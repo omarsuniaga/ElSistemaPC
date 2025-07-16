@@ -143,20 +143,20 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {useAdvancedAnalytics} from "@/analytics/composables/useAdvancedAnalytics"
+import { computed } from 'vue';
+import { useAdvancedAnalytics } from '@/analytics/composables/useAdvancedAnalytics';
 
 // Components
-import MetricCard from "@/analytics/components/MetricCard.vue"
-import RiskStudentsWidget from "@/analytics/components/RiskStudentsWidget.vue"
-import SmartRecommendationsWidget from "@/analytics/components/SmartRecommendationsWidget.vue"
-import AttendancePredictionChart from "@/analytics/components/AttendancePredictionChart.vue"
-import WeeklyTrendsChart from "@/analytics/components/WeeklyTrendsChart.vue"
-import AlertsWidget from "@/analytics/components/AlertsWidget.vue"
-import KeyInsightsWidget from "@/analytics/components/KeyInsightsWidget.vue"
-import TimeSlotAnalysisWidget from "@/analytics/components/TimeSlotAnalysisWidget.vue"
-import SeasonalPatternsWidget from "@/analytics/components/SeasonalPatternsWidget.vue"
-import ErrorModal from "@/components/ui/ErrorModal.vue"
+import MetricCard from '@/analytics/components/MetricCard.vue';
+import RiskStudentsWidget from '@/analytics/components/RiskStudentsWidget.vue';
+import SmartRecommendationsWidget from '@/analytics/components/SmartRecommendationsWidget.vue';
+import AttendancePredictionChart from '@/analytics/components/AttendancePredictionChart.vue';
+import WeeklyTrendsChart from '@/analytics/components/WeeklyTrendsChart.vue';
+import AlertsWidget from '@/analytics/components/AlertsWidget.vue';
+import KeyInsightsWidget from '@/analytics/components/KeyInsightsWidget.vue';
+import TimeSlotAnalysisWidget from '@/analytics/components/TimeSlotAnalysisWidget.vue';
+import SeasonalPatternsWidget from '@/analytics/components/SeasonalPatternsWidget.vue';
+import ErrorModal from '@/components/ui/ErrorModal.vue';
 
 // Composable de Analytics
 const {
@@ -167,15 +167,15 @@ const {
   alertsSummary,
   topRecommendations,
   refreshDashboard,
-} = useAdvancedAnalytics()
+} = useAdvancedAnalytics();
 
 // Computed properties
 const healthScoreColor = computed(() => {
-  const score = healthScore.value
-  if (score >= 80) return "text-green-600"
-  if (score >= 60) return "text-yellow-600"
-  return "text-red-600"
-})
+  const score = healthScore.value;
+  if (score >= 80) return 'text-green-600';
+  if (score >= 60) return 'text-yellow-600';
+  return 'text-red-600';
+});
 </script>
 
 <style scoped>

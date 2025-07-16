@@ -566,14 +566,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted, nextTick} from "vue"
-import {debounce} from "lodash-es"
-import {Dialog, DialogPanel, TransitionRoot, TransitionChild, DialogTitle} from "@headlessui/vue"
-import {MagnifyingGlassIcon, XMarkIcon} from "@heroicons/vue/24/outline"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useStudentsStore} from "../../Students/store/students"
-import {useNotification} from "@/composables/useNotification"
-import type {ClassData} from "../types/class"
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { debounce } from 'lodash-es';
+import { Dialog, DialogPanel, TransitionRoot, TransitionChild, DialogTitle } from '@headlessui/vue';
+import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useStudentsStore } from '../../Students/store/students';
+import { useNotification } from '@/composables/useNotification';
+import type { ClassData } from '../types/class';
 
 // Props
 interface Props {
@@ -583,30 +583,30 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   classData: null,
-})
+});
 
 // Emits
 const emit = defineEmits<{
-  (e: "close"): void
-  (e: "save", data: Partial<ClassData>): void
-}>()
+  (e: 'close'): void
+  (e: 'save', data: Partial<ClassData>): void
+}>();
 
 // Stores and Composables
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
-const {showNotification} = useNotification()
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
+const { showNotification } = useNotification();
 
 // State
-const saving = ref(false)
-const studentSearchTerm = ref("")
+const saving = ref(false);
+const studentSearchTerm = ref('');
 
 // Data Loading State
-const teachers = ref<any[]>([])
-const students = ref<any[]>([])
+const teachers = ref<any[]>([]);
+const students = ref<any[]>([]);
 const loading = ref({
   teachers: false,
   students: false,
-})
+});
 
 // Schedule Interface
 interface ScheduleSlot {
@@ -620,7 +620,7 @@ interface ClassFormData {
   name: string
   instrument: string
   level: string
-  status: "active" | "inactive" | "suspended"
+  status: 'active' | 'inactive' | 'suspended'
   description: string
   capacity: number
   teacherId: string
@@ -632,44 +632,44 @@ interface ClassFormData {
 
 // Form State
 const classForm = ref<ClassFormData>({
-  name: "",
-  instrument: "",
-  level: "",
-  status: "active",
-  description: "",
+  name: '',
+  instrument: '',
+  level: '',
+  status: 'active',
+  description: '',
   capacity: 8,
-  teacherId: "",
+  teacherId: '',
   studentIds: [],
   sharedWith: [],
   permissions: {},
-  schedules: [{day: "", startTime: "", endTime: ""}],
-})
+  schedules: [{ day: '', startTime: '', endTime: '' }],
+});
 
 // Computed Properties
-const isEditing = computed(() => !!props.classData?.id)
+const isEditing = computed(() => !!props.classData?.id);
 
 const availableSharedTeachers = computed(() =>
-  teachers.value.filter((teacher) => teacher.id !== classForm.value.teacherId)
-)
+  teachers.value.filter((teacher) => teacher.id !== classForm.value.teacherId),
+);
 
 // Enhanced validation with detailed error messages
 const validationErrors = computed(() => {
-  const errors: string[] = []
+  const errors: string[] = [];
 
   if (!classForm.value.name.trim()) {
-    errors.push("El nombre de la clase es obligatorio")
+    errors.push('El nombre de la clase es obligatorio');
   }
 
   if (!classForm.value.instrument) {
-    errors.push("Debe seleccionar un instrumento")
+    errors.push('Debe seleccionar un instrumento');
   }
 
   if (!classForm.value.level) {
-    errors.push("Debe seleccionar un nivel")
+    errors.push('Debe seleccionar un nivel');
   }
 
   if (!classForm.value.teacherId) {
-    errors.push("Debe seleccionar un profesor principal")
+    errors.push('Debe seleccionar un profesor principal');
   }
 
   // Validate schedules
@@ -678,11 +678,11 @@ const validationErrors = computed(() => {
       schedule.day &&
       schedule.startTime &&
       schedule.endTime &&
-      schedule.startTime < schedule.endTime
-  )
+      schedule.startTime < schedule.endTime,
+  );
 
   if (!hasValidSchedule) {
-    errors.push("Debe agregar al menos un horario válido")
+    errors.push('Debe agregar al menos un horario válido');
   }
 
   // Check for invalid schedules
@@ -691,104 +691,104 @@ const validationErrors = computed(() => {
       schedule.day &&
       schedule.startTime &&
       schedule.endTime &&
-      schedule.startTime >= schedule.endTime
-  )
+      schedule.startTime >= schedule.endTime,
+  );
 
   if (invalidSchedules.length > 0) {
-    errors.push("Algunos horarios tienen hora de inicio posterior a la de fin")
+    errors.push('Algunos horarios tienen hora de inicio posterior a la de fin');
   }
 
   // Check capacity
   if (classForm.value.capacity && classForm.value.studentIds.length > classForm.value.capacity) {
     errors.push(
-      `Se han seleccionado más estudiantes (${classForm.value.studentIds.length}) que la capacidad máxima (${classForm.value.capacity})`
-    )
+      `Se han seleccionado más estudiantes (${classForm.value.studentIds.length}) que la capacidad máxima (${classForm.value.capacity})`,
+    );
   }
 
-  return errors
-})
+  return errors;
+});
 
-const isFormValid = computed(() => validationErrors.value.length === 0)
+const isFormValid = computed(() => validationErrors.value.length === 0);
 
 // Student filtering with improved search
 const filteredStudents = computed(() => {
   if (!studentSearchTerm.value.trim()) {
-    return students.value
+    return students.value;
   }
 
   const searchTerms = studentSearchTerm.value
     .toLowerCase()
-    .split(" ")
-    .filter((term) => term.length > 0)
+    .split(' ')
+    .filter((term) => term.length > 0);
 
   return students.value.filter((student) => {
     const searchText =
-      `${student.nombre || ""} ${student.apellido || ""} ${student.instrumento || ""}`.toLowerCase()
-    return searchTerms.every((term) => searchText.includes(term))
-  })
-})
+      `${student.nombre || ''} ${student.apellido || ''} ${student.instrumento || ''}`.toLowerCase();
+    return searchTerms.every((term) => searchText.includes(term));
+  });
+});
 
 // Schedule validation helpers
 const isValidSchedule = (schedule: ScheduleSlot): boolean => {
   if (!schedule.day || !schedule.startTime || !schedule.endTime) {
-    return false
+    return false;
   }
-  return schedule.startTime < schedule.endTime
-}
+  return schedule.startTime < schedule.endTime;
+};
 
 const getScheduleErrorMessage = (schedule: ScheduleSlot): string => {
-  if (!schedule.day) return "Seleccione un día"
-  if (!schedule.startTime) return "Ingrese la hora de inicio"
-  if (!schedule.endTime) return "Ingrese la hora de fin"
+  if (!schedule.day) return 'Seleccione un día';
+  if (!schedule.startTime) return 'Ingrese la hora de inicio';
+  if (!schedule.endTime) return 'Ingrese la hora de fin';
   if (schedule.startTime >= schedule.endTime)
-    return "La hora de inicio debe ser anterior a la hora de fin"
-  return ""
-}
+    return 'La hora de inicio debe ser anterior a la hora de fin';
+  return '';
+};
 
 // Schedule management
 const addScheduleSlot = () => {
   classForm.value.schedules.push({
-    day: "",
-    startTime: "",
-    endTime: "",
-  })
-}
+    day: '',
+    startTime: '',
+    endTime: '',
+  });
+};
 
 const removeScheduleSlot = (index: number) => {
   if (classForm.value.schedules.length > 1) {
-    classForm.value.schedules.splice(index, 1)
+    classForm.value.schedules.splice(index, 1);
   }
-}
+};
 
 // Permission management
 const updateTeacherPermission = (teacherId: string, permissionLevel: string) => {
   switch (permissionLevel) {
-    case "read":
-      classForm.value.permissions[teacherId] = ["read"]
-      break
-    case "write":
-      classForm.value.permissions[teacherId] = ["read", "write"]
-      break
-    case "manage":
-      classForm.value.permissions[teacherId] = ["read", "write", "manage"]
-      break
-    default:
-      classForm.value.permissions[teacherId] = ["read"]
+  case 'read':
+    classForm.value.permissions[teacherId] = ['read'];
+    break;
+  case 'write':
+    classForm.value.permissions[teacherId] = ['read', 'write'];
+    break;
+  case 'manage':
+    classForm.value.permissions[teacherId] = ['read', 'write', 'manage'];
+    break;
+  default:
+    classForm.value.permissions[teacherId] = ['read'];
   }
-}
+};
 
 // Form submission
 const handleSubmit = async () => {
   if (!isFormValid.value || saving.value) {
-    showNotification("Por favor corrige los errores en el formulario", "warning")
-    return
+    showNotification('Por favor corrige los errores en el formulario', 'warning');
+    return;
   }
 
-  saving.value = true
-  await nextTick()
+  saving.value = true;
+  await nextTick();
 
   try {
-    const now = new Date()
+    const now = new Date();
 
     // Prepare class data
     const classData: Partial<ClassData> = {
@@ -801,145 +801,145 @@ const handleSubmit = async () => {
       // Convert schedules to the format expected by the parent component
       schedule: classForm.value.schedules.find((s) => s.day && s.startTime && s.endTime)
         ? {
-            day: classForm.value.schedules[0].day,
-            startTime: classForm.value.schedules[0].startTime,
-            endTime: classForm.value.schedules[0].endTime,
-          }
+          day: classForm.value.schedules[0].day,
+          startTime: classForm.value.schedules[0].startTime,
+          endTime: classForm.value.schedules[0].endTime,
+        }
         : undefined,
       updatedAt: now,
-    }
+    };
 
     // Add metadata based on form fields
     if (classForm.value.instrument) {
       classData.description =
-        `${classData.description}\nInstrumento: ${classForm.value.instrument}\nNivel: ${classForm.value.level}`.trim()
+        `${classData.description}\nInstrumento: ${classForm.value.instrument}\nNivel: ${classForm.value.level}`.trim();
     }
 
     // If editing, preserve ID and creation date
     if (isEditing.value && props.classData?.id) {
-      classData.id = props.classData.id
-      classData.createdAt = props.classData.createdAt
+      classData.id = props.classData.id;
+      classData.createdAt = props.classData.createdAt;
     } else {
-      classData.createdAt = now
+      classData.createdAt = now;
     }
 
     // Emit save event
-    emit("save", classData)
+    emit('save', classData);
 
     showNotification(
-      isEditing.value ? "Clase actualizada correctamente" : "Clase creada correctamente",
-      "success"
-    )
+      isEditing.value ? 'Clase actualizada correctamente' : 'Clase creada correctamente',
+      'success',
+    );
 
-    emit("close")
+    emit('close');
   } catch (error) {
-    console.error("Error al guardar la clase:", error)
-    showNotification("Error al guardar la clase. Por favor, inténtalo de nuevo.", "error")
+    console.error('Error al guardar la clase:', error);
+    showNotification('Error al guardar la clase. Por favor, inténtalo de nuevo.', 'error');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 // Form reset
 const resetForm = () => {
   classForm.value = {
-    name: "",
-    instrument: "",
-    level: "",
-    status: "active",
-    description: "",
+    name: '',
+    instrument: '',
+    level: '',
+    status: 'active',
+    description: '',
     capacity: 8,
-    teacherId: "",
+    teacherId: '',
     studentIds: [],
     sharedWith: [],
     permissions: {},
-    schedules: [{day: "", startTime: "", endTime: ""}],
-  }
-  studentSearchTerm.value = ""
-}
+    schedules: [{ day: '', startTime: '', endTime: '' }],
+  };
+  studentSearchTerm.value = '';
+};
 
 // Event handlers
 const handleClose = () => {
   if (!saving.value) {
-    emit("close")
+    emit('close');
   }
-}
+};
 
 // Data loading
 onMounted(async () => {
   try {
-    loading.value.teachers = true
-    loading.value.students = true
+    loading.value.teachers = true;
+    loading.value.students = true;
 
     await Promise.all([
       teachersStore.fetchTeachers().then((data) => {
-        teachers.value = data || teachersStore.teachers
+        teachers.value = data || teachersStore.teachers;
       }),
       studentsStore.fetchStudents().then((data) => {
-        students.value = data || studentsStore.students
+        students.value = data || studentsStore.students;
       }),
-    ])
+    ]);
 
     // Load class data if editing
     if (props.classData) {
-      populateFormWithClassData(props.classData)
+      populateFormWithClassData(props.classData);
     }
   } catch (error) {
-    console.error("Error loading data:", error)
-    showNotification("Error al cargar los datos. Por favor, intenta nuevamente.", "error")
+    console.error('Error loading data:', error);
+    showNotification('Error al cargar los datos. Por favor, intenta nuevamente.', 'error');
   } finally {
-    loading.value.teachers = false
-    loading.value.students = false
+    loading.value.teachers = false;
+    loading.value.students = false;
   }
-})
+});
 
 // Helper function to populate form with class data
 const populateFormWithClassData = (classData: ClassData) => {
   classForm.value = {
-    name: classData.name || "",
-    instrument: extractInstrumentFromDescription(classData.description || ""),
-    level: extractLevelFromDescription(classData.description || ""),
-    status: classData.status || "active",
-    description: cleanDescription(classData.description || ""),
+    name: classData.name || '',
+    instrument: extractInstrumentFromDescription(classData.description || ''),
+    level: extractLevelFromDescription(classData.description || ''),
+    status: classData.status || 'active',
+    description: cleanDescription(classData.description || ''),
     capacity: 8, // Default capacity
-    teacherId: classData.teacherId || "",
+    teacherId: classData.teacherId || '',
     studentIds: classData.studentIds || [],
     sharedWith: classData.sharedWith || [],
     permissions: {},
     schedules: classData.schedule
       ? [
-          {
-            day: classData.schedule.day,
-            startTime: classData.schedule.startTime,
-            endTime: classData.schedule.endTime,
-          },
-        ]
-      : [{day: "", startTime: "", endTime: ""}],
-  }
+        {
+          day: classData.schedule.day,
+          startTime: classData.schedule.startTime,
+          endTime: classData.schedule.endTime,
+        },
+      ]
+      : [{ day: '', startTime: '', endTime: '' }],
+  };
 
   // Set default permissions for shared teachers
   classData.sharedWith?.forEach((teacherId) => {
-    classForm.value.permissions[teacherId] = ["read"]
-  })
-}
+    classForm.value.permissions[teacherId] = ['read'];
+  });
+};
 
 // Helper functions for extracting data from description
 const extractInstrumentFromDescription = (description: string): string => {
-  const match = description.match(/Instrumento:\s*([^\n]+)/i)
-  return match ? match[1].trim() : ""
-}
+  const match = description.match(/Instrumento:\s*([^\n]+)/i);
+  return match ? match[1].trim() : '';
+};
 
 const extractLevelFromDescription = (description: string): string => {
-  const match = description.match(/Nivel:\s*([^\n]+)/i)
-  return match ? match[1].trim() : ""
-}
+  const match = description.match(/Nivel:\s*([^\n]+)/i);
+  return match ? match[1].trim() : '';
+};
 
 const cleanDescription = (description: string): string => {
   return description
-    .replace(/Instrumento:\s*[^\n]+\n?/gi, "")
-    .replace(/Nivel:\s*[^\n]+\n?/gi, "")
-    .trim()
-}
+    .replace(/Instrumento:\s*[^\n]+\n?/gi, '')
+    .replace(/Nivel:\s*[^\n]+\n?/gi, '')
+    .trim();
+};
 
 // Watch for changes in shared teachers to manage permissions
 watch(
@@ -949,33 +949,33 @@ watch(
     if (oldSharedWith) {
       oldSharedWith.forEach((teacherId) => {
         if (!newSharedWith.includes(teacherId)) {
-          delete classForm.value.permissions[teacherId]
+          delete classForm.value.permissions[teacherId];
         }
-      })
+      });
     }
 
     // Add default permissions for new shared teachers
     newSharedWith.forEach((teacherId) => {
       if (!classForm.value.permissions[teacherId]) {
-        classForm.value.permissions[teacherId] = ["read"]
+        classForm.value.permissions[teacherId] = ['read'];
       }
-    })
+    });
   },
-  {deep: true}
-)
+  { deep: true },
+);
 
 // Watch for classData changes
 watch(
   () => props.classData,
   (classData) => {
     if (classData) {
-      populateFormWithClassData(classData)
+      populateFormWithClassData(classData);
     } else {
-      resetForm()
+      resetForm();
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 </script>
 
 <style scoped>

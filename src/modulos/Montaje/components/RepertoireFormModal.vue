@@ -239,9 +239,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import type {Repertorio, TipoRepertorio, EstadoRepertorio, Obra} from "../types"
-import {useMontaje} from "../composables/useMontaje"
+import { ref, computed, onMounted } from 'vue';
+import type { Repertorio, TipoRepertorio, EstadoRepertorio, Obra } from '../types';
+import { useMontaje } from '../composables/useMontaje';
 
 interface Props {
   repertoire?: Repertorio
@@ -250,113 +250,113 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   isEdit: false,
-})
+});
 
 const emit = defineEmits<{
   close: []
   save: [repertoire: Repertorio]
-}>()
+}>();
 
-const {getAllWorks} = useMontaje()
+const { getAllWorks } = useMontaje();
 
-const loading = ref(false)
-const availableWorks = ref<Obra[]>([])
-const newEtiqueta = ref("")
+const loading = ref(false);
+const availableWorks = ref<Obra[]>([]);
+const newEtiqueta = ref('');
 
 const tiposRepertorio: TipoRepertorio[] = [
-  "SINFONICA",
-  "CAMARA",
-  "CORAL",
-  "BANDA",
-  "SOLISTA",
-  "CONJUNTO",
-]
+  'SINFONICA',
+  'CAMARA',
+  'CORAL',
+  'BANDA',
+  'SOLISTA',
+  'CONJUNTO',
+];
 
 const estadosRepertorio: EstadoRepertorio[] = [
-  "BORRADOR",
-  "EN_REVISION",
-  "APROBADO",
-  "EN_MONTAJE",
-  "SUSPENDIDO",
-  "COMPLETADO",
-]
+  'BORRADOR',
+  'EN_REVISION',
+  'APROBADO',
+  'EN_MONTAJE',
+  'SUSPENDIDO',
+  'COMPLETADO',
+];
 
 const form = ref({
-  nombre: props.repertoire?.nombre || "",
-  descripcion: props.repertoire?.descripcion || "",
-  tipo: props.repertoire?.tipo || ("" as TipoRepertorio),
-  estado: props.repertoire?.estado || ("BORRADOR" as EstadoRepertorio),
+  nombre: props.repertoire?.nombre || '',
+  descripcion: props.repertoire?.descripcion || '',
+  tipo: props.repertoire?.tipo || ('' as TipoRepertorio),
+  estado: props.repertoire?.estado || ('BORRADOR' as EstadoRepertorio),
   nivelDificultad: props.repertoire?.nivelDificultad || 1,
   fechaInicio: props.repertoire?.fechaInicio
-    ? new Date(props.repertoire.fechaInicio).toISOString().split("T")[0]
-    : "",
+    ? new Date(props.repertoire.fechaInicio).toISOString().split('T')[0]
+    : '',
   fechaObjetivo: props.repertoire?.fechaObjetivo
-    ? new Date(props.repertoire.fechaObjetivo).toISOString().split("T")[0]
-    : "",
+    ? new Date(props.repertoire.fechaObjetivo).toISOString().split('T')[0]
+    : '',
   etiquetas: [...(props.repertoire?.etiquetas || [])],
   obras: [...(props.repertoire?.obras || [])],
-  metadatos: {...(props.repertoire?.metadatos || {})},
-})
+  metadatos: { ...(props.repertoire?.metadatos || {}) },
+});
 
 const loadWorks = async () => {
   try {
-    availableWorks.value = await getAllWorks()
+    availableWorks.value = await getAllWorks();
   } catch (error) {
-    console.error("Error loading works:", error)
+    console.error('Error loading works:', error);
   }
-}
+};
 
 const addEtiqueta = () => {
   if (newEtiqueta.value.trim() && !form.value.etiquetas.includes(newEtiqueta.value.trim())) {
-    form.value.etiquetas.push(newEtiqueta.value.trim())
-    newEtiqueta.value = ""
+    form.value.etiquetas.push(newEtiqueta.value.trim());
+    newEtiqueta.value = '';
   }
-}
+};
 
 const removeEtiqueta = (index: number) => {
-  form.value.etiquetas.splice(index, 1)
-}
+  form.value.etiquetas.splice(index, 1);
+};
 
 const addMetadata = () => {
-  const key = `metadata_${Object.keys(form.value.metadatos).length + 1}`
-  form.value.metadatos[key] = ""
-}
+  const key = `metadata_${Object.keys(form.value.metadatos).length + 1}`;
+  form.value.metadatos[key] = '';
+};
 
 const removeMetadata = (key: string) => {
-  delete form.value.metadatos[key]
-}
+  delete form.value.metadatos[key];
+};
 
 const updateMetadataKey = (event: Event, oldKey: string) => {
-  const newKey = (event.target as HTMLInputElement).value
+  const newKey = (event.target as HTMLInputElement).value;
   if (newKey !== oldKey && newKey.trim()) {
-    const value = form.value.metadatos[oldKey]
-    delete form.value.metadatos[oldKey]
-    form.value.metadatos[newKey] = value
+    const value = form.value.metadatos[oldKey];
+    delete form.value.metadatos[oldKey];
+    form.value.metadatos[newKey] = value;
   }
-}
+};
 
 const handleSubmit = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     const repertoireData: Partial<Repertorio> = {
       ...form.value,
       fechaInicio: form.value.fechaInicio ? new Date(form.value.fechaInicio) : undefined,
       fechaObjetivo: form.value.fechaObjetivo ? new Date(form.value.fechaObjetivo) : undefined,
-    }
+    };
 
     if (props.isEdit && props.repertoire) {
-      repertoireData.id = props.repertoire.id
+      repertoireData.id = props.repertoire.id;
     }
 
-    emit("save", repertoireData as Repertorio)
+    emit('save', repertoireData as Repertorio);
   } catch (error) {
-    console.error("Error saving repertoire:", error)
+    console.error('Error saving repertoire:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 onMounted(() => {
-  loadWorks()
-})
+  loadWorks();
+});
 </script>

@@ -1,258 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {format, subMonths, subWeeks, startOfMonth, endOfMonth} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAnalyticsStore} from "../store/analytics"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {Bar, Doughnut} from "vue-chartjs"
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js"
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-)
-
-const props = defineProps({
-  teacherId: {
-    type: String,
-    default: "",
-  },
-  startDate: {
-    type: Date,
-    default: () => startOfMonth(subMonths(new Date(), 1)),
-  },
-  endDate: {
-    type: Date,
-    default: () => endOfMonth(new Date()),
-  },
-  compact: {
-    type: Boolean,
-    default: false,
-  },
-})
-
-const analyticsStore = useAnalyticsStore()
-const teachersStore = useTeachersStore()
-
-// Estado local
-const isLoading = ref(false)
-const error = ref("")
-const report = ref<any>(null)
-const teacher = ref<any>(null)
-const customDateRange = ref(false)
-const dateRange = ref({
-  startDate: format(props.startDate, "yyyy-MM-dd"),
-  endDate: format(props.endDate, "yyyy-MM-dd"),
-})
-
-// Generación de periodo automática
-const periods = [
-  {
-    id: "last-month",
-    name: "Último mes",
-    start: startOfMonth(subMonths(new Date(), 1)),
-    end: endOfMonth(subMonths(new Date(), 1)),
-  },
-  {
-    id: "current-month",
-    name: "Mes actual",
-    start: startOfMonth(new Date()),
-    end: endOfMonth(new Date()),
-  },
-  {id: "last-week", name: "Última semana", start: subWeeks(new Date(), 1), end: new Date()},
-  {id: "custom", name: "Personalizado", start: new Date(), end: new Date()},
-]
-
-const selectedPeriod = ref(periods[0].id)
-
-// Observadores
-watch(
-  () => props.teacherId,
-  (newTeacherId) => {
-    if (newTeacherId) {
-      loadTeacherData()
-    }
-  }
-)
-
-watch(selectedPeriod, (newPeriod) => {
-  if (newPeriod !== "custom") {
-    const period = periods.find((p) => p.id === newPeriod)
-    if (period) {
-      dateRange.value = {
-        startDate: format(period.start, "yyyy-MM-dd"),
-        endDate: format(period.end, "yyyy-MM-dd"),
-      }
-      loadReport()
-    }
-  } else {
-    customDateRange.value = true
-  }
-})
-
-watch([() => dateRange.value.startDate, () => dateRange.value.endDate], () => {
-  if (customDateRange.value && dateRange.value.startDate && dateRange.value.endDate) {
-    loadReport()
-  }
-})
-
-// Carga de datos
-async function loadTeacherData() {
-  if (!props.teacherId) return
-
-  isLoading.value = true
-  error.value = ""
-
-  try {
-    await teachersStore.fetchTeachers()
-    teacher.value = teachersStore.getTeacherById(props.teacherId)
-
-    if (!teacher.value) {
-      throw new Error("Profesor no encontrado")
-    }
-
-    await loadReport()
-  } catch (err: any) {
-    console.error("Error al cargar datos del profesor:", err)
-    error.value = err.message || "Error al cargar datos del profesor"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-async function loadReport() {
-  if (!props.teacherId) return
-
-  isLoading.value = true
-  error.value = ""
-
-  try {
-    const start = new Date(dateRange.value.startDate)
-    const end = new Date(dateRange.value.endDate)
-
-    report.value = await analyticsStore.generateTeacherReport(props.teacherId, start, end)
-  } catch (err: any) {
-    console.error("Error al generar reporte del profesor:", err)
-    error.value = err.message || "Error al generar reporte del profesor"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Gráficos y datos procesados
-const efficiencyRatingClass = computed(() => {
-  if (!report.value) return {}
-
-  const efficiency = report.value.efficiency.overall
-
-  if (efficiency > 90) return "text-green-600 dark:text-green-400"
-  if (efficiency > 80) return "text-emerald-600 dark:text-emerald-400"
-  if (efficiency > 70) return "text-lime-600 dark:text-lime-400"
-  if (efficiency > 60) return "text-yellow-600 dark:text-yellow-400"
-  return "text-red-600 dark:text-red-400"
-})
-
-const attendanceChartData = computed(() => {
-  if (!report.value) {
-    return {
-      labels: [],
-      datasets: [],
-    }
-  }
-
-  return {
-    labels: ["Horas Programadas", "Horas Trabajadas"],
-    datasets: [
-      {
-        label: "Horas",
-        backgroundColor: ["rgba(59, 130, 246, 0.8)", "rgba(16, 185, 129, 0.8)"],
-        data: [report.value.attendance.scheduledHours, report.value.attendance.workedHours],
-      },
-    ],
-  }
-})
-
-const teacherClassesData = computed(() => {
-  if (!report.value || !report.value.classes || !report.value.classes.details) {
-    return []
-  }
-
-  return report.value.classes.details.map((classItem: any) => {
-    const schedules = classItem.schedules || []
-    const totalSchedules = schedules.length
-    const className = classItem.name || classItem.nombre || "Clase sin nombre"
-
-    return {
-      name: className,
-      totalSchedules,
-      instrument: classItem.instrument || classItem.instrumento || "No especificado",
-    }
-  })
-})
-
-const appUsageChartData = computed(() => {
-  if (!report.value || !report.value.appUsage) {
-    return {
-      labels: [],
-      datasets: [],
-    }
-  }
-
-  return {
-    labels: ["En Horario de Clase", "Fuera de Horario"],
-    datasets: [
-      {
-        label: "Sesiones",
-        backgroundColor: ["rgba(59, 130, 246, 0.8)", "rgba(156, 163, 175, 0.8)"],
-        data: [
-          report.value.appUsage.sessionsInClassTime || 0,
-          (report.value.appUsage.totalSessions || 0) -
-            (report.value.appUsage.sessionsInClassTime || 0),
-        ],
-      },
-    ],
-  }
-})
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "bottom" as const,
-    },
-    title: {
-      display: false,
-    },
-  },
-}
-
-// Cargar datos cuando se monte el componente
-onMounted(() => {
-  if (props.teacherId) {
-    loadTeacherData()
-  }
-})
-</script>
-
 <template>
   <div class="teacher-performance">
     <div v-if="isLoading" class="flex justify-center items-center py-8">
@@ -435,6 +180,261 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { format, subMonths, subWeeks, startOfMonth, endOfMonth } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAnalyticsStore } from '../store/analytics';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { Bar, Doughnut } from 'vue-chartjs';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+);
+
+const props = defineProps({
+  teacherId: {
+    type: String,
+    default: '',
+  },
+  startDate: {
+    type: Date,
+    default: () => startOfMonth(subMonths(new Date(), 1)),
+  },
+  endDate: {
+    type: Date,
+    default: () => endOfMonth(new Date()),
+  },
+  compact: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const analyticsStore = useAnalyticsStore();
+const teachersStore = useTeachersStore();
+
+// Estado local
+const isLoading = ref(false);
+const error = ref('');
+const report = ref<any>(null);
+const teacher = ref<any>(null);
+const customDateRange = ref(false);
+const dateRange = ref({
+  startDate: format(props.startDate, 'yyyy-MM-dd'),
+  endDate: format(props.endDate, 'yyyy-MM-dd'),
+});
+
+// Generación de periodo automática
+const periods = [
+  {
+    id: 'last-month',
+    name: 'Último mes',
+    start: startOfMonth(subMonths(new Date(), 1)),
+    end: endOfMonth(subMonths(new Date(), 1)),
+  },
+  {
+    id: 'current-month',
+    name: 'Mes actual',
+    start: startOfMonth(new Date()),
+    end: endOfMonth(new Date()),
+  },
+  { id: 'last-week', name: 'Última semana', start: subWeeks(new Date(), 1), end: new Date() },
+  { id: 'custom', name: 'Personalizado', start: new Date(), end: new Date() },
+];
+
+const selectedPeriod = ref(periods[0].id);
+
+// Observadores
+watch(
+  () => props.teacherId,
+  (newTeacherId) => {
+    if (newTeacherId) {
+      loadTeacherData();
+    }
+  },
+);
+
+watch(selectedPeriod, (newPeriod) => {
+  if (newPeriod !== 'custom') {
+    const period = periods.find((p) => p.id === newPeriod);
+    if (period) {
+      dateRange.value = {
+        startDate: format(period.start, 'yyyy-MM-dd'),
+        endDate: format(period.end, 'yyyy-MM-dd'),
+      };
+      loadReport();
+    }
+  } else {
+    customDateRange.value = true;
+  }
+});
+
+watch([() => dateRange.value.startDate, () => dateRange.value.endDate], () => {
+  if (customDateRange.value && dateRange.value.startDate && dateRange.value.endDate) {
+    loadReport();
+  }
+});
+
+// Carga de datos
+async function loadTeacherData() {
+  if (!props.teacherId) return;
+
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    await teachersStore.fetchTeachers();
+    teacher.value = teachersStore.getTeacherById(props.teacherId);
+
+    if (!teacher.value) {
+      throw new Error('Profesor no encontrado');
+    }
+
+    await loadReport();
+  } catch (err: any) {
+    console.error('Error al cargar datos del profesor:', err);
+    error.value = err.message || 'Error al cargar datos del profesor';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+async function loadReport() {
+  if (!props.teacherId) return;
+
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    const start = new Date(dateRange.value.startDate);
+    const end = new Date(dateRange.value.endDate);
+
+    report.value = await analyticsStore.generateTeacherReport(props.teacherId, start, end);
+  } catch (err: any) {
+    console.error('Error al generar reporte del profesor:', err);
+    error.value = err.message || 'Error al generar reporte del profesor';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Gráficos y datos procesados
+const efficiencyRatingClass = computed(() => {
+  if (!report.value) return {};
+
+  const efficiency = report.value.efficiency.overall;
+
+  if (efficiency > 90) return 'text-green-600 dark:text-green-400';
+  if (efficiency > 80) return 'text-emerald-600 dark:text-emerald-400';
+  if (efficiency > 70) return 'text-lime-600 dark:text-lime-400';
+  if (efficiency > 60) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-red-600 dark:text-red-400';
+});
+
+const attendanceChartData = computed(() => {
+  if (!report.value) {
+    return {
+      labels: [],
+      datasets: [],
+    };
+  }
+
+  return {
+    labels: ['Horas Programadas', 'Horas Trabajadas'],
+    datasets: [
+      {
+        label: 'Horas',
+        backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(16, 185, 129, 0.8)'],
+        data: [report.value.attendance.scheduledHours, report.value.attendance.workedHours],
+      },
+    ],
+  };
+});
+
+const teacherClassesData = computed(() => {
+  if (!report.value || !report.value.classes || !report.value.classes.details) {
+    return [];
+  }
+
+  return report.value.classes.details.map((classItem: any) => {
+    const schedules = classItem.schedules || [];
+    const totalSchedules = schedules.length;
+    const className = classItem.name || classItem.nombre || 'Clase sin nombre';
+
+    return {
+      name: className,
+      totalSchedules,
+      instrument: classItem.instrument || classItem.instrumento || 'No especificado',
+    };
+  });
+});
+
+const appUsageChartData = computed(() => {
+  if (!report.value || !report.value.appUsage) {
+    return {
+      labels: [],
+      datasets: [],
+    };
+  }
+
+  return {
+    labels: ['En Horario de Clase', 'Fuera de Horario'],
+    datasets: [
+      {
+        label: 'Sesiones',
+        backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(156, 163, 175, 0.8)'],
+        data: [
+          report.value.appUsage.sessionsInClassTime || 0,
+          (report.value.appUsage.totalSessions || 0) -
+            (report.value.appUsage.sessionsInClassTime || 0),
+        ],
+      },
+    ],
+  };
+});
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+    },
+    title: {
+      display: false,
+    },
+  },
+};
+
+// Cargar datos cuando se monte el componente
+onMounted(() => {
+  if (props.teacherId) {
+    loadTeacherData();
+  }
+});
+</script>
 
 <style lang="scss" scoped>
 .teacher-performance {

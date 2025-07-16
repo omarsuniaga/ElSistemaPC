@@ -1,15 +1,3 @@
-<script setup lang="ts">
-import {PlusIcon} from "@heroicons/vue/24/outline"
-import TeacherWeeklySchedule from "./TeacherWeeklySchedule.vue"
-import type {ClassData} from "../types/teacherTypes" // Assuming types are moved
-
-defineProps<{
-  teacherClasses: ClassData[]
-  currentTeacherId: string
-}>()
-const emit = defineEmits(["add-class", "view-class"])
-</script>
-
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4">
     <h2
@@ -31,3 +19,15 @@ const emit = defineEmits(["add-class", "view-class"])
     />
   </div>
 </template>
+
+<script setup lang="ts">
+import { PlusIcon } from '@heroicons/vue/24/outline';
+import TeacherWeeklySchedule from './TeacherWeeklySchedule.vue';
+import type { ClassData } from '../types/teacherTypes'; // Assuming types are moved
+
+defineProps<{
+  teacherClasses: ClassData[]
+  currentTeacherId: string
+}>();
+const emit = defineEmits(['add-class', 'view-class']);
+</script>

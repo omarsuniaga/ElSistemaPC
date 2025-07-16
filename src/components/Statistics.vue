@@ -1,138 +1,4 @@
 ```vue
-<script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {Line, Bar, Doughnut} from "vue-chartjs"
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  type ChartData,
-  type ChartOptions,
-} from "chart.js"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import {useTeachersStore} from "../stores/teachers"
-import {useClassesStore} from "../stores/classes"
-import {useAttendanceStore} from "../stores/attendance"
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-)
-
-const props = defineProps<{
-  type: "student" | "teacher"
-  id: number | string
-  period?: "week" | "month" | "year"
-}>()
-
-const studentsStore = useStudentsStore()
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-const attendanceStore = useAttendanceStore()
-
-const isLoading = ref(true)
-const error = ref("")
-
-// Chart data
-const attendanceData = computed<ChartData>(() => ({
-  labels: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
-  datasets: [
-    {
-      label: "Asistencia",
-      data: [95, 87, 92, 88, 90, 85, 89],
-      borderColor: "#22c55e",
-      backgroundColor: "#22c55e",
-    },
-  ],
-}))
-
-const performanceData = computed<ChartData>(() => ({
-  labels: ["Teoría", "Técnica", "Interpretación", "Ritmo"],
-  datasets: [
-    {
-      data: [85, 92, 78, 88],
-      backgroundColor: ["#3b82f6", "#22c55e", "#eab308", "#ec4899"],
-    },
-  ],
-}))
-
-const progressData = computed<ChartData>(() => ({
-  labels: ["Ene", "Feb", "Mar", "Abr", "May", "Jun"],
-  datasets: [
-    {
-      label: "Progreso",
-      data: [65, 70, 75, 82, 85, 90],
-      borderColor: "#8b5cf6",
-      backgroundColor: "#8b5cf6",
-    },
-  ],
-}))
-
-const chartOptions: ChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "top",
-    },
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      max: 100,
-    },
-  },
-}
-
-// Metrics
-const metrics = computed(() => {
-  if (props.type === "student") {
-    return {
-      attendance: "90%",
-      performance: "85%",
-      progress: "75%",
-      level: "Intermedio",
-    }
-  } else {
-    return {
-      students: "15",
-      classes: "45",
-      rating: "4.8",
-      experience: "5 años",
-    }
-  }
-})
-
-onMounted(async () => {
-  try {
-    // Fetch data based on type and id
-    if (props.type === "student") {
-      await Promise.all([studentsStore.fetchStudents(), attendanceStore.fetchAttendance()])
-    } else {
-      await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()])
-    }
-    isLoading.value = false
-  } catch (err) {
-    error.value = "Error al cargar los datos"
-    isLoading.value = false
-  }
-})
-</script>
-
 <template>
   <div class="space-y-6">
     <!-- Loading State -->
@@ -188,4 +54,138 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { Line, Bar, Doughnut } from 'vue-chartjs';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  type ChartData,
+  type ChartOptions,
+} from 'chart.js';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import { useTeachersStore } from '../stores/teachers';
+import { useClassesStore } from '../stores/classes';
+import { useAttendanceStore } from '../stores/attendance';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+);
+
+const props = defineProps<{
+  type: 'student' | 'teacher'
+  id: number | string
+  period?: 'week' | 'month' | 'year'
+}>();
+
+const studentsStore = useStudentsStore();
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+const attendanceStore = useAttendanceStore();
+
+const isLoading = ref(true);
+const error = ref('');
+
+// Chart data
+const attendanceData = computed<ChartData>(() => ({
+  labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+  datasets: [
+    {
+      label: 'Asistencia',
+      data: [95, 87, 92, 88, 90, 85, 89],
+      borderColor: '#22c55e',
+      backgroundColor: '#22c55e',
+    },
+  ],
+}));
+
+const performanceData = computed<ChartData>(() => ({
+  labels: ['Teoría', 'Técnica', 'Interpretación', 'Ritmo'],
+  datasets: [
+    {
+      data: [85, 92, 78, 88],
+      backgroundColor: ['#3b82f6', '#22c55e', '#eab308', '#ec4899'],
+    },
+  ],
+}));
+
+const progressData = computed<ChartData>(() => ({
+  labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+  datasets: [
+    {
+      label: 'Progreso',
+      data: [65, 70, 75, 82, 85, 90],
+      borderColor: '#8b5cf6',
+      backgroundColor: '#8b5cf6',
+    },
+  ],
+}));
+
+const chartOptions: ChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top',
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      max: 100,
+    },
+  },
+};
+
+// Metrics
+const metrics = computed(() => {
+  if (props.type === 'student') {
+    return {
+      attendance: '90%',
+      performance: '85%',
+      progress: '75%',
+      level: 'Intermedio',
+    };
+  } else {
+    return {
+      students: '15',
+      classes: '45',
+      rating: '4.8',
+      experience: '5 años',
+    };
+  }
+});
+
+onMounted(async () => {
+  try {
+    // Fetch data based on type and id
+    if (props.type === 'student') {
+      await Promise.all([studentsStore.fetchStudents(), attendanceStore.fetchAttendance()]);
+    } else {
+      await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()]);
+    }
+    isLoading.value = false;
+  } catch (err) {
+    error.value = 'Error al cargar los datos';
+    isLoading.value = false;
+  }
+});
+</script>
 ```

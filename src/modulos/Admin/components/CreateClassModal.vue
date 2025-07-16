@@ -582,7 +582,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 import {
   XMarkIcon,
   CheckIcon,
@@ -593,219 +593,219 @@ import {
   CalendarIcon,
   ClockIcon,
   UserGroupIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 const emit = defineEmits<{
   close: []
   created: [classData: any]
-}>()
+}>();
 
 // Form state
-const currentStep = ref(0)
-const isSubmitting = ref(false)
+const currentStep = ref(0);
+const isSubmitting = ref(false);
 
 const formData = ref({
-  name: "",
-  description: "",
-  category: "",
-  level: "",
+  name: '',
+  description: '',
+  category: '',
+  level: '',
   maxStudents: 10,
   duration: 60,
-  classType: "recurring",
+  classType: 'recurring',
   weekDays: [] as number[],
-  startTime: "",
-  startDate: "",
-  workshopDate: "",
-  workshopTime: "",
-  roomId: "",
-  materials: [""],
-  prerequisites: "",
+  startTime: '',
+  startDate: '',
+  workshopDate: '',
+  workshopTime: '',
+  roomId: '',
+  materials: [''],
+  prerequisites: '',
   cost: 0,
-  paymentMode: "per-class",
-})
+  paymentMode: 'per-class',
+});
 
 // Static data
 const steps = [
-  {id: "basic", title: "Básico"},
-  {id: "schedule", title: "Horario"},
-  {id: "resources", title: "Recursos"},
-  {id: "review", title: "Revisar"},
-]
+  { id: 'basic', title: 'Básico' },
+  { id: 'schedule', title: 'Horario' },
+  { id: 'resources', title: 'Recursos' },
+  { id: 'review', title: 'Revisar' },
+];
 
 const classTypes = [
   {
-    value: "recurring",
-    label: "Recurrente",
-    description: "Clases regulares",
+    value: 'recurring',
+    label: 'Recurrente',
+    description: 'Clases regulares',
     icon: CalendarIcon,
   },
   {
-    value: "workshop",
-    label: "Taller",
-    description: "Evento único",
+    value: 'workshop',
+    label: 'Taller',
+    description: 'Evento único',
     icon: ClockIcon,
   },
   {
-    value: "private",
-    label: "Privada",
-    description: "Clase individual",
+    value: 'private',
+    label: 'Privada',
+    description: 'Clase individual',
     icon: UserGroupIcon,
   },
-]
+];
 
 const weekDays = [
-  {value: 1, label: "Lunes", short: "L"},
-  {value: 2, label: "Martes", short: "M"},
-  {value: 3, label: "Miércoles", short: "X"},
-  {value: 4, label: "Jueves", short: "J"},
-  {value: 5, label: "Viernes", short: "V"},
-  {value: 6, label: "Sábado", short: "S"},
-  {value: 0, label: "Domingo", short: "D"},
-]
+  { value: 1, label: 'Lunes', short: 'L' },
+  { value: 2, label: 'Martes', short: 'M' },
+  { value: 3, label: 'Miércoles', short: 'X' },
+  { value: 4, label: 'Jueves', short: 'J' },
+  { value: 5, label: 'Viernes', short: 'V' },
+  { value: 6, label: 'Sábado', short: 'S' },
+  { value: 0, label: 'Domingo', short: 'D' },
+];
 
 // TODO: Obtener datos reales de las aulas/salas de un store o API
-const availableRooms = ref([])
+const availableRooms = ref([]);
 
 // Computed
 const minDate = computed(() => {
-  const today = new Date()
-  return today.toISOString().split("T")[0]
-})
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+});
 
 const canProceed = computed(() => {
   switch (currentStep.value) {
-    case 0:
-      return formData.value.name && formData.value.category && formData.value.level
-    case 1:
-      if (formData.value.classType === "recurring") {
-        return (
-          formData.value.weekDays.length > 0 && formData.value.startTime && formData.value.startDate
-        )
-      } else if (formData.value.classType === "workshop") {
-        return formData.value.workshopDate && formData.value.workshopTime
-      }
-      return true
-    case 2:
-      return true // Optional step
-    case 3:
-      return true // Review step
-    default:
-      return false
+  case 0:
+    return formData.value.name && formData.value.category && formData.value.level;
+  case 1:
+    if (formData.value.classType === 'recurring') {
+      return (
+        formData.value.weekDays.length > 0 && formData.value.startTime && formData.value.startDate
+      );
+    } else if (formData.value.classType === 'workshop') {
+      return formData.value.workshopDate && formData.value.workshopTime;
+    }
+    return true;
+  case 2:
+    return true; // Optional step
+  case 3:
+    return true; // Review step
+  default:
+    return false;
   }
-})
+});
 
 // Methods
 const getStepClasses = (index: number) => {
   if (currentStep.value > index) {
-    return "bg-green-500 text-white"
+    return 'bg-green-500 text-white';
   } else if (currentStep.value === index) {
-    return "bg-blue-500 text-white"
+    return 'bg-blue-500 text-white';
   } else {
-    return "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400"
+    return 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400';
   }
-}
+};
 
 const nextStep = () => {
   if (currentStep.value < steps.length - 1) {
-    currentStep.value++
+    currentStep.value++;
   }
-}
+};
 
 const previousStep = () => {
   if (currentStep.value > 0) {
-    currentStep.value--
+    currentStep.value--;
   }
-}
+};
 
 const addMaterial = () => {
-  formData.value.materials.push("")
-}
+  formData.value.materials.push('');
+};
 
 const removeMaterial = (index: number) => {
   if (formData.value.materials.length > 1) {
-    formData.value.materials.splice(index, 1)
+    formData.value.materials.splice(index, 1);
   }
-}
+};
 
 const handleSubmit = async () => {
-  isSubmitting.value = true
+  isSubmitting.value = true;
 
   try {
     // TODO: Implementar la lógica real para crear la clase (ej. classesStore.createClass(formData.value))
-    console.log("Creando clase con datos:", formData.value)
+    console.log('Creando clase con datos:', formData.value);
 
     // Emit the created event with form data
-    emit("created", {...formData.value})
+    emit('created', { ...formData.value });
   } catch (error) {
-    console.error("Error creating class:", error)
+    console.error('Error creating class:', error);
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 
 const handleBackdropClick = (event: MouseEvent) => {
   if (event.target === event.currentTarget) {
-    emit("close")
+    emit('close');
   }
-}
+};
 
 // Helper methods for labels
 const getCategoryLabel = (category: string) => {
   const labels: Record<string, string> = {
-    piano: "Piano",
-    violin: "Violín",
-    guitar: "Guitarra",
-    voice: "Canto",
-    drums: "Batería",
-    theory: "Teoría Musical",
-    ensemble: "Ensamble",
-  }
-  return labels[category] || category
-}
+    piano: 'Piano',
+    violin: 'Violín',
+    guitar: 'Guitarra',
+    voice: 'Canto',
+    drums: 'Batería',
+    theory: 'Teoría Musical',
+    ensemble: 'Ensamble',
+  };
+  return labels[category] || category;
+};
 
 const getLevelLabel = (level: string) => {
   const labels: Record<string, string> = {
-    beginner: "Principiante",
-    intermediate: "Intermedio",
-    advanced: "Avanzado",
-    professional: "Profesional",
-  }
-  return labels[level] || level
-}
+    beginner: 'Principiante',
+    intermediate: 'Intermedio',
+    advanced: 'Avanzado',
+    professional: 'Profesional',
+  };
+  return labels[level] || level;
+};
 
 const getClassTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
-    recurring: "Clase Recurrente",
-    workshop: "Taller",
-    private: "Clase Privada",
-  }
-  return labels[type] || type
-}
+    recurring: 'Clase Recurrente',
+    workshop: 'Taller',
+    private: 'Clase Privada',
+  };
+  return labels[type] || type;
+};
 
 const getWeekDaysLabel = (days: number[]) => {
-  return days.map((day) => weekDays.find((d) => d.value === day)?.short).join(", ")
-}
+  return days.map((day) => weekDays.find((d) => d.value === day)?.short).join(', ');
+};
 
 const getRoomName = (roomId: string) => {
-  return availableRooms.value.find((room) => room.id === roomId)?.name || "N/A"
-}
+  return availableRooms.value.find((room) => room.id === roomId)?.name || 'N/A';
+};
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return "N/A"
-  return new Date(dateString).toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
 
 // Lifecycle
 onMounted(() => {
   // Set default start date to tomorrow
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  formData.value.startDate = tomorrow.toISOString().split("T")[0]
-})
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  formData.value.startDate = tomorrow.toISOString().split('T')[0];
+});
 </script>
 
 <style scoped>

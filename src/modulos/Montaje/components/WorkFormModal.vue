@@ -258,9 +258,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import type {Obra, CreateWorkInput} from "../types"
-import {DificultadFrase, EstadoObra, TipoInstrumento} from "../types"
+import { ref, computed, onMounted, watch } from 'vue';
+import type { Obra, CreateWorkInput } from '../types';
+import { DificultadFrase, EstadoObra, TipoInstrumento } from '../types';
 
 interface Props {
   show?: boolean
@@ -269,118 +269,118 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "submit", data: CreateWorkInput): void
+  (e: 'close'): void
+  (e: 'submit', data: CreateWorkInput): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   show: false,
   work: undefined,
   loading: false,
-})
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // Form state
 const form = ref<CreateWorkInput>({
-  title: "",
-  composer: "",
-  genre: "",
+  title: '',
+  composer: '',
+  genre: '',
   difficulty: DificultadFrase.FACIL,
   estimatedDuration: 30,
   instruments: [],
-  description: "",
-  sheetMusicUrl: "",
-  audioUrl: "",
-  videoUrl: "",
+  description: '',
+  sheetMusicUrl: '',
+  audioUrl: '',
+  videoUrl: '',
   tags: [],
   status: EstadoObra.PENDIENTE,
   totalCompases: 0,
-})
+});
 
-const newTag = ref("")
-const error = ref("")
+const newTag = ref('');
+const error = ref('');
 
 // Available instruments
 const availableInstruments = [
-  {value: TipoInstrumento.VIOLIN1, label: "Violín 1"},
-  {value: TipoInstrumento.VIOLIN2, label: "Violín 2"},
-  {value: TipoInstrumento.VIOLA, label: "Viola"},
-  {value: TipoInstrumento.CELLO, label: "Violonchelo"},
-  {value: TipoInstrumento.CONTRABAJO, label: "Contrabajo"},
-  {value: TipoInstrumento.FLUTE, label: "Flauta"},
-  {value: TipoInstrumento.OBOE, label: "Oboe"},
-  {value: TipoInstrumento.CLARINET, label: "Clarinete"},
-  {value: TipoInstrumento.BASSOON, label: "Fagot"},
-  {value: TipoInstrumento.HORN, label: "Trompa"},
-  {value: TipoInstrumento.TRUMPET, label: "Trompeta"},
-  {value: TipoInstrumento.TROMBONE, label: "Trombón"},
-  {value: TipoInstrumento.TUBA, label: "Tuba"},
-  {value: TipoInstrumento.TIMPANI, label: "Timbales"},
-  {value: TipoInstrumento.PERCUSSION, label: "Percusión"},
-]
+  { value: TipoInstrumento.VIOLIN1, label: 'Violín 1' },
+  { value: TipoInstrumento.VIOLIN2, label: 'Violín 2' },
+  { value: TipoInstrumento.VIOLA, label: 'Viola' },
+  { value: TipoInstrumento.CELLO, label: 'Violonchelo' },
+  { value: TipoInstrumento.CONTRABAJO, label: 'Contrabajo' },
+  { value: TipoInstrumento.FLUTE, label: 'Flauta' },
+  { value: TipoInstrumento.OBOE, label: 'Oboe' },
+  { value: TipoInstrumento.CLARINET, label: 'Clarinete' },
+  { value: TipoInstrumento.BASSOON, label: 'Fagot' },
+  { value: TipoInstrumento.HORN, label: 'Trompa' },
+  { value: TipoInstrumento.TRUMPET, label: 'Trompeta' },
+  { value: TipoInstrumento.TROMBONE, label: 'Trombón' },
+  { value: TipoInstrumento.TUBA, label: 'Tuba' },
+  { value: TipoInstrumento.TIMPANI, label: 'Timbales' },
+  { value: TipoInstrumento.PERCUSSION, label: 'Percusión' },
+];
 
 // Computed properties
-const isEdit = computed(() => !!props.work)
+const isEdit = computed(() => !!props.work);
 
 const isFormValid = computed(() => {
   return (
-    form.value.title.trim() !== "" &&
-    form.value.composer?.trim() !== "" &&
+    form.value.title.trim() !== '' &&
+    form.value.composer?.trim() !== '' &&
     form.value.difficulty !== undefined &&
     form.value.instruments.length > 0
-  )
-})
+  );
+});
 
 // Methods
 const addTag = () => {
   if (newTag.value.trim() && !form.value.tags?.includes(newTag.value.trim())) {
-    if (!form.value.tags) form.value.tags = []
-    form.value.tags.push(newTag.value.trim())
-    newTag.value = ""
+    if (!form.value.tags) form.value.tags = [];
+    form.value.tags.push(newTag.value.trim());
+    newTag.value = '';
   }
-}
+};
 
 const removeTag = (index: number) => {
   if (form.value.tags) {
-    form.value.tags.splice(index, 1)
+    form.value.tags.splice(index, 1);
   }
-}
+};
 
 const handleSubmit = () => {
   if (!isFormValid.value) {
-    error.value = "Por favor, completa todos los campos obligatorios"
-    return
+    error.value = 'Por favor, completa todos los campos obligatorios';
+    return;
   }
 
   if (form.value.instruments.length === 0) {
-    error.value = "Selecciona al menos un instrumento"
-    return
+    error.value = 'Selecciona al menos un instrumento';
+    return;
   }
 
-  error.value = ""
-  emit("submit", {...form.value})
-}
+  error.value = '';
+  emit('submit', { ...form.value });
+};
 
 const resetForm = () => {
   form.value = {
-    title: "",
-    composer: "",
-    genre: "",
+    title: '',
+    composer: '',
+    genre: '',
     difficulty: DificultadFrase.FACIL,
     estimatedDuration: 30,
     instruments: [],
-    description: "",
-    sheetMusicUrl: "",
-    audioUrl: "",
-    videoUrl: "",
+    description: '',
+    sheetMusicUrl: '',
+    audioUrl: '',
+    videoUrl: '',
     tags: [],
     status: EstadoObra.PENDIENTE,
     totalCompases: 0,
-  }
-  newTag.value = ""
-  error.value = ""
-}
+  };
+  newTag.value = '';
+  error.value = '';
+};
 
 // Watch for modal visibility changes
 watch(
@@ -392,28 +392,28 @@ watch(
         form.value = {
           title: props.work.titulo,
           composer: props.work.compositor,
-          genre: props.work.genero || "",
+          genre: props.work.genero || '',
           difficulty: props.work.metadatos.complejidadGeneral,
           estimatedDuration: props.work.duracionEstimada,
           totalCompases: props.work.metadatos.totalCompases || 0,
           instruments:
             props.work.instrumentosRequeridos?.map(
-              (inst) => inst.instrumentoId as TipoInstrumento
+              (inst) => inst.instrumentoId as TipoInstrumento,
             ) || [],
-          description: props.work.descripcion || "",
-          sheetMusicUrl: props.work.archivoPartitura || "",
-          audioUrl: props.work.audioReferencia || "",
-          videoUrl: props.work.videoReferencia || "",
+          description: props.work.descripcion || '',
+          sheetMusicUrl: props.work.archivoPartitura || '',
+          audioUrl: props.work.audioReferencia || '',
+          videoUrl: props.work.videoReferencia || '',
           tags: [], // Las obras no tienen tags en la interfaz actual
           status: props.work.estado,
-        }
+        };
       } else {
         // Reset form for new work
-        resetForm()
+        resetForm();
       }
     }
-  }
-)
+  },
+);
 
 // Initialize form with work data if editing
 onMounted(() => {
@@ -421,20 +421,20 @@ onMounted(() => {
     form.value = {
       title: props.work.titulo,
       composer: props.work.compositor,
-      genre: props.work.genero || "",
+      genre: props.work.genero || '',
       difficulty: props.work.metadatos.complejidadGeneral,
       estimatedDuration: props.work.duracionEstimada,
       totalCompases: props.work.metadatos.totalCompases || 0,
       instruments:
         props.work.instrumentosRequeridos?.map((inst) => inst.instrumentoId as TipoInstrumento) ||
         [],
-      description: props.work.descripcion || "",
-      sheetMusicUrl: props.work.archivoPartitura || "",
-      audioUrl: props.work.audioReferencia || "",
-      videoUrl: props.work.videoReferencia || "",
+      description: props.work.descripcion || '',
+      sheetMusicUrl: props.work.archivoPartitura || '',
+      audioUrl: props.work.audioReferencia || '',
+      videoUrl: props.work.videoReferencia || '',
       tags: [], // Las obras no tienen tags en la interfaz actual
       status: props.work.estado,
-    }
+    };
   }
-})
+});
 </script>

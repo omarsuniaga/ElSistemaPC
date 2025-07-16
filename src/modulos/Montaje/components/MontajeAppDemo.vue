@@ -14,8 +14,8 @@
               Usuario: {{ user?.name || 'Invitado' }}
             </span>
             <button
-              @click="$router.push('/')"
               class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+              @click="$router.push('/')"
             >
               ← Volver al Sistema Principal
             </button>
@@ -128,8 +128,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { MONTAJE_MODULE_INFO } from '../index'
+import { computed } from 'vue';
+import { MONTAJE_MODULE_INFO } from '../index';
 
 // Props del componente
 interface Props {
@@ -148,18 +148,18 @@ const props = withDefaults(defineProps<Props>(), {
     name: 'Usuario Demo',
     email: 'demo@montaje.com',
     role: 'musician',
-    permissions: ['montaje:access']
-  })
-})
+    permissions: ['montaje:access'],
+  }),
+});
 
 // Datos del módulo
-const moduleInfo = computed(() => MONTAJE_MODULE_INFO)
-const projectName = computed(() => 'El Sistema PC')
+const moduleInfo = computed(() => MONTAJE_MODULE_INFO);
+const projectName = computed(() => 'El Sistema PC');
 
 // Loggar que el módulo se cargó exitosamente
-console.log('🎼 Módulo Montaje cargado exitosamente!')
-console.log('📊 Usuario actual:', props.user)
-console.log('⚙️ Información del módulo:', moduleInfo.value)
+console.log('🎼 Módulo Montaje cargado exitosamente!');
+console.log('📊 Usuario actual:', props.user);
+console.log('⚙️ Información del módulo:', moduleInfo.value);
 </script>
 
 <style scoped>

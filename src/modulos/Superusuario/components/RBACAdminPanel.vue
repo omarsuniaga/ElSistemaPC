@@ -193,254 +193,254 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted} from "vue"
-import {useRBACManagement} from "../../../composables/useRBACManagement"
-import {useAuthStore} from "../../../stores/auth"
+import { ref, onMounted } from 'vue';
+import { useRBACManagement } from '../../../composables/useRBACManagement';
+import { useAuthStore } from '../../../stores/auth';
 
 // Importar funciones de inicialización
 import {
   initializeRBACCollections,
   checkRBACCollections,
   forceReinitializeRBACCollections,
-} from "../../../scripts/initialize-rbac-firestore"
+} from '../../../scripts/initialize-rbac-firestore';
 
-const rbacManagement = useRBACManagement()
-const authStore = useAuthStore()
+const rbacManagement = useRBACManagement();
+const authStore = useAuthStore();
 
 // State
-const loading = ref(false)
-const loadingMessage = ref("")
-const systemStatus = ref(null)
-const activityLogs = ref([])
+const loading = ref(false);
+const loadingMessage = ref('');
+const systemStatus = ref(null);
+const activityLogs = ref([]);
 
 // Teacher configuration
 const teacherStudentAccess = ref({
   allStudents: false,
   studentMenu: true,
-})
+});
 
 // Methods
 const addLog = (
   message: string,
-  type: "info" | "success" | "error" | "warning" = "info",
-  details?: string
+  type: 'info' | 'success' | 'error' | 'warning' = 'info',
+  details?: string,
 ) => {
   activityLogs.value.unshift({
     message,
     type,
     details,
     timestamp: new Date().toLocaleTimeString(),
-  })
+  });
 
   // Limit logs to 50 entries
   if (activityLogs.value.length > 50) {
-    activityLogs.value = activityLogs.value.slice(0, 50)
+    activityLogs.value = activityLogs.value.slice(0, 50);
   }
-}
+};
 
 const clearLogs = () => {
-  activityLogs.value = []
-}
+  activityLogs.value = [];
+};
 
 const refreshStatus = async () => {
   try {
-    loading.value = true
-    loadingMessage.value = "Verificando estado del sistema..."
+    loading.value = true;
+    loadingMessage.value = 'Verificando estado del sistema...';
 
-    const status = await checkRBACCollections()
-    systemStatus.value = status
+    const status = await checkRBACCollections();
+    systemStatus.value = status;
 
-    addLog("Estado del sistema actualizado", "success")
+    addLog('Estado del sistema actualizado', 'success');
   } catch (error) {
-    console.error("Error refreshing status:", error)
-    addLog("Error al actualizar estado del sistema", "error", error.message)
+    console.error('Error refreshing status:', error);
+    addLog('Error al actualizar estado del sistema', 'error', error.message);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const initializeCollections = async () => {
   try {
-    loading.value = true
-    loadingMessage.value = "Inicializando colecciones RBAC..."
+    loading.value = true;
+    loadingMessage.value = 'Inicializando colecciones RBAC...';
 
-    await initializeRBACCollections()
-    await refreshStatus()
+    await initializeRBACCollections();
+    await refreshStatus();
 
-    addLog("Colecciones RBAC inicializadas correctamente", "success")
+    addLog('Colecciones RBAC inicializadas correctamente', 'success');
   } catch (error) {
-    console.error("Error initializing collections:", error)
-    addLog("Error al inicializar colecciones", "error", error.message)
+    console.error('Error initializing collections:', error);
+    addLog('Error al inicializar colecciones', 'error', error.message);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const forceReinitialize = async () => {
-  if (!confirm("⚠️ Esto sobrescribirá toda la configuración RBAC existente. ¿Continuar?")) {
-    return
+  if (!confirm('⚠️ Esto sobrescribirá toda la configuración RBAC existente. ¿Continuar?')) {
+    return;
   }
 
   try {
-    loading.value = true
-    loadingMessage.value = "Forzando reinicialización..."
+    loading.value = true;
+    loadingMessage.value = 'Forzando reinicialización...';
 
-    await forceReinitializeRBACCollections()
-    await refreshStatus()
+    await forceReinitializeRBACCollections();
+    await refreshStatus();
 
     addLog(
-      "Reinicialización forzada completada",
-      "warning",
-      "Toda la configuración anterior fue sobrescrita"
-    )
+      'Reinicialización forzada completada',
+      'warning',
+      'Toda la configuración anterior fue sobrescrita',
+    );
   } catch (error) {
-    console.error("Error force reinitializing:", error)
-    addLog("Error en reinicialización forzada", "error", error.message)
+    console.error('Error force reinitializing:', error);
+    addLog('Error en reinicialización forzada', 'error', error.message);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const testConnection = async () => {
   try {
-    loading.value = true
-    loadingMessage.value = "Probando conexión con Firestore..."
+    loading.value = true;
+    loadingMessage.value = 'Probando conexión con Firestore...';
 
     // Test read operations
-    await rbacManagement.loadRoles()
-    await rbacManagement.loadPermissions()
-    await rbacManagement.loadNavigationConfig()
+    await rbacManagement.loadRoles();
+    await rbacManagement.loadPermissions();
+    await rbacManagement.loadNavigationConfig();
 
     addLog(
-      "Conexión con Firestore exitosa",
-      "success",
-      "Lectura de roles, permisos y navegación completada"
-    )
+      'Conexión con Firestore exitosa',
+      'success',
+      'Lectura de roles, permisos y navegación completada',
+    );
   } catch (error) {
-    console.error("Error testing connection:", error)
-    addLog("Error de conexión con Firestore", "error", error.message)
+    console.error('Error testing connection:', error);
+    addLog('Error de conexión con Firestore', 'error', error.message);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const runDiagnostics = async () => {
   try {
-    loading.value = true
-    loadingMessage.value = "Ejecutando diagnóstico del sistema..."
+    loading.value = true;
+    loadingMessage.value = 'Ejecutando diagnóstico del sistema...';
 
     // Cargar datos si no están cargados
-    await rbacManagement.loadRoles()
-    await rbacManagement.loadPermissions()
-    await rbacManagement.loadNavigationConfig()
+    await rbacManagement.loadRoles();
+    await rbacManagement.loadPermissions();
+    await rbacManagement.loadNavigationConfig();
 
     // Ejecutar diagnóstico de permisos
-    const permissionsDiag = rbacManagement.debugPermissions()
+    const permissionsDiag = rbacManagement.debugPermissions();
 
     addLog(
-      "Diagnóstico ejecutado",
-      "info",
+      'Diagnóstico ejecutado',
+      'info',
       `Roles: ${rbacManagement.roles.value.length}, ` +
         `Permisos: ${permissionsDiag.totalPermissions}, ` +
-        `Navegación: ${rbacManagement.navigationConfig.value.length}`
-    )
+        `Navegación: ${rbacManagement.navigationConfig.value.length}`,
+    );
 
-    console.log("=== DIAGNÓSTICO COMPLETO RBAC ===")
-    console.log("Roles:", rbacManagement.roles.value)
-    console.log("Permisos:", rbacManagement.permissions.value)
-    console.log("Navegación:", rbacManagement.navigationConfig.value)
-    console.log("=== FIN DIAGNÓSTICO ===")
+    console.log('=== DIAGNÓSTICO COMPLETO RBAC ===');
+    console.log('Roles:', rbacManagement.roles.value);
+    console.log('Permisos:', rbacManagement.permissions.value);
+    console.log('Navegación:', rbacManagement.navigationConfig.value);
+    console.log('=== FIN DIAGNÓSTICO ===');
   } catch (error) {
-    console.error("Error running diagnostics:", error)
-    addLog("Error ejecutando diagnóstico", "error", error.message)
+    console.error('Error running diagnostics:', error);
+    addLog('Error ejecutando diagnóstico', 'error', error.message);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const updateTeacherStudentAccess = async () => {
   try {
-    loading.value = true
-    loadingMessage.value = "Actualizando permisos de maestros..."
+    loading.value = true;
+    loadingMessage.value = 'Actualizando permisos de maestros...';
 
     // Update teacher permissions for student access
     await rbacManagement.updateTeacherStudentViewPermission(
-      "maestro",
-      teacherStudentAccess.value.allStudents
-    )
+      'maestro',
+      teacherStudentAccess.value.allStudents,
+    );
 
     addLog(
-      `Acceso de maestros a estudiantes: ${teacherStudentAccess.value.allStudents ? "Habilitado" : "Limitado"}`,
-      "success"
-    )
+      `Acceso de maestros a estudiantes: ${teacherStudentAccess.value.allStudents ? 'Habilitado' : 'Limitado'}`,
+      'success',
+    );
   } catch (error) {
-    console.error("Error updating teacher access:", error)
-    addLog("Error al actualizar permisos de maestros", "error", error.message)
+    console.error('Error updating teacher access:', error);
+    addLog('Error al actualizar permisos de maestros', 'error', error.message);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const updateNavigationAccess = async () => {
   try {
-    loading.value = true
-    loadingMessage.value = "Actualizando navegación..."
+    loading.value = true;
+    loadingMessage.value = 'Actualizando navegación...';
 
     // Update navigation for student menu visibility
     const navigationUpdates = [
       {
-        id: "estudiantes-maestro",
+        id: 'estudiantes-maestro',
         isActive: teacherStudentAccess.value.studentMenu,
         roles: teacherStudentAccess.value.studentMenu
-          ? ["Maestro", "Maestro Avanzado"]
-          : ["Maestro Avanzado"],
+          ? ['Maestro', 'Maestro Avanzado']
+          : ['Maestro Avanzado'],
       },
-    ]
+    ];
 
     await rbacManagement.updateNavigationForRole(
-      "Maestro",
+      'Maestro',
       navigationUpdates,
-      authStore.user?.uid || "system"
-    )
+      authStore.user?.uid || 'system',
+    );
 
     addLog(
-      `Menú estudiantes para maestros: ${teacherStudentAccess.value.studentMenu ? "Visible" : "Oculto"}`,
-      "success"
-    )
+      `Menú estudiantes para maestros: ${teacherStudentAccess.value.studentMenu ? 'Visible' : 'Oculto'}`,
+      'success',
+    );
   } catch (error) {
-    console.error("Error updating navigation:", error)
-    addLog("Error al actualizar navegación", "error", error.message)
+    console.error('Error updating navigation:', error);
+    addLog('Error al actualizar navegación', 'error', error.message);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const enableStudentAccessForTeachers = async () => {
   try {
-    loading.value = true
-    loadingMessage.value = "Configurando acceso total a estudiantes..."
+    loading.value = true;
+    loadingMessage.value = 'Configurando acceso total a estudiantes...';
 
     // Enable both student access and menu visibility
-    teacherStudentAccess.value.allStudents = true
-    teacherStudentAccess.value.studentMenu = true
+    teacherStudentAccess.value.allStudents = true;
+    teacherStudentAccess.value.studentMenu = true;
 
-    await updateTeacherStudentAccess()
-    await updateNavigationAccess()
+    await updateTeacherStudentAccess();
+    await updateNavigationAccess();
 
-    addLog("Acceso total a estudiantes habilitado para maestros", "success")
+    addLog('Acceso total a estudiantes habilitado para maestros', 'success');
   } catch (error) {
-    console.error("Error enabling student access:", error)
-    addLog("Error al habilitar acceso a estudiantes", "error", error.message)
+    console.error('Error enabling student access:', error);
+    addLog('Error al habilitar acceso a estudiantes', 'error', error.message);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Initialize component
 onMounted(async () => {
-  await refreshStatus()
-  addLog("Panel de administración RBAC cargado", "info")
-})
+  await refreshStatus();
+  addLog('Panel de administración RBAC cargado', 'info');
+});
 </script>
 
 <style scoped>

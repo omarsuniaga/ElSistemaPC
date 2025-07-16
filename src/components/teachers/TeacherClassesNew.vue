@@ -275,11 +275,11 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useRouter} from "vue-router"
-import {useClassesStore} from "../../stores/classes"
-import {useStudentsStore} from "../../modulos/Students/store/students"
-import type {Student} from "../../modulos/Students/types/student"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useClassesStore } from '../../stores/classes';
+import { useStudentsStore } from '../../modulos/Students/store/students';
+import type { Student } from '../../modulos/Students/types/student';
 import {
   MagnifyingGlassIcon,
   AcademicCapIcon,
@@ -289,7 +289,7 @@ import {
   ClockIcon,
   CalendarIcon,
   ClipboardDocumentCheckIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Interfaces
 interface TeacherClass {
@@ -298,7 +298,7 @@ interface TeacherClass {
   contenido?: string
   instrumento?: string
   nivel?: string
-  tipo?: "individual" | "group"
+  tipo?: 'individual' | 'group'
   teacherId: string
   alumnos?: string[]
   horario?: {
@@ -309,182 +309,182 @@ interface TeacherClass {
 }
 
 // Router
-const router = useRouter()
+const router = useRouter();
 
 // Stores
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
 
 // Estado
-const searchQuery = ref("")
-const filterInstrument = ref("")
-const filterLevel = ref("")
-const currentPage = ref(1)
-const pageSize = 5
-const selectedClassStudents = ref<TeacherClass | null>(null)
-const classStudents = ref<Student[]>([])
-const teacherClasses = ref<TeacherClass[]>([])
+const searchQuery = ref('');
+const filterInstrument = ref('');
+const filterLevel = ref('');
+const currentPage = ref(1);
+const pageSize = 5;
+const selectedClassStudents = ref<TeacherClass | null>(null);
+const classStudents = ref<Student[]>([]);
+const teacherClasses = ref<TeacherClass[]>([]);
 
 // ID del profesor (simulado)
-const teacherId = "1" // En un caso real, se obtendría del usuario autenticado
+const teacherId = '1'; // En un caso real, se obtendría del usuario autenticado
 
 // Opciones de filtro
-const instruments = ["Piano", "Violín", "Guitarra", "Flauta", "Violonchelo", "Percusión"]
-const levels = ["Principiante", "Intermedio", "Avanzado"]
+const instruments = ['Piano', 'Violín', 'Guitarra', 'Flauta', 'Violonchelo', 'Percusión'];
+const levels = ['Principiante', 'Intermedio', 'Avanzado'];
 
 // Estadísticas de clases
 const classesStats = computed(() => {
-  const total = teacherClasses.value.length
-  const students = 0
-  let individual = 0
-  let group = 0
+  const total = teacherClasses.value.length;
+  const students = 0;
+  let individual = 0;
+  let group = 0;
 
-  const uniqueStudents = new Set()
+  const uniqueStudents = new Set();
 
   teacherClasses.value.forEach((cls) => {
     if (cls.alumnos) {
-      cls.alumnos.forEach((id) => uniqueStudents.add(id))
+      cls.alumnos.forEach((id) => uniqueStudents.add(id));
     }
 
-    if (cls.tipo === "individual") {
-      individual++
+    if (cls.tipo === 'individual') {
+      individual++;
     } else {
-      group++
+      group++;
     }
-  })
+  });
 
   return {
     total,
     students: uniqueStudents.size,
     individual,
     group,
-  }
-})
+  };
+});
 
 // Clases filtradas
 const filteredClasses = computed(() => {
-  let result = teacherClasses.value
+  let result = teacherClasses.value;
 
   // Filtrar por búsqueda
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     result = result.filter(
       (cls) =>
         (cls.nombre && cls.nombre.toLowerCase().includes(query)) ||
-        (cls.instrumento && cls.instrumento.toLowerCase().includes(query))
-    )
+        (cls.instrumento && cls.instrumento.toLowerCase().includes(query)),
+    );
   }
 
   // Filtrar por instrumento
   if (filterInstrument.value) {
-    result = result.filter((cls) => cls.instrumento === filterInstrument.value)
+    result = result.filter((cls) => cls.instrumento === filterInstrument.value);
   }
 
   // Filtrar por nivel
   if (filterLevel.value) {
-    result = result.filter((cls) => cls.nivel === filterLevel.value)
+    result = result.filter((cls) => cls.nivel === filterLevel.value);
   }
 
-  return result
-})
+  return result;
+});
 
 // Clases paginadas
 const paginatedClasses = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  const end = start + pageSize
-  return filteredClasses.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * pageSize;
+  const end = start + pageSize;
+  return filteredClasses.value.slice(start, end);
+});
 
 // Total de páginas
-const totalPages = computed(() => Math.ceil(filteredClasses.value.length / pageSize))
+const totalPages = computed(() => Math.ceil(filteredClasses.value.length / pageSize));
 
 // Verificar si hay filtros activos
-const hasFilters = computed(() => searchQuery.value || filterInstrument.value || filterLevel.value)
+const hasFilters = computed(() => searchQuery.value || filterInstrument.value || filterLevel.value);
 
 // Formatear el número de horarios
 const formatScheduleCount = (classItem: TeacherClass) => {
-  return classItem.horario ? "1 sesión semanal" : "Sin horario"
-}
+  return classItem.horario ? '1 sesión semanal' : 'Sin horario';
+};
 
 // Obtener etiqueta del tipo de clase
 const getClassTypeLabel = (type: string) => {
   switch (type) {
-    case "individual":
-      return "Individual"
-    case "group":
-      return "Grupal"
-    case "ensemble":
-      return "Conjunto"
-    case "workshop":
-      return "Taller"
-    default:
-      return "Regular"
+  case 'individual':
+    return 'Individual';
+  case 'group':
+    return 'Grupal';
+  case 'ensemble':
+    return 'Conjunto';
+  case 'workshop':
+    return 'Taller';
+  default:
+    return 'Regular';
   }
-}
+};
 
 // Obtener clase CSS para el tipo de clase
 const getClassTypeClass = (type: string) => {
   switch (type) {
-    case "individual":
-      return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200"
-    case "group":
-      return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
-    case "ensemble":
-      return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-    case "workshop":
-      return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
-    default:
-      return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200"
+  case 'individual':
+    return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200';
+  case 'group':
+    return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200';
+  case 'ensemble':
+    return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+  case 'workshop':
+    return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
+  default:
+    return 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200';
   }
-}
+};
 
 // Mostrar lista de estudiantes
 const showStudentList = async (classItem: TeacherClass) => {
-  selectedClassStudents.value = classItem
+  selectedClassStudents.value = classItem;
 
   try {
     if (studentsStore.students.length === 0) {
-      await studentsStore.fetchStudents()
+      await studentsStore.fetchStudents();
     }
 
     // Filtrar estudiantes de esta clase
     classStudents.value = studentsStore.students.filter((student) =>
-      classItem.alumnos?.includes(student.id)
-    )
+      classItem.alumnos?.includes(student.id),
+    );
   } catch (error) {
-    console.error("Error al cargar estudiantes de la clase:", error)
+    console.error('Error al cargar estudiantes de la clase:', error);
   }
-}
+};
 
 // Mostrar detalles del estudiante
 const showStudentDetails = (studentId: string) => {
-  router.push(`/students/${studentId}`)
-}
+  router.push(`/students/${studentId}`);
+};
 
 // Tomar asistencia
 const takeAttendance = (classItem: TeacherClass) => {
-  router.push(`/teacher/classes/${classItem.id}/attendance`)
-}
+  router.push(`/teacher/classes/${classItem.id}/attendance`);
+};
 
 // Resetear la página actual cuando cambian los filtros
 watch([searchQuery, filterInstrument, filterLevel], () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
 
 // Cargar datos al montar el componente
 onMounted(async () => {
   try {
     // Cargar clases
     if (classesStore.classes.length === 0) {
-      await classesStore.fetchClasses()
+      await classesStore.fetchClasses();
     }
 
     // Filtrar clases para este profesor (como maestro principal)
-    teacherClasses.value = classesStore.classes.filter((c) => c.teacherId === teacherId)
+    teacherClasses.value = classesStore.classes.filter((c) => c.teacherId === teacherId);
   } catch (error) {
-    console.error("Error al cargar clases del profesor:", error)
+    console.error('Error al cargar clases del profesor:', error);
   }
-})
+});
 </script>
 
 <style scoped>

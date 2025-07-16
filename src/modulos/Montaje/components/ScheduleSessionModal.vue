@@ -118,8 +118,8 @@
                 </option>
               </select>
               <button
-                @click="removeWork(index)"
                 class="text-red-500 hover:text-red-700 text-sm"
+                @click="removeWork(index)"
               >
                 🗑️
               </button>
@@ -127,8 +127,8 @@
           </div>
           
           <button
-            @click="addWork"
             class="mt-3 px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
+            @click="addWork"
           >
             ➕ Agregar Obra
           </button>
@@ -260,16 +260,16 @@
       
       <div class="flex gap-3 mt-6">
         <button
-          @click="scheduleSession"
           :disabled="!isFormValid || scheduling"
           class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          @click="scheduleSession"
         >
           {{ scheduling ? 'Programando...' : 'Programar Ensayo' }}
         </button>
         <button
-          @click="$emit('close')"
           :disabled="scheduling"
           class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          @click="$emit('close')"
         >
           Cancelar
         </button>
@@ -279,18 +279,18 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted } from 'vue'
-import { useMontaje } from '../composables/useMontaje'
-import { useMusicalWorks } from '../composables/useHeatMapProjects'
+import { reactive, ref, computed, onMounted } from 'vue';
+import { useMontaje } from '../composables/useMontaje';
+import { useMusicalWorks } from '../composables/useHeatMapProjects';
 
 const emit = defineEmits<{
   sessionScheduled: [session: any]
   close: []
-}>()
+}>();
 
-const { currentProject } = useMontaje()
-const { works } = useMusicalWorks()
-const scheduling = ref(false)
+const { currentProject } = useMontaje();
+const { works } = useMusicalWorks();
+const scheduling = ref(false);
 
 const availableLocations = [
   'Sala Principal',
@@ -300,8 +300,8 @@ const availableLocations = [
   'Teatro Municipal',
   'Conservatorio - Sala A',
   'Conservatorio - Sala B',
-  'Otra ubicación'
-]
+  'Otra ubicación',
+];
 
 const instrumentSections = [
   'Cuerdas',
@@ -309,8 +309,8 @@ const instrumentSections = [
   'Viento-metal',
   'Percusión',
   'Teclados',
-  'Voces'
-]
+  'Voces',
+];
 
 const sessionForm = reactive({
   title: '',
@@ -329,11 +329,11 @@ const sessionForm = reactive({
     email24h: true,
     email2h: false,
     push1h: true,
-    sms30min: false
-  }
-})
+    sms30min: false,
+  },
+});
 
-const availableWorks = computed(() => works.value)
+const availableWorks = computed(() => works.value);
 
 const isFormValid = computed(() => {
   return sessionForm.title.trim() && 
@@ -341,21 +341,21 @@ const isFormValid = computed(() => {
          sessionForm.startTime && 
          sessionForm.duration > 0 &&
          sessionForm.location &&
-         sessionForm.workIds.some(id => id)
-})
+         sessionForm.workIds.some(id => id);
+});
 
 const addWork = () => {
-  sessionForm.workIds.push('')
-}
+  sessionForm.workIds.push('');
+};
 
 const removeWork = (index: number) => {
-  sessionForm.workIds.splice(index, 1)
-}
+  sessionForm.workIds.splice(index, 1);
+};
 
 const scheduleSession = async () => {
-  if (!isFormValid.value) return
+  if (!isFormValid.value) return;
   
-  scheduling.value = true
+  scheduling.value = true;
   
   try {
     const sessionData = {
@@ -376,31 +376,31 @@ const scheduleSession = async () => {
       reminders: sessionForm.reminders,
       status: 'scheduled',
       createdAt: new Date().toISOString(),
-      createdBy: 'current_user_id'
-    }
+      createdBy: 'current_user_id',
+    };
     
     // Here you would save to your backend/Firebase
-    console.log('Scheduling session:', sessionData)
+    console.log('Scheduling session:', sessionData);
     
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    emit('sessionScheduled', sessionData)
+    emit('sessionScheduled', sessionData);
   } catch (error) {
-    console.error('Error scheduling session:', error)
-    alert('Error al programar el ensayo. Por favor, intenta de nuevo.')
+    console.error('Error scheduling session:', error);
+    alert('Error al programar el ensayo. Por favor, intenta de nuevo.');
   } finally {
-    scheduling.value = false
+    scheduling.value = false;
   }
-}
+};
 
 onMounted(() => {
   // Set default date to tomorrow
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  sessionForm.date = tomorrow.toISOString().split('T')[0]
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  sessionForm.date = tomorrow.toISOString().split('T')[0];
   
   // Set default time
-  sessionForm.startTime = '19:00'
-})
+  sessionForm.startTime = '19:00';
+});
 </script>

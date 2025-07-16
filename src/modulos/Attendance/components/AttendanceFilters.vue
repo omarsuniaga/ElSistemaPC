@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, watch} from "vue"
+import { ref, watch } from 'vue';
 
 // Props para pasar datos desde el componente padre
 interface TeacherData {
@@ -56,25 +56,25 @@ defineProps<{
   teachers: TeacherData[]
   instrumentsByFamily: Record<string, string[]>
   levelOptions: string[]
-}>()
+}>();
 
 // Filtros locales, que se comunicarán hacia el componente padre
 const localFilters = ref({
-  instrument: "",
-  level: "",
-  teacherId: "",
-})
+  instrument: '',
+  level: '',
+  teacherId: '',
+});
 
 // Emitir cambios
 const emit = defineEmits<{
-  (e: "update-filters", filters: typeof localFilters.value): void
-}>()
+  (e: 'update-filters', filters: typeof localFilters.value): void
+}>();
 
 watch(
   localFilters,
   (newFilters) => {
-    emit("update-filters", newFilters)
+    emit('update-filters', newFilters);
   },
-  {deep: true}
-)
+  { deep: true },
+);
 </script>

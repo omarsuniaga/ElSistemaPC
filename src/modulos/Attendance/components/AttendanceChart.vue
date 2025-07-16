@@ -5,8 +5,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, watch} from "vue"
-import Chart from "chart.js/auto"
+import { ref, onMounted, watch } from 'vue';
+import Chart from 'chart.js/auto';
 
 const props = defineProps<{
   data: {
@@ -19,31 +19,31 @@ const props = defineProps<{
       borderWidth?: number
     }[]
   }
-}>()
+}>();
 
-const chartCanvas = ref<HTMLCanvasElement | null>(null)
-let chart: Chart | null = null
+const chartCanvas = ref<HTMLCanvasElement | null>(null);
+let chart: Chart | null = null;
 
 const createChart = () => {
-  if (!chartCanvas.value) return
+  if (!chartCanvas.value) return;
 
   if (chart) {
-    chart.destroy()
+    chart.destroy();
   }
 
   chart = new Chart(chartCanvas.value, {
-    type: "bar",
+    type: 'bar',
     data: props.data,
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: "top",
+          position: 'top',
         },
         title: {
           display: true,
-          text: "Tendencia de Asistencia",
+          text: 'Tendencia de Asistencia',
         },
       },
       scales: {
@@ -55,26 +55,26 @@ const createChart = () => {
         },
       },
     },
-  })
-}
+  });
+};
 
 onMounted(() => {
-  createChart()
-})
+  createChart();
+});
 
 watch(
   () => props.data,
   () => {
-    createChart()
+    createChart();
   },
-  {deep: true}
-)
+  { deep: true },
+);
 </script>
 
 <script lang="ts">
 export default {
-  name: "AttendanceChart",
-}
+  name: 'AttendanceChart',
+};
 </script>
 
 <style scoped>

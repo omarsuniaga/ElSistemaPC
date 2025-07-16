@@ -11,9 +11,9 @@ const ejemploClase = {
     slots: [
       { day: 'Martes', startTime: '17:00', endTime: '18:30' },
       { day: 'Jueves', startTime: '17:00', endTime: '18:30' },
-      { day: 'Sábado', startTime: '09:00', endTime: '12:30' }
-    ]
-  }
+      { day: 'Sábado', startTime: '09:00', endTime: '12:30' },
+    ],
+  },
 };
 
 console.log('🎯 Ejemplo de clase con horario (basado en la imagen):');
@@ -47,7 +47,7 @@ const dayMapping = {
   'Dom': 0, 'Lun': 1, 'Mar': 2, 'Mié': 3, 'Jue': 4, 'Vie': 5, 'Sáb': 6,
   
   // Formato sin acentos
-  'miercoles': 3, 'sabado': 6
+  'miercoles': 3, 'sabado': 6,
 };
 
 console.log('\n🗺️ Mapeo de días:');

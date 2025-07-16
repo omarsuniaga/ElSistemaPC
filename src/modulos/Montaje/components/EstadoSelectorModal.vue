@@ -123,9 +123,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, PropType, watch} from "vue"
-import {EstadoCompass} from "../types"
-import {useAttendanceStore} from "@/modulos/Attendance/store/attendance"
+import { ref, computed, PropType, watch } from 'vue';
+import { EstadoCompass } from '../types';
+import { useAttendanceStore } from '@/modulos/Attendance/store/attendance';
 
 // Definición de tipos
 interface Alumno {
@@ -158,7 +158,7 @@ const props = defineProps({
   },
   classeId: {
     type: String,
-    default: "",
+    default: '',
   },
   showAttendanceFilter: {
     type: Boolean,
@@ -168,149 +168,149 @@ const props = defineProps({
     type: Date,
     default: () => new Date(),
   },
-})
+});
 
-const emit = defineEmits(["update", "close"])
+const emit = defineEmits(['update', 'close']);
 
 // Estado
-const selectedEstado = ref<EstadoCompass | "">("")
-const observacion = ref("")
-const alumnosSeleccionados = ref<string[]>([...props.alumnosPreseleccionados])
-const attendanceStore = useAttendanceStore()
+const selectedEstado = ref<EstadoCompass | ''>('');
+const observacion = ref('');
+const alumnosSeleccionados = ref<string[]>([...props.alumnosPreseleccionados]);
+const attendanceStore = useAttendanceStore();
 
 // Estados disponibles con clases visuales
 const estadosDisponibles = [
   {
     valor: EstadoCompass.SIN_TRABAJAR,
-    label: "Sin trabajar",
-    clase: "bg-pink-300",
+    label: 'Sin trabajar',
+    clase: 'bg-pink-300',
   },
   {
     valor: EstadoCompass.LEIDO,
-    label: "Leído",
-    clase: "bg-blue-300",
+    label: 'Leído',
+    clase: 'bg-blue-300',
   },
   {
     valor: EstadoCompass.CON_DIFICULTAD,
-    label: "Con dificultad",
-    clase: "bg-yellow-300",
+    label: 'Con dificultad',
+    clase: 'bg-yellow-300',
   },
   {
     valor: EstadoCompass.LOGRADO,
-    label: "Logrado",
-    clase: "bg-green-300",
+    label: 'Logrado',
+    clase: 'bg-green-300',
   },
-]
+];
 
 // Computed properties
 const selectionSummary = computed(() => {
-  const count = props.compasesSeleccionados.length
+  const count = props.compasesSeleccionados.length;
 
-  if (count === 0) return "No hay compases seleccionados"
+  if (count === 0) return 'No hay compases seleccionados';
 
   if (count === 1) {
-    const compas = props.compasesSeleccionados[0]
-    const instrumentoText = compas.instrumento ? ` (${compas.instrumento})` : ""
-    return `Compás ${compas.numero}${instrumentoText}`
+    const compas = props.compasesSeleccionados[0];
+    const instrumentoText = compas.instrumento ? ` (${compas.instrumento})` : '';
+    return `Compás ${compas.numero}${instrumentoText}`;
   }
 
   // Agrupar por instrumento si hay varios compases
-  const porInstrumento: Record<string, number> = {}
+  const porInstrumento: Record<string, number> = {};
 
   props.compasesSeleccionados.forEach((c) => {
-    const key = c.instrumento || "sin_instrumento"
-    porInstrumento[key] = (porInstrumento[key] || 0) + 1
-  })
+    const key = c.instrumento || 'sin_instrumento';
+    porInstrumento[key] = (porInstrumento[key] || 0) + 1;
+  });
 
   if (Object.keys(porInstrumento).length === 1) {
-    const instrumento = Object.keys(porInstrumento)[0]
-    const texto = instrumento !== "sin_instrumento" ? ` del instrumento ${instrumento}` : ""
-    return `${count} compases${texto} seleccionados`
+    const instrumento = Object.keys(porInstrumento)[0];
+    const texto = instrumento !== 'sin_instrumento' ? ` del instrumento ${instrumento}` : '';
+    return `${count} compases${texto} seleccionados`;
   }
 
-  return `${count} compases de ${Object.keys(porInstrumento).length} instrumentos seleccionados`
-})
+  return `${count} compases de ${Object.keys(porInstrumento).length} instrumentos seleccionados`;
+});
 
 // Métodos
 const selectEstado = (estado: EstadoCompass) => {
-  selectedEstado.value = estado
+  selectedEstado.value = estado;
 
   // Limpiar observación si no es "con dificultad"
   if (estado !== EstadoCompass.CON_DIFICULTAD) {
-    observacion.value = ""
+    observacion.value = '';
   }
-}
+};
 
 const toggleSelectAll = () => {
   if (alumnosSeleccionados.value.length === props.alumnosDisponibles.length) {
-    alumnosSeleccionados.value = []
+    alumnosSeleccionados.value = [];
   } else {
-    alumnosSeleccionados.value = props.alumnosDisponibles.map((a) => a.id)
+    alumnosSeleccionados.value = props.alumnosDisponibles.map((a) => a.id);
   }
-}
+};
 
 const toggleAlumno = (alumnoId: string) => {
-  const index = alumnosSeleccionados.value.indexOf(alumnoId)
+  const index = alumnosSeleccionados.value.indexOf(alumnoId);
   if (index === -1) {
-    alumnosSeleccionados.value.push(alumnoId)
+    alumnosSeleccionados.value.push(alumnoId);
   } else {
-    alumnosSeleccionados.value.splice(index, 1)
+    alumnosSeleccionados.value.splice(index, 1);
   }
-}
+};
 
 const filterByAttendance = async () => {
-  if (!props.classeId) return
+  if (!props.classeId) return;
 
   try {
     // Cargar asistencia para la fecha actual
-    await attendanceStore.fetchAttendanceForSession(props.classeId, props.fechaSesion)
+    await attendanceStore.fetchAttendanceForSession(props.classeId, props.fechaSesion);
 
     // Obtener el listado de presentes
-    const presentes = attendanceStore.getPresentStudentIds(props.classeId, props.fechaSesion)
+    const presentes = attendanceStore.getPresentStudentIds(props.classeId, props.fechaSesion);
 
     // Filtrar y seleccionar solo los presentes
     alumnosSeleccionados.value = props.alumnosDisponibles
       .filter((alumno) => presentes.includes(alumno.id))
-      .map((alumno) => alumno.id)
+      .map((alumno) => alumno.id);
   } catch (error) {
-    console.error("Error al filtrar por asistencia:", error)
+    console.error('Error al filtrar por asistencia:', error);
   }
-}
+};
 
 const confirmSelection = () => {
-  if (!selectedEstado.value) return
+  if (!selectedEstado.value) return;
 
-  emit("update", {
+  emit('update', {
     estado: selectedEstado.value,
     observacion: observacion.value,
     alumnosIds: alumnosSeleccionados.value,
     compases: props.compasesSeleccionados,
-  })
+  });
 
-  resetForm()
-  emit("close")
-}
+  resetForm();
+  emit('close');
+};
 
 const cancelSelection = () => {
-  resetForm()
-  emit("close")
-}
+  resetForm();
+  emit('close');
+};
 
 const resetForm = () => {
-  selectedEstado.value = ""
-  observacion.value = ""
-  alumnosSeleccionados.value = [...props.alumnosPreseleccionados]
-}
+  selectedEstado.value = '';
+  observacion.value = '';
+  alumnosSeleccionados.value = [...props.alumnosPreseleccionados];
+};
 
 // Sincronizar con props al abrir el modal
 watch(
   () => props.isOpen,
   (isOpen) => {
     if (isOpen) {
-      alumnosSeleccionados.value = [...props.alumnosPreseleccionados]
+      alumnosSeleccionados.value = [...props.alumnosPreseleccionados];
     }
-  }
-)
+  },
+);
 
 // Cargar datos de asistencia al abrir si se solicita
 watch(
@@ -318,13 +318,13 @@ watch(
   async (isOpen) => {
     if (isOpen && props.showAttendanceFilter && props.classeId) {
       try {
-        await attendanceStore.fetchAttendanceForSession(props.classeId, props.fechaSesion)
+        await attendanceStore.fetchAttendanceForSession(props.classeId, props.fechaSesion);
       } catch (error) {
-        console.error("Error al cargar datos de asistencia:", error)
+        console.error('Error al cargar datos de asistencia:', error);
       }
     }
-  }
-)
+  },
+);
 </script>
 
 <style scoped>

@@ -170,22 +170,22 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 import {
   ExclamationCircleIcon,
   UserIcon,
   BellIcon,
   DocumentTextIcon,
   ExclamationTriangleIcon as ExclamationIcon,
-} from "@heroicons/vue/24/outline"
-import {useClassesStore} from "../../modulos/Classes/store/classes"
-import {useAttendanceStore} from "../../modulos/Attendance/store/attendance"
-import {useStudentsStore} from "../../modulos/Students/store/students"
-import {jsPDF} from "jspdf"
-import "jspdf-autotable"
+} from '@heroicons/vue/24/outline';
+import { useClassesStore } from '../../modulos/Classes/store/classes';
+import { useAttendanceStore } from '../../modulos/Attendance/store/attendance';
+import { useStudentsStore } from '../../modulos/Students/store/students';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 // Tipo para jsPDF con autotable
-declare module "jspdf" {
+declare module 'jspdf' {
   interface jsPDF {
     autoTable: (options: any) => jsPDF
   }
@@ -209,67 +209,67 @@ interface AbsenceReport {
 }
 
 // Obtener stores necesarios
-const classesStore = useClassesStore()
-const attendanceStore = useAttendanceStore()
-const studentsStore = useStudentsStore()
+const classesStore = useClassesStore();
+const attendanceStore = useAttendanceStore();
+const studentsStore = useStudentsStore();
 
 // Estados reactivos
-const loading = ref(true)
-const activeFilter = ref("week") // 'week' o 'month'
+const loading = ref(true);
+const activeFilter = ref('week'); // 'week' o 'month'
 
 // Estructura para almacenar el resultado del análisis
 const absenceReport = ref<AbsenceReport>({
   weeklyAbsences: [],
   monthlyAbsences: [],
-})
+});
 
 // Función para obtener los datos de ausencias de estudiantes
 async function analyzeAbsences(): Promise<AbsenceReport> {
   try {
     // Calcular los estudiantes con más ausencias en la última semana
-    const now = new Date()
-    const lastWeek = new Date(now)
-    lastWeek.setDate(now.getDate() - 7)
+    const now = new Date();
+    const lastWeek = new Date(now);
+    lastWeek.setDate(now.getDate() - 7);
 
-    const lastMonth = new Date(now)
-    lastMonth.setMonth(now.getMonth() - 1)
+    const lastMonth = new Date(now);
+    lastMonth.setMonth(now.getMonth() - 1);
 
     // Obtener datos de ausencias
-    await attendanceStore.fetchAttendance()
+    await attendanceStore.fetchAttendance();
 
     // Obtener estudiantes con ausencias
-    const absentStudents = attendanceStore.calculateAbsentStudents(20)
+    const absentStudents = attendanceStore.calculateAbsentStudents(20);
 
     // Filtrar por período y mapear a la estructura esperada
-    const weeklyAbsences: Student[] = []
-    const monthlyAbsences: Student[] = []
+    const weeklyAbsences: Student[] = [];
+    const monthlyAbsences: Student[] = [];
 
     for (const student of absentStudents) {
       // Buscar información del estudiante
-      const studentData = studentsStore.items.find((s) => s.id === student.studentId)
-      if (!studentData) continue
+      const studentData = studentsStore.items.find((s) => s.id === student.studentId);
+      if (!studentData) continue;
 
       // Solo incluir estudiantes con más de 2 ausencias
       if (student.absences >= 2) {
         // Crear objeto con la estructura esperada
         const studentInfo: Student = {
           id: student.studentId,
-          nombre: studentData.nombre || "Sin nombre",
-          apellido: studentData.apellido || "Sin apellido",
+          nombre: studentData.nombre || 'Sin nombre',
+          apellido: studentData.apellido || 'Sin apellido',
           absences: student.absences,
           classes: studentData.classIds || [],
           hasInstruments: !!studentData.instrumentId,
           photoURL: studentData.photoURL,
-        }
+        };
 
         // Verificar si la última asistencia está dentro del período de una semana
         if (new Date(student.lastAttendance) >= lastWeek) {
-          weeklyAbsences.push(studentInfo)
+          weeklyAbsences.push(studentInfo);
         }
 
         // Verificar si la última asistencia está dentro del período de un mes
         if (new Date(student.lastAttendance) >= lastMonth) {
-          monthlyAbsences.push(studentInfo)
+          monthlyAbsences.push(studentInfo);
         }
       }
     }
@@ -277,115 +277,115 @@ async function analyzeAbsences(): Promise<AbsenceReport> {
     return {
       weeklyAbsences,
       monthlyAbsences,
-    }
+    };
   } catch (error) {
-    console.error("Error al analizar ausencias:", error)
+    console.error('Error al analizar ausencias:', error);
     // Retornamos un objeto vacío en caso de error
     return {
       weeklyAbsences: [],
       monthlyAbsences: [],
-    }
+    };
   }
 }
 
 // Alumnos filtrados según la selección semanal/mensual
 const filteredStudents = computed(() => {
-  return activeFilter.value === "week"
+  return activeFilter.value === 'week'
     ? absenceReport.value.weeklyAbsences
-    : absenceReport.value.monthlyAbsences
-})
+    : absenceReport.value.monthlyAbsences;
+});
 
 // Función para obtener los nombres de las clases a partir de los IDs
 function getClassesNames(classIds?: string[]): string[] {
-  if (!classIds || classIds.length === 0) return ["Sin clase asignada"]
+  if (!classIds || classIds.length === 0) return ['Sin clase asignada'];
 
   return classIds.map((classId) => {
-    const classInfo = classesStore.classes.find((c) => c.id === classId)
-    return classInfo?.name || "Clase desconocida"
-  })
+    const classInfo = classesStore.classes.find((c) => c.id === classId);
+    return classInfo?.name || 'Clase desconocida';
+  });
 }
 
 // Cargar los datos de ausencias al montar el componente
 onMounted(async () => {
   try {
-    loading.value = true
-    absenceReport.value = await analyzeAbsences()
+    loading.value = true;
+    absenceReport.value = await analyzeAbsences();
   } catch (error) {
-    console.error("Error al cargar datos de inasistencias:", error)
+    console.error('Error al cargar datos de inasistencias:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 
 // Función para notificar al director
 function notifyDirector(student: Student): void {
   // Aquí iría la lógica para notificar al director
   // Por ejemplo, un servicio que envíe un email o una notificación
   alert(
-    `Se ha notificado al director sobre las inasistencias de ${student.nombre} ${student.apellido}`
-  )
+    `Se ha notificado al director sobre las inasistencias de ${student.nombre} ${student.apellido}`,
+  );
   // TODO: Implementar sistema de notificaciones real
 }
 
 // Función para enviar un reporte
 function sendReport(student: Student): void {
   // Aquí iría la lógica para enviar un reporte
-  alert(`Se ha enviado un reporte sobre las inasistencias de ${student.nombre} ${student.apellido}`)
+  alert(`Se ha enviado un reporte sobre las inasistencias de ${student.nombre} ${student.apellido}`);
   // TODO: Implementar sistema de envío de reportes
 }
 
 // Función para generar una amonestación en PDF
 function createWarning(student: Student): void {
-  const doc = new jsPDF()
-  const now = new Date()
-  const dateStr = now.toLocaleDateString("es-ES")
-  const classNames = getClassesNames(student.classes).join(", ")
+  const doc = new jsPDF();
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('es-ES');
+  const classNames = getClassesNames(student.classes).join(', ');
 
   // Título
-  doc.setFontSize(18)
-  doc.text("AMONESTACIÓN POR INASISTENCIAS", 105, 20, {align: "center"})
+  doc.setFontSize(18);
+  doc.text('AMONESTACIÓN POR INASISTENCIAS', 105, 20, { align: 'center' });
 
   // Fecha
-  doc.setFontSize(12)
-  doc.text(`Fecha: ${dateStr}`, 20, 30)
+  doc.setFontSize(12);
+  doc.text(`Fecha: ${dateStr}`, 20, 30);
 
   // Datos del estudiante
-  doc.setFontSize(12)
-  doc.text("DATOS DEL ESTUDIANTE", 20, 40)
+  doc.setFontSize(12);
+  doc.text('DATOS DEL ESTUDIANTE', 20, 40);
 
-  doc.setFontSize(11)
-  doc.text(`Nombre completo: ${student.nombre} ${student.apellido}`, 20, 50)
-  doc.text(`ID: ${student.id}`, 20, 57)
-  doc.text(`Clases: ${classNames}`, 20, 64)
-  doc.text(`Tipo: ${student.hasInstruments ? "Con instrumento" : "Sin instrumento"}`, 20, 71)
-  doc.text(`Total de inasistencias: ${student.absences}`, 20, 78)
+  doc.setFontSize(11);
+  doc.text(`Nombre completo: ${student.nombre} ${student.apellido}`, 20, 50);
+  doc.text(`ID: ${student.id}`, 20, 57);
+  doc.text(`Clases: ${classNames}`, 20, 64);
+  doc.text(`Tipo: ${student.hasInstruments ? 'Con instrumento' : 'Sin instrumento'}`, 20, 71);
+  doc.text(`Total de inasistencias: ${student.absences}`, 20, 78);
 
   // Motivo
-  doc.setFontSize(12)
-  doc.text("MOTIVO DE LA AMONESTACIÓN", 20, 90)
-  doc.setFontSize(11)
+  doc.setFontSize(12);
+  doc.text('MOTIVO DE LA AMONESTACIÓN', 20, 90);
+  doc.setFontSize(11);
   doc.text(
-    "El estudiante ha superado el límite de inasistencias permitidas, lo que afecta",
+    'El estudiante ha superado el límite de inasistencias permitidas, lo que afecta',
     20,
-    100
-  )
-  doc.text("negativamente su aprendizaje y el desarrollo de las clases.", 20, 107)
+    100,
+  );
+  doc.text('negativamente su aprendizaje y el desarrollo de las clases.', 20, 107);
 
   // Medidas a tomar
-  doc.setFontSize(12)
-  doc.text("MEDIDAS A TOMAR", 20, 120)
-  doc.setFontSize(11)
-  doc.text("1. Contactar inmediatamente con los padres o tutores.", 20, 130)
-  doc.text("2. Establecer un compromiso de asistencia para las próximas clases.", 20, 137)
-  doc.text("3. Programar sesiones de recuperación si es necesario.", 20, 144)
+  doc.setFontSize(12);
+  doc.text('MEDIDAS A TOMAR', 20, 120);
+  doc.setFontSize(11);
+  doc.text('1. Contactar inmediatamente con los padres o tutores.', 20, 130);
+  doc.text('2. Establecer un compromiso de asistencia para las próximas clases.', 20, 137);
+  doc.text('3. Programar sesiones de recuperación si es necesario.', 20, 144);
 
   // Firmas
-  doc.line(20, 170, 80, 170)
-  doc.line(120, 170, 180, 170)
-  doc.text("Firma del Profesor", 35, 180)
-  doc.text("Firma del Director", 135, 180)
+  doc.line(20, 170, 80, 170);
+  doc.line(120, 170, 180, 170);
+  doc.text('Firma del Profesor', 35, 180);
+  doc.text('Firma del Director', 135, 180);
 
   // Guardar PDF
-  doc.save(`Amonestacion_${student.apellido}_${student.nombre}.pdf`)
+  doc.save(`Amonestacion_${student.apellido}_${student.nombre}.pdf`);
 }
 </script>

@@ -58,13 +58,13 @@
 defineProps<{
   from: string
   to: string
-}>()
+}>();
 
 defineEmits<{
-  "update:from": [value: string]
-  "update:to": [value: string]
-  "set-range": [type: string]
-  "sync-data": []
-  "generate-report": []
-}>()
+  'update:from': [value: string]
+  'update:to': [value: string]
+  'set-range': [type: string]
+  'sync-data': []
+  'generate-report': []
+}>();
 </script>

@@ -22,9 +22,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {ChevronRightIcon} from "@heroicons/vue/24/outline"
-import * as HeroIcons from "@heroicons/vue/24/outline"
+import { computed } from 'vue';
+import { ChevronRightIcon } from '@heroicons/vue/24/outline';
+import * as HeroIcons from '@heroicons/vue/24/outline';
 
 interface Props {
   title: string
@@ -33,13 +33,13 @@ interface Props {
   gradient: string
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   click: []
-}>()
+}>();
 
 const iconComponent = computed(() => {
-  return (HeroIcons as any)[props.icon] || HeroIcons.CogIcon
-})
+  return (HeroIcons as any)[props.icon] || HeroIcons.CogIcon;
+});
 </script>

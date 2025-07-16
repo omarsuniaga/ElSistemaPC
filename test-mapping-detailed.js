@@ -4,7 +4,7 @@ console.log('='.repeat(60));
 
 // Funciones replicadas del componente actual
 const getDayIndex = (dayString) => {
-  if (typeof dayString === "number") return dayString;
+  if (typeof dayString === 'number') return dayString;
 
   const dayMapping = {
     lunes: 0, martes: 1, miércoles: 2, jueves: 3, viernes: 4, sábado: 5, domingo: 6,
@@ -48,9 +48,9 @@ const ejemploClase = {
     slots: [
       { day: 'Martes', startTime: '17:00', endTime: '18:30' },
       { day: 'Jueves', startTime: '17:00', endTime: '18:30' },
-      { day: 'Sábado', startTime: '09:00', endTime: '12:30' }
-    ]
-  }
+      { day: 'Sábado', startTime: '09:00', endTime: '12:30' },
+    ],
+  },
 };
 
 console.log('📊 CLASE DE PRUEBA:');
@@ -82,7 +82,7 @@ console.log('-'.repeat(50));
 
 let erroresEncontrados = 0;
 
-fechasJulio2025.forEach(({fecha, nombre}) => {
+fechasJulio2025.forEach(({ fecha, nombre }) => {
   const jsDay = fecha.getDay();
   const alignedDay = convertJSDateToAligned(jsDay);
   const shouldShow = hasScheduledClasses(fecha, [ejemploClase]);

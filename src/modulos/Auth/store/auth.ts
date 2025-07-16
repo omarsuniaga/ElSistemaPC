@@ -7,4 +7,4 @@
 
 // Dejar el archivo vacío intencionalmente o con una exportación mínima para evitar errores de importación inmediatos
 // hasta que todas las referencias sean actualizadas.
-export {}
+export {};

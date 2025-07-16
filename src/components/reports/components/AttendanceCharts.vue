@@ -88,10 +88,10 @@
 </template>
 
 <script setup>
-import {computed} from "vue"
-import {CheckCircleIcon, XCircleIcon, ClockIcon} from "@heroicons/vue/24/outline"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
+import { computed } from 'vue';
+import { CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/vue/24/outline';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const props = defineProps({
   attendanceData: {
@@ -102,86 +102,86 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-})
+});
 
 // Estadísticas generales
 const stats = computed(() => {
-  let totalPresent = 0
-  let totalAbsent = 0
-  let totalLate = 0
+  let totalPresent = 0;
+  let totalAbsent = 0;
+  let totalLate = 0;
 
   props.attendanceData.forEach((classData) => {
     classData.students?.forEach((student) => {
       student.attendance?.forEach((record) => {
         switch (record.status) {
-          case "present":
-            totalPresent++
-            break
-          case "absent":
-            totalAbsent++
-            break
-          case "late":
-            totalLate++
-            break
+        case 'present':
+          totalPresent++;
+          break;
+        case 'absent':
+          totalAbsent++;
+          break;
+        case 'late':
+          totalLate++;
+          break;
         }
-      })
-    })
-  })
+      });
+    });
+  });
 
   return {
     totalPresent,
     totalAbsent,
     totalLate,
     total: totalPresent + totalAbsent + totalLate,
-  }
-})
+  };
+});
 
 // Datos para gráfico por clase
 const chartData = computed(() => {
   return props.attendanceData.map((classData) => {
-    let present = 0
-    let total = 0
+    let present = 0;
+    let total = 0;
 
     classData.students?.forEach((student) => {
       student.attendance?.forEach((record) => {
-        total++
-        if (record.status === "present") {
-          present++
+        total++;
+        if (record.status === 'present') {
+          present++;
         }
-      })
-    })
+      });
+    });
 
     return {
-      name: classData.className || "Clase sin nombre",
+      name: classData.className || 'Clase sin nombre',
       present,
       total,
       attendanceRate: total > 0 ? Math.round((present / total) * 100) : 0,
-    }
-  })
-})
+    };
+  });
+});
 
 // Datos de tendencia por día
 const trendData = computed(() => {
-  const dailyStats = new Map()
+  const dailyStats = new Map();
 
   // Agrupar por fecha
   props.attendanceData.forEach((classData) => {
     classData.students?.forEach((student) => {
       student.attendance?.forEach((record) => {
-        const dateKey = format(new Date(record.date), "yyyy-MM-dd")
+        const dateKey = format(new Date(record.date), 'yyyy-MM-dd');
 
         if (!dailyStats.has(dateKey)) {
-          dailyStats.set(dateKey, {present: 0, total: 0, date: record.date})
+          dailyStats.set(dateKey, { present: 0, total: 0, date: record.date });
         }
 
-        const dayData = dailyStats.get(dateKey)
-        dayData.total++
-        if (record.status === "present") {
-          dayData.present++
+        const dayData = dailyStats.get(dateKey);
+        dayData.total++;
+        if (record.status === 'present') {
+          dayData.present++;
         }
-      })
-    })
-  })
+      });
+    });
+  });
 
   // Convertir a array y calcular porcentajes
   return Array.from(dailyStats.values())
@@ -190,10 +190,10 @@ const trendData = computed(() => {
       rate: day.total > 0 ? Math.round((day.present / day.total) * 100) : 0,
     }))
     .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .slice(-10) // Últimos 10 días
-})
+    .slice(-10); // Últimos 10 días
+});
 
 const formatDate = (date) => {
-  return format(new Date(date), "dd/MM", {locale: es})
-}
+  return format(new Date(date), 'dd/MM', { locale: es });
+};
 </script>

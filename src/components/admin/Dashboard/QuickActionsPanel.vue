@@ -34,58 +34,58 @@ import {
   ChatBubbleBottomCenterTextIcon,
   CogIcon,
   ShieldCheckIcon,
-} from "@heroicons/vue/24/outline"
-import {QuestionMarkCircleIcon} from "@heroicons/vue/24/solid"
+} from '@heroicons/vue/24/outline';
+import { QuestionMarkCircleIcon } from '@heroicons/vue/24/solid';
 
-defineOptions({name: "QuickActionsPanel"})
+defineOptions({ name: 'QuickActionsPanel' });
 
 const actions = [
   {
-    name: "Gestionar Estudiantes",
-    description: "Ver, crear y editar perfiles",
+    name: 'Gestionar Estudiantes',
+    description: 'Ver, crear y editar perfiles',
     icon: UsersIcon,
-    route: "/admin/students",
+    route: '/admin/students',
     tooltip:
-      "Accede a la gestión completa de estudiantes: añadir nuevos, editar existentes y ver detalles.",
+      'Accede a la gestión completa de estudiantes: añadir nuevos, editar existentes y ver detalles.',
   },
   {
-    name: "Ver Horario General",
-    description: "Calendario de todas las clases",
+    name: 'Ver Horario General',
+    description: 'Calendario de todas las clases',
     icon: CalendarIcon,
-    route: "/admin/schedules",
-    tooltip: "Visualiza el horario consolidado de todas las clases y maestros de la academia.",
+    route: '/admin/schedules',
+    tooltip: 'Visualiza el horario consolidado de todas las clases y maestros de la academia.',
   },
   {
-    name: "Centro de Reportes",
-    description: "Generar PDFs y análisis",
+    name: 'Centro de Reportes',
+    description: 'Generar PDFs y análisis',
     icon: DocumentChartBarIcon,
-    route: "/admin/reports",
+    route: '/admin/reports',
     tooltip:
-      "Genera reportes detallados de asistencia, rendimiento y otros datos operativos en formatos PDF y Excel.",
+      'Genera reportes detallados de asistencia, rendimiento y otros datos operativos en formatos PDF y Excel.',
   },
   {
-    name: "Configurar WhatsApp",
-    description: "Conexión y plantillas",
+    name: 'Configurar WhatsApp',
+    description: 'Conexión y plantillas',
     icon: ChatBubbleBottomCenterTextIcon,
-    route: "/admin/whatsapp",
+    route: '/admin/whatsapp',
     tooltip:
-      "Administra la conexión de WhatsApp y personaliza las plantillas de mensajes para las notificaciones automáticas.",
+      'Administra la conexión de WhatsApp y personaliza las plantillas de mensajes para las notificaciones automáticas.',
   },
   {
-    name: "Permisos y Roles",
-    description: "Administrar acceso (RBAC)",
+    name: 'Permisos y Roles',
+    description: 'Administrar acceso (RBAC)',
     icon: ShieldCheckIcon,
-    route: "/admin/permissions",
+    route: '/admin/permissions',
     tooltip:
-      "Define y gestiona los roles de usuario y sus permisos de acceso a las diferentes secciones de la aplicación.",
+      'Define y gestiona los roles de usuario y sus permisos de acceso a las diferentes secciones de la aplicación.',
   },
   {
-    name: "Ajustes del Sistema",
-    description: "Configuraciones generales",
+    name: 'Ajustes del Sistema',
+    description: 'Configuraciones generales',
     icon: CogIcon,
-    route: "/admin/system",
+    route: '/admin/system',
     tooltip:
-      "Accede a las configuraciones generales de la aplicación, como el nombre de la academia, datos de contacto, etc.",
+      'Accede a las configuraciones generales de la aplicación, como el nombre de la academia, datos de contacto, etc.',
   },
-]
+];
 </script>

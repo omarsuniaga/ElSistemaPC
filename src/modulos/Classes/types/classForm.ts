@@ -1,6 +1,6 @@
-import type {ClassData} from "./class"
-import type {Teacher} from "../../Teachers/types/teacher"
-import type {Student} from "../../Students/types/student"
+import type { ClassData } from './class';
+import type { Teacher } from '../../Teachers/types/teacher';
+import type { Student } from '../../Students/types/student';
 
 export interface ClassScheduleSlot {
   id: string
@@ -10,7 +10,7 @@ export interface ClassScheduleSlot {
   duration: string
 }
 
-export type ClassStatus = "active" | "inactive" | "completed" | "cancelled"
+export type ClassStatus = 'active' | 'inactive' | 'completed' | 'cancelled'
 
 export interface ClassFormData {
   id: string
@@ -35,12 +35,12 @@ export interface ClassFormData {
 export interface ClassFormProps {
   isOpen: boolean
   classData?: Partial<ClassData> | null
-  mode: "create" | "edit"
+  mode: 'create' | 'edit'
 }
 
 export interface ClassFormEmits {
-  (e: "update:isOpen", value: boolean): void
-  (e: "save", classData: ClassFormData): void
+  (e: 'update:isOpen', value: boolean): void
+  (e: 'save', classData: ClassFormData): void
 }
 
 export interface TeacherOption {

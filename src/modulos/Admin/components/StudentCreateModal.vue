@@ -353,13 +353,13 @@
 <script setup lang="ts">
 // Define component name
 defineOptions({
-  name: "StudentCreateModal",
-})
+  name: 'StudentCreateModal',
+});
 
-import {ref, reactive} from "vue"
-import {XMarkIcon} from "@heroicons/vue/24/outline"
-import {useAdminStudentsStore} from "../store/adminStudents"
-import type {Student} from "../store/adminStudents"
+import { ref, reactive } from 'vue';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
+import { useAdminStudentsStore } from '../store/adminStudents';
+import type { Student } from '../store/adminStudents';
 
 // Emits
 interface Emits {
@@ -367,147 +367,147 @@ interface Emits {
   created: [student: Student]
 }
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // Store
-const studentsStore = useAdminStudentsStore()
+const studentsStore = useAdminStudentsStore();
 
 // State
-const isSubmitting = ref(false)
+const isSubmitting = ref(false);
 
 // Form data
 const form = reactive({
-  name: "",
-  email: "",
-  phone: "",
-  birthDate: "",
-  address: "",
-  parentName: "",
-  parentPhone: "",
-  parentEmail: "",
+  name: '',
+  email: '',
+  phone: '',
+  birthDate: '',
+  address: '',
+  parentName: '',
+  parentPhone: '',
+  parentEmail: '',
   instruments: [] as string[],
-  grade: "" as "beginner" | "intermediate" | "advanced" | "",
-  status: "pending" as "active" | "inactive" | "pending",
-  notes: "",
-})
+  grade: '' as 'beginner' | 'intermediate' | 'advanced' | '',
+  status: 'pending' as 'active' | 'inactive' | 'pending',
+  notes: '',
+});
 
 // Form errors
 const errors = reactive({
-  name: "",
-  email: "",
-  phone: "",
-  birthDate: "",
-  parentName: "",
-  parentPhone: "",
-  parentEmail: "",
-  instruments: "",
-  grade: "",
-})
+  name: '',
+  email: '',
+  phone: '',
+  birthDate: '',
+  parentName: '',
+  parentPhone: '',
+  parentEmail: '',
+  instruments: '',
+  grade: '',
+});
 
 // Available instruments
 const availableInstruments = [
-  {value: "piano", label: "Piano"},
-  {value: "guitar", label: "Guitarra"},
-  {value: "violin", label: "Violín"},
-  {value: "drums", label: "Batería"},
-  {value: "voice", label: "Canto"},
-  {value: "bass", label: "Bajo"},
-  {value: "flute", label: "Flauta"},
-  {value: "saxophone", label: "Saxofón"},
-  {value: "trumpet", label: "Trompeta"},
-  {value: "cello", label: "Violonchelo"},
-]
+  { value: 'piano', label: 'Piano' },
+  { value: 'guitar', label: 'Guitarra' },
+  { value: 'violin', label: 'Violín' },
+  { value: 'drums', label: 'Batería' },
+  { value: 'voice', label: 'Canto' },
+  { value: 'bass', label: 'Bajo' },
+  { value: 'flute', label: 'Flauta' },
+  { value: 'saxophone', label: 'Saxofón' },
+  { value: 'trumpet', label: 'Trompeta' },
+  { value: 'cello', label: 'Violonchelo' },
+];
 
 // Methods
 const validateForm = (): boolean => {
   // Clear previous errors
   Object.keys(errors).forEach((key) => {
-    errors[key as keyof typeof errors] = ""
-  })
+    errors[key as keyof typeof errors] = '';
+  });
 
-  let isValid = true
+  let isValid = true;
 
   // Required fields validation
   if (!form.name.trim()) {
-    errors.name = "El nombre es requerido"
-    isValid = false
+    errors.name = 'El nombre es requerido';
+    isValid = false;
   }
 
   if (!form.email.trim()) {
-    errors.email = "El correo electrónico es requerido"
-    isValid = false
+    errors.email = 'El correo electrónico es requerido';
+    isValid = false;
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    errors.email = "El correo electrónico no es válido"
-    isValid = false
+    errors.email = 'El correo electrónico no es válido';
+    isValid = false;
   }
 
   if (!form.phone.trim()) {
-    errors.phone = "El teléfono es requerido"
-    isValid = false
+    errors.phone = 'El teléfono es requerido';
+    isValid = false;
   }
 
   if (!form.birthDate) {
-    errors.birthDate = "La fecha de nacimiento es requerida"
-    isValid = false
+    errors.birthDate = 'La fecha de nacimiento es requerida';
+    isValid = false;
   }
 
   if (!form.parentName.trim()) {
-    errors.parentName = "El nombre del padre/tutor es requerido"
-    isValid = false
+    errors.parentName = 'El nombre del padre/tutor es requerido';
+    isValid = false;
   }
 
   if (!form.parentPhone.trim()) {
-    errors.parentPhone = "El teléfono del padre/tutor es requerido"
-    isValid = false
+    errors.parentPhone = 'El teléfono del padre/tutor es requerido';
+    isValid = false;
   }
 
   if (form.parentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.parentEmail)) {
-    errors.parentEmail = "El correo electrónico del padre/tutor no es válido"
-    isValid = false
+    errors.parentEmail = 'El correo electrónico del padre/tutor no es válido';
+    isValid = false;
   }
 
   if (form.instruments.length === 0) {
-    errors.instruments = "Debe seleccionar al menos un instrumento"
-    isValid = false
+    errors.instruments = 'Debe seleccionar al menos un instrumento';
+    isValid = false;
   }
 
   if (!form.grade) {
-    errors.grade = "El nivel es requerido"
-    isValid = false
+    errors.grade = 'El nivel es requerido';
+    isValid = false;
   }
 
-  return isValid
-}
+  return isValid;
+};
 
 const handleSubmit = async () => {
   if (!validateForm()) {
-    return
+    return;
   }
 
   try {
-    isSubmitting.value = true
+    isSubmitting.value = true;
 
     const studentData = {
       ...form,
       birthDate: new Date(form.birthDate),
       enrollmentDate: new Date(),
       classes: [],
-      createdBy: "current_user_id", // Replace with actual user ID
-    }
+      createdBy: 'current_user_id', // Replace with actual user ID
+    };
 
-    const newStudent = await studentsStore.createStudent(studentData)
-    emit("created", newStudent)
+    const newStudent = await studentsStore.createStudent(studentData);
+    emit('created', newStudent);
   } catch (error) {
-    console.error("Error creating student:", error)
+    console.error('Error creating student:', error);
     // Handle error (show notification, etc.)
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 
 const handleCancel = () => {
-  emit("close")
-}
+  emit('close');
+};
 </script>
 
 <style scoped>

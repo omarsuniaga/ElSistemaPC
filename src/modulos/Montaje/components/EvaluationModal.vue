@@ -105,8 +105,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import type {CreateEvaluationInput} from "../types"
+import { ref, computed } from 'vue';
+import type { CreateEvaluationInput } from '../types';
 
 interface Props {
   show: boolean
@@ -115,64 +115,64 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "submit", data: CreateEvaluationInput): void
+  (e: 'close'): void
+  (e: 'submit', data: CreateEvaluationInput): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   students: () => [],
-})
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
-const isSubmitting = ref(false)
+const isSubmitting = ref(false);
 
 const evaluationData = ref<CreateEvaluationInput>({
-  estudianteId: "",
-  obraId: props.workId || "",
-  workId: props.workId || "",
-  maestroEvaluadorId: "current-user", // Se establecería con el usuario actual
+  estudianteId: '',
+  obraId: props.workId || '',
+  workId: props.workId || '',
+  maestroEvaluadorId: 'current-user', // Se establecería con el usuario actual
   score: 0,
-  comments: "",
+  comments: '',
   tiempoSesion: 30,
   fecha: new Date(),
-  tipo: "continua",
-})
+  tipo: 'continua',
+});
 
 const closeModal = () => {
-  emit("close")
-}
+  emit('close');
+};
 
 const handleSubmit = async () => {
   try {
-    isSubmitting.value = true
+    isSubmitting.value = true;
 
     const dataToSubmit: CreateEvaluationInput = {
       ...evaluationData.value,
       obraId: props.workId || evaluationData.value.obraId,
       workId: props.workId || evaluationData.value.workId,
-    }
+    };
 
-    emit("submit", dataToSubmit)
+    emit('submit', dataToSubmit);
 
     // Reset form
     evaluationData.value = {
-      estudianteId: "",
-      obraId: props.workId || "",
-      workId: props.workId || "",
-      maestroEvaluadorId: "current-user",
+      estudianteId: '',
+      obraId: props.workId || '',
+      workId: props.workId || '',
+      maestroEvaluadorId: 'current-user',
       score: 0,
-      comments: "",
+      comments: '',
       tiempoSesion: 30,
       fecha: new Date(),
-      tipo: "continua",
-    }
+      tipo: 'continua',
+    };
 
-    closeModal()
+    closeModal();
   } catch (error) {
-    console.error("Error submitting evaluation:", error)
+    console.error('Error submitting evaluation:', error);
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 </script>

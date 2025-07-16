@@ -1,56 +1,3 @@
-<script setup lang="ts">
-import {type FunctionalComponent, computed} from "vue"
-import {
-  BookOpenIcon,
-  ChartBarSquareIcon,
-  CalendarIcon,
-  ClockIcon,
-  BellIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/vue/24/outline"
-import {useGeneralNotifications} from "../composables/useGeneralNotifications"
-import {useAuthStore} from "../../../stores/auth"
-import {useTeachersStore} from "../store/teachers"
-
-const props = defineProps<{
-  activeTab: string
-}>()
-
-const emit = defineEmits(["set-active-tab"])
-
-// Usar el store de autenticación y maestros
-const authStore = useAuthStore()
-const teachersStore = useTeachersStore()
-
-// Usar el composable de notificaciones para obtener el contador
-const {unreadCount} = useGeneralNotifications()
-
-// Computed values for notifications
-const hasNotifications = computed(() => unreadCount.value > 0)
-const notificationCount = computed(() => unreadCount.value)
-
-// Computed para obtener información del maestro actual
-const currentTeacher = computed(() => {
-  const teacherData = teachersStore.getTeacherById(authStore.user?.uid || "")
-  return {
-    name: teacherData?.name || authStore.user?.email?.split("@")[0] || "Maestro",
-  }
-})
-
-const tabs: Array<{name: string; value: string; icon: FunctionalComponent}> = [
-  {name: "Mis Clases", value: "classes", icon: BookOpenIcon},
-  {name: "Clases Emergentes", value: "emergency", icon: ExclamationTriangleIcon},
-  {name: "Notificaciones", value: "notifications", icon: BellIcon},
-  {name: "Métricas", value: "overview", icon: ChartBarSquareIcon},
-  {name: "Ausentes", value: "schedule", icon: CalendarIcon}, // Renamed
-  {name: "Observaciones", value: "upcoming", icon: ClockIcon}, // Renamed
-]
-
-const setActiveTab = (tab: string) => {
-  emit("set-active-tab", tab)
-}
-</script>
-
 <template>
   <header
     class="dashboard-header bg-white dark:bg-gray-800 p-3 md:p-4 rounded-lg shadow mb-4 md:mb-6"
@@ -97,6 +44,59 @@ const setActiveTab = (tab: string) => {
     </div>
   </header>
 </template>
+
+<script setup lang="ts">
+import { type FunctionalComponent, computed } from 'vue';
+import {
+  BookOpenIcon,
+  ChartBarSquareIcon,
+  CalendarIcon,
+  ClockIcon,
+  BellIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/vue/24/outline';
+import { useGeneralNotifications } from '../composables/useGeneralNotifications';
+import { useAuthStore } from '../../../stores/auth';
+import { useTeachersStore } from '../store/teachers';
+
+const props = defineProps<{
+  activeTab: string
+}>();
+
+const emit = defineEmits(['set-active-tab']);
+
+// Usar el store de autenticación y maestros
+const authStore = useAuthStore();
+const teachersStore = useTeachersStore();
+
+// Usar el composable de notificaciones para obtener el contador
+const { unreadCount } = useGeneralNotifications();
+
+// Computed values for notifications
+const hasNotifications = computed(() => unreadCount.value > 0);
+const notificationCount = computed(() => unreadCount.value);
+
+// Computed para obtener información del maestro actual
+const currentTeacher = computed(() => {
+  const teacherData = teachersStore.getTeacherById(authStore.user?.uid || '');
+  return {
+    name: teacherData?.name || authStore.user?.email?.split('@')[0] || 'Maestro',
+  };
+});
+
+const tabs: Array<{name: string; value: string; icon: FunctionalComponent}> = [
+  { name: 'Mis Clases', value: 'classes', icon: BookOpenIcon },
+  { name: 'Clases Emergentes', value: 'emergency', icon: ExclamationTriangleIcon },
+  { name: 'Notificaciones', value: 'notifications', icon: BellIcon },
+  { name: 'Métricas', value: 'overview', icon: ChartBarSquareIcon },
+  { name: 'Ausentes', value: 'schedule', icon: CalendarIcon }, // Renamed
+  { name: 'Observaciones', value: 'upcoming', icon: ClockIcon }, // Renamed
+];
+
+const setActiveTab = (tab: string) => {
+  emit('set-active-tab', tab);
+};
+</script>
 
 <style scoped>
 /* Animaciones para el badge de notificaciones */

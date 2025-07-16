@@ -188,15 +188,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { useAttendanceCalendarSimple as useAttendanceCalendar } from '../composables/useAttendanceCalendarSimple'
-import { CalendarService } from '../services/CalendarService'
-import NewAttendanceCalendar from '../components/NewAttendanceCalendar.vue'
-import NewClassesDayModal from '../components/NewClassesDayModal.vue'
-import StatsCard from '../components/StatsCard.vue'
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAttendanceCalendarSimple as useAttendanceCalendar } from '../composables/useAttendanceCalendarSimple';
+import { CalendarService } from '../services/CalendarService';
+import NewAttendanceCalendar from '../components/NewAttendanceCalendar.vue';
+import NewClassesDayModal from '../components/NewClassesDayModal.vue';
+import StatsCard from '../components/StatsCard.vue';
 
 // Props
 interface Props {
@@ -204,11 +204,11 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mode: 'new-calendar'
-})
+  mode: 'new-calendar',
+});
 
 // Router
-const router = useRouter()
+const router = useRouter();
 
 const {
   selectedDate,
@@ -220,40 +220,40 @@ const {
   selectDate,
   refreshCurrentDate,
   validateClassForDay,
-  debugClass
-} = useAttendanceCalendar()
-const showClassesModal = ref(false)
-const isDevelopment = ref(process.env.NODE_ENV === 'development')
+  debugClass,
+} = useAttendanceCalendar();
+const showClassesModal = ref(false);
+const isDevelopment = ref(process.env.NODE_ENV === 'development');
 
 // Computed
 const formattedSelectedDate = computed(() => {
-  if (!selectedDate.value) return "Ninguna fecha seleccionada"
+  if (!selectedDate.value) return 'Ninguna fecha seleccionada';
   
   try {
     // Evitar problemas de zona horaria parseando manualmente
-    const [year, month, day] = selectedDate.value.split('-').map(Number)
-    const date = new Date(year, month - 1, day) // month es 0-indexed
+    const [year, month, day] = selectedDate.value.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month es 0-indexed
     
-    console.log(`[formattedSelectedDate] Input: ${selectedDate.value}`)
-    console.log(`[formattedSelectedDate] Parsed: ${year}-${month}-${day}`)
-    console.log(`[formattedSelectedDate] Date object:`, date)
-    console.log(`[formattedSelectedDate] Day of week:`, date.getDay())
+    console.log(`[formattedSelectedDate] Input: ${selectedDate.value}`);
+    console.log(`[formattedSelectedDate] Parsed: ${year}-${month}-${day}`);
+    console.log('[formattedSelectedDate] Date object:', date);
+    console.log('[formattedSelectedDate] Day of week:', date.getDay());
     
-    const formatted = date.toLocaleDateString("es-ES", { 
-      weekday: "long", 
-      year: "numeric", 
-      month: "long", 
-      day: "numeric" 
-    })
+    const formatted = date.toLocaleDateString('es-ES', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric', 
+    });
     
-    console.log(`[formattedSelectedDate] Formatted: ${formatted}`)
+    console.log(`[formattedSelectedDate] Formatted: ${formatted}`);
     
-    return formatted
+    return formatted;
   } catch (error) {
-    console.error('[formattedSelectedDate] Error:', error)
-    return selectedDate.value
+    console.error('[formattedSelectedDate] Error:', error);
+    return selectedDate.value;
   }
-})
+});
 
 const debugInfo = computed(() => ({
   selectedDate: selectedDate.value,
@@ -262,78 +262,78 @@ const debugInfo = computed(() => ({
   dayStats: dayStats.value || {},
   isLoading: isLoading.value,
   error: error.value || null,
-}))
+}));
 
 // Methods
 const handleDateSelected = async (date: string) => {
-  console.log(`[NewTeacherAttendanceDashboard] Date selected: ${date}`)
+  console.log(`[NewTeacherAttendanceDashboard] Date selected: ${date}`);
   
   try {
-    await selectDate(date)
+    await selectDate(date);
     console.log(
       `[NewTeacherAttendanceDashboard] ✅ Classes loaded for ${date}:`,
-      dayClasses.value?.length || 0
-    )
+      dayClasses.value?.length || 0,
+    );
   } catch (err) {
-    console.error("[NewTeacherAttendanceDashboard] Error loading classes:", err)
+    console.error('[NewTeacherAttendanceDashboard] Error loading classes:', err);
   }
-}
+};
 
 const handleMonthChanged = (month: Date) => {
-  console.log(`[NewTeacherAttendanceDashboard] Month changed:`, month)
-}
+  console.log('[NewTeacherAttendanceDashboard] Month changed:', month);
+};
 
 const openClassesModal = () => {
   if ((dayClasses.value?.length || 0) > 0) {
-    showClassesModal.value = true
+    showClassesModal.value = true;
   }
-}
+};
 
 const handleCloseModal = () => {
-  showClassesModal.value = false
-}
+  showClassesModal.value = false;
+};
 
 const handleTakeAttendance = (classId: string) => {
-  console.log(`[NewTeacherAttendanceDashboard] Take attendance for class:`, classId)
+  console.log('[NewTeacherAttendanceDashboard] Take attendance for class:', classId);
   // TODO: Navegar a formulario de asistencia
-  router.push(`/teacher/attendance/${selectedDate.value}/${classId}`)
-}
+  router.push(`/teacher/attendance/${selectedDate.value}/${classId}`);
+};
 
 const handleViewAttendance = (classId: string) => {
-  console.log(`[NewTeacherAttendanceDashboard] View attendance for class:`, classId)
+  console.log('[NewTeacherAttendanceDashboard] View attendance for class:', classId);
   // TODO: Navegar a vista de asistencia
-  router.push(`/attendance/${selectedDate.value}/${classId}`)
-}
+  router.push(`/attendance/${selectedDate.value}/${classId}`);
+};
 
 const handleEditClass = (classId: string) => {
-  console.log(`[NewTeacherAttendanceDashboard] Edit class:`, classId)
+  console.log('[NewTeacherAttendanceDashboard] Edit class:', classId);
   // TODO: Navegar a edición de clase
-}
+};
 
 const handleRefreshClasses = async () => {
-  await refreshCurrentDate()
-}
+  await refreshCurrentDate();
+};
 
 const goToToday = async () => {
-  const today = format(new Date(), 'yyyy-MM-dd')
-  await handleDateSelected(today)
-}
+  const today = format(new Date(), 'yyyy-MM-dd');
+  await handleDateSelected(today);
+};
 
 const refreshData = async () => {
-  await refreshCurrentDate()
-}
+  await refreshCurrentDate();
+};
 
 const openOldCalendar = () => {
-  router.push('/teacher/attendance/calendar')
-}
+  router.push('/teacher/attendance/calendar');
+};
 
 // Lifecycle
 onMounted(async () => {
-  console.log(`[NewTeacherAttendanceDashboard] Mounted with mode: ${props.mode}`)
+  console.log(`[NewTeacherAttendanceDashboard] Mounted with mode: ${props.mode}`);
   
   // Cargar día actual por defecto
-  await goToToday()
-})
+  await goToToday();
+});
 </script>
 
 <style scoped>

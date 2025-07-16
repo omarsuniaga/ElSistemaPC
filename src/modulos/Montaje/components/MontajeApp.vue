@@ -4,13 +4,13 @@
     <template #sidebar>
       <nav class="p-4 space-y-2">
         <button
-          @click="goToDashboard"
           :class="[
             'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors',
             currentView === 'dashboard' 
               ? 'bg-blue-500 text-white' 
               : `${themeClasses.text.primary} ${themeClasses.hover}`
           ]"
+          @click="goToDashboard"
         >
           <span class="text-xl">🏠</span>
           <span class="font-medium">Dashboard</span>
@@ -22,52 +22,52 @@
           </div>
           
           <button
-            @click="currentView = 'work-detail'"
             :class="[
               'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors',
               currentView === 'work-detail' 
                 ? 'bg-blue-500 text-white' 
                 : `${themeClasses.text.primary} ${themeClasses.hover}`
             ]"
+            @click="currentView = 'work-detail'"
           >
             <span class="text-lg">📊</span>
             <span>Vista General</span>
           </button>
           
           <button
-            @click="currentView = 'evaluations'"
             :class="[
               'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors',
               currentView === 'evaluations' 
                 ? 'bg-blue-500 text-white' 
                 : `${themeClasses.text.primary} ${themeClasses.hover}`
             ]"
+            @click="currentView = 'evaluations'"
           >
             <span class="text-lg">📋</span>
             <span>Evaluaciones</span>
           </button>
           
           <button
-            @click="currentView = 'weekly-evaluations'"
             :class="[
               'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors',
               currentView === 'weekly-evaluations' 
                 ? 'bg-blue-500 text-white' 
                 : `${themeClasses.text.primary} ${themeClasses.hover}`
             ]"
+            @click="currentView = 'weekly-evaluations'"
           >
             <span class="text-lg">📅</span>
             <span>Semanales</span>
           </button>
           
           <button
-            @click="currentView = 'analytics'"
             :class="[
               'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors',
               currentView === 'analytics' 
                 ? 'bg-blue-500 text-white' 
                 : `${themeClasses.text.primary} ${themeClasses.hover}`
             ]"
+            @click="currentView = 'analytics'"
           >
             <span class="text-lg">📈</span>
             <span>Análisis</span>
@@ -81,26 +81,26 @@
           </div>
           
           <button
-            @click="currentView = 'calendar'"
             :class="[
               'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors',
               currentView === 'calendar' 
                 ? 'bg-blue-500 text-white' 
                 : `${themeClasses.text.primary} ${themeClasses.hover}`
             ]"
+            @click="currentView = 'calendar'"
           >
             <span class="text-lg">📅</span>
             <span>Calendario</span>
           </button>
           
           <button
-            @click="currentView = 'musical-tools'"
             :class="[
               'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors',
               currentView === 'musical-tools' 
                 ? 'bg-blue-500 text-white' 
                 : `${themeClasses.text.primary} ${themeClasses.hover}`
             ]"
+            @click="currentView = 'musical-tools'"
           >
             <span class="text-lg">🎼</span>
             <span>Herramientas</span>
@@ -108,13 +108,13 @@
           
           <button
             v-if="hasPermission('users', 'read')"
-            @click="currentView = 'users'"
             :class="[
               'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors',
               currentView === 'users' 
                 ? 'bg-blue-500 text-white' 
                 : `${themeClasses.text.primary} ${themeClasses.hover}`
             ]"
+            @click="currentView = 'users'"
           >
             <span class="text-lg">👥</span>
             <span>Usuarios</span>
@@ -122,13 +122,13 @@
           
           <button
             v-if="hasPermission('settings', 'read')"
-            @click="currentView = 'permissions'"
             :class="[
               'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors',
               currentView === 'permissions' 
                 ? 'bg-blue-500 text-white' 
                 : `${themeClasses.text.primary} ${themeClasses.hover}`
             ]"
+            @click="currentView = 'permissions'"
           >
             <span class="text-lg">🔐</span>
             <span>Permisos</span>
@@ -144,11 +144,11 @@
         <span :class="['text-gray-400', themeClasses.text.muted]">|</span>
         <select
           :value="currentProject.id"
-          @change="selectProject($event.target.value)"
           :class="[
             'text-sm border-none bg-transparent font-medium focus:ring-0',
             themeClasses.text.primary
           ]"
+          @change="selectProject($event.target.value)"
         >
           <option 
             v-for="project in projects" 
@@ -268,28 +268,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useMontaje } from '../composables/useMontaje'
-import { useTheme } from '../composables/useTheme'
-import { useResponsive } from '../composables/useResponsive'
+import { ref, onMounted } from 'vue';
+import { useMontaje } from '../composables/useMontaje';
+import { useTheme } from '../composables/useTheme';
+import { useResponsive } from '../composables/useResponsive';
 
 // Components
-import ResponsiveLayout from './ResponsiveLayout.vue'
-import ResponsiveModal from './ResponsiveModal.vue'
-import MontajeDashboard from './MontajeDashboard.vue'
-import MontajeNotifications from './MontajeNotifications.vue'
-import MontajeProjectModal from './MontajeProjectModal.vue'
-import WorkDetail from '../views/WorkDetail.vue'
-import InstrumentDetail from '../views/InstrumentDetail.vue'
-import EvaluationsView from '../views/EvaluationsView.vue'
-import WeeklyEvaluationsView from '../views/WeeklyEvaluationsView.vue'
-import AnalyticsView from '../views/AnalyticsView.vue'
-import InteractiveCalendar from './InteractiveCalendar.vue'
-import MusicalTools from './MusicalTools.vue'
-import PermissionsManager from './PermissionsManager.vue'
-import UsersApp from './users/UsersApp.vue'
+import ResponsiveLayout from './ResponsiveLayout.vue';
+import ResponsiveModal from './ResponsiveModal.vue';
+import MontajeDashboard from './MontajeDashboard.vue';
+import MontajeNotifications from './MontajeNotifications.vue';
+import MontajeProjectModal from './MontajeProjectModal.vue';
+import WorkDetail from '../views/WorkDetail.vue';
+import InstrumentDetail from '../views/InstrumentDetail.vue';
+import EvaluationsView from '../views/EvaluationsView.vue';
+import WeeklyEvaluationsView from '../views/WeeklyEvaluationsView.vue';
+import AnalyticsView from '../views/AnalyticsView.vue';
+import InteractiveCalendar from './InteractiveCalendar.vue';
+import MusicalTools from './MusicalTools.vue';
+import PermissionsManager from './PermissionsManager.vue';
+import UsersApp from './users/UsersApp.vue';
 
-import type { MusicalWork, Instrument } from '../types'
+import type { MusicalWork, Instrument } from '../types';
 
 // Props - Recibe el usuario del sistema principal
 interface Props {
@@ -305,56 +305,56 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   user: undefined,
-  initialProject: undefined
-})
+  initialProject: undefined,
+});
 
 type ViewType = 'dashboard' | 'work-detail' | 'instrument-detail' | 'evaluations' | 'weekly-evaluations' | 'analytics' | 'calendar' | 'musical-tools' | 'users' | 'permissions'
 
-const { currentProject, projects, projectStats, loadProjects, selectProject } = useMontaje()
-const { themeClasses } = useTheme()
-const { isMobile, textClasses } = useResponsive()
+const { currentProject, projects, projectStats, loadProjects, selectProject } = useMontaje();
+const { themeClasses } = useTheme();
+const { isMobile, textClasses } = useResponsive();
 
-const currentView = ref<ViewType>('dashboard')
-const currentWork = ref<MusicalWork | null>(null)
-const selectedInstrument = ref<Instrument | null>(null)
-const showCreateProject = ref(false)
+const currentView = ref<ViewType>('dashboard');
+const currentWork = ref<MusicalWork | null>(null);
+const selectedInstrument = ref<Instrument | null>(null);
+const showCreateProject = ref(false);
 
 // Función para verificar permisos
 const hasPermission = (resource: string, action: string): boolean => {
-  if (!props.user?.permissions) return true // Si no hay permisos definidos, permitir todo
+  if (!props.user?.permissions) return true; // Si no hay permisos definidos, permitir todo
   return props.user.permissions.includes(`${resource}:${action}`) ||
          props.user.permissions.includes(`${resource}:*`) ||
-         props.user.permissions.includes('*:*')
-}
+         props.user.permissions.includes('*:*');
+};
 
 const onWorkSelected = (work: MusicalWork) => {
-  currentWork.value = work
-  currentView.value = 'work-detail'
-  selectedInstrument.value = null
-}
+  currentWork.value = work;
+  currentView.value = 'work-detail';
+  selectedInstrument.value = null;
+};
 
 const onInstrumentSelected = (instrument: Instrument) => {
-  selectedInstrument.value = instrument
-  currentView.value = 'instrument-detail'
-}
+  selectedInstrument.value = instrument;
+  currentView.value = 'instrument-detail';
+};
 
 const goToDashboard = () => {
-  currentView.value = 'dashboard'
-  currentWork.value = null
-  selectedInstrument.value = null
-}
+  currentView.value = 'dashboard';
+  currentWork.value = null;
+  selectedInstrument.value = null;
+};
 
 const onProjectCreated = (project: any) => {
-  showCreateProject.value = false
-  selectProject(project.id)
-}
+  showCreateProject.value = false;
+  selectProject(project.id);
+};
 
 onMounted(async () => {
-  await loadProjects()
+  await loadProjects();
   
   // Si se proporciona un proyecto inicial, seleccionarlo
   if (props.initialProject) {
-    selectProject(props.initialProject)
+    selectProject(props.initialProject);
   }
-})
+});
 </script>

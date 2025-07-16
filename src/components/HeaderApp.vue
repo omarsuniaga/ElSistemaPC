@@ -273,16 +273,16 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted, watch} from "vue"
-import {useRouter} from "vue-router"
-import {useAuthStore} from "../stores/auth"
-import {useTheme} from "../composables/useTheme"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import {format, parseISO, isValid} from "date-fns"
-import {es} from "date-fns/locale"
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import { useTheme } from '../composables/useTheme';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import { format, parseISO, isValid } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 // AGREGAR: Importar sistema de módulos
-import { moduleManager } from "../modulos/Montaje/core/ModuleManager"
+import { moduleManager } from '../modulos/Montaje/core/ModuleManager';
 
 import {
   MagnifyingGlassIcon,
@@ -297,109 +297,109 @@ import {
   XMarkIcon,
   ExclamationCircleIcon,
   AcademicCapIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
-const router = useRouter()
-const authStore = useAuthStore()
-const studentsStore = useStudentsStore()
-const {isDarkMode, toggleTheme: switchTheme} = useTheme()
+const router = useRouter();
+const authStore = useAuthStore();
+const studentsStore = useStudentsStore();
+const { isDarkMode, toggleTheme: switchTheme } = useTheme();
 
 // Estado para menús y búsqueda
-const showMenu = ref(false)
-const showSearch = ref(false)
-const searchQuery = ref("")
-const searchResults = ref<any[]>([])
-const searchLoading = ref(false)
-const searchTimeout = ref<number | null>(null)
+const showMenu = ref(false);
+const showSearch = ref(false);
+const searchQuery = ref('');
+const searchResults = ref<any[]>([]);
+const searchLoading = ref(false);
+const searchTimeout = ref<number | null>(null);
 
 // AGREGAR: Estado para el sistema de módulos
-const isMontajeActive = ref(false)
+const isMontajeActive = ref(false);
 
 // Estado para el modal de detalles
-const showModal = ref(false)
-const selectedStudent = ref<any>(null)
+const showModal = ref(false);
+const selectedStudent = ref<any>(null);
 
 // AGREGAR: Computed para verificar acceso al módulo Montaje
 const canAccessMontaje = computed(() => {
-  const user = moduleManager.getCurrentUser()
-  return user && moduleManager.hasPermissions(["montaje:access"])
-})
+  const user = moduleManager.getCurrentUser();
+  return user && moduleManager.hasPermissions(['montaje:access']);
+});
 
 // Funciones para menús
 const toggleMenu = () => {
-  showMenu.value = !showMenu.value
-  if (showMenu.value) showSearch.value = false
-}
+  showMenu.value = !showMenu.value;
+  if (showMenu.value) showSearch.value = false;
+};
 
 const toggleSearch = () => {
-  showSearch.value = !showSearch.value
+  showSearch.value = !showSearch.value;
   if (showSearch.value) {
-    showMenu.value = false
-    searchQuery.value = ""
+    showMenu.value = false;
+    searchQuery.value = '';
     // Inicializar la carga de estudiantes si no lo están ya
     if (studentsStore.students.length === 0) {
-      loadStudents()
+      loadStudents();
     }
   } else {
-    searchResults.value = []
-    searchQuery.value = ""
+    searchResults.value = [];
+    searchQuery.value = '';
   }
 
   // Emitir evento para ajustar el espaciado en la aplicación principal
-  document.body.classList.toggle("header-has-search", showSearch.value)
-}
+  document.body.classList.toggle('header-has-search', showSearch.value);
+};
 
 const toggleTheme = async () => {
-  switchTheme()
-}
+  switchTheme();
+};
 
 // Cargar estudiantes
 const loadStudents = async () => {
   try {
-    searchLoading.value = true
-    await studentsStore.fetchStudents()
-    searchLoading.value = false
+    searchLoading.value = true;
+    await studentsStore.fetchStudents();
+    searchLoading.value = false;
   } catch (error) {
-    console.error("Error al cargar estudiantes:", error)
-    searchLoading.value = false
+    console.error('Error al cargar estudiantes:', error);
+    searchLoading.value = false;
   }
-}
+};
 
 // Observar cambios en la búsqueda para implementar debounce
 watch(searchQuery, (newQuery) => {
   if (searchTimeout.value) {
-    clearTimeout(searchTimeout.value)
+    clearTimeout(searchTimeout.value);
   }
 
   if (newQuery.length >= 3) {
-    searchLoading.value = true
+    searchLoading.value = true;
     searchTimeout.value = setTimeout(() => {
-      handleSearch()
-    }, 300) as unknown as number
+      handleSearch();
+    }, 300) as unknown as number;
   } else {
-    searchResults.value = []
-    searchLoading.value = false
+    searchResults.value = [];
+    searchLoading.value = false;
   }
-})
+});
 
 // Función de búsqueda mejorada
 const handleSearch = () => {
   if (searchQuery.value.length < 3) {
-    searchResults.value = []
-    searchLoading.value = false
-    return
+    searchResults.value = [];
+    searchLoading.value = false;
+    return;
   }
 
-  const query = searchQuery.value.toLowerCase().trim()
+  const query = searchQuery.value.toLowerCase().trim();
 
   // Si no hay estudiantes cargados, iniciar carga
   if (studentsStore.students.length === 0) {
-    loadStudents().then(() => performSearch(query))
-    return
+    loadStudents().then(() => performSearch(query));
+    return;
   }
 
-  performSearch(query)
-}
+  performSearch(query);
+};
 
 // Realizar la búsqueda con la query
 const performSearch = (query: string) => {
@@ -407,188 +407,188 @@ const performSearch = (query: string) => {
     .filter((student) => {
       // Crear un texto combinado para búsqueda más efectiva
       const searchableText = [
-        student.nombre || "",
-        student.apellido || "",
-        student.instrumento || "",
-        student.email || "",
-        student.grupo || "",
-        `${student.nombre || ""} ${student.apellido || ""}`,
+        student.nombre || '',
+        student.apellido || '',
+        student.instrumento || '',
+        student.email || '',
+        student.grupo || '',
+        `${student.nombre || ''} ${student.apellido || ''}`,
       ]
-        .join(" ")
-        .toLowerCase()
+        .join(' ')
+        .toLowerCase();
 
-      return searchableText.includes(query)
+      return searchableText.includes(query);
     })
     .sort((a, b) => {
       // Ordenar por relevancia: primero los que empiezan con la consulta
-      const nameA = `${a.nombre || ""} ${a.apellido || ""}`.toLowerCase()
-      const nameB = `${b.nombre || ""} ${b.apellido || ""}`.toLowerCase()
+      const nameA = `${a.nombre || ''} ${a.apellido || ''}`.toLowerCase();
+      const nameB = `${b.nombre || ''} ${b.apellido || ''}`.toLowerCase();
 
-      if (nameA.startsWith(query) && !nameB.startsWith(query)) return -1
-      if (!nameA.startsWith(query) && nameB.startsWith(query)) return 1
+      if (nameA.startsWith(query) && !nameB.startsWith(query)) return -1;
+      if (!nameA.startsWith(query) && nameB.startsWith(query)) return 1;
 
       // Luego ordenar alfabéticamente
-      return nameA.localeCompare(nameB)
+      return nameA.localeCompare(nameB);
     })
-    .slice(0, 20) // Limitar a 20 resultados para mejorar el rendimiento
+    .slice(0, 20); // Limitar a 20 resultados para mejorar el rendimiento
 
-  searchLoading.value = false
-}
+  searchLoading.value = false;
+};
 
 // Mostrar detalles del estudiante en modal
 const showStudentDetails = (student: any) => {
-  selectedStudent.value = student
-  showModal.value = true
-}
+  selectedStudent.value = student;
+  showModal.value = true;
+};
 
 // Cerrar modal
 const closeModal = () => {
-  showModal.value = false
+  showModal.value = false;
   setTimeout(() => {
-    selectedStudent.value = null
-  }, 200)
-}
+    selectedStudent.value = null;
+  }, 200);
+};
 
 // Navegar al perfil completo del estudiante
 const navigateToStudentProfile = (studentId: string) => {
-  showSearch.value = false
-  searchQuery.value = ""
-  searchResults.value = []
-  showModal.value = false
-  router.push(`/students/${studentId}`)
-}
+  showSearch.value = false;
+  searchQuery.value = '';
+  searchResults.value = [];
+  showModal.value = false;
+  router.push(`/students/${studentId}`);
+};
 
 // Formatear fecha para mostrar en el modal
 const formatDate = (dateString: string) => {
-  if (!dateString) return "No registrada"
+  if (!dateString) return 'No registrada';
 
   try {
-    const date = typeof dateString === "string" ? parseISO(dateString) : new Date(dateString)
-    if (!isValid(date)) return "Fecha inválida"
-    return format(date, "dd/MM/yyyy", {locale: es})
+    const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString);
+    if (!isValid(date)) return 'Fecha inválida';
+    return format(date, 'dd/MM/yyyy', { locale: es });
   } catch (error) {
-    console.error("Error al formatear fecha:", error)
-    return "Fecha inválida"
+    console.error('Error al formatear fecha:', error);
+    return 'Fecha inválida';
   }
-}
+};
 
 // Navegar al perfil según rol
 
 const navigateToProfile = () => {
-  showMenu.value = false
+  showMenu.value = false;
 
   // Navegar según el rol del usuario
-  if (authStore.user?.role === "Maestro") {
-    router.push("/teacher/profile")
+  if (authStore.user?.role === 'Maestro') {
+    router.push('/teacher/profile');
   } else {
-    router.push("/profile")
+    router.push('/profile');
   }
-}
+};
 
 // Cerrar sesión
 const handleLogout = async () => {
   try {
-    await authStore.signOut()
-    router.push("/login")
+    await authStore.signOut();
+    router.push('/login');
   } catch (error) {
-    console.error("Error al cerrar sesión:", error)
+    console.error('Error al cerrar sesión:', error);
   }
-}
+};
 
 // Computed para verificar si es admin o director
 const isAdminOrDirector = computed(() => {
-  const role = authStore.user?.role
-  return role === "admin" || role === "director" || role === "Admin" || role === "Director"
-})
+  const role = authStore.user?.role;
+  return role === 'admin' || role === 'director' || role === 'Admin' || role === 'Director';
+});
 
 // Función para ir al SuperAdmin
 const goToSuperAdmin = () => {
-  showMenu.value = false
-  router.push("/admin")
-}
+  showMenu.value = false;
+  router.push('/admin');
+};
 
 // AGREGAR: Función para alternar el módulo Montaje
 const toggleMontajeModule = () => {
-  showMenu.value = false
+  showMenu.value = false;
   try {
     if (isMontajeActive.value) {
       // Si ya está activo, volver al sistema principal
-      router.push("/")
-      isMontajeActive.value = false
+      router.push('/');
+      isMontajeActive.value = false;
     } else {
       // Activar el módulo Montaje
-      moduleManager.activateModule("montaje")
-      router.push("/montaje")
-      isMontajeActive.value = true
+      moduleManager.activateModule('montaje');
+      router.push('/montaje');
+      isMontajeActive.value = true;
     }
   } catch (error) {
-    console.error("Error al alternar módulo Montaje:", error)
+    console.error('Error al alternar módulo Montaje:', error);
   }
-}
+};
 
 // Cerrar menús al hacer clic fuera
 const closeMenus = (e: MouseEvent) => {
-  const target = e.target as HTMLElement
+  const target = e.target as HTMLElement;
 
   // No cerrar si se hace clic en el modal
-  if (target.closest(".fixed.inset-0")) {
-    return
+  if (target.closest('.fixed.inset-0')) {
+    return;
   }
 
   // No cerrar si se hace clic en la barra de búsqueda o en el botón de búsqueda
   if (
-    target.closest(".MagnifyingGlassIcon") ||
+    target.closest('.MagnifyingGlassIcon') ||
     target.closest('input[type="text"]') ||
     target.closest('button[title="Buscar estudiantes"]')
   ) {
-    return
+    return;
   }
 
   // Cerrar menú si hace clic fuera
-  if (!target.closest(".relative")) {
-    showMenu.value = false
+  if (!target.closest('.relative')) {
+    showMenu.value = false;
   }
 
   // Cerrar búsqueda si hace clic fuera y no en los resultados
   if (
-    !target.closest(".relative") &&
-    !target.closest(".search-results") &&
+    !target.closest('.relative') &&
+    !target.closest('.search-results') &&
     !target.closest('input[type="text"]') &&
     !target.closest('button[title="Buscar estudiantes"]')
   ) {
-    showSearch.value = false
+    showSearch.value = false;
   }
-}
+};
 
 // Manejar tecla Escape para cerrar modal y búsqueda
 const handleKeyDown = (e: KeyboardEvent) => {
-  if (e.key === "Escape") {
+  if (e.key === 'Escape') {
     if (showModal.value) {
-      closeModal()
+      closeModal();
     } else if (showSearch.value) {
-      showSearch.value = false
-      searchQuery.value = ""
+      showSearch.value = false;
+      searchQuery.value = '';
     }
   }
-}
+};
 
 onMounted(() => {
-  document.addEventListener("click", closeMenus)
-  document.addEventListener("keydown", handleKeyDown)
+  document.addEventListener('click', closeMenus);
+  document.addEventListener('keydown', handleKeyDown);
 
   // Precargar estudiantes si hay una sesión activa
   if (authStore.isLoggedIn && studentsStore.students.length === 0) {
-    loadStudents()
+    loadStudents();
   }
-})
+});
 
 onUnmounted(() => {
-  document.removeEventListener("click", closeMenus)
-  document.removeEventListener("keydown", handleKeyDown)
+  document.removeEventListener('click', closeMenus);
+  document.removeEventListener('keydown', handleKeyDown);
   if (searchTimeout.value) {
-    clearTimeout(searchTimeout.value)
+    clearTimeout(searchTimeout.value);
   }
-})
+});
 </script>
 
 <style scoped>

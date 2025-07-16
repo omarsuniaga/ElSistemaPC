@@ -6,8 +6,8 @@ export interface UserProfile {
   phone: string
   photoURL: string
   address: string
-  role: "student" | "teacher"
-  status: "active" | "inactive" | "pending"
+  role: 'student' | 'teacher'
+  status: 'active' | 'inactive' | 'pending'
   createdAt: string
   updatedAt?: string
   preferences?: UserSettings
@@ -56,8 +56,8 @@ export interface Notification {
   userId: string
   title: string
   message: string
-  type: "info" | "alert" | "reminder"
-  status: "read" | "unread"
+  type: 'info' | 'alert' | 'reminder'
+  status: 'read' | 'unread'
   createdAt: string
   updatedAt?: string
 }

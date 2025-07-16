@@ -83,8 +83,8 @@ const preloadCriticalData = async () => {
     console.warn("⚠️ [Dashboard] Error preloading essential data:", err)
   }
 }
-  `
-}
+  `,
+};
 
 /**
  * 2️⃣ MEMOIZAR INDICADORES DE CALENDARIO
@@ -147,7 +147,7 @@ const calendarIndicators = computed(() => {
 
   return indicators
 })
-`
+`;
 
 /**
  * 3️⃣ LAZY LOADING DE COMPONENTES
@@ -213,7 +213,7 @@ watch(selectedDay, (newDate) => {
     loadClassesForSelectedDay(newDate)
   }
 })
-`
+`;
 
 // ===================================================================
 // 🎯 FASE 2: OPTIMIZACIONES MEDIAS (2-3 días)
@@ -272,7 +272,7 @@ watch(dashboardState, debouncedStateHandler, {
   immediate: false, // No ejecutar en la primera carga
   deep: true 
 })
-`
+`;
 
 /**
  * 5️⃣ PRE-COMPUTAR ESTADÍSTICAS EN BACKGROUND
@@ -342,7 +342,7 @@ const monthlyStats = computed(() => {
     precomputedStats.value : 
     calculateStatsLocally()
 })
-`
+`;
 
 // ===================================================================
 // 🎯 MÉTRICAS DE ÉXITO
@@ -350,25 +350,25 @@ const monthlyStats = computed(() => {
 
 const SUCCESS_METRICS = {
   before: {
-    initialLoad: "3-5 segundos",
-    monthChange: "500ms",
-    viewChange: "800ms-1.2s",
-    memoryUsage: "~25MB"
+    initialLoad: '3-5 segundos',
+    monthChange: '500ms',
+    viewChange: '800ms-1.2s',
+    memoryUsage: '~25MB',
   },
   
   after: {
-    initialLoad: "1-2 segundos (-60%)",
-    monthChange: "200ms (-60%)", 
-    viewChange: "300-400ms (-65%)",
-    memoryUsage: "~15MB (-40%)"
+    initialLoad: '1-2 segundos (-60%)',
+    monthChange: '200ms (-60%)', 
+    viewChange: '300-400ms (-65%)',
+    memoryUsage: '~15MB (-40%)',
   },
   
   implementation: {
-    phase1: "Implementar optimizaciones críticas (1-2 días)",
-    phase2: "Implementar optimizaciones medias (2-3 días)",
-    testing: "Validar métricas y ajustes finos (1 día)"
-  }
-}
+    phase1: 'Implementar optimizaciones críticas (1-2 días)',
+    phase2: 'Implementar optimizaciones medias (2-3 días)',
+    testing: 'Validar métricas y ajustes finos (1 día)',
+  },
+};
 
 // ===================================================================
 // 🛠️ INSTRUCCIONES DE IMPLEMENTACIÓN
@@ -398,9 +398,9 @@ const IMPLEMENTATION_GUIDE = `
    - window.testDashboardPerformance() // Ver métricas actuales
    - window.getDashboardRecommendations() // Ver recomendaciones
    - console.time('initialLoad') // Medir tiempos manualmente
-`
+`;
 
-console.log("📊 Plan de optimización cargado - Revisa las constantes para implementación")
+console.log('📊 Plan de optimización cargado - Revisa las constantes para implementación');
 
 export {
   OPTIMIZATION_PHASE_1,
@@ -409,5 +409,5 @@ export {
   WATCHERS_OPTIMIZATION,
   BACKGROUND_STATS_OPTIMIZATION,
   SUCCESS_METRICS,
-  IMPLEMENTATION_GUIDE
-}
+  IMPLEMENTATION_GUIDE,
+};

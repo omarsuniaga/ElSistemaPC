@@ -1,162 +1,3 @@
-<script setup lang="ts">
-import {ref, computed} from "vue"
-import {Dialog, DialogPanel} from "@headlessui/vue"
-import type {MusicalWork} from "../types/repertoire"
-import {INSTRUMENT_SECTIONS} from "../types/repertoire"
-import {useStudentsStore} from "../../Students/store/students"
-import FileUpload from "./FileUpload.vue"
-import * as yup from "yup"
-
-const props = defineProps<{
-  initialData?: Partial<MusicalWork>
-}>()
-
-const emit = defineEmits<{
-  (e: "submit", data: Partial<MusicalWork>): void
-  (e: "cancel"): void
-}>()
-
-const studentsStore = useStudentsStore()
-
-const formData = ref({
-  title: "",
-  composer: "",
-  duration: "",
-  difficulty: "beginner" as "beginner" | "intermediate" | "advanced",
-  instruments: [] as {
-    id: number
-    name: string
-    section: "strings" | "woodwinds" | "brass" | "percussion" | "other"
-    measures: {id: number; progress: number; studentProgress: Record<string, number>}[]
-    studentProgress: Record<string, number>
-  }[],
-  score: "",
-  audio: "",
-  ...props.initialData,
-})
-
-const selectedSection = ref<"strings" | "woodwinds" | "brass" | "percussion" | "other">("strings")
-
-const sections = INSTRUMENT_SECTIONS
-
-const availableInstrumentsBySection = computed(() => {
-  const section = sections.find((s) => s.name === selectedSection.value)
-  if (!section) return []
-  return section.instruments.filter(
-    (instrument) => !formData.value.instruments.some((i) => i.name === instrument)
-  )
-})
-
-const availableStudentsByInstrument = (instrumentName: string) => {
-  return studentsStore.students.filter(
-    (student) => student.instrumento.toLowerCase() === instrumentName.toLowerCase()
-  )
-}
-
-const addInstrument = (name: string) => {
-  if (!formData.value.instruments.some((i) => i.name === name)) {
-    const section = sections.find((s) => s.instruments.includes(name))
-    if (!section) return
-
-    formData.value.instruments.push({
-      id: Math.max(0, ...formData.value.instruments.map((i) => i.id)) + 1,
-      name,
-      section: section.name,
-      measures: Array.from({length: 24}, (_, i) => ({
-        id: i + 1,
-        progress: 0,
-        studentProgress: {},
-      })),
-      studentProgress: {},
-    })
-  }
-}
-
-const removeInstrument = (id: number) => {
-  formData.value.instruments = formData.value.instruments.filter((i) => i.id !== id)
-}
-
-const addMeasureToInstrument = (instrumentId: number) => {
-  const instrument = formData.value.instruments.find((i) => i.id === instrumentId)
-  if (instrument) {
-    const nextId = Math.max(0, ...instrument.measures.map((m) => m.id)) + 1
-    instrument.measures.push({
-      id: nextId,
-      number: nextId,
-      progress: 0,
-      difficulty: "easy",
-      notes: "",
-      studentProgress: {},
-    })
-  }
-}
-
-const updateMeasureProgress = (measureId: number, instrumentId: number) => {
-  const instrument = formData.value.instruments.find((i) => i.id === instrumentId)
-  if (!instrument) return
-
-  const measure = instrument.measures.find((m) => m.id === measureId)
-  if (measure) {
-    measure.progress = (measure.progress + 20) % 120
-  }
-}
-
-const getStatusColor = (progress: number) => {
-  if (progress <= 20) return "bg-red-500"
-  if (progress <= 40) return "bg-orange-500"
-  if (progress <= 60) return "bg-yellow-500"
-  if (progress <= 80) return "bg-blue-500"
-  return "bg-green-500"
-}
-
-const handleScoreUpload = (files: FileList) => {
-  formData.value.score = URL.createObjectURL(files[0])
-}
-
-const handleAudioUpload = (files: FileList) => {
-  formData.value.audio = URL.createObjectURL(files[0])
-}
-
-const workSchema = yup.object().shape({
-  title: yup.string().required("El título es obligatorio"),
-  composer: yup.string().required("El compositor es obligatorio"),
-  duration: yup
-    .string()
-    .matches(/^\d{2}:\d{2}$/, "La duración debe estar en el formato MM:SS")
-    .required("La duración es obligatoria"),
-  difficulty: yup
-    .string()
-    .oneOf(["beginner", "intermediate", "advanced"], "Dificultad inválida")
-    .required("La dificultad es obligatoria"),
-  instruments: yup
-    .array()
-    .of(
-      yup.object().shape({
-        id: yup.number().required(),
-        name: yup.string().required(),
-        section: yup.string().required(),
-        measures: yup.array().required().min(1, "Debe tener al menos un compás"),
-      })
-    )
-    .min(1, "Debe agregar al menos un instrumento"),
-  score: yup.string().required("La partitura es obligatoria"),
-  audio: yup.string().required("El audio es obligatorio"),
-})
-
-const handleSubmit = async () => {
-  try {
-    await workSchema.validate(formData.value, {abortEarly: false})
-    emit("submit", formData.value)
-  } catch (err) {
-    if (err instanceof yup.ValidationError) {
-      err.inner.forEach((error) => {
-        console.error(error.message)
-      })
-    }
-  }
-}
-</script>
-
 <template>
   <Dialog :open="true" class="relative z-50" @close="emit('cancel')">
     <div class="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -335,3 +176,162 @@ const handleSubmit = async () => {
     </div>
   </Dialog>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { Dialog, DialogPanel } from '@headlessui/vue';
+import type { MusicalWork } from '../types/repertoire';
+import { INSTRUMENT_SECTIONS } from '../types/repertoire';
+import { useStudentsStore } from '../../Students/store/students';
+import FileUpload from './FileUpload.vue';
+import * as yup from 'yup';
+
+const props = defineProps<{
+  initialData?: Partial<MusicalWork>
+}>();
+
+const emit = defineEmits<{
+  (e: 'submit', data: Partial<MusicalWork>): void
+  (e: 'cancel'): void
+}>();
+
+const studentsStore = useStudentsStore();
+
+const formData = ref({
+  title: '',
+  composer: '',
+  duration: '',
+  difficulty: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
+  instruments: [] as {
+    id: number
+    name: string
+    section: 'strings' | 'woodwinds' | 'brass' | 'percussion' | 'other'
+    measures: {id: number; progress: number; studentProgress: Record<string, number>}[]
+    studentProgress: Record<string, number>
+  }[],
+  score: '',
+  audio: '',
+  ...props.initialData,
+});
+
+const selectedSection = ref<'strings' | 'woodwinds' | 'brass' | 'percussion' | 'other'>('strings');
+
+const sections = INSTRUMENT_SECTIONS;
+
+const availableInstrumentsBySection = computed(() => {
+  const section = sections.find((s) => s.name === selectedSection.value);
+  if (!section) return [];
+  return section.instruments.filter(
+    (instrument) => !formData.value.instruments.some((i) => i.name === instrument),
+  );
+});
+
+const availableStudentsByInstrument = (instrumentName: string) => {
+  return studentsStore.students.filter(
+    (student) => student.instrumento.toLowerCase() === instrumentName.toLowerCase(),
+  );
+};
+
+const addInstrument = (name: string) => {
+  if (!formData.value.instruments.some((i) => i.name === name)) {
+    const section = sections.find((s) => s.instruments.includes(name));
+    if (!section) return;
+
+    formData.value.instruments.push({
+      id: Math.max(0, ...formData.value.instruments.map((i) => i.id)) + 1,
+      name,
+      section: section.name,
+      measures: Array.from({ length: 24 }, (_, i) => ({
+        id: i + 1,
+        progress: 0,
+        studentProgress: {},
+      })),
+      studentProgress: {},
+    });
+  }
+};
+
+const removeInstrument = (id: number) => {
+  formData.value.instruments = formData.value.instruments.filter((i) => i.id !== id);
+};
+
+const addMeasureToInstrument = (instrumentId: number) => {
+  const instrument = formData.value.instruments.find((i) => i.id === instrumentId);
+  if (instrument) {
+    const nextId = Math.max(0, ...instrument.measures.map((m) => m.id)) + 1;
+    instrument.measures.push({
+      id: nextId,
+      number: nextId,
+      progress: 0,
+      difficulty: 'easy',
+      notes: '',
+      studentProgress: {},
+    });
+  }
+};
+
+const updateMeasureProgress = (measureId: number, instrumentId: number) => {
+  const instrument = formData.value.instruments.find((i) => i.id === instrumentId);
+  if (!instrument) return;
+
+  const measure = instrument.measures.find((m) => m.id === measureId);
+  if (measure) {
+    measure.progress = (measure.progress + 20) % 120;
+  }
+};
+
+const getStatusColor = (progress: number) => {
+  if (progress <= 20) return 'bg-red-500';
+  if (progress <= 40) return 'bg-orange-500';
+  if (progress <= 60) return 'bg-yellow-500';
+  if (progress <= 80) return 'bg-blue-500';
+  return 'bg-green-500';
+};
+
+const handleScoreUpload = (files: FileList) => {
+  formData.value.score = URL.createObjectURL(files[0]);
+};
+
+const handleAudioUpload = (files: FileList) => {
+  formData.value.audio = URL.createObjectURL(files[0]);
+};
+
+const workSchema = yup.object().shape({
+  title: yup.string().required('El título es obligatorio'),
+  composer: yup.string().required('El compositor es obligatorio'),
+  duration: yup
+    .string()
+    .matches(/^\d{2}:\d{2}$/, 'La duración debe estar en el formato MM:SS')
+    .required('La duración es obligatoria'),
+  difficulty: yup
+    .string()
+    .oneOf(['beginner', 'intermediate', 'advanced'], 'Dificultad inválida')
+    .required('La dificultad es obligatoria'),
+  instruments: yup
+    .array()
+    .of(
+      yup.object().shape({
+        id: yup.number().required(),
+        name: yup.string().required(),
+        section: yup.string().required(),
+        measures: yup.array().required().min(1, 'Debe tener al menos un compás'),
+      }),
+    )
+    .min(1, 'Debe agregar al menos un instrumento'),
+  score: yup.string().required('La partitura es obligatoria'),
+  audio: yup.string().required('El audio es obligatorio'),
+});
+
+const handleSubmit = async () => {
+  try {
+    await workSchema.validate(formData.value, { abortEarly: false });
+    emit('submit', formData.value);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      err.inner.forEach((error) => {
+        console.error(error.message);
+      });
+    }
+  }
+};
+</script>

@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import {UsersIcon} from "@heroicons/vue/24/outline"
+import { UsersIcon } from '@heroicons/vue/24/outline';
 
 interface Student {
   id: string
@@ -83,39 +83,39 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  title: "Estudiantes Recientes",
+  title: 'Estudiantes Recientes',
   showClass: false,
   showStatus: false,
-})
+});
 
 const getStudentName = (student: Student): string => {
-  return `${student.nombre || ""} ${student.apellido || ""}`.trim() || "Sin nombre"
-}
+  return `${student.nombre || ''} ${student.apellido || ''}`.trim() || 'Sin nombre';
+};
 
 const getStudentInstrument = (student: Student): string => {
-  if (student.instrumento) return student.instrumento
-  if (student.instrumentos?.length) return student.instrumentos.join(", ")
-  return "No asignado"
-}
+  if (student.instrumento) return student.instrumento;
+  if (student.instrumentos?.length) return student.instrumentos.join(', ');
+  return 'No asignado';
+};
 
 const getStudentAvatar = (student: Student): string => {
-  if (student.avatar) return student.avatar
-  const name = getStudentName(student)
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`
-}
+  if (student.avatar) return student.avatar;
+  const name = getStudentName(student);
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
+};
 
 const formatDate = (date: any): string => {
-  if (!date) return "Sin fecha"
+  if (!date) return 'Sin fecha';
   try {
-    const d = date instanceof Date ? date : new Date(date)
-    return d.toLocaleDateString("es-ES")
+    const d = date instanceof Date ? date : new Date(date);
+    return d.toLocaleDateString('es-ES');
   } catch {
-    return "Fecha inválida"
+    return 'Fecha inválida';
   }
-}
+};
 
 const handleImageError = (event: Event) => {
-  const target = event.target as HTMLImageElement
-  target.src = "https://ui-avatars.com/api/?name=Usuario&background=6b7280&color=fff"
-}
+  const target = event.target as HTMLImageElement;
+  target.src = 'https://ui-avatars.com/api/?name=Usuario&background=6b7280&color=fff';
+};
 </script>

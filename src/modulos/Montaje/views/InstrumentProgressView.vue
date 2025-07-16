@@ -1,95 +1,8 @@
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useMontajeStore } from '../store/montaje'
-import { useRouter, useRoute } from 'vue-router'
-import { TipoInstrumento } from '../types'
-import { permissionsService } from '../service/permissionsService'
-import { MontajePermission } from '../types/permissions'
-import InstrumentProgressGrid from '../components/InstrumentProgressGrid.vue'
-
-const router = useRouter()
-const route = useRoute()
-const montajeStore = useMontajeStore()
-
-// Estado
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const selectedInstrument = ref<TipoInstrumento | null>(null)
-const hasPermission = ref(false)
-
-// Calcular ID de obra desde ruta
-const obraId = computed(() => route.params.id?.toString() || '')
-
-// Obtener lista de instrumentos del maestro
-const teacherInstruments = computed(() => montajeStore.teacherInstruments || [])
-
-// Determinar si hay una obra seleccionada
-const hasSelectedWork = computed(() => !!montajeStore.obraActual)
-
-// Seleccionar instrumento
-async function selectInstrument(instrument: TipoInstrumento) {
-  if (!hasPermission.value) return
-  
-  try {
-    selectedInstrument.value = instrument
-    await montajeStore.seleccionarInstrumento(instrument)
-  } catch (err) {
-    console.error('Error al seleccionar instrumento:', err)
-    error.value = 'No se pudo cargar la información del instrumento'
-  }
-}
-
-// Cargar información inicial
-async function loadInitialData() {
-  isLoading.value = true
-  error.value = null
-  
-  try {
-    // Verificar permisos RBAC
-    const canViewInstruments = await permissionsService.hasPermission(
-      MontajePermission.VIEW_INSTRUMENT_COMPASS_STATES
-    )
-    hasPermission.value = canViewInstruments
-    
-    if (!hasPermission.value) {
-      error.value = 'No tienes permisos para ver esta página'
-      return
-    }
-    
-    // Cargar obra actual si no está cargada
-    if (obraId.value && !montajeStore.obraActual) {
-      await montajeStore.cargarObra(obraId.value)
-    }
-    
-    // Cargar instrumentos del maestro
-    await montajeStore.cargarInstrumentosMaestro()
-    
-    // Seleccionar automáticamente el primer instrumento si solo hay uno
-    if (teacherInstruments.value.length === 1) {
-      await selectInstrument(teacherInstruments.value[0])
-    }
-    
-  } catch (err) {
-    console.error('Error cargando datos iniciales:', err)
-    error.value = 'Error al cargar información. Intenta nuevamente.'
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Volver a la lista de obras
-function goBack() {
-  router.push('/montaje/obras')
-}
-
-onMounted(loadInitialData)
-</script>
-
 <template>
   <div class="instrument-progress-view">
     <!-- Barra superior con navegación y título -->
     <div class="top-bar mb-4 flex items-center gap-4">
-      <button @click="goBack" class="btn btn-outline-secondary">
+      <button class="btn btn-outline-secondary" @click="goBack">
         <i class="bi bi-arrow-left"></i> Volver
       </button>
       
@@ -136,11 +49,11 @@ onMounted(loadInitialData)
           <button
             v-for="instrument in teacherInstruments"
             :key="instrument"
-            @click="selectInstrument(instrument)"
             class="btn"
             :class="instrument === selectedInstrument 
               ? 'btn-primary' 
               : 'btn-outline-secondary'"
+            @click="selectInstrument(instrument)"
           >
             {{ instrument }}
           </button>
@@ -163,6 +76,93 @@ onMounted(loadInitialData)
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useMontajeStore } from '../store/montaje';
+import { useRouter, useRoute } from 'vue-router';
+import { TipoInstrumento } from '../types';
+import { permissionsService } from '../service/permissionsService';
+import { MontajePermission } from '../types/permissions';
+import InstrumentProgressGrid from '../components/InstrumentProgressGrid.vue';
+
+const router = useRouter();
+const route = useRoute();
+const montajeStore = useMontajeStore();
+
+// Estado
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+const selectedInstrument = ref<TipoInstrumento | null>(null);
+const hasPermission = ref(false);
+
+// Calcular ID de obra desde ruta
+const obraId = computed(() => route.params.id?.toString() || '');
+
+// Obtener lista de instrumentos del maestro
+const teacherInstruments = computed(() => montajeStore.teacherInstruments || []);
+
+// Determinar si hay una obra seleccionada
+const hasSelectedWork = computed(() => !!montajeStore.obraActual);
+
+// Seleccionar instrumento
+async function selectInstrument(instrument: TipoInstrumento) {
+  if (!hasPermission.value) return;
+  
+  try {
+    selectedInstrument.value = instrument;
+    await montajeStore.seleccionarInstrumento(instrument);
+  } catch (err) {
+    console.error('Error al seleccionar instrumento:', err);
+    error.value = 'No se pudo cargar la información del instrumento';
+  }
+}
+
+// Cargar información inicial
+async function loadInitialData() {
+  isLoading.value = true;
+  error.value = null;
+  
+  try {
+    // Verificar permisos RBAC
+    const canViewInstruments = await permissionsService.hasPermission(
+      MontajePermission.VIEW_INSTRUMENT_COMPASS_STATES,
+    );
+    hasPermission.value = canViewInstruments;
+    
+    if (!hasPermission.value) {
+      error.value = 'No tienes permisos para ver esta página';
+      return;
+    }
+    
+    // Cargar obra actual si no está cargada
+    if (obraId.value && !montajeStore.obraActual) {
+      await montajeStore.cargarObra(obraId.value);
+    }
+    
+    // Cargar instrumentos del maestro
+    await montajeStore.cargarInstrumentosMaestro();
+    
+    // Seleccionar automáticamente el primer instrumento si solo hay uno
+    if (teacherInstruments.value.length === 1) {
+      await selectInstrument(teacherInstruments.value[0]);
+    }
+    
+  } catch (err) {
+    console.error('Error cargando datos iniciales:', err);
+    error.value = 'Error al cargar información. Intenta nuevamente.';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Volver a la lista de obras
+function goBack() {
+  router.push('/montaje/obras');
+}
+
+onMounted(loadInitialData);
+</script>
 
 <style scoped>
 .instrument-progress-view {

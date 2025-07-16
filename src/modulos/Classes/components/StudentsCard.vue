@@ -111,11 +111,11 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
-import {useRouter} from "vue-router"
-import {generateClassDetailsPDF, generateStudentListPDF} from "@/utils/studentsListPdfExport"
-import {DocumentArrowDownIcon, ClipboardDocumentListIcon, PlusIcon} from "@heroicons/vue/24/outline"
-import StudentProfileModal from "@/modulos/Students/components/StudentProfileModal.vue"
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { generateClassDetailsPDF, generateStudentListPDF } from '@/utils/studentsListPdfExport';
+import { DocumentArrowDownIcon, ClipboardDocumentListIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import StudentProfileModal from '@/modulos/Students/components/StudentProfileModal.vue';
 
 interface Student {
   id: string
@@ -130,43 +130,43 @@ const props = defineProps<{
   className: string
   weeklyHours: number
   teacherName: string
-}>()
+}>();
 
-const router = useRouter()
+const router = useRouter();
 
 // Estado para manejar el modal
-const selectedStudent = ref<Student | null>(null)
-const isModalOpen = ref(false)
+const selectedStudent = ref<Student | null>(null);
+const isModalOpen = ref(false);
 
 // Abrir el modal con la información del estudiante seleccionado
 const openStudentModal = (student: Student) => {
-  selectedStudent.value = student
-  isModalOpen.value = true
-}
+  selectedStudent.value = student;
+  isModalOpen.value = true;
+};
 
 // Cerrar el modal
 const closeStudentModal = () => {
-  isModalOpen.value = false
+  isModalOpen.value = false;
   // Reset the selected student after a slight delay to allow for the closing animation
   setTimeout(() => {
-    selectedStudent.value = null
-  }, 300)
-}
+    selectedStudent.value = null;
+  }, 300);
+};
 
 // Handle view profile from modal
 const handleViewProfile = (studentId: string) => {
   // Here you can emit an event to the parent or handle navigation differently
-  console.log(`Requested to view profile for student: ${studentId}`)
+  console.log(`Requested to view profile for student: ${studentId}`);
   // Close the modal
-  closeStudentModal()
-}
+  closeStudentModal();
+};
 
 // Handle add student navigation safely
 const addNewStudent = () => {
   try {
     alert(
-      "Esta función será implementada próximamente. Por ahora, utilice la interfaz de administración de estudiantes para añadir nuevos estudiantes a la clase."
-    )
+      'Esta función será implementada próximamente. Por ahora, utilice la interfaz de administración de estudiantes para añadir nuevos estudiantes a la clase.',
+    );
 
     // Commented out problematic navigation attempts
     /*
@@ -189,9 +189,9 @@ const addNewStudent = () => {
     });
     */
   } catch (error) {
-    console.error("Error navigating to add student:", error)
+    console.error('Error navigating to add student:', error);
   }
-}
+};
 
 // Descargar PDF con la lista básica de estudiantes
 const downloadStudentsList = async () => {
@@ -200,29 +200,29 @@ const downloadStudentsList = async () => {
       className: props.className,
       teacherName: props.teacherName,
       students: props.students,
-    })
+    });
   } catch (error) {
-    console.error("Error generating student list PDF:", error)
+    console.error('Error generating student list PDF:', error);
   }
-}
+};
 
 // Descargar PDF detallado con información de la clase
 const downloadDetailedPDF = async () => {
   try {
     // Get current date for the attendance report
-    const today = new Date().toISOString().split("T")[0] // Format: YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
 
     await generateClassDetailsPDF(
       props.className,
       props.teacherName,
       props.weeklyHours,
       props.students,
-      today // Pass today's date
-    )
+      today, // Pass today's date
+    );
   } catch (error) {
-    console.error("Error generating detailed PDF:", error)
+    console.error('Error generating detailed PDF:', error);
   }
-}
+};
 </script>
 
 <style scoped>

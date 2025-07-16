@@ -1,112 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {
-  PencilIcon,
-  XCircleIcon,
-  CheckIcon,
-  UserGroupIcon,
-  ArrowDownTrayIcon,
-} from "@heroicons/vue/24/outline"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useStudentsStore} from "../../Students/store/students"
-import {generateClassDetailsPDF} from "../../../utils/pdf/pdf-export"
-import StudentProgress from "../../../components/StudentProgress.vue"
-
-const props = defineProps({
-  selectedClass: {
-    type: Object,
-    required: true,
-  },
-  studentCount: {
-    type: Number,
-    required: true,
-  },
-})
-
-const emit = defineEmits(["handle-manage-students", "save-changes"])
-
-// Stores
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
-
-// State
-const isEditing = ref(false)
-const editableClass = ref({...props.selectedClass})
-const saveLoading = ref(false)
-const saveError = ref("")
-const saveSuccess = ref(false)
-
-// Computed
-const teacherName = computed(() => {
-  if (!props.selectedClass.teacherId) return "Sin profesor asignado"
-  const teacher = teachersStore.teachers.find((t) => t.id === props.selectedClass.teacherId)
-  return teacher ? teacher.name : "Profesor no encontrado"
-})
-
-const classStudents = computed(() => {
-  return (
-    props.selectedClass?.studentIds?.map((id) => studentsStore.students.find((s) => s.id === id)) ||
-    []
-  )
-})
-
-// Methods
-const startEditing = () => {
-  editableClass.value = JSON.parse(JSON.stringify(props.selectedClass))
-  isEditing.value = true
-}
-
-const cancelEditing = () => {
-  isEditing.value = false
-  saveError.value = ""
-  saveSuccess.value = false
-}
-
-const saveClassChanges = async () => {
-  saveLoading.value = true
-  saveError.value = ""
-  saveSuccess.value = false
-
-  try {
-    // Emitir evento para guardar cambios
-    emit("save-changes", editableClass.value)
-    saveSuccess.value = true
-    setTimeout(() => {
-      isEditing.value = false
-      saveSuccess.value = false
-    }, 1500)
-  } catch (error) {
-    console.error("Error updating class:", error)
-    saveError.value = "Error al guardar los cambios. Inténtelo de nuevo."
-  } finally {
-    saveLoading.value = false
-  }
-}
-
-const downloadStudentList = async () => {
-  try {
-    // Get teacher name from computed property
-    const teacher = teacherName.value
-
-    // Get weekly hours (for now we'll set a default)
-    const weeklyHours = 2 // You can calculate this from schedule if needed
-
-    // Get all students with their full information
-    const students = classStudents.value.filter((s) => s !== undefined)
-
-    // Generate and download the PDF
-    await generateClassDetailsPDF(props.selectedClass.name, teacher, weeklyHours, students)
-  } catch (error) {
-    console.error("Error generating PDF:", error)
-  }
-}
-
-onMounted(() => {
-  // Cargar profesores al inicio
-  console.log("Loading teachers...", teachersStore.teachers)
-})
-</script>
-
 <template>
   <div class="space-y-4">
     <!-- Información Principal -->
@@ -321,3 +212,112 @@ onMounted(() => {
     />
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import {
+  PencilIcon,
+  XCircleIcon,
+  CheckIcon,
+  UserGroupIcon,
+  ArrowDownTrayIcon,
+} from '@heroicons/vue/24/outline';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useStudentsStore } from '../../Students/store/students';
+import { generateClassDetailsPDF } from '../../../utils/pdf/pdf-export';
+import StudentProgress from '../../../components/StudentProgress.vue';
+
+const props = defineProps({
+  selectedClass: {
+    type: Object,
+    required: true,
+  },
+  studentCount: {
+    type: Number,
+    required: true,
+  },
+});
+
+const emit = defineEmits(['handle-manage-students', 'save-changes']);
+
+// Stores
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
+
+// State
+const isEditing = ref(false);
+const editableClass = ref({ ...props.selectedClass });
+const saveLoading = ref(false);
+const saveError = ref('');
+const saveSuccess = ref(false);
+
+// Computed
+const teacherName = computed(() => {
+  if (!props.selectedClass.teacherId) return 'Sin profesor asignado';
+  const teacher = teachersStore.teachers.find((t) => t.id === props.selectedClass.teacherId);
+  return teacher ? teacher.name : 'Profesor no encontrado';
+});
+
+const classStudents = computed(() => {
+  return (
+    props.selectedClass?.studentIds?.map((id) => studentsStore.students.find((s) => s.id === id)) ||
+    []
+  );
+});
+
+// Methods
+const startEditing = () => {
+  editableClass.value = JSON.parse(JSON.stringify(props.selectedClass));
+  isEditing.value = true;
+};
+
+const cancelEditing = () => {
+  isEditing.value = false;
+  saveError.value = '';
+  saveSuccess.value = false;
+};
+
+const saveClassChanges = async () => {
+  saveLoading.value = true;
+  saveError.value = '';
+  saveSuccess.value = false;
+
+  try {
+    // Emitir evento para guardar cambios
+    emit('save-changes', editableClass.value);
+    saveSuccess.value = true;
+    setTimeout(() => {
+      isEditing.value = false;
+      saveSuccess.value = false;
+    }, 1500);
+  } catch (error) {
+    console.error('Error updating class:', error);
+    saveError.value = 'Error al guardar los cambios. Inténtelo de nuevo.';
+  } finally {
+    saveLoading.value = false;
+  }
+};
+
+const downloadStudentList = async () => {
+  try {
+    // Get teacher name from computed property
+    const teacher = teacherName.value;
+
+    // Get weekly hours (for now we'll set a default)
+    const weeklyHours = 2; // You can calculate this from schedule if needed
+
+    // Get all students with their full information
+    const students = classStudents.value.filter((s) => s !== undefined);
+
+    // Generate and download the PDF
+    await generateClassDetailsPDF(props.selectedClass.name, teacher, weeklyHours, students);
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+  }
+};
+
+onMounted(() => {
+  // Cargar profesores al inicio
+  console.log('Loading teachers...', teachersStore.teachers);
+});
+</script>

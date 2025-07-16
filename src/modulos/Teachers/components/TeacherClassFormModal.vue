@@ -1,34 +1,3 @@
-<script setup lang="ts">
-import {
-  Dialog,
-  DialogPanel,
-  DialogOverlay,
-  DialogTitle,
-  TransitionRoot,
-  TransitionChild,
-} from "@headlessui/vue"
-import ClassForm from "@/modulos/Classes/components/ClassForm.vue"
-import type {ClassData} from "../types/teacherTypes" // Assuming types are moved
-
-const props = defineProps<{
-  show: boolean
-  isEditing: boolean
-  classData: Partial<ClassData> | null
-}>()
-const emit = defineEmits(["update:show", "save", "cancel"])
-
-const closeModal = () => {
-  emit("update:show", false)
-  emit("cancel") // Also emit cancel for consistency
-}
-
-const handleSave = (data: Partial<ClassData>) => {
-  emit("save", data)
-  // Optionally close modal on save, or let the parent handle it
-  // closeModal();
-}
-</script>
-
 <template>
   <TransitionRoot appear :show="show">
     <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="closeModal">
@@ -71,3 +40,34 @@ const handleSave = (data: Partial<ClassData>) => {
     </Dialog>
   </TransitionRoot>
 </template>
+
+<script setup lang="ts">
+import {
+  Dialog,
+  DialogPanel,
+  DialogOverlay,
+  DialogTitle,
+  TransitionRoot,
+  TransitionChild,
+} from '@headlessui/vue';
+import ClassForm from '@/modulos/Classes/components/ClassForm.vue';
+import type { ClassData } from '../types/teacherTypes'; // Assuming types are moved
+
+const props = defineProps<{
+  show: boolean
+  isEditing: boolean
+  classData: Partial<ClassData> | null
+}>();
+const emit = defineEmits(['update:show', 'save', 'cancel']);
+
+const closeModal = () => {
+  emit('update:show', false);
+  emit('cancel'); // Also emit cancel for consistency
+};
+
+const handleSave = (data: Partial<ClassData>) => {
+  emit('save', data);
+  // Optionally close modal on save, or let the parent handle it
+  // closeModal();
+};
+</script>

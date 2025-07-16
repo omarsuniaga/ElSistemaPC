@@ -1,94 +1,3 @@
-<script setup lang="ts">
-import {ref, computed} from "vue"
-import {useClassesStore} from "../modulos/Classes/store/classes"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import {CheckIcon, XMarkIcon} from "@heroicons/vue/24/outline"
-
-const props = defineProps<{
-  classId: string
-}>()
-
-const emit = defineEmits(["student-progressed"])
-
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-
-const selectedStudents = ref<string[]>([])
-
-const currentClass = computed(() => {
-  return classesStore.classes.find((c) => c.id === props.classId)
-})
-
-const students = computed(() => {
-  if (!currentClass.value?.studentIds) return []
-  return studentsStore.students.filter((s) => currentClass.value?.studentIds?.includes(s.id))
-})
-
-const nextLevelClass = computed(() => {
-  if (!currentClass.value?.level) return null
-
-  const levelMap = {
-    Principiante: "Intermedio",
-    Intermedio: "Avanzado",
-  }
-
-  const nextLevel = levelMap[currentClass.value.level]
-  if (!nextLevel) return null
-
-  // Find a class of the same instrument but next level
-  return classesStore.classes.find(
-    (c) => c.instrument === currentClass.value?.instrument && c.level === nextLevel
-  )
-})
-
-const canProgress = computed(() => {
-  return nextLevelClass.value !== null
-})
-
-const toggleStudent = (studentId: string) => {
-  const index = selectedStudents.value.indexOf(studentId)
-  if (index === -1) {
-    selectedStudents.value.push(studentId)
-  } else {
-    selectedStudents.value.splice(index, 1)
-  }
-}
-
-const progressStudents = async () => {
-  if (!nextLevelClass.value || !currentClass.value) return
-
-  try {
-    // Remove students from current class
-    const updatedCurrentStudents = (currentClass.value.studentIds || []).filter(
-      (id) => !selectedStudents.value.includes(id)
-    )
-
-    // Add students to next level class
-    const updatedNextStudents = [
-      ...(nextLevelClass.value.studentIds || []),
-      ...selectedStudents.value,
-    ]
-
-    // Update both classes
-    await Promise.all([
-      classesStore.updateClass({
-        id: currentClass.value.id,
-        studentIds: updatedCurrentStudents,
-      }),
-      classesStore.updateClass({
-        id: nextLevelClass.value.id,
-        studentIds: updatedNextStudents,
-      }),
-    ])
-
-    emit("student-progressed")
-    selectedStudents.value = []
-  } catch (error) {
-    console.error("Error progressing students:", error)
-  }
-}
-</script>
-
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
     <div class="mb-4">
@@ -138,3 +47,94 @@ const progressStudents = async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useClassesStore } from '../modulos/Classes/store/classes';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+
+const props = defineProps<{
+  classId: string
+}>();
+
+const emit = defineEmits(['student-progressed']);
+
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+
+const selectedStudents = ref<string[]>([]);
+
+const currentClass = computed(() => {
+  return classesStore.classes.find((c) => c.id === props.classId);
+});
+
+const students = computed(() => {
+  if (!currentClass.value?.studentIds) return [];
+  return studentsStore.students.filter((s) => currentClass.value?.studentIds?.includes(s.id));
+});
+
+const nextLevelClass = computed(() => {
+  if (!currentClass.value?.level) return null;
+
+  const levelMap = {
+    Principiante: 'Intermedio',
+    Intermedio: 'Avanzado',
+  };
+
+  const nextLevel = levelMap[currentClass.value.level];
+  if (!nextLevel) return null;
+
+  // Find a class of the same instrument but next level
+  return classesStore.classes.find(
+    (c) => c.instrument === currentClass.value?.instrument && c.level === nextLevel,
+  );
+});
+
+const canProgress = computed(() => {
+  return nextLevelClass.value !== null;
+});
+
+const toggleStudent = (studentId: string) => {
+  const index = selectedStudents.value.indexOf(studentId);
+  if (index === -1) {
+    selectedStudents.value.push(studentId);
+  } else {
+    selectedStudents.value.splice(index, 1);
+  }
+};
+
+const progressStudents = async () => {
+  if (!nextLevelClass.value || !currentClass.value) return;
+
+  try {
+    // Remove students from current class
+    const updatedCurrentStudents = (currentClass.value.studentIds || []).filter(
+      (id) => !selectedStudents.value.includes(id),
+    );
+
+    // Add students to next level class
+    const updatedNextStudents = [
+      ...(nextLevelClass.value.studentIds || []),
+      ...selectedStudents.value,
+    ];
+
+    // Update both classes
+    await Promise.all([
+      classesStore.updateClass({
+        id: currentClass.value.id,
+        studentIds: updatedCurrentStudents,
+      }),
+      classesStore.updateClass({
+        id: nextLevelClass.value.id,
+        studentIds: updatedNextStudents,
+      }),
+    ]);
+
+    emit('student-progressed');
+    selectedStudents.value = [];
+  } catch (error) {
+    console.error('Error progressing students:', error);
+  }
+};
+</script>

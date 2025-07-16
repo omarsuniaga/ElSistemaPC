@@ -39,56 +39,56 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from "vue"
-import {useNetworkStatus} from "@/composables/useNetworkStatus"
+import { computed, ref } from 'vue';
+import { useNetworkStatus } from '@/composables/useNetworkStatus';
 
-const {isOnline, connectionQuality, lastChecked, isChecking, forceCheck} = useNetworkStatus()
+const { isOnline, connectionQuality, lastChecked, isChecking, forceCheck } = useNetworkStatus();
 
-const showDetails = ref(false)
+const showDetails = ref(false);
 
 const shouldShowStatus = computed(() => {
-  return !isOnline.value || connectionQuality.value === "slow"
-})
+  return !isOnline.value || connectionQuality.value === 'slow';
+});
 
 const statusClass = computed(() => {
-  if (!isOnline.value) return "offline"
-  if (connectionQuality.value === "slow") return "slow"
-  return "online"
-})
+  if (!isOnline.value) return 'offline';
+  if (connectionQuality.value === 'slow') return 'slow';
+  return 'online';
+});
 
 const dotClass = computed(() => {
-  if (!isOnline.value) return "pulse-dot"
-  if (connectionQuality.value === "slow") return "slow-dot"
-  return "online-dot"
-})
+  if (!isOnline.value) return 'pulse-dot';
+  if (connectionQuality.value === 'slow') return 'slow-dot';
+  return 'online-dot';
+});
 
 const statusText = computed(() => {
-  if (!isOnline.value) return "Sin conexión"
-  if (connectionQuality.value === "slow") return "Conexión lenta"
-  return "Conectado"
-})
+  if (!isOnline.value) return 'Sin conexión';
+  if (connectionQuality.value === 'slow') return 'Conexión lenta';
+  return 'Conectado';
+});
 
 const statusMessage = computed(() => {
   if (!isOnline.value) {
-    return "Los cambios se sincronizarán cuando vuelvas a tener conexión. Puedes seguir trabajando normalmente."
+    return 'Los cambios se sincronizarán cuando vuelvas a tener conexión. Puedes seguir trabajando normalmente.';
   }
-  if (connectionQuality.value === "slow") {
-    return "La conexión es lenta. Algunas funciones pueden tardar más de lo normal."
+  if (connectionQuality.value === 'slow') {
+    return 'La conexión es lenta. Algunas funciones pueden tardar más de lo normal.';
   }
-  return "Conexión estable"
-})
+  return 'Conexión estable';
+});
 
 const toggleDetails = () => {
-  showDetails.value = !showDetails.value
-}
+  showDetails.value = !showDetails.value;
+};
 
 const formatTime = (date: Date): string => {
-  return date.toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  })
-}
+  return date.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+};
 </script>
 
 <style scoped>

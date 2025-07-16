@@ -4,7 +4,7 @@
  * Define los nombres válidos para las familias de instrumentos.
  * Se incluye uniones conocidas y se permite cualquier otro valor de tipo string.
  */
-export type InstrumentFamilyName = "cuerdas" | "maderas" | "metales" | "percusion" | "coro" | string
+export type InstrumentFamilyName = 'cuerdas' | 'maderas' | 'metales' | 'percusion' | 'coro' | string
 
 /**
  * Representa un instrumento individual.

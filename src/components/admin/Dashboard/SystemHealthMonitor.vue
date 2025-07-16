@@ -45,75 +45,75 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted} from "vue"
-import {db} from "../../../firebase"
-import {collection, getDocs, limit, query} from "firebase/firestore"
-import {functions} from "@/firebase"
-import {QuestionMarkCircleIcon} from "@heroicons/vue/24/solid"
+import { ref, onMounted } from 'vue';
+import { db } from '../../../firebase';
+import { collection, getDocs, limit, query } from 'firebase/firestore';
+import { functions } from '@/firebase';
+import { QuestionMarkCircleIcon } from '@heroicons/vue/24/solid';
 
-defineOptions({name: "SystemHealthMonitor"})
+defineOptions({ name: 'SystemHealthMonitor' });
 
-const loading = ref(true)
+const loading = ref(true);
 const services = ref([
   {
-    name: "Conexión a Firestore",
-    status: "checking",
+    name: 'Conexión a Firestore',
+    status: 'checking',
     tooltip:
-      "Verifica la conectividad con la base de datos de Firestore realizando una lectura de prueba.",
+      'Verifica la conectividad con la base de datos de Firestore realizando una lectura de prueba.',
   },
   {
-    name: "API de WhatsApp",
-    status: "checking",
-    tooltip: "Comprueba el estado de la conexión con la API de WhatsApp para el envío de mensajes.",
+    name: 'API de WhatsApp',
+    status: 'checking',
+    tooltip: 'Comprueba el estado de la conexión con la API de WhatsApp para el envío de mensajes.',
   },
   {
-    name: "Funciones de Notificación",
-    status: "checking",
+    name: 'Funciones de Notificación',
+    status: 'checking',
     tooltip:
-      "Verifica la disponibilidad y el correcto funcionamiento de las funciones de Firebase encargadas de las notificaciones.",
+      'Verifica la disponibilidad y el correcto funcionamiento de las funciones de Firebase encargadas de las notificaciones.',
   },
-])
+]);
 
 const checkSystemHealth = async () => {
-  loading.value = true
+  loading.value = true;
 
   // Check Firestore Connection
   try {
-    const testQuery = query(collection(db, "ALUMNOS"), limit(1))
-    await getDocs(testQuery)
-    services.value[0].status = "operational"
+    const testQuery = query(collection(db, 'ALUMNOS'), limit(1));
+    await getDocs(testQuery);
+    services.value[0].status = 'operational';
   } catch (error) {
-    console.error("Firestore health check failed:", error)
-    services.value[0].status = "failed"
+    console.error('Firestore health check failed:', error);
+    services.value[0].status = 'failed';
   }
 
   // Check WhatsApp API - Safe local check only
   try {
     // For development, we'll just verify the service is available locally
     // Avoid making actual network requests that cause CORS issues
-    services.value[1].status = "operational"
+    services.value[1].status = 'operational';
   } catch (error) {
-    console.error("WhatsApp API health check failed:", error)
-    services.value[1].status = "failed"
+    console.error('WhatsApp API health check failed:', error);
+    services.value[1].status = 'failed';
   }
 
   // Check Notification Functions - Local check only
   try {
     // For development, we'll check if Firebase Functions are initialized
     if (functions) {
-      services.value[2].status = "operational"
+      services.value[2].status = 'operational';
     } else {
-      services.value[2].status = "failed"
+      services.value[2].status = 'failed';
     }
   } catch (error) {
-    console.error("Notification Functions health check failed:", error)
-    services.value[2].status = "failed"
+    console.error('Notification Functions health check failed:', error);
+    services.value[2].status = 'failed';
   }
 
-  loading.value = false
-}
+  loading.value = false;
+};
 
 onMounted(() => {
-  checkSystemHealth()
-})
+  checkSystemHealth();
+});
 </script>

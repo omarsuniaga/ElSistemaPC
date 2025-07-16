@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import type {Alert, Warning} from "@/analytics/composables/useAdvancedAnalytics"
+import type { Alert, Warning } from '@/analytics/composables/useAdvancedAnalytics';
 
 interface Props {
   alerts: Alert[]
@@ -146,49 +146,49 @@ interface Props {
   loading?: boolean
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 function formatTimestamp(date: Date): string {
-  return new Intl.RelativeTimeFormat("es", {numeric: "auto"}).format(
+  return new Intl.RelativeTimeFormat('es', { numeric: 'auto' }).format(
     Math.round((date.getTime() - Date.now()) / (1000 * 60 * 60)),
-    "hour"
-  )
+    'hour',
+  );
 }
 
 function executeAction(alert: Alert, action: string) {
-  console.log(`Ejecutando acción "${action}" para alerta:`, alert.id)
+  console.log(`Ejecutando acción "${action}" para alerta:`, alert.id);
 
   // Implementar acciones específicas
   switch (action) {
-    case "Contactar estudiantes ausentes":
-      // Abrir modal de contacto masivo
-      break
-    case "Revisar horarios de clase":
-      // Navegar a configuración de horarios
-      break
-    case "Evaluar metodología de enseñanza":
-      // Abrir dashboard de evaluación
-      break
+  case 'Contactar estudiantes ausentes':
+    // Abrir modal de contacto masivo
+    break;
+  case 'Revisar horarios de clase':
+    // Navegar a configuración de horarios
+    break;
+  case 'Evaluar metodología de enseñanza':
+    // Abrir dashboard de evaluación
+    break;
   }
 }
 
 function dismissAlert(alert: Alert) {
-  console.log("Descartando alerta:", alert.id)
+  console.log('Descartando alerta:', alert.id);
   // Implementar lógica para ocultar alerta
 }
 
 function dismissWarning(warning: Warning) {
-  console.log("Descartando aviso:", warning.id)
+  console.log('Descartando aviso:', warning.id);
   // Implementar lógica para ocultar aviso
 }
 
 function resolveAllCritical() {
-  console.log("Resolviendo todas las alertas críticas...")
+  console.log('Resolviendo todas las alertas críticas...');
   // Implementar flujo de resolución masiva
 }
 
 function generateAlertReport() {
-  console.log("Generando reporte de alertas...")
+  console.log('Generando reporte de alertas...');
   // Implementar generación de reporte
 }
 </script>

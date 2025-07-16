@@ -148,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, onUnmounted, computed} from "vue"
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import {
   PhoneIcon,
   CheckCircleIcon,
@@ -161,456 +161,456 @@ import {
   XCircleIcon,
   QuestionMarkCircleIcon,
   BeakerIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Estado reactivo
-const loading = ref(true)
-const connectionStatus = ref<string>("waiting_for_qr")
-const qrImageUrl = ref<string | null>(null)
-const error = ref<string | null>(null)
-const sendingTest = ref(false)
-const testingConnection = ref(false)
-const loadingText = ref("Inicializando conexión...")
-const isWaitingForScan = ref(false)
+const loading = ref(true);
+const connectionStatus = ref<string>('waiting_for_qr');
+const qrImageUrl = ref<string | null>(null);
+const error = ref<string | null>(null);
+const sendingTest = ref(false);
+const testingConnection = ref(false);
+const loadingText = ref('Inicializando conexión...');
+const isWaitingForScan = ref(false);
 
 // Configuración de la API
-const API_BASE_URL = "https://whatsappapi-4ffilcsmva-uc.a.run.app"
+const API_BASE_URL = 'https://whatsappapi-4ffilcsmva-uc.a.run.app';
 
 // Intervalo para verificar estado
-let statusInterval: NodeJS.Timeout | null = null
-let fastStatusInterval: NodeJS.Timeout | null = null
+let statusInterval: NodeJS.Timeout | null = null;
+let fastStatusInterval: NodeJS.Timeout | null = null;
 
 // Computed properties
 const statusText = computed(() => {
   switch (connectionStatus.value) {
-    case "connected":
-      return "Conectado"
-    case "waiting_for_qr":
-      return "Esperando escaneo"
-    case "logged_out":
-      return "Sesión cerrada"
-    case "reconnecting":
-      return "Reconectando..."
-    case "error":
-      return "Error de conexión"
-    default:
-      return "Desconectado"
+  case 'connected':
+    return 'Conectado';
+  case 'waiting_for_qr':
+    return 'Esperando escaneo';
+  case 'logged_out':
+    return 'Sesión cerrada';
+  case 'reconnecting':
+    return 'Reconectando...';
+  case 'error':
+    return 'Error de conexión';
+  default:
+    return 'Desconectado';
   }
-})
+});
 
 const statusIcon = computed(() => {
   switch (connectionStatus.value) {
-    case "connected":
-      return CheckCircleIcon
-    case "waiting_for_qr":
-      return ClockIcon
-    case "logged_out":
-      return XCircleIcon
-    case "reconnecting":
-      return ArrowPathIcon
-    case "error":
-      return ExclamationTriangleIcon
-    default:
-      return QuestionMarkCircleIcon
+  case 'connected':
+    return CheckCircleIcon;
+  case 'waiting_for_qr':
+    return ClockIcon;
+  case 'logged_out':
+    return XCircleIcon;
+  case 'reconnecting':
+    return ArrowPathIcon;
+  case 'error':
+    return ExclamationTriangleIcon;
+  default:
+    return QuestionMarkCircleIcon;
   }
-})
+});
 
 const messageIcon = computed(() => {
   switch (connectionStatus.value) {
-    case "logged_out":
-      return XCircleIcon
-    case "error":
-      return ExclamationTriangleIcon
-    default:
-      return ClockIcon
+  case 'logged_out':
+    return XCircleIcon;
+  case 'error':
+    return ExclamationTriangleIcon;
+  default:
+    return ClockIcon;
   }
-})
+});
 
 const messageText = computed(() => {
   switch (connectionStatus.value) {
-    case "logged_out":
-      return 'Sesión cerrada. Haz clic en "Actualizar QR" para generar un nuevo código'
-    case "error":
-      return "Error de conexión. Verifica que las funciones estén desplegadas"
-    default:
-      return "Generando código QR..."
+  case 'logged_out':
+    return 'Sesión cerrada. Haz clic en "Actualizar QR" para generar un nuevo código';
+  case 'error':
+    return 'Error de conexión. Verifica que las funciones estén desplegadas';
+  default:
+    return 'Generando código QR...';
   }
-})
+});
 
 // Métodos
 const loadQR = async () => {
-  loading.value = true
-  loadingText.value = "Inicializando WhatsApp..."
-  error.value = null
-  qrImageUrl.value = null
+  loading.value = true;
+  loadingText.value = 'Inicializando WhatsApp...';
+  error.value = null;
+  qrImageUrl.value = null;
 
   try {
     // Primero inicializar WhatsApp
     const initResponse = await fetch(`${API_BASE_URL}/init`, {
-      method: "POST",
-    })
+      method: 'POST',
+    });
 
     if (initResponse.ok) {
-      loadingText.value = "Generando código QR..."
+      loadingText.value = 'Generando código QR...';
 
       // Intentar obtener el QR varias veces
-      let attempts = 0
-      const maxAttempts = 15
+      let attempts = 0;
+      const maxAttempts = 15;
 
       while (attempts < maxAttempts) {
         try {
           const response = await fetch(`${API_BASE_URL}/qr`, {
-            cache: "no-cache",
-          })
+            cache: 'no-cache',
+          });
 
           if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`)
+            throw new Error(`Error HTTP: ${response.status}`);
           }
 
-          const contentType = response.headers.get("content-type")
+          const contentType = response.headers.get('content-type');
 
-          if (contentType && contentType.includes("image/png")) {
+          if (contentType && contentType.includes('image/png')) {
             // Es una imagen QR
-            const blob = await response.blob()
-            qrImageUrl.value = URL.createObjectURL(blob)
-            loadingText.value = "¡QR generado! Escanea con tu teléfono"
-            break
+            const blob = await response.blob();
+            qrImageUrl.value = URL.createObjectURL(blob);
+            loadingText.value = '¡QR generado! Escanea con tu teléfono';
+            break;
           } else {
             // Es JSON, verificar estado
-            const data = await response.json()
-            if (data.status === "connected") {
-              connectionStatus.value = "connected"
-              loadingText.value = "¡WhatsApp ya está conectado!"
-              break
+            const data = await response.json();
+            if (data.status === 'connected') {
+              connectionStatus.value = 'connected';
+              loadingText.value = '¡WhatsApp ya está conectado!';
+              break;
             }
           }
         } catch (err) {
-          console.log(`Intento ${attempts + 1}/${maxAttempts} fallido:`, err)
+          console.log(`Intento ${attempts + 1}/${maxAttempts} fallido:`, err);
         }
 
-        attempts++
+        attempts++;
         if (attempts < maxAttempts) {
-          loadingText.value = `Generando QR... (${attempts}/${maxAttempts})`
-          await new Promise((resolve) => setTimeout(resolve, 2000))
+          loadingText.value = `Generando QR... (${attempts}/${maxAttempts})`;
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       }
 
       if (attempts >= maxAttempts && !qrImageUrl.value) {
-        throw new Error("No se pudo generar el código QR después de varios intentos")
+        throw new Error('No se pudo generar el código QR después de varios intentos');
       }
     } else {
-      throw new Error("Error al inicializar WhatsApp")
+      throw new Error('Error al inicializar WhatsApp');
     }
   } catch (err) {
-    console.error("Error cargando QR:", err)
-    error.value = err instanceof Error ? err.message : "Error al cargar el código QR"
-    connectionStatus.value = "error"
+    console.error('Error cargando QR:', err);
+    error.value = err instanceof Error ? err.message : 'Error al cargar el código QR';
+    connectionStatus.value = 'error';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const checkStatus = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/status`)
+    const response = await fetch(`${API_BASE_URL}/status`);
 
     if (!response.ok) {
-      throw new Error(`Error HTTP: ${response.status}`)
+      throw new Error(`Error HTTP: ${response.status}`);
     }
 
-    const data = await response.json()
+    const data = await response.json();
 
-    connectionStatus.value = data.status
+    connectionStatus.value = data.status;
 
     // Si está conectado, limpiar QR y detener verificaciones
-    if (data.status === "connected") {
-      qrImageUrl.value = null
+    if (data.status === 'connected') {
+      qrImageUrl.value = null;
       if (statusInterval) {
-        clearInterval(statusInterval)
-        statusInterval = null
+        clearInterval(statusInterval);
+        statusInterval = null;
       }
     }
   } catch (err) {
-    console.error("Error verificando estado:", err)
-    connectionStatus.value = "disconnected"
+    console.error('Error verificando estado:', err);
+    connectionStatus.value = 'disconnected';
     // Si hay error 404, mostrar mensaje específico
-    if (err instanceof Error && err.message.includes("404")) {
-      connectionStatus.value = "function-not-available"
+    if (err instanceof Error && err.message.includes('404')) {
+      connectionStatus.value = 'function-not-available';
     }
   }
-}
+};
 
 const refreshQR = async () => {
-  console.log("🔄 Refrescando QR...")
+  console.log('🔄 Refrescando QR...');
 
   // Limpiar intervalos anteriores
   if (statusInterval) {
-    clearInterval(statusInterval)
+    clearInterval(statusInterval);
   }
   if (fastStatusInterval) {
-    clearInterval(fastStatusInterval)
+    clearInterval(fastStatusInterval);
   }
 
-  loading.value = true
-  loadingText.value = "Obteniendo código QR..."
-  error.value = null
-  qrImageUrl.value = null
+  loading.value = true;
+  loadingText.value = 'Obteniendo código QR...';
+  error.value = null;
+  qrImageUrl.value = null;
 
   try {
-    console.log("📱 Solicitando QR directamente...")
+    console.log('📱 Solicitando QR directamente...');
     const response = await fetch(`${API_BASE_URL}/qr?t=${Date.now()}`, {
-      method: "GET",
-      cache: "no-cache",
+      method: 'GET',
+      cache: 'no-cache',
       headers: {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
       },
-    })
+    });
 
-    console.log("📊 Response status:", response.status)
+    console.log('📊 Response status:', response.status);
 
     if (response.ok) {
-      const contentType = response.headers.get("content-type")
-      console.log("📄 Content-Type:", contentType)
+      const contentType = response.headers.get('content-type');
+      console.log('📄 Content-Type:', contentType);
 
-      if (contentType && contentType.includes("image/png")) {
-        console.log("🖼️ Recibiendo imagen PNG...")
-        const blob = await response.blob()
-        console.log("📦 Blob size:", blob.size)
+      if (contentType && contentType.includes('image/png')) {
+        console.log('🖼️ Recibiendo imagen PNG...');
+        const blob = await response.blob();
+        console.log('📦 Blob size:', blob.size);
 
         if (blob.size > 0) {
-          const imageUrl = URL.createObjectURL(blob)
-          qrImageUrl.value = imageUrl
-          console.log("✅ QR imagen URL creada:", imageUrl)
-          loadingText.value = "¡QR listo! Escanea con tu teléfono"
+          const imageUrl = URL.createObjectURL(blob);
+          qrImageUrl.value = imageUrl;
+          console.log('✅ QR imagen URL creada:', imageUrl);
+          loadingText.value = '¡QR listo! Escanea con tu teléfono';
 
           // Iniciar monitoreo frecuente después de mostrar el QR
-          startFastMonitoring()
+          startFastMonitoring();
         } else {
-          throw new Error("La imagen QR está vacía")
+          throw new Error('La imagen QR está vacía');
         }
       } else {
-        const data = await response.json()
-        console.log("📄 QR Response JSON:", data)
+        const data = await response.json();
+        console.log('📄 QR Response JSON:', data);
 
-        if (data.status === "connected") {
-          connectionStatus.value = "connected"
-          qrImageUrl.value = null
+        if (data.status === 'connected') {
+          connectionStatus.value = 'connected';
+          qrImageUrl.value = null;
         } else {
-          throw new Error(data.message || "QR no disponible como imagen")
+          throw new Error(data.message || 'QR no disponible como imagen');
         }
       }
     } else {
-      throw new Error(`Error HTTP: ${response.status}`)
+      throw new Error(`Error HTTP: ${response.status}`);
     }
   } catch (err) {
-    console.error("❌ Error refrescando QR:", err)
-    error.value = err instanceof Error ? err.message : "Error al refrescar el código QR"
+    console.error('❌ Error refrescando QR:', err);
+    error.value = err instanceof Error ? err.message : 'Error al refrescar el código QR';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 
   // Iniciar verificación de estado normal
-  statusInterval = setInterval(checkStatus, 5000)
-}
+  statusInterval = setInterval(checkStatus, 5000);
+};
 
 // Nueva función para monitoreo frecuente después de mostrar QR
 const startFastMonitoring = () => {
-  console.log("🚀 Iniciando monitoreo frecuente para detectar escaneo...")
+  console.log('🚀 Iniciando monitoreo frecuente para detectar escaneo...');
 
   // Verificar cada 2 segundos por 30 segundos
-  let checks = 0
-  const maxChecks = 15 // 30 segundos
+  let checks = 0;
+  const maxChecks = 15; // 30 segundos
 
   fastStatusInterval = setInterval(async () => {
-    checks++
-    console.log(`🔍 Verificación rápida ${checks}/${maxChecks}`)
+    checks++;
+    console.log(`🔍 Verificación rápida ${checks}/${maxChecks}`);
 
-    await checkStatus()
+    await checkStatus();
 
     // Si se conectó o llegamos al límite, parar el monitoreo frecuente
-    if (connectionStatus.value === "connected" || checks >= maxChecks) {
-      console.log("⏹️ Deteniendo monitoreo frecuente")
+    if (connectionStatus.value === 'connected' || checks >= maxChecks) {
+      console.log('⏹️ Deteniendo monitoreo frecuente');
       if (fastStatusInterval) {
-        clearInterval(fastStatusInterval)
-        fastStatusInterval = null
+        clearInterval(fastStatusInterval);
+        fastStatusInterval = null;
       }
 
-      if (connectionStatus.value === "connected") {
-        console.log("🎉 ¡WhatsApp conectado exitosamente!")
+      if (connectionStatus.value === 'connected') {
+        console.log('🎉 ¡WhatsApp conectado exitosamente!');
         // Mostrar notificación de éxito
-        alert("🎉 ¡WhatsApp conectado exitosamente! Ya puedes enviar notificaciones.")
+        alert('🎉 ¡WhatsApp conectado exitosamente! Ya puedes enviar notificaciones.');
       }
     }
-  }, 2000)
-}
+  }, 2000);
+};
 
 const testDirectConnection = async () => {
-  testingConnection.value = true
+  testingConnection.value = true;
 
   try {
-    console.log("🔍 Probando conexión directa...")
+    console.log('🔍 Probando conexión directa...');
 
     // Verificar estado actual
-    const statusResponse = await fetch(`${API_BASE_URL}/status`)
+    const statusResponse = await fetch(`${API_BASE_URL}/status`);
 
     if (statusResponse.ok) {
-      const statusData = await statusResponse.json()
-      console.log("📊 Estado actual:", statusData)
+      const statusData = await statusResponse.json();
+      console.log('📊 Estado actual:', statusData);
 
-      connectionStatus.value = statusData.status
+      connectionStatus.value = statusData.status;
 
-      if (statusData.status === "connected") {
-        console.log("🎉 ¡WhatsApp ya está conectado!")
-        qrImageUrl.value = null
-        alert("🎉 ¡WhatsApp está conectado! Ya puedes enviar notificaciones.")
-      } else if (statusData.status === "qr_ready") {
-        console.log("📱 QR disponible, obteniendo imagen...")
-        await refreshQR()
+      if (statusData.status === 'connected') {
+        console.log('🎉 ¡WhatsApp ya está conectado!');
+        qrImageUrl.value = null;
+        alert('🎉 ¡WhatsApp está conectado! Ya puedes enviar notificaciones.');
+      } else if (statusData.status === 'qr_ready') {
+        console.log('📱 QR disponible, obteniendo imagen...');
+        await refreshQR();
       } else {
-        console.log("⚠️ Estado:", statusData.status)
-        alert(`Estado actual: ${statusData.status}\nMensaje: ${statusData.message}`)
+        console.log('⚠️ Estado:', statusData.status);
+        alert(`Estado actual: ${statusData.status}\nMensaje: ${statusData.message}`);
       }
     } else {
-      throw new Error(`Error HTTP: ${statusResponse.status}`)
+      throw new Error(`Error HTTP: ${statusResponse.status}`);
     }
   } catch (error) {
-    console.error("❌ Error en prueba directa:", error)
+    console.error('❌ Error en prueba directa:', error);
     alert(
-      "❌ Error al probar conexión: " +
-        (error instanceof Error ? error.message : "Error desconocido")
-    )
+      '❌ Error al probar conexión: ' +
+        (error instanceof Error ? error.message : 'Error desconocido'),
+    );
   } finally {
-    testingConnection.value = false
+    testingConnection.value = false;
   }
-}
+};
 
 const testDirectQR = async () => {
-  console.log("🧪 Probando QR directo desde componente...")
+  console.log('🧪 Probando QR directo desde componente...');
 
   try {
     // Llamar init primero
-    console.log("📞 Llamando /init...")
-    const initResponse = await fetch(`${API_BASE_URL}/init`, {method: "POST"})
-    const initResult = await initResponse.json()
-    console.log("📊 Init result:", initResult)
+    console.log('📞 Llamando /init...');
+    const initResponse = await fetch(`${API_BASE_URL}/init`, { method: 'POST' });
+    const initResult = await initResponse.json();
+    console.log('📊 Init result:', initResult);
 
     if (initResult.success) {
-      console.log("✅ Init exitoso, obteniendo QR...")
+      console.log('✅ Init exitoso, obteniendo QR...');
 
       // Llamar QR
-      const qrUrl = `${API_BASE_URL}/qr?t=${Date.now()}`
-      console.log("📞 Llamando /qr:", qrUrl)
+      const qrUrl = `${API_BASE_URL}/qr?t=${Date.now()}`;
+      console.log('📞 Llamando /qr:', qrUrl);
 
-      const qrResponse = await fetch(qrUrl)
-      console.log("📊 QR response status:", qrResponse.status)
-      console.log("📊 QR content-type:", qrResponse.headers.get("content-type"))
+      const qrResponse = await fetch(qrUrl);
+      console.log('📊 QR response status:', qrResponse.status);
+      console.log('📊 QR content-type:', qrResponse.headers.get('content-type'));
 
       if (qrResponse.ok) {
-        const contentType = qrResponse.headers.get("content-type")
+        const contentType = qrResponse.headers.get('content-type');
 
-        if (contentType?.includes("image/png")) {
-          console.log("🖼️ Respuesta es imagen PNG!")
-          const blob = await qrResponse.blob()
-          console.log("📦 Blob size:", blob.size)
+        if (contentType?.includes('image/png')) {
+          console.log('🖼️ Respuesta es imagen PNG!');
+          const blob = await qrResponse.blob();
+          console.log('📦 Blob size:', blob.size);
 
           if (blob.size > 0) {
             // Crear URL del blob y actualizar la imagen
-            const imageUrl = URL.createObjectURL(blob)
-            qrImageUrl.value = imageUrl
-            connectionStatus.value = "waiting_for_qr"
-            console.log("✅ QR cargado exitosamente!")
-            alert("✅ QR cargado! Ver imagen arriba.")
+            const imageUrl = URL.createObjectURL(blob);
+            qrImageUrl.value = imageUrl;
+            connectionStatus.value = 'waiting_for_qr';
+            console.log('✅ QR cargado exitosamente!');
+            alert('✅ QR cargado! Ver imagen arriba.');
           } else {
-            throw new Error("Imagen QR vacía")
+            throw new Error('Imagen QR vacía');
           }
         } else {
-          const data = await qrResponse.json()
-          console.log("📄 QR response JSON:", data)
-          alert("📄 Respuesta: " + JSON.stringify(data, null, 2))
+          const data = await qrResponse.json();
+          console.log('📄 QR response JSON:', data);
+          alert('📄 Respuesta: ' + JSON.stringify(data, null, 2));
         }
       } else {
-        throw new Error(`Error HTTP: ${qrResponse.status}`)
+        throw new Error(`Error HTTP: ${qrResponse.status}`);
       }
     } else {
-      throw new Error("Error en init: " + initResult.message)
+      throw new Error('Error en init: ' + initResult.message);
     }
   } catch (error) {
-    console.error("❌ Error en test directo:", error)
-    alert("❌ Error: " + (error instanceof Error ? error.message : "Error desconocido"))
+    console.error('❌ Error en test directo:', error);
+    alert('❌ Error: ' + (error instanceof Error ? error.message : 'Error desconocido'));
   }
-}
+};
 
 const testMessage = async () => {
-  if (connectionStatus.value !== "connected") return
+  if (connectionStatus.value !== 'connected') return;
 
-  sendingTest.value = true
+  sendingTest.value = true;
 
   try {
     const response = await fetch(`${API_BASE_URL}/send-message`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        to: "120363025343298938@g.us", // Número de prueba
+        to: '120363025343298938@g.us', // Número de prueba
         message:
-          "🎵 Mensaje de prueba desde la Academia Musical! WhatsApp está funcionando correctamente.",
+          '🎵 Mensaje de prueba desde la Academia Musical! WhatsApp está funcionando correctamente.',
       }),
-    })
+    });
 
     if (response.ok) {
-      alert("✅ Mensaje de prueba enviado correctamente!")
+      alert('✅ Mensaje de prueba enviado correctamente!');
     } else {
-      throw new Error("Error al enviar mensaje")
+      throw new Error('Error al enviar mensaje');
     }
   } catch (err) {
-    console.error("Error enviando mensaje de prueba:", err)
-    alert("❌ Error al enviar mensaje de prueba")
+    console.error('Error enviando mensaje de prueba:', err);
+    alert('❌ Error al enviar mensaje de prueba');
   } finally {
-    sendingTest.value = false
+    sendingTest.value = false;
   }
-}
+};
 
 const handleQRResponse = (data: any) => {
-  connectionStatus.value = data.status
+  connectionStatus.value = data.status;
 
   switch (data.status) {
-    case "connected":
-      loadingText.value = "WhatsApp conectado"
-      break
-    case "logged_out":
-      loadingText.value = "Sesión cerrada"
-      break
-    case "waiting_for_qr":
-      loadingText.value = "Generando nuevo código QR..."
-      // Reintentar cargar QR en unos segundos
-      setTimeout(() => {
-        if (connectionStatus.value === "waiting_for_qr") {
-          loadQR()
-        }
-      }, 2000)
-      break
+  case 'connected':
+    loadingText.value = 'WhatsApp conectado';
+    break;
+  case 'logged_out':
+    loadingText.value = 'Sesión cerrada';
+    break;
+  case 'waiting_for_qr':
+    loadingText.value = 'Generando nuevo código QR...';
+    // Reintentar cargar QR en unos segundos
+    setTimeout(() => {
+      if (connectionStatus.value === 'waiting_for_qr') {
+        loadQR();
+      }
+    }, 2000);
+    break;
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  await checkStatus()
-  await loadQR()
+  await checkStatus();
+  await loadQR();
 
   // Verificar estado cada 3 segundos
-  statusInterval = setInterval(checkStatus, 3000)
-})
+  statusInterval = setInterval(checkStatus, 3000);
+});
 
 onUnmounted(() => {
   if (statusInterval) {
-    clearInterval(statusInterval)
+    clearInterval(statusInterval);
   }
   if (fastStatusInterval) {
-    clearInterval(fastStatusInterval)
+    clearInterval(fastStatusInterval);
   }
-})
+});
 </script>
 
 <style scoped>

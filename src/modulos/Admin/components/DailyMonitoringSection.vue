@@ -355,7 +355,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted} from "vue"
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import {
   ChartBarIcon,
   ArrowRightIcon,
@@ -371,27 +371,27 @@ import {
   UserPlusIcon,
   ExclamationCircleIcon,
   CalendarIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Stores
-import {useAdminStudentsStore} from "../store/adminStudents"
-import {useClassesStore} from "../../Classes/store/classes"
+import { useAdminStudentsStore } from '../store/adminStudents';
+import { useClassesStore } from '../../Classes/store/classes';
 
-const studentsStore = useAdminStudentsStore()
-const classesStore = useClassesStore()
+const studentsStore = useAdminStudentsStore();
+const classesStore = useClassesStore();
 
 // State
-const isRefreshing = ref(false)
-const autoRefreshInterval = ref<NodeJS.Timeout | null>(null)
+const isRefreshing = ref(false);
+const autoRefreshInterval = ref<NodeJS.Timeout | null>(null);
 
 // Computed stats
 const stats = computed(() => {
-  const totalStudents = studentsStore.studentStats.total
+  const totalStudents = studentsStore.studentStats.total;
   // TODO: Obtener el número real de estudiantes presentes hoy del store de asistencia
-  const present = Math.floor(totalStudents * 0.87) // Estimación hasta tener datos reales
-  const absent = totalStudents - present
-  const activeClasses = classesStore.classes.filter((c) => c.status === "active").length
-  const efficiency = totalStudents > 0 ? Math.floor((present / totalStudents) * 100) : 0
+  const present = Math.floor(totalStudents * 0.87); // Estimación hasta tener datos reales
+  const absent = totalStudents - present;
+  const activeClasses = classesStore.classes.filter((c) => c.status === 'active').length;
+  const efficiency = totalStudents > 0 ? Math.floor((present / totalStudents) * 100) : 0;
 
   return {
     present,
@@ -402,73 +402,73 @@ const stats = computed(() => {
     absentPercentage: totalStudents > 0 ? Math.floor((absent / totalStudents) * 100) : 0,
     classesPercentage: Math.min(
       100,
-      Math.floor((activeClasses / Math.max(1, Math.ceil(totalStudents / 8))) * 100)
+      Math.floor((activeClasses / Math.max(1, Math.ceil(totalStudents / 8))) * 100),
     ),
     efficiencyPercentage: efficiency,
-    presentTrend: "N/A", // TODO: Obtener tendencia real
-    absentTrend: "N/A", // TODO: Obtener tendencia real
-    classesTrend: "N/A", // TODO: Obtener tendencia real
-    efficiencyTrend: "N/A", // TODO: Obtener tendencia real
-  }
-})
+    presentTrend: 'N/A', // TODO: Obtener tendencia real
+    absentTrend: 'N/A', // TODO: Obtener tendencia real
+    classesTrend: 'N/A', // TODO: Obtener tendencia real
+    efficiencyTrend: 'N/A', // TODO: Obtener tendencia real
+  };
+});
 
 // Horarios de asistencia por hora
 const hourlyAttendance = computed(() => {
   // TODO: Obtener datos reales de asistencia por hora del store o API
-  return []
-})
+  return [];
+});
 
 const maxHourlyAttendance = computed(() => {
-  return Math.max(...hourlyAttendance.value.map((h) => h.attendance))
-})
+  return Math.max(...hourlyAttendance.value.map((h) => h.attendance));
+});
 
 // Alertas diarias
 const dailyAlerts = computed(() => {
-  const alerts = []
+  const alerts = [];
 
   if (stats.value.absentPercentage > 20) {
     alerts.push({
-      id: "high-absence",
-      type: "warning",
-      title: "Alto Índice de Ausencias",
+      id: 'high-absence',
+      type: 'warning',
+      title: 'Alto Índice de Ausencias',
       description: `${stats.value.absentPercentage}% de ausencias hoy`,
-      priority: "high",
-      action: "view_absences",
-    })
+      priority: 'high',
+      action: 'view_absences',
+    });
   }
 
   if (stats.value.activeClasses < 5 && stats.value.present > 30) {
     alerts.push({
-      id: "low-classes",
-      type: "info",
-      title: "Pocas Clases Activas",
+      id: 'low-classes',
+      type: 'info',
+      title: 'Pocas Clases Activas',
       description: `Solo ${stats.value.activeClasses} clases para ${stats.value.present} estudiantes`,
-      priority: "medium",
-      action: "schedule_classes",
-    })
+      priority: 'medium',
+      action: 'schedule_classes',
+    });
   }
 
   if (stats.value.efficiency > 95) {
     alerts.push({
-      id: "excellent-performance",
-      type: "success",
-      title: "Rendimiento Excelente",
+      id: 'excellent-performance',
+      type: 'success',
+      title: 'Rendimiento Excelente',
       description: `${stats.value.efficiency}% de eficiencia hoy`,
-      priority: "low",
-      action: "view_report",
-    })
+      priority: 'low',
+      action: 'view_report',
+    });
   }
 
-  return alerts
-})
+  return alerts;
+});
 
 // Resumen de actividades
 const activitySummary = computed(() => {
   const newStudentsToday = studentsStore.students.filter((student) => {
-    const enrollmentDate = new Date(student.enrollmentDate)
-    const today = new Date()
-    return enrollmentDate.toDateString() === today.toDateString()
-  }).length
+    const enrollmentDate = new Date(student.enrollmentDate);
+    const today = new Date();
+    return enrollmentDate.toDateString() === today.toDateString();
+  }).length;
 
   return {
     attendanceRecords: 0, // TODO: Obtener el número real de registros de asistencia
@@ -477,60 +477,60 @@ const activitySummary = computed(() => {
     recentAttendance: [], // TODO: Obtener registros de asistencia recientes
     recentStudents: [], // TODO: Obtener nombres de estudiantes recientes
     recentObservations: [], // TODO: Obtener observaciones recientes
-  }
-})
+  };
+});
 
 // Próximas actividades
 const upcomingActivities = computed(() => {
   // TODO: Obtener actividades próximas reales del sistema (ej. eventos, clases, recordatorios)
-  return []
-})
+  return [];
+});
 
 // Methods
 const refreshData = async () => {
-  isRefreshing.value = true
+  isRefreshing.value = true;
   try {
-    await Promise.all([studentsStore.loadStudents(), classesStore.fetchClasses()])
+    await Promise.all([studentsStore.loadStudents(), classesStore.fetchClasses()]);
   } finally {
     setTimeout(() => {
-      isRefreshing.value = false
-    }, 1000)
+      isRefreshing.value = false;
+    }, 1000);
   }
-}
+};
 
 const handleAlertAction = (alert: any, action: string) => {
-  console.log("Alert action:", alert, action)
-}
+  console.log('Alert action:', alert, action);
+};
 
 const dismissAlert = (alertId: string) => {
-  console.log("Dismiss alert:", alertId)
-}
+  console.log('Dismiss alert:', alertId);
+};
 
 const handleActivityClick = (activity: any) => {
-  console.log("Activity clicked:", activity)
-}
+  console.log('Activity clicked:', activity);
+};
 
 // Auto-refresh
 const startAutoRefresh = () => {
   autoRefreshInterval.value = setInterval(() => {
-    refreshData()
-  }, 30000)
-}
+    refreshData();
+  }, 30000);
+};
 
 const stopAutoRefresh = () => {
   if (autoRefreshInterval.value) {
-    clearInterval(autoRefreshInterval.value)
-    autoRefreshInterval.value = null
+    clearInterval(autoRefreshInterval.value);
+    autoRefreshInterval.value = null;
   }
-}
+};
 
 onMounted(() => {
-  startAutoRefresh()
-})
+  startAutoRefresh();
+});
 
 onUnmounted(() => {
-  stopAutoRefresh()
-})
+  stopAutoRefresh();
+});
 </script>
 
 <style scoped>

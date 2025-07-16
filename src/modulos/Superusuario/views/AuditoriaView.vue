@@ -256,255 +256,255 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 
 // State
-const loading = ref(false)
-const error = ref<string | null>(null)
-const currentPage = ref(1)
-const pageSize = 20
-const expandedLogs = ref<string[]>([])
+const loading = ref(false);
+const error = ref<string | null>(null);
+const currentPage = ref(1);
+const pageSize = 20;
+const expandedLogs = ref<string[]>([]);
 
 const filters = ref({
-  startDate: "",
-  endDate: "",
-  action: "",
-  userEmail: "",
-  level: "",
-})
+  startDate: '',
+  endDate: '',
+  action: '',
+  userEmail: '',
+  level: '',
+});
 
 // Mock data - in real app this would come from the API
 const auditLogs = ref([
   {
-    id: "1",
+    id: '1',
     timestamp: new Date(),
-    action: "LOGIN",
-    level: "INFO",
-    userEmail: "admin@example.com",
-    description: "Usuario inició sesión en el sistema",
-    ipAddress: "192.168.1.100",
-    resource: "auth",
-    details: {userAgent: "Mozilla/5.0...", sessionId: "abc123"},
+    action: 'LOGIN',
+    level: 'INFO',
+    userEmail: 'admin@example.com',
+    description: 'Usuario inició sesión en el sistema',
+    ipAddress: '192.168.1.100',
+    resource: 'auth',
+    details: { userAgent: 'Mozilla/5.0...', sessionId: 'abc123' },
   },
   {
-    id: "2",
+    id: '2',
     timestamp: new Date(Date.now() - 1000 * 60 * 30),
-    action: "ROLE_CHANGE",
-    level: "WARNING",
-    userEmail: "superuser@example.com",
-    description: "Cambio de rol de usuario: juan@example.com de Maestro a Admin",
-    ipAddress: "192.168.1.101",
-    resource: "users",
-    details: {userId: "user123", oldRole: "Maestro", newRole: "Admin"},
+    action: 'ROLE_CHANGE',
+    level: 'WARNING',
+    userEmail: 'superuser@example.com',
+    description: 'Cambio de rol de usuario: juan@example.com de Maestro a Admin',
+    ipAddress: '192.168.1.101',
+    resource: 'users',
+    details: { userId: 'user123', oldRole: 'Maestro', newRole: 'Admin' },
   },
   {
-    id: "3",
+    id: '3',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-    action: "SYSTEM_CONFIG",
-    level: "CRITICAL",
-    userEmail: "superuser@example.com",
-    description: "Configuración del sistema RBAC modificada",
-    ipAddress: "192.168.1.101",
-    resource: "rbac_config",
-    details: {configKey: "permissions", oldValue: "disabled", newValue: "enabled"},
+    action: 'SYSTEM_CONFIG',
+    level: 'CRITICAL',
+    userEmail: 'superuser@example.com',
+    description: 'Configuración del sistema RBAC modificada',
+    ipAddress: '192.168.1.101',
+    resource: 'rbac_config',
+    details: { configKey: 'permissions', oldValue: 'disabled', newValue: 'enabled' },
   },
-])
+]);
 
 // Computed
 const filteredLogs = computed(() => {
   return auditLogs.value.filter((log) => {
     const matchesDateRange =
       (!filters.value.startDate || log.timestamp >= new Date(filters.value.startDate)) &&
-      (!filters.value.endDate || log.timestamp <= new Date(filters.value.endDate))
-    const matchesAction = !filters.value.action || log.action === filters.value.action
+      (!filters.value.endDate || log.timestamp <= new Date(filters.value.endDate));
+    const matchesAction = !filters.value.action || log.action === filters.value.action;
     const matchesUser =
       !filters.value.userEmail ||
-      log.userEmail?.toLowerCase().includes(filters.value.userEmail.toLowerCase())
-    const matchesLevel = !filters.value.level || log.level === filters.value.level
+      log.userEmail?.toLowerCase().includes(filters.value.userEmail.toLowerCase());
+    const matchesLevel = !filters.value.level || log.level === filters.value.level;
 
-    return matchesDateRange && matchesAction && matchesUser && matchesLevel
-  })
-})
+    return matchesDateRange && matchesAction && matchesUser && matchesLevel;
+  });
+});
 
 const paginatedLogs = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  const end = start + pageSize
-  return filteredLogs.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * pageSize;
+  const end = start + pageSize;
+  return filteredLogs.value.slice(start, end);
+});
 
-const totalPages = computed(() => Math.ceil(filteredLogs.value.length / pageSize))
+const totalPages = computed(() => Math.ceil(filteredLogs.value.length / pageSize));
 
 const visiblePages = computed(() => {
-  const pages = []
-  const total = totalPages.value
-  const current = currentPage.value
+  const pages = [];
+  const total = totalPages.value;
+  const current = currentPage.value;
 
   if (total <= 7) {
     for (let i = 1; i <= total; i++) {
-      pages.push(i)
+      pages.push(i);
     }
   } else {
     if (current <= 4) {
-      for (let i = 1; i <= 5; i++) pages.push(i)
-      pages.push("...")
-      pages.push(total)
+      for (let i = 1; i <= 5; i++) pages.push(i);
+      pages.push('...');
+      pages.push(total);
     } else if (current >= total - 3) {
-      pages.push(1)
-      pages.push("...")
-      for (let i = total - 4; i <= total; i++) pages.push(i)
+      pages.push(1);
+      pages.push('...');
+      for (let i = total - 4; i <= total; i++) pages.push(i);
     } else {
-      pages.push(1)
-      pages.push("...")
-      for (let i = current - 1; i <= current + 1; i++) pages.push(i)
-      pages.push("...")
-      pages.push(total)
+      pages.push(1);
+      pages.push('...');
+      for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+      pages.push('...');
+      pages.push(total);
     }
   }
 
-  return pages
-})
+  return pages;
+});
 
 const todayLogs = computed(() => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return auditLogs.value.filter((log) => log.timestamp >= today).length
-})
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return auditLogs.value.filter((log) => log.timestamp >= today).length;
+});
 
 const weekLogs = computed(() => {
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  return auditLogs.value.filter((log) => log.timestamp >= weekAgo).length
-})
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  return auditLogs.value.filter((log) => log.timestamp >= weekAgo).length;
+});
 
 const criticalLogs = computed(() => {
-  return auditLogs.value.filter((log) => log.level === "CRITICAL" || log.level === "ERROR").length
-})
+  return auditLogs.value.filter((log) => log.level === 'CRITICAL' || log.level === 'ERROR').length;
+});
 
-const totalLogs = computed(() => auditLogs.value.length)
+const totalLogs = computed(() => auditLogs.value.length);
 
 // Methods
 const getLevelColor = (level: string) => {
   const colors = {
-    INFO: "bg-blue-100 text-blue-600",
-    WARNING: "bg-yellow-100 text-yellow-600",
-    ERROR: "bg-red-100 text-red-600",
-    CRITICAL: "bg-red-200 text-red-700",
-  }
-  return colors[level as keyof typeof colors] || "bg-gray-100 text-gray-600"
-}
+    INFO: 'bg-blue-100 text-blue-600',
+    WARNING: 'bg-yellow-100 text-yellow-600',
+    ERROR: 'bg-red-100 text-red-600',
+    CRITICAL: 'bg-red-200 text-red-700',
+  };
+  return colors[level as keyof typeof colors] || 'bg-gray-100 text-gray-600';
+};
 
 const getLevelBadgeColor = (level: string) => {
   const colors = {
-    INFO: "bg-blue-100 text-blue-800",
-    WARNING: "bg-yellow-100 text-yellow-800",
-    ERROR: "bg-red-100 text-red-800",
-    CRITICAL: "bg-red-200 text-red-900",
-  }
-  return colors[level as keyof typeof colors] || "bg-gray-100 text-gray-800"
-}
+    INFO: 'bg-blue-100 text-blue-800',
+    WARNING: 'bg-yellow-100 text-yellow-800',
+    ERROR: 'bg-red-100 text-red-800',
+    CRITICAL: 'bg-red-200 text-red-900',
+  };
+  return colors[level as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+};
 
 const getActionIcon = (action: string) => {
   const icons = {
-    LOGIN: "🔐",
-    LOGOUT: "🚪",
-    CREATE: "➕",
-    UPDATE: "✏️",
-    DELETE: "🗑️",
-    ROLE_CHANGE: "🔄",
-    PERMISSION_CHANGE: "🔑",
-    SYSTEM_CONFIG: "⚙️",
-  }
-  return icons[action as keyof typeof icons] || "📝"
-}
+    LOGIN: '🔐',
+    LOGOUT: '🚪',
+    CREATE: '➕',
+    UPDATE: '✏️',
+    DELETE: '🗑️',
+    ROLE_CHANGE: '🔄',
+    PERMISSION_CHANGE: '🔑',
+    SYSTEM_CONFIG: '⚙️',
+  };
+  return icons[action as keyof typeof icons] || '📝';
+};
 
 const getActionDescription = (action: string) => {
   const descriptions = {
-    LOGIN: "Inicio de sesión",
-    LOGOUT: "Cierre de sesión",
-    CREATE: "Creación",
-    UPDATE: "Actualización",
-    DELETE: "Eliminación",
-    ROLE_CHANGE: "Cambio de rol",
-    PERMISSION_CHANGE: "Cambio de permisos",
-    SYSTEM_CONFIG: "Configuración del sistema",
-  }
-  return descriptions[action as keyof typeof descriptions] || action
-}
+    LOGIN: 'Inicio de sesión',
+    LOGOUT: 'Cierre de sesión',
+    CREATE: 'Creación',
+    UPDATE: 'Actualización',
+    DELETE: 'Eliminación',
+    ROLE_CHANGE: 'Cambio de rol',
+    PERMISSION_CHANGE: 'Cambio de permisos',
+    SYSTEM_CONFIG: 'Configuración del sistema',
+  };
+  return descriptions[action as keyof typeof descriptions] || action;
+};
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date);
+};
 
 const toggleDetails = (logId: string) => {
-  const index = expandedLogs.value.indexOf(logId)
+  const index = expandedLogs.value.indexOf(logId);
   if (index > -1) {
-    expandedLogs.value.splice(index, 1)
+    expandedLogs.value.splice(index, 1);
   } else {
-    expandedLogs.value.push(logId)
+    expandedLogs.value.push(logId);
   }
-}
+};
 
 const viewLogDetails = (log: any) => {
   alert(
-    `Detalles completos del log:\n\nID: ${log.id}\nAcción: ${log.action}\nNivel: ${log.level}\nUsuario: ${log.userEmail}\nIP: ${log.ipAddress}\nFecha: ${formatDate(log.timestamp)}\n\nDescripción:\n${log.description}\n\nDetalles:\n${JSON.stringify(log.details, null, 2)}`
-  )
-}
+    `Detalles completos del log:\n\nID: ${log.id}\nAcción: ${log.action}\nNivel: ${log.level}\nUsuario: ${log.userEmail}\nIP: ${log.ipAddress}\nFecha: ${formatDate(log.timestamp)}\n\nDescripción:\n${log.description}\n\nDetalles:\n${JSON.stringify(log.details, null, 2)}`,
+  );
+};
 
 const reportIssue = (log: any) => {
   if (confirm(`¿Deseas reportar este problema para seguimiento?\n\nLog: ${log.description}`)) {
-    console.log("Reportando problema:", log.id)
-    alert("Problema reportado exitosamente. Se ha enviado una notificación al equipo de soporte.")
+    console.log('Reportando problema:', log.id);
+    alert('Problema reportado exitosamente. Se ha enviado una notificación al equipo de soporte.');
   }
-}
+};
 
 const clearFilters = () => {
   filters.value = {
-    startDate: "",
-    endDate: "",
-    action: "",
-    userEmail: "",
-    level: "",
-  }
-  currentPage.value = 1
-}
+    startDate: '',
+    endDate: '',
+    action: '',
+    userEmail: '',
+    level: '',
+  };
+  currentPage.value = 1;
+};
 
 const refreshLogs = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    console.log("✅ Logs actualizados")
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.log('✅ Logs actualizados');
   } catch (err) {
-    error.value = "Error al cargar logs de auditoría"
-    console.error("Error loading audit logs:", err)
+    error.value = 'Error al cargar logs de auditoría';
+    console.error('Error loading audit logs:', err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const exportLogs = () => {
-  console.log("Exportando logs...")
+  console.log('Exportando logs...');
   // TODO: Implement export functionality
-  alert("Funcionalidad de exportación en desarrollo")
-}
+  alert('Funcionalidad de exportación en desarrollo');
+};
 
 // Lifecycle
 onMounted(() => {
   // Set default date range to last 7 days
-  const endDate = new Date()
-  const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const endDate = new Date();
+  const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  filters.value.startDate = startDate.toISOString().split("T")[0]
-  filters.value.endDate = endDate.toISOString().split("T")[0]
+  filters.value.startDate = startDate.toISOString().split('T')[0];
+  filters.value.endDate = endDate.toISOString().split('T')[0];
 
-  refreshLogs()
-})
+  refreshLogs();
+});
 </script>
 
 <style scoped>

@@ -1,15 +1,3 @@
-<script setup lang="ts">
-import {PencilIcon, UserGroupIcon} from "@heroicons/vue/24/outline"
-import type {ClassData} from "../types/teacherTypes" // Assuming types are moved
-
-defineProps<{
-  upcomingClasses: ClassData[]
-  getNextSession: (classItem: ClassData) => Date
-  formatDateTime: (date: Date) => string
-}>()
-const emit = defineEmits(["edit-class", "manage-students"])
-</script>
-
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4">
     <h2 class="text-lg font-semibold mb-4">Próximas Clases (24h)</h2>
@@ -62,3 +50,15 @@ const emit = defineEmits(["edit-class", "manage-students"])
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { PencilIcon, UserGroupIcon } from '@heroicons/vue/24/outline';
+import type { ClassData } from '../types/teacherTypes'; // Assuming types are moved
+
+defineProps<{
+  upcomingClasses: ClassData[]
+  getNextSession: (classItem: ClassData) => Date
+  formatDateTime: (date: Date) => string
+}>();
+const emit = defineEmits(['edit-class', 'manage-students']);
+</script>

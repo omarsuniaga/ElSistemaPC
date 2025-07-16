@@ -177,11 +177,11 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot} from "@headlessui/vue"
-import {useTeachersStore} from "../store/teachers"
-import {useTeacherCollaboration} from "../../Classes/composables/useTeacherCollaboration"
-import {useAuthStore} from "../../../stores/auth"
+import { ref, computed, onMounted } from 'vue';
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
+import { useTeachersStore } from '../store/teachers';
+import { useTeacherCollaboration } from '../../Classes/composables/useTeacherCollaboration';
+import { useAuthStore } from '../../../stores/auth';
 
 interface Props {
   show: boolean
@@ -193,22 +193,22 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "invitation-sent"): void
+  (e: 'close'): void
+  (e: 'invitation-sent'): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
 // Stores y composables
-const teachersStore = useTeachersStore()
-const authStore = useAuthStore()
-const {inviteAssistant} = useTeacherCollaboration()
+const teachersStore = useTeachersStore();
+const authStore = useAuthStore();
+const { inviteAssistant } = useTeacherCollaboration();
 
 // Estado
-const selectedTeacherId = ref("")
-const isLoading = ref(false)
-const error = ref("")
+const selectedTeacherId = ref('');
+const isLoading = ref(false);
+const error = ref('');
 
 // Permisos por defecto
 const permissions = ref({
@@ -216,59 +216,59 @@ const permissions = ref({
   canAddObservations: true,
   canViewAttendanceHistory: false,
   canViewObservations: true,
-})
+});
 
 // Computed
 const availableTeachers = computed(() => {
   return teachersStore.teachers.filter(
     (teacher) =>
       teacher.id !== props.classData.teacherId && // No incluir al maestro actual
-      teacher.id !== authStore.user?.uid // No incluirse a sí mismo
-  )
-})
+      teacher.id !== authStore.user?.uid, // No incluirse a sí mismo
+  );
+});
 
 // Métodos
 const handleInvite = async () => {
   if (!selectedTeacherId.value) {
-    error.value = "Por favor selecciona un maestro"
-    return
+    error.value = 'Por favor selecciona un maestro';
+    return;
   }
 
-  isLoading.value = true
-  error.value = ""
+  isLoading.value = true;
+  error.value = '';
 
   try {
     await inviteAssistant({
       classId: props.classData.id,
       teacherId: selectedTeacherId.value,
       permissions: permissions.value,
-    })
+    });
 
-    console.log("Invitación enviada correctamente")
+    console.log('Invitación enviada correctamente');
 
-    emit("invitation-sent")
-    emit("close")
+    emit('invitation-sent');
+    emit('close');
 
     // Limpiar formulario
-    selectedTeacherId.value = ""
+    selectedTeacherId.value = '';
     permissions.value = {
       canTakeAttendance: true,
       canAddObservations: true,
       canViewAttendanceHistory: false,
       canViewObservations: true,
-    }
+    };
   } catch (err: any) {
-    error.value = err.message || "Error al enviar la invitación"
-    console.error("Error al enviar invitación:", err)
+    error.value = err.message || 'Error al enviar la invitación';
+    console.error('Error al enviar invitación:', err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Cargar maestros al montar el componente
 onMounted(async () => {
   if (teachersStore.teachers.length === 0) {
-    await teachersStore.fetchTeachers()
+    await teachersStore.fetchTeachers();
   }
-})
+});
 </script>

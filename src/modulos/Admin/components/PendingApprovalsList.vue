@@ -182,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
+import { ref, computed } from 'vue';
 import {
   CheckCircleIcon,
   UserIcon,
@@ -192,22 +192,22 @@ import {
   EyeIcon,
   EyeSlashIcon,
   ArrowTopRightOnSquareIcon,
-} from "@heroicons/vue/24/outline"
-import ApprovalActionModal from "./ApprovalActionModal.vue"
+} from '@heroicons/vue/24/outline';
+import ApprovalActionModal from './ApprovalActionModal.vue';
 
 interface PendingApproval {
   id: string
   type:
-    | "teacher_registration"
-    | "schedule_change"
-    | "class_creation"
-    | "student_enrollment"
-    | "resource_request"
+    | 'teacher_registration'
+    | 'schedule_change'
+    | 'class_creation'
+    | 'student_enrollment'
+    | 'resource_request'
   title: string
   description: string
   requestedBy: string
   requestedAt: Date
-  priority: "low" | "medium" | "high"
+  priority: 'low' | 'medium' | 'high'
   data: any
 }
 
@@ -222,152 +222,152 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   hasMore: false,
   loadingMore: false,
-})
+});
 
 const emit = defineEmits<{
   approve: [approval: PendingApproval]
   reject: [approval: PendingApproval, reason?: string]
   loadMore: []
   viewDetails: [approval: PendingApproval]
-}>()
+}>();
 
 // State
-const processing = ref<string | null>(null)
-const showPreview = ref(false)
-const showModal = ref(false)
-const selectedApproval = ref<PendingApproval | null>(null)
-const selectedAction = ref<"approve" | "reject" | null>(null)
+const processing = ref<string | null>(null);
+const showPreview = ref(false);
+const showModal = ref(false);
+const selectedApproval = ref<PendingApproval | null>(null);
+const selectedAction = ref<'approve' | 'reject' | null>(null);
 
 // Methods
 const getPriorityColor = (priority: string) => {
   const colorMap = {
-    low: "bg-green-400",
-    medium: "bg-yellow-400",
-    high: "bg-red-400",
-  }
-  return colorMap[priority as keyof typeof colorMap] || "bg-gray-400"
-}
+    low: 'bg-green-400',
+    medium: 'bg-yellow-400',
+    high: 'bg-red-400',
+  };
+  return colorMap[priority as keyof typeof colorMap] || 'bg-gray-400';
+};
 
 const getPriorityLabel = (priority: string) => {
   const labelMap = {
-    low: "Baja",
-    medium: "Media",
-    high: "Alta",
-  }
-  return labelMap[priority as keyof typeof labelMap] || "Normal"
-}
+    low: 'Baja',
+    medium: 'Media',
+    high: 'Alta',
+  };
+  return labelMap[priority as keyof typeof labelMap] || 'Normal';
+};
 
 const getPriorityBadgeClasses = (priority: string) => {
   const classMap = {
-    low: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-    high: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  }
+    low: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+    high: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  };
   return (
     classMap[priority as keyof typeof classMap] ||
-    "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-  )
-}
+    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+  );
+};
 
 const getTypeLabel = (type: string) => {
   const labelMap = {
-    teacher_registration: "Registro Maestro",
-    schedule_change: "Cambio Horario",
-    class_creation: "Crear Clase",
-    student_enrollment: "Inscripción",
-    resource_request: "Recurso",
-  }
-  return labelMap[type as keyof typeof labelMap] || "General"
-}
+    teacher_registration: 'Registro Maestro',
+    schedule_change: 'Cambio Horario',
+    class_creation: 'Crear Clase',
+    student_enrollment: 'Inscripción',
+    resource_request: 'Recurso',
+  };
+  return labelMap[type as keyof typeof labelMap] || 'General';
+};
 
 const getTypeClasses = (type: string) => {
   const classMap = {
-    teacher_registration: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    schedule_change: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-    class_creation: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    student_enrollment: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
-    resource_request: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-  }
+    teacher_registration: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    schedule_change: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+    class_creation: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    student_enrollment: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+    resource_request: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+  };
   return (
     classMap[type as keyof typeof classMap] ||
-    "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-  )
-}
+    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+  );
+};
 
 const formatTimeAgo = (timestamp: Date): string => {
-  const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000)
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
-    return "Ahora"
+    return 'Ahora';
   } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60)
-    return `${minutes}m`
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes}m`;
   } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600)
-    return `${hours}h`
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours}h`;
   } else {
-    const days = Math.floor(diffInSeconds / 86400)
-    return `${days}d`
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days}d`;
   }
-}
+};
 
 const getPreviewData = (data: any) => {
-  if (!data || typeof data !== "object") return {}
+  if (!data || typeof data !== 'object') return {};
 
   // Show only first 3 key-value pairs for preview
-  const entries = Object.entries(data).slice(0, 3)
-  return Object.fromEntries(entries)
-}
+  const entries = Object.entries(data).slice(0, 3);
+  return Object.fromEntries(entries);
+};
 
 const formatKey = (key: string): string => {
-  return key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())
-}
+  return key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+};
 
 const togglePreview = (approvalId: string) => {
-  showPreview.value = !showPreview.value
-}
+  showPreview.value = !showPreview.value;
+};
 
 const viewFullDetails = (approval: PendingApproval) => {
-  emit("viewDetails", approval)
-}
+  emit('viewDetails', approval);
+};
 
 const handleApprove = (approval: PendingApproval) => {
-  selectedApproval.value = approval
-  selectedAction.value = "approve"
-  showModal.value = true
-}
+  selectedApproval.value = approval;
+  selectedAction.value = 'approve';
+  showModal.value = true;
+};
 
 const handleReject = (approval: PendingApproval) => {
-  selectedApproval.value = approval
-  selectedAction.value = "reject"
-  showModal.value = true
-}
+  selectedApproval.value = approval;
+  selectedAction.value = 'reject';
+  showModal.value = true;
+};
 
 const confirmAction = async (reason?: string) => {
-  if (!selectedApproval.value || !selectedAction.value) return
+  if (!selectedApproval.value || !selectedAction.value) return;
 
-  processing.value = selectedApproval.value.id
+  processing.value = selectedApproval.value.id;
 
   try {
-    if (selectedAction.value === "approve") {
-      emit("approve", selectedApproval.value)
+    if (selectedAction.value === 'approve') {
+      emit('approve', selectedApproval.value);
     } else {
-      emit("reject", selectedApproval.value, reason)
+      emit('reject', selectedApproval.value, reason);
     }
   } finally {
-    processing.value = null
-    showModal.value = false
-    selectedApproval.value = null
-    selectedAction.value = null
+    processing.value = null;
+    showModal.value = false;
+    selectedApproval.value = null;
+    selectedAction.value = null;
   }
-}
+};
 
 const cancelAction = () => {
-  showModal.value = false
-  selectedApproval.value = null
-  selectedAction.value = null
-}
+  showModal.value = false;
+  selectedApproval.value = null;
+  selectedAction.value = null;
+};
 </script>
 
 <style scoped>

@@ -1,31 +1,3 @@
-<script setup lang="ts">
-import {ref, onMounted} from "vue"
-
-const isDarkMode = ref(false)
-
-const toggleDarkMode = () => {
-  isDarkMode.value = !isDarkMode.value
-  if (isDarkMode.value) {
-    document.documentElement.classList.add("dark")
-    localStorage.setItem("darkMode", "true")
-  } else {
-    document.documentElement.classList.remove("dark")
-    localStorage.setItem("darkMode", "false")
-  }
-}
-
-onMounted(() => {
-  const savedMode = localStorage.getItem("darkMode")
-  if (
-    savedMode === "true" ||
-    (!savedMode && window.matchMedia("(prefers-color-scheme: dark)").matches)
-  ) {
-    isDarkMode.value = true
-    document.documentElement.classList.add("dark")
-  }
-})
-</script>
-
 <template>
   <button
     class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
@@ -64,3 +36,31 @@ onMounted(() => {
     </svg>
   </button>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+
+const isDarkMode = ref(false);
+
+const toggleDarkMode = () => {
+  isDarkMode.value = !isDarkMode.value;
+  if (isDarkMode.value) {
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('darkMode', 'true');
+  } else {
+    document.documentElement.classList.remove('dark');
+    localStorage.setItem('darkMode', 'false');
+  }
+};
+
+onMounted(() => {
+  const savedMode = localStorage.getItem('darkMode');
+  if (
+    savedMode === 'true' ||
+    (!savedMode && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  ) {
+    isDarkMode.value = true;
+    document.documentElement.classList.add('dark');
+  }
+});
+</script>

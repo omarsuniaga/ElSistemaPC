@@ -235,7 +235,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 import {
   BeakerIcon,
   BoltIcon,
@@ -248,216 +248,216 @@ import {
   CommandLineIcon,
   ArrowDownTrayIcon,
   EyeIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
-import {useBrandingStore} from "@/stores/brandingStore"
-import {brandingTests} from "@/utils/testing/brandingTests"
-import {logger} from "@/utils/logging/logger"
+import { useBrandingStore } from '@/stores/brandingStore';
+import { brandingTests } from '@/utils/testing/brandingTests';
+import { logger } from '@/utils/logging/logger';
 
 // Store
-const brandingStore = useBrandingStore()
+const brandingStore = useBrandingStore();
 
 // Estado local
-const isRunning = ref(false)
-const progress = ref(0)
-const currentTestMessage = ref("")
-const testResults = ref<Array<{test: string; status: "PASS" | "FAIL"; details?: string}>>([])
+const isRunning = ref(false);
+const progress = ref(0);
+const currentTestMessage = ref('');
+const testResults = ref<Array<{test: string; status: 'PASS' | 'FAIL'; details?: string}>>([]);
 
 // Estado del sistema
 const storeStatus = computed(() => ({
   store: !!brandingStore,
   config: !!brandingStore.config.appName,
-}))
+}));
 
-const cssVariablesCount = computed(() => Object.keys(brandingStore.cssVariables).length)
+const cssVariablesCount = computed(() => Object.keys(brandingStore.cssVariables).length);
 
 // Estadísticas de pruebas
-const passedTests = computed(() => testResults.value.filter((r) => r.status === "PASS").length)
+const passedTests = computed(() => testResults.value.filter((r) => r.status === 'PASS').length);
 
 const successRate = computed(() =>
   testResults.value.length > 0
     ? Math.round((passedTests.value / testResults.value.length) * 100)
-    : 0
-)
+    : 0,
+);
 
 const summaryColor = computed(() => {
-  if (successRate.value >= 90) return "success"
-  if (successRate.value >= 70) return "warning"
-  return "danger"
-})
+  if (successRate.value >= 90) return 'success';
+  if (successRate.value >= 70) return 'warning';
+  return 'danger';
+});
 
 // Estilos para preview
 const headerStyles = computed(() => ({
   backgroundColor: brandingStore.primaryColor,
-  color: "white",
-  padding: "16px",
-  borderRadius: "8px",
-  display: "flex",
-  alignItems: "center",
-  gap: "12px",
-}))
+  color: 'white',
+  padding: '16px',
+  borderRadius: '8px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+}));
 
 // Métodos
 async function runQuickTest() {
-  isRunning.value = true
-  currentTestMessage.value = "Ejecutando prueba rápida..."
-  progress.value = 0.3
+  isRunning.value = true;
+  currentTestMessage.value = 'Ejecutando prueba rápida...';
+  progress.value = 0.3;
 
   try {
-    const result = await brandingTests.quickTest()
+    const result = await brandingTests.quickTest();
 
     testResults.value = [
       {
-        test: "Prueba Rápida del Sistema",
-        status: result ? "PASS" : "FAIL",
+        test: 'Prueba Rápida del Sistema',
+        status: result ? 'PASS' : 'FAIL',
         details: result
-          ? "Todos los componentes básicos funcionan"
-          : "Fallos detectados en componentes básicos",
+          ? 'Todos los componentes básicos funcionan'
+          : 'Fallos detectados en componentes básicos',
       },
-    ]
+    ];
 
-    progress.value = 1
-    currentTestMessage.value = "Prueba rápida completada"
+    progress.value = 1;
+    currentTestMessage.value = 'Prueba rápida completada';
   } catch (error) {
-    logger.error("BRANDING_TEST_DASHBOARD", "Error en prueba rápida", error)
+    logger.error('BRANDING_TEST_DASHBOARD', 'Error en prueba rápida', error);
     testResults.value = [
       {
-        test: "Prueba Rápida del Sistema",
-        status: "FAIL",
+        test: 'Prueba Rápida del Sistema',
+        status: 'FAIL',
         details: `Error: ${error}`,
       },
-    ]
+    ];
   } finally {
     setTimeout(() => {
-      isRunning.value = false
-      currentTestMessage.value = ""
-      progress.value = 0
-    }, 1000)
+      isRunning.value = false;
+      currentTestMessage.value = '';
+      progress.value = 0;
+    }, 1000);
   }
 }
 
 async function runFullTest() {
-  isRunning.value = true
-  currentTestMessage.value = "Ejecutando suite completa de pruebas..."
-  progress.value = 0.1
+  isRunning.value = true;
+  currentTestMessage.value = 'Ejecutando suite completa de pruebas...';
+  progress.value = 0.1;
 
   try {
     // Capturar resultados de la suite completa
-    await brandingTests.runAllTests()
+    await brandingTests.runAllTests();
 
     // Obtener resultados del window object
-    const results = (window as any).brandingTestResults || []
-    testResults.value = results
+    const results = (window as any).brandingTestResults || [];
+    testResults.value = results;
 
-    progress.value = 1
-    currentTestMessage.value = "Suite completa finalizada"
+    progress.value = 1;
+    currentTestMessage.value = 'Suite completa finalizada';
   } catch (error) {
-    logger.error("BRANDING_TEST_DASHBOARD", "Error en suite completa", error)
+    logger.error('BRANDING_TEST_DASHBOARD', 'Error en suite completa', error);
     testResults.value = [
       {
-        test: "Suite Completa",
-        status: "FAIL",
+        test: 'Suite Completa',
+        status: 'FAIL',
         details: `Error ejecutando suite: ${error}`,
       },
-    ]
+    ];
   } finally {
     setTimeout(() => {
-      isRunning.value = false
-      currentTestMessage.value = ""
-      progress.value = 0
-    }, 1000)
+      isRunning.value = false;
+      currentTestMessage.value = '';
+      progress.value = 0;
+    }, 1000);
   }
 }
 
 function testBrandingComponents() {
-  isRunning.value = true
-  currentTestMessage.value = "Probando componentes de branding..."
-  progress.value = 0.5
+  isRunning.value = true;
+  currentTestMessage.value = 'Probando componentes de branding...';
+  progress.value = 0.5;
 
-  const componentTests = []
+  const componentTests = [];
 
   // Test DynamicHeader
-  if (document.querySelector(".dynamic-header") || document.querySelector('[class*="header"]')) {
+  if (document.querySelector('.dynamic-header') || document.querySelector('[class*="header"]')) {
     componentTests.push({
-      test: "DynamicHeader Component",
-      status: "PASS" as const,
-      details: "Componente encontrado en DOM",
-    })
+      test: 'DynamicHeader Component',
+      status: 'PASS' as const,
+      details: 'Componente encontrado en DOM',
+    });
   } else {
     componentTests.push({
-      test: "DynamicHeader Component",
-      status: "FAIL" as const,
-      details: "Componente no encontrado en DOM",
-    })
+      test: 'DynamicHeader Component',
+      status: 'FAIL' as const,
+      details: 'Componente no encontrado en DOM',
+    });
   }
 
   // Test variables CSS aplicadas
-  const root = document.documentElement
-  const primaryVar = getComputedStyle(root).getPropertyValue("--ion-color-primary")
+  const root = document.documentElement;
+  const primaryVar = getComputedStyle(root).getPropertyValue('--ion-color-primary');
 
   if (primaryVar) {
     componentTests.push({
-      test: "CSS Variables Applied",
-      status: "PASS" as const,
+      test: 'CSS Variables Applied',
+      status: 'PASS' as const,
       details: `Primary color: ${primaryVar.trim()}`,
-    })
+    });
   } else {
     componentTests.push({
-      test: "CSS Variables Applied",
-      status: "FAIL" as const,
-      details: "Variables CSS no encontradas",
-    })
+      test: 'CSS Variables Applied',
+      status: 'FAIL' as const,
+      details: 'Variables CSS no encontradas',
+    });
   }
 
   // Test composable availability
   try {
-    const {appTitle} = useBranding()
+    const { appTitle } = useBranding();
     componentTests.push({
-      test: "Branding Composable",
-      status: "PASS" as const,
+      test: 'Branding Composable',
+      status: 'PASS' as const,
       details: `Composable funcional, title: ${appTitle.value}`,
-    })
+    });
   } catch (error) {
     componentTests.push({
-      test: "Branding Composable",
-      status: "FAIL" as const,
-      details: "Error accediendo al composable",
-    })
+      test: 'Branding Composable',
+      status: 'FAIL' as const,
+      details: 'Error accediendo al composable',
+    });
   }
 
-  testResults.value = componentTests
-  progress.value = 1
+  testResults.value = componentTests;
+  progress.value = 1;
 
   setTimeout(() => {
-    isRunning.value = false
-    currentTestMessage.value = ""
-    progress.value = 0
-  }, 800)
+    isRunning.value = false;
+    currentTestMessage.value = '';
+    progress.value = 0;
+  }, 800);
 }
 
 function clearResults() {
-  testResults.value = []
+  testResults.value = [];
 }
 
 function openConsoleTools() {
-  console.group("🎨 Branding Debug Tools - Activadas")
-  console.log("Usa estas funciones en la consola:")
-  console.log("• testBranding() - Suite completa")
-  console.log("• quickTestBranding() - Prueba rápida")
-  console.log("• window.brandingTestResults - Últimos resultados")
-  console.log("• debugBranding() - Ver todas las herramientas")
-  console.groupEnd()
+  console.group('🎨 Branding Debug Tools - Activadas');
+  console.log('Usa estas funciones en la consola:');
+  console.log('• testBranding() - Suite completa');
+  console.log('• quickTestBranding() - Prueba rápida');
+  console.log('• window.brandingTestResults - Últimos resultados');
+  console.log('• debugBranding() - Ver todas las herramientas');
+  console.groupEnd();
 
   // Ejecutar debug automáticamente
   if ((window as any).debugBranding) {
-    ;(window as any).debugBranding()
+    ;(window as any).debugBranding();
   }
 }
 
 function exportTestResults() {
   if (testResults.value.length === 0) {
-    alert("No hay resultados para exportar")
-    return
+    alert('No hay resultados para exportar');
+    return;
   }
 
   const data = {
@@ -471,37 +471,37 @@ function exportTestResults() {
       failed: testResults.value.length - passedTests.value,
       successRate: successRate.value,
     },
-  }
+  };
 
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"})
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `branding-test-results-${new Date().toISOString().split("T")[0]}.json`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `branding-test-results-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function viewBrandingStore() {
-  console.group("🎨 Branding Store State")
-  console.log("Config:", brandingStore.config)
-  console.log("CSS Variables:", brandingStore.cssVariables)
-  console.log("App Title:", brandingStore.appTitle)
-  console.log("Primary Color:", brandingStore.primaryColor)
-  console.log("Is Loading:", brandingStore.isLoading)
-  console.log("Has Changes:", brandingStore.hasChanges)
-  console.groupEnd()
+  console.group('🎨 Branding Store State');
+  console.log('Config:', brandingStore.config);
+  console.log('CSS Variables:', brandingStore.cssVariables);
+  console.log('App Title:', brandingStore.appTitle);
+  console.log('Primary Color:', brandingStore.primaryColor);
+  console.log('Is Loading:', brandingStore.isLoading);
+  console.log('Has Changes:', brandingStore.hasChanges);
+  console.groupEnd();
 }
 
 // Composable para uso en template
-import {useBranding} from "@/composables/useBranding"
+import { useBranding } from '@/composables/useBranding';
 
 // Lifecycle
 onMounted(() => {
-  logger.info("BRANDING_TEST_DASHBOARD", "Dashboard de pruebas montado")
-})
+  logger.info('BRANDING_TEST_DASHBOARD', 'Dashboard de pruebas montado');
+});
 </script>
 
 <style scoped>

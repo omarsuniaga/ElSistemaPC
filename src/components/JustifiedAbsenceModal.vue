@@ -1,59 +1,4 @@
 <!-- components/JustifiedAbsenceModal.vue -->
-<script setup lang="ts">
-import {ref} from "vue"
-
-defineProps<{
-  student: any
-}>()
-
-const emit = defineEmits(["close", "save"])
-
-const reason = ref("")
-const file = ref<File | null>(null)
-const isUploading = ref(false)
-const documentUrl = ref("")
-const errorMessage = ref("")
-
-const handleFileChange = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  if (input.files && input.files.length > 0) {
-    file.value = input.files[0]
-  }
-}
-
-const save = () => {
-  if (!reason.value.trim()) {
-    errorMessage.value = "Por favor ingrese una razón para la justificación"
-    return
-  }
-
-  // Enviar tanto la razón como el archivo si existe
-  emit("save", {
-    reason: reason.value,
-    documentUrl: documentUrl.value,
-    file: file.value,
-  })
-
-  close()
-}
-
-const close = () => {
-  reason.value = ""
-  file.value = null
-  documentUrl.value = ""
-  errorMessage.value = ""
-  emit("close")
-}
-
-// Make sure the component is exported as default
-defineExpose({})
-if (import.meta.env?.PROD === false) {
-  // @ts-ignore - This ensures the component has a default export
-  // which helps with certain bundlers and IDE tooling
-  const _default = {}
-}
-</script>
-
 <template>
   <div
     v-if="$props.student"
@@ -69,6 +14,7 @@ if (import.meta.env?.PROD === false) {
         >
         <textarea
           id="reason"
+          ref="reasonInput"
           v-model="reason"
           rows="3"
           class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -129,3 +75,79 @@ if (import.meta.env?.PROD === false) {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, watch, nextTick } from 'vue';
+
+
+interface Student {
+  id: string;
+  nombre: string;
+  apellido: string;
+  [key: string]: any;
+}
+const props = defineProps<{
+  student: Student | null,
+  initialReason?: string
+}>();
+
+const emit = defineEmits(['close', 'save']);
+
+const reason = ref(props.initialReason || '');
+const reasonInput = ref<HTMLTextAreaElement | null>(null);
+// Watch for changes in student or initialReason to update the textarea and autofocus
+watch([
+  () => props.student,
+  () => props.initialReason,
+], async ([student, initialReason]) => {
+  reason.value = initialReason || '';
+  await nextTick();
+  if (student && reasonInput.value) {
+    reasonInput.value.focus();
+    reasonInput.value.select();
+  }
+});
+const file = ref<File | null>(null);
+const isUploading = ref(false);
+const documentUrl = ref('');
+const errorMessage = ref('');
+
+const handleFileChange = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files.length > 0) {
+    file.value = input.files[0];
+  }
+};
+
+const save = () => {
+  if (!reason.value.trim()) {
+    errorMessage.value = 'Por favor ingrese una razón para la justificación';
+    return;
+  }
+
+  // Enviar tanto la razón como el archivo si existe
+  emit('save', {
+    reason: reason.value,
+    documentUrl: documentUrl.value,
+    file: file.value,
+  });
+
+  close();
+};
+
+const close = () => {
+  reason.value = '';
+  file.value = null;
+  documentUrl.value = '';
+  errorMessage.value = '';
+  emit('close');
+};
+
+// Make sure the component is exported as default
+defineExpose({});
+if (import.meta.env?.PROD === false) {
+  // @ts-expect-error - This ensures the component has a default export
+  // which helps with certain bundlers and IDE tooling
+  const _default = {};
+}
+</script>

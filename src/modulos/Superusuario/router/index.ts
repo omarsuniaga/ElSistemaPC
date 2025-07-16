@@ -1,127 +1,127 @@
 // src/modulos/Superusuario/router/index.ts
 
-import {RouteRecordRaw} from "vue-router"
+import { RouteRecordRaw } from 'vue-router';
 
 export const superusuarioRoutes: RouteRecordRaw[] = [
   {
-    path: "/superusuario",
-    name: "SuperusuarioBase",
-    redirect: "/superusuario/dashboard",
+    path: '/superusuario',
+    name: 'SuperusuarioBase',
+    redirect: '/superusuario/dashboard',
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
+      allowedRoles: ['Superusuario'],
     },
   },
   {
-    path: "/superusuario/dashboard",
-    name: "SuperusuarioDashboard",
-    component: () => import("../views/SuperusuarioDashboard.vue"),
+    path: '/superusuario/dashboard',
+    name: 'SuperusuarioDashboard',
+    component: () => import('../views/SuperusuarioDashboard.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Panel de Superusuario",
+      allowedRoles: ['Superusuario'],
+      title: 'Panel de Superusuario',
     },
   },
   {
-    path: "/superusuario/roles",
-    name: "SuperusuarioRoles",
-    component: () => import("../components/ConfigurarRoles.vue"),
+    path: '/superusuario/roles',
+    name: 'SuperusuarioRoles',
+    component: () => import('../components/ConfigurarRoles.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Configuración de Roles",
+      allowedRoles: ['Superusuario'],
+      title: 'Configuración de Roles',
     },
   },
   {
-    path: "/superusuario/permissions",
-    name: "SuperusuarioPermissions",
-    component: () => import("../views/SuperusuarioDashboard.vue"), // Reusar dashboard por ahora
+    path: '/superusuario/permissions',
+    name: 'SuperusuarioPermissions',
+    component: () => import('../views/SuperusuarioDashboard.vue'), // Reusar dashboard por ahora
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Gestión de Permisos",
+      allowedRoles: ['Superusuario'],
+      title: 'Gestión de Permisos',
     },
   },
   {
-    path: "/superusuario/rbac",
-    name: "SuperusuarioRBAC",
-    component: () => import("../views/RBACManagement.vue"),
+    path: '/superusuario/rbac',
+    name: 'SuperusuarioRBAC',
+    component: () => import('../views/RBACManagement.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Gestión de Roles y Permisos (RBAC)",
+      allowedRoles: ['Superusuario'],
+      title: 'Gestión de Roles y Permisos (RBAC)',
     },
   },
   {
-    path: "/superusuario/rbac-admin",
-    name: "SuperusuarioRBACAdmin",
-    component: () => import("../components/RBACAdminPanel.vue"),
+    path: '/superusuario/rbac-admin',
+    name: 'SuperusuarioRBACAdmin',
+    component: () => import('../components/RBACAdminPanel.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Panel de Administración RBAC",
+      allowedRoles: ['Superusuario'],
+      title: 'Panel de Administración RBAC',
     },
   },
   {
-    path: "/superusuario/navigation",
-    name: "SuperusuarioNavigation",
-    component: () => import("../views/NavigationManagement.vue"),
+    path: '/superusuario/navigation',
+    name: 'SuperusuarioNavigation',
+    component: () => import('../views/NavigationManagement.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Gestión de Navegación",
+      allowedRoles: ['Superusuario'],
+      title: 'Gestión de Navegación',
     },
   },
   {
-    path: "/superusuario/users",
-    name: "SuperusuarioUsers",
-    component: () => import("../views/GestionUsuarios.vue"),
+    path: '/superusuario/users',
+    name: 'SuperusuarioUsers',
+    component: () => import('../views/GestionUsuarios.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Gestión de Usuarios",
+      allowedRoles: ['Superusuario'],
+      title: 'Gestión de Usuarios',
     },
   },
   {
-    path: "/superusuario/system",
-    name: "SuperusuarioSystem",
-    component: () => import("../views/GestionModulos.vue"),
+    path: '/superusuario/system',
+    name: 'SuperusuarioSystem',
+    component: () => import('../views/GestionModulos.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Configuración del Sistema",
+      allowedRoles: ['Superusuario'],
+      title: 'Configuración del Sistema',
     },
   },
   {
-    path: "/superusuario/audit",
-    name: "SuperusuarioAudit",
-    component: () => import("../views/AuditoriaView.vue"),
+    path: '/superusuario/audit',
+    name: 'SuperusuarioAudit',
+    component: () => import('../views/AuditoriaView.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Auditoría del Sistema",
+      allowedRoles: ['Superusuario'],
+      title: 'Auditoría del Sistema',
     },
   },
   {
-    path: "/superusuario/backup",
-    name: "SuperusuarioBackup",
-    component: () => import("../views/SuperusuarioDashboard.vue"), // Reusar dashboard por ahora
+    path: '/superusuario/backup',
+    name: 'SuperusuarioBackup',
+    component: () => import('../views/SuperusuarioDashboard.vue'), // Reusar dashboard por ahora
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Respaldo y Restauración",
+      allowedRoles: ['Superusuario'],
+      title: 'Respaldo y Restauración',
     },
   },
   {
-    path: "/superusuario/branding",
-    name: "SuperusuarioBranding",
-    component: () => import("../../../components/admin/BrandingManager.vue"),
+    path: '/superusuario/branding',
+    name: 'SuperusuarioBranding',
+    component: () => import('../../../components/admin/BrandingManager.vue'),
     meta: {
       requiresAuth: true,
-      allowedRoles: ["Superusuario"],
-      title: "Configuración de Marca",
+      allowedRoles: ['Superusuario'],
+      title: 'Configuración de Marca',
     },
   },
-]
+];
 
-export default superusuarioRoutes
+export default superusuarioRoutes;

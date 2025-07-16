@@ -1,7 +1,7 @@
 // src/modulos/Montaje/service/teacherService.ts
-import { db } from "@/firebase"
-import { collection, query, where, getDocs, getDoc, doc } from "firebase/firestore"
-import { TipoInstrumento } from "../types"
+import { db } from '@/firebase';
+import { collection, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
+import { TipoInstrumento } from '../types';
 
 class TeacherService {
   /**
@@ -14,50 +14,50 @@ class TeacherService {
    */
   async getUserInstruments(userId: string): Promise<TipoInstrumento[]> {
     try {
-      const instruments = new Set<TipoInstrumento>()
+      const instruments = new Set<TipoInstrumento>();
       
       // 1. Obtener especialidades del perfil del usuario
-      const userDoc = await getDoc(doc(db, "USERS", userId))
+      const userDoc = await getDoc(doc(db, 'USERS', userId));
       if (userDoc.exists()) {
-        const userData = userDoc.data()
+        const userData = userDoc.data();
         
         // Añadir especialidades si existen
         if (userData.specialties && Array.isArray(userData.specialties)) {
           userData.specialties.forEach((specialty: string) => {
             if (Object.values(TipoInstrumento).includes(specialty as TipoInstrumento)) {
-              instruments.add(specialty as TipoInstrumento)
+              instruments.add(specialty as TipoInstrumento);
             }
-          })
+          });
         }
         
         // También verificar el campo instruments por compatibilidad
         if (userData.instruments && Array.isArray(userData.instruments)) {
           userData.instruments.forEach((instrument: string) => {
             if (Object.values(TipoInstrumento).includes(instrument as TipoInstrumento)) {
-              instruments.add(instrument as TipoInstrumento)
+              instruments.add(instrument as TipoInstrumento);
             }
-          })
+          });
         }
       }
       
       // 2. Obtener clases del profesor y sus instrumentos
       const classesQuery = query(
-        collection(db, "CLASES"),
-        where("teacherId", "==", userId)
-      )
+        collection(db, 'CLASES'),
+        where('teacherId', '==', userId),
+      );
       
-      const classesSnapshot = await getDocs(classesQuery)
+      const classesSnapshot = await getDocs(classesQuery);
       classesSnapshot.forEach(doc => {
-        const classData = doc.data()
+        const classData = doc.data();
         if (classData.instrument && Object.values(TipoInstrumento).includes(classData.instrument)) {
-          instruments.add(classData.instrument as TipoInstrumento)
+          instruments.add(classData.instrument as TipoInstrumento);
         }
-      })
+      });
       
-      return Array.from(instruments)
+      return Array.from(instruments);
     } catch (error) {
-      console.error("Error obteniendo instrumentos del profesor:", error)
-      return []
+      console.error('Error obteniendo instrumentos del profesor:', error);
+      return [];
     }
   }
   
@@ -70,9 +70,9 @@ class TeacherService {
    * @returns true si el profesor tiene asignado el instrumento
    */
   async hasInstrumentAssigned(userId: string, instrument: TipoInstrumento): Promise<boolean> {
-    const instruments = await this.getUserInstruments(userId)
-    return instruments.includes(instrument)
+    const instruments = await this.getUserInstruments(userId);
+    return instruments.includes(instrument);
   }
 }
 
-export const teacherService = new TeacherService()
+export const teacherService = new TeacherService();

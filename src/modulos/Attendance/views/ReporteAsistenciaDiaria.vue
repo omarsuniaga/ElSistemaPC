@@ -520,8 +520,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   ArrowPathIcon,
   CheckCircleIcon,
@@ -529,18 +529,18 @@ import {
   DocumentCheckIcon,
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Componentes
-import WhatsAppNotificacionesModal from "../../../components/WhatsAppNotificacionesModal.vue"
+import WhatsAppNotificacionesModal from '../../../components/WhatsAppNotificacionesModal.vue';
 
 // Servicios
-import {getDailyAttendanceReport} from "../../../services/dailyAttendanceService";
+import { getDailyAttendanceReport } from '../../../services/dailyAttendanceService';
 import {
   notifyLateStudents as sendLateNotifications,
   notifyJustifiedAbsences as sendJustifiedNotifications,
   notifyUnexcusedAbsences as sendUnexcusedNotifications,
-} from "../../../services/attendanceNotifications"
+} from '../../../services/attendanceNotifications';
 
 // Interfaces y tipos
 interface AttendanceRecord {
@@ -549,7 +549,7 @@ interface AttendanceRecord {
   studentName: string
   className: string
   teacherName: string
-  status: "Presente" | "Ausente" | "Tardanza" | "Justificado"
+  status: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado'
   time: string
   observations: string
   reason?: string
@@ -572,340 +572,340 @@ interface _StudentForNotification {
 }
 
 // Composables y servicios
-const _router = useRouter()
+const _router = useRouter();
 
 // Estados reactivos
-const loading = ref(false)
-const sendingNotifications = ref(false)
-const selectedDate = ref(new Date().toISOString().split("T")[0])
-const searchTerm = ref("")
-const statusFilter = ref("")
-const showWhatsAppModal = ref(false)
+const loading = ref(false);
+const sendingNotifications = ref(false);
+const selectedDate = ref(new Date().toISOString().split('T')[0]);
+const searchTerm = ref('');
+const statusFilter = ref('');
+const showWhatsAppModal = ref(false);
 
 // 📊 Estados para el modal de WhatsApp
-const modalInitialTab = ref<"ausentes" | "tarde" | "justificado">("ausentes")
-const reportDataForModal = ref<any>(null)
+const modalInitialTab = ref<'ausentes' | 'tarde' | 'justificado'>('ausentes');
+const reportDataForModal = ref<any>(null);
 
 // Datos de asistencia
-const attendanceData = ref<AttendanceRecord[]>([])
+const attendanceData = ref<AttendanceRecord[]>([]);
 const attendanceSummary = ref<AttendanceSummary>({
   total: 0,
   presentes: 0,
   ausentes: 0,
   tarde: 0,
   justificados: 0,
-})
+});
 
 // Computed properties
-const hasAttendanceData = computed(() => attendanceData.value.length > 0)
+const hasAttendanceData = computed(() => attendanceData.value.length > 0);
 
 const lateStudents = computed(() => {
   return attendanceData.value
-    .filter((record) => record.status === "Tardanza")
+    .filter((record) => record.status === 'Tardanza')
     .map((record) => ({
       id: record.id,
       studentId: record.studentId,
       name: record.studentName,
       className: record.className,
       time: record.time,
-    }))
-})
+    }));
+});
 
 const justifiedAbsences = computed(() => {
   return attendanceData.value
-    .filter((record) => record.status === "Justificado")
+    .filter((record) => record.status === 'Justificado')
     .map((record) => ({
       id: record.id,
       studentId: record.studentId,
       name: record.studentName,
       className: record.className,
       reason: record.reason,
-    }))
-})
+    }));
+});
 
 const unjustifiedAbsences = computed(() => {
   return attendanceData.value
-    .filter((record) => record.status === "Ausente")
+    .filter((record) => record.status === 'Ausente')
     .map((record) => ({
       id: record.id,
       studentId: record.studentId,
       name: record.studentName,
       className: record.className,
-    }))
-})
+    }));
+});
 
 const filteredAttendanceRecords = computed(() => {
-  let filtered = attendanceData.value
+  let filtered = attendanceData.value;
 
   if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase()
+    const term = searchTerm.value.toLowerCase();
     filtered = filtered.filter(
       (record) =>
         record.studentName.toLowerCase().includes(term) ||
-        record.className.toLowerCase().includes(term)
-    )
+        record.className.toLowerCase().includes(term),
+    );
   }
 
   if (statusFilter.value) {
-    filtered = filtered.filter((record) => record.status === statusFilter.value)
+    filtered = filtered.filter((record) => record.status === statusFilter.value);
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 // Métodos
 const formatDisplayDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
 
 const formatTime = (time: string): string => {
-  if (!time) return "—"
-  return new Date(time).toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+  if (!time) return '—';
+  return new Date(time).toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const getInitials = (name: string): string => {
   return name
-    .split(" ")
+    .split(' ')
     .map((n) => n[0])
-    .join("")
+    .join('')
     .toUpperCase()
-    .slice(0, 2)
-}
+    .slice(0, 2);
+};
 
 const getStatusIcon = (status: string): string => {
   switch (status) {
-    case "Presente":
-      return "✅"
-    case "Ausente":
-      return "❌"
-    case "Tardanza":
-      return "⏰"
-    case "Justificado":
-      return "📝"
-    default:
-      return "❓"
+  case 'Presente':
+    return '✅';
+  case 'Ausente':
+    return '❌';
+  case 'Tardanza':
+    return '⏰';
+  case 'Justificado':
+    return '📝';
+  default:
+    return '❓';
   }
-}
+};
 
 const getStatusBadgeClasses = (status: string): string => {
   switch (status) {
-    case "Presente":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-    case "Ausente":
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-    case "Tardanza":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-    case "Justificado":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+  case 'Presente':
+    return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+  case 'Ausente':
+    return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+  case 'Tardanza':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+  case 'Justificado':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
   }
-}
+};
 
 const loadAttendanceData = async (): Promise<void> => {
-  loading.value = true
+  loading.value = true;
   try {
-    console.log(`📊 Cargando datos de asistencia para ${selectedDate.value}`)
+    console.log(`📊 Cargando datos de asistencia para ${selectedDate.value}`);
 
-    const report = await getDailyAttendanceReport(selectedDate.value)
+    const report = await getDailyAttendanceReport(selectedDate.value);
 
     if (report.success) {
-      attendanceData.value = report.records
-      attendanceSummary.value = report.summary
+      attendanceData.value = report.records;
+      attendanceSummary.value = report.summary;
 
-      console.log(`✅ Datos cargados: ${report.records.length} registros`)
+      console.log(`✅ Datos cargados: ${report.records.length} registros`);
     } else {
-      console.error("❌ Error obteniendo reporte:", report.error)
-      attendanceData.value = []
+      console.error('❌ Error obteniendo reporte:', report.error);
+      attendanceData.value = [];
       attendanceSummary.value = {
         total: 0,
         presentes: 0,
         ausentes: 0,
         tarde: 0,
         justificados: 0,
-      }
+      };
     }
   } catch (error) {
-    console.error("Error cargando datos de asistencia:", error)
-    attendanceData.value = []
+    console.error('Error cargando datos de asistencia:', error);
+    attendanceData.value = [];
     attendanceSummary.value = {
       total: 0,
       presentes: 0,
       ausentes: 0,
       tarde: 0,
       justificados: 0,
-    }
+    };
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const refreshData = (): void => {
-  loadAttendanceData()
-}
+  loadAttendanceData();
+};
 
 const openWhatsAppModal = (): void => {
-  showWhatsAppModal.value = true
-}
+  showWhatsAppModal.value = true;
+};
 
 // 📱 Función para abrir el modal con datos de ausencias sin justificar
 const openWhatsAppModalForAbsences = (): void => {
-  console.log("📱 [Reporte Diario] Abriendo modal para ausencias sin justificar:", unjustifiedAbsences.value)
+  console.log('📱 [Reporte Diario] Abriendo modal para ausencias sin justificar:', unjustifiedAbsences.value);
   
   reportDataForModal.value = {
     unjustifiedAbsences: unjustifiedAbsences.value,
     selectedDate: selectedDate.value,
-  }
-  modalInitialTab.value = "ausentes"
-  showWhatsAppModal.value = true
-}
+  };
+  modalInitialTab.value = 'ausentes';
+  showWhatsAppModal.value = true;
+};
 
 const handleWhatsAppMessagesSent = (result: {
   success: number
   failed: number
   messages: any[]
 }): void => {
-  console.log("📱 Mensajes enviados desde reporte diario:", result)
+  console.log('📱 Mensajes enviados desde reporte diario:', result);
   
   // Mostrar notificación de éxito
-  alert(`✅ Mensajes enviados!\n\nExitosos: ${result.success}\nFallidos: ${result.failed}`)
+  alert(`✅ Mensajes enviados!\n\nExitosos: ${result.success}\nFallidos: ${result.failed}`);
   
   // Cerrar modal
-  showWhatsAppModal.value = false
+  showWhatsAppModal.value = false;
   
   // Opcionalmente recargar datos
   if (result.success > 0) {
-    loadAttendanceData()
+    loadAttendanceData();
   }
-}
+};
 
 const notifyLateStudents = async (): Promise<void> => {
   if (lateStudents.value.length === 0) {
-    alert("⚠️ No hay estudiantes con tardanza para notificar.")
-    return
+    alert('⚠️ No hay estudiantes con tardanza para notificar.');
+    return;
   }
 
   if (!confirm(`¿Enviar notificaciones de tardanza a ${lateStudents.value.length} estudiantes?`)) {
-    return
+    return;
   }
 
-  sendingNotifications.value = true
+  sendingNotifications.value = true;
   try {
-    const studentIds = lateStudents.value.map((s) => s.studentId)
-    const result = await sendLateNotifications(studentIds)
+    const studentIds = lateStudents.value.map((s) => s.studentId);
+    const result = await sendLateNotifications(studentIds);
 
     alert(
-      `✅ Notificaciones enviadas!\n\n` +
+      '✅ Notificaciones enviadas!\n\n' +
         `📱 Exitosas: ${result.success}\n` +
         `❌ Fallidas: ${result.failed}\n\n` +
-        `Se han enviado mensajes a los representantes sobre las tardanzas.`
-    )
+        'Se han enviado mensajes a los representantes sobre las tardanzas.',
+    );
   } catch (error) {
-    console.error("Error enviando notificaciones:", error)
+    console.error('Error enviando notificaciones:', error);
     alert(
-      `❌ Error enviando notificaciones: ${error instanceof Error ? error.message : "Error desconocido"}`
-    )
+      `❌ Error enviando notificaciones: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+    );
   } finally {
-    sendingNotifications.value = false
+    sendingNotifications.value = false;
   }
-}
+};
 
 const notifyJustifiedAbsences = async (): Promise<void> => {
   if (justifiedAbsences.value.length === 0) {
-    alert("⚠️ No hay ausencias justificadas para notificar.")
-    return
+    alert('⚠️ No hay ausencias justificadas para notificar.');
+    return;
   }
 
   if (
     !confirm(
-      `¿Enviar notificaciones sobre próximas actividades a ${justifiedAbsences.value.length} estudiantes?`
+      `¿Enviar notificaciones sobre próximas actividades a ${justifiedAbsences.value.length} estudiantes?`,
     )
   ) {
-    return
+    return;
   }
 
-  sendingNotifications.value = true
+  sendingNotifications.value = true;
   try {
-    const studentIds = justifiedAbsences.value.map((s) => s.studentId)
-    const result = await sendJustifiedNotifications(studentIds)
+    const studentIds = justifiedAbsences.value.map((s) => s.studentId);
+    const result = await sendJustifiedNotifications(studentIds);
 
     alert(
-      `✅ Notificaciones enviadas!\n\n` +
+      '✅ Notificaciones enviadas!\n\n' +
         `📱 Exitosas: ${result.success}\n` +
         `❌ Fallidas: ${result.failed}\n\n` +
-        `Se han enviado recordatorios de próximas actividades.`
-    )
+        'Se han enviado recordatorios de próximas actividades.',
+    );
   } catch (error) {
-    console.error("Error enviando notificaciones:", error)
+    console.error('Error enviando notificaciones:', error);
     alert(
-      `❌ Error enviando notificaciones: ${error instanceof Error ? error.message : "Error desconocido"}`
-    )
+      `❌ Error enviando notificaciones: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+    );
   } finally {
-    sendingNotifications.value = false
+    sendingNotifications.value = false;
   }
-}
+};
 
 // 🎯 MÉTODO PRINCIPAL: Notificación Inteligente con Escalación Automática
 const notifyAbsentStudentsWithEscalation = async (): Promise<void> => {
   if (unjustifiedAbsences.value.length === 0) {
-    alert("✅ ¡Excelente! No hay estudiantes ausentes sin justificar hoy.")
-    return
+    alert('✅ ¡Excelente! No hay estudiantes ausentes sin justificar hoy.');
+    return;
   }
 
   const confirmMessage =
-    `🧠 Notificación Inteligente con Escalación Automática\n\n` +
+    '🧠 Notificación Inteligente con Escalación Automática\n\n' +
     `📊 Estudiantes ausentes sin justificar: ${unjustifiedAbsences.value.length}\n\n` +
-    `El sistema analizará automáticamente el historial semanal de cada estudiante y aplicará el nivel de escalación apropiado:\n\n` +
-    `🟢 1ª ausencia: Recordatorio amable\n` +
-    `🟡 2ª ausencia: Tono disciplinario\n` +
-    `🟠 3ª ausencia: Solicitud de explicación\n` +
-    `🔴 4+ ausencias: Citación obligatoria\n\n` +
-    `¿Proceder con el análisis y envío automático?`
+    'El sistema analizará automáticamente el historial semanal de cada estudiante y aplicará el nivel de escalación apropiado:\n\n' +
+    '🟢 1ª ausencia: Recordatorio amable\n' +
+    '🟡 2ª ausencia: Tono disciplinario\n' +
+    '🟠 3ª ausencia: Solicitud de explicación\n' +
+    '🔴 4+ ausencias: Citación obligatoria\n\n' +
+    '¿Proceder con el análisis y envío automático?';
 
   if (!confirm(confirmMessage)) {
-    return
+    return;
   }
 
-  sendingNotifications.value = true
+  sendingNotifications.value = true;
   try {
     // Obtener IDs de estudiantes ausentes sin justificar
-    const absentStudentIds = unjustifiedAbsences.value.map((student) => student.studentId)
+    const absentStudentIds = unjustifiedAbsences.value.map((student) => student.studentId);
 
     // Llamar al sistema inteligente de escalación
-    const result = await sendUnexcusedNotifications(absentStudentIds)
+    const result = await sendUnexcusedNotifications(absentStudentIds);
 
     // Mostrar resultado detallado
     alert(
-      `🎯 ¡Notificación Inteligente Completada!\n\n` +
+      '🎯 ¡Notificación Inteligente Completada!\n\n' +
         `📱 Total procesados: ${absentStudentIds.length}\n` +
         `✅ Enviados exitosamente: ${result.success}\n` +
         `❌ Fallos en envío: ${result.failed}\n\n` +
-        `🧠 El sistema aplicó automáticamente la escalación apropiada según el historial semanal de cada estudiante.\n\n` +
-        `Los padres recibieron mensajes personalizados con el tono correspondiente a la frecuencia de ausencias.`
-    )
+        '🧠 El sistema aplicó automáticamente la escalación apropiada según el historial semanal de cada estudiante.\n\n' +
+        'Los padres recibieron mensajes personalizados con el tono correspondiente a la frecuencia de ausencias.',
+    );
   } catch (error) {
-    console.error("Error en notificación inteligente:", error)
+    console.error('Error en notificación inteligente:', error);
     alert(
-      `❌ Error en el sistema de notificación inteligente:\n\n${error instanceof Error ? error.message : "Error desconocido"}\n\nPor favor, intente nuevamente o contacte al soporte técnico.`
-    )
+      `❌ Error en el sistema de notificación inteligente:\n\n${error instanceof Error ? error.message : 'Error desconocido'}\n\nPor favor, intente nuevamente o contacte al soporte técnico.`,
+    );
   } finally {
-    sendingNotifications.value = false
+    sendingNotifications.value = false;
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadAttendanceData()
-})
+  loadAttendanceData();
+});
 </script>
 
 <style scoped>

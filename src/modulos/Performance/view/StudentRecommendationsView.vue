@@ -304,8 +304,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRoute, useRouter} from "vue-router"
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import {
   ArrowLeftIcon,
   BoltIcon,
@@ -322,46 +322,46 @@ import {
   UserGroupIcon,
   StarIcon,
   // TrendingUpIcon removed
-} from "@heroicons/vue/24/outline"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import {useStudentsStore} from "../../Students/store/students"
-import {useStudentPerformance} from "../composables/useStudentPerformance"
-import StudentAvatar from "../../Students/components/StudentAvatar.vue"
+} from '@heroicons/vue/24/outline';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useStudentsStore } from '../../Students/store/students';
+import { useStudentPerformance } from '../composables/useStudentPerformance';
+import StudentAvatar from '../../Students/components/StudentAvatar.vue';
 
-const route = useRoute()
-const router = useRouter()
-const studentsStore = useStudentsStore()
+const route = useRoute();
+const router = useRouter();
+const studentsStore = useStudentsStore();
 
-const studentId = route.params.id as string
-const student = computed(() => studentsStore.students.find((s) => s.id === studentId))
+const studentId = route.params.id as string;
+const student = computed(() => studentsStore.students.find((s) => s.id === studentId));
 
-const {performanceData, loading, error, refresh} = useStudentPerformance(studentId)
+const { performanceData, loading, error, refresh } = useStudentPerformance(studentId);
 
 // Mock data for demonstration
 const recommendationCategories = ref([
   {
-    id: "attendance",
-    title: "Asistencia",
-    description: "Mejorar la regularidad en las clases",
+    id: 'attendance',
+    title: 'Asistencia',
+    description: 'Mejorar la regularidad en las clases',
     icon: CalendarIcon,
-    priority: "high",
+    priority: 'high',
     recommendations: [
       {
-        title: "Establecer rutina de asistencia",
+        title: 'Establecer rutina de asistencia',
         description:
-          "Se recomienda crear un horario fijo para las clases de música y establecer recordatorios.",
+          'Se recomienda crear un horario fijo para las clases de música y establecer recordatorios.',
         metrics: [
-          {label: "Asistencia actual", value: "75%"},
-          {label: "Meta", value: "90%"},
+          { label: 'Asistencia actual', value: '75%' },
+          { label: 'Meta', value: '90%' },
         ],
-        timeline: "Implementar en 2 semanas",
+        timeline: 'Implementar en 2 semanas',
         actions: [
-          {id: "schedule", label: "Crear Horario", type: "primary", icon: CalendarIcon},
+          { id: 'schedule', label: 'Crear Horario', type: 'primary', icon: CalendarIcon },
           {
-            id: "reminders",
-            label: "Configurar Recordatorios",
-            type: "secondary",
+            id: 'reminders',
+            label: 'Configurar Recordatorios',
+            type: 'secondary',
             icon: EnvelopeIcon,
           },
         ],
@@ -369,127 +369,127 @@ const recommendationCategories = ref([
     ],
   },
   {
-    id: "practice",
-    title: "Práctica Musical",
-    description: "Optimizar las sesiones de práctica",
+    id: 'practice',
+    title: 'Práctica Musical',
+    description: 'Optimizar las sesiones de práctica',
     icon: MusicalNoteIcon,
-    priority: "medium",
+    priority: 'medium',
     recommendations: [
       {
-        title: "Incrementar tiempo de práctica diaria",
-        description: "Aumentar gradualmente el tiempo de práctica de 15 a 30 minutos diarios.",
+        title: 'Incrementar tiempo de práctica diaria',
+        description: 'Aumentar gradualmente el tiempo de práctica de 15 a 30 minutos diarios.',
         metrics: [
-          {label: "Práctica actual", value: "15 min/día"},
-          {label: "Meta", value: "30 min/día"},
+          { label: 'Práctica actual', value: '15 min/día' },
+          { label: 'Meta', value: '30 min/día' },
         ],
-        timeline: "Progreso gradual en 4 semanas",
+        timeline: 'Progreso gradual en 4 semanas',
         actions: [
-          {id: "plan", label: "Crear Plan", type: "primary", icon: DocumentTextIcon},
-          {id: "track", label: "Seguir Progreso", type: "secondary", icon: ChartBarIcon},
+          { id: 'plan', label: 'Crear Plan', type: 'primary', icon: DocumentTextIcon },
+          { id: 'track', label: 'Seguir Progreso', type: 'secondary', icon: ChartBarIcon },
         ],
       },
     ],
   },
-])
+]);
 
 const progressItems = ref([
   {
-    id: "attendance",
-    title: "Mejora en Asistencia",
+    id: 'attendance',
+    title: 'Mejora en Asistencia',
     progress: 75,
-    description: "Ha asistido regularmente las últimas 3 semanas",
-    nextStep: "Mantener la constancia durante un mes completo",
+    description: 'Ha asistido regularmente las últimas 3 semanas',
+    nextStep: 'Mantener la constancia durante un mes completo',
   },
   {
-    id: "technique",
-    title: "Técnica Instrumental",
+    id: 'technique',
+    title: 'Técnica Instrumental',
     progress: 60,
-    description: "Progreso notable en escalas y ejercicios básicos",
-    nextStep: "Practicar ejercicios de agilidad",
+    description: 'Progreso notable en escalas y ejercicios básicos',
+    nextStep: 'Practicar ejercicios de agilidad',
   },
-])
+]);
 
 const goals = ref([
   {
-    id: "concert",
-    title: "Participar en Concierto de Fin de Año",
-    description: "Prepararse para la presentación del concierto anual",
-    deadline: new Date("2024-12-15"),
+    id: 'concert',
+    title: 'Participar en Concierto de Fin de Año',
+    description: 'Prepararse para la presentación del concierto anual',
+    deadline: new Date('2024-12-15'),
     completed: false,
     milestones: [
-      {id: "piece1", title: "Dominar primera pieza", completed: true},
-      {id: "piece2", title: "Aprender segunda pieza", completed: false},
-      {id: "ensemble", title: "Practicar con conjunto", completed: false},
-      {id: "performance", title: "Ensayo general", completed: false},
+      { id: 'piece1', title: 'Dominar primera pieza', completed: true },
+      { id: 'piece2', title: 'Aprender segunda pieza', completed: false },
+      { id: 'ensemble', title: 'Practicar con conjunto', completed: false },
+      { id: 'performance', title: 'Ensayo general', completed: false },
     ],
   },
-])
+]);
 
 const getPriorityLabel = (priority: string): string => {
   switch (priority) {
-    case "high":
-      return "Alta"
-    case "medium":
-      return "Media"
-    case "low":
-      return "Baja"
-    default:
-      return priority
+  case 'high':
+    return 'Alta';
+  case 'medium':
+    return 'Media';
+  case 'low':
+    return 'Baja';
+  default:
+    return priority;
   }
-}
+};
 
 const getProgressColor = (progress: number): string => {
-  if (progress >= 80) return "#10b981" // green-500
-  if (progress >= 60) return "#f59e0b" // amber-500
-  if (progress >= 40) return "#f97316" // orange-500
-  return "#ef4444" // red-500
-}
+  if (progress >= 80) return '#10b981'; // green-500
+  if (progress >= 60) return '#f59e0b'; // amber-500
+  if (progress >= 40) return '#f97316'; // orange-500
+  return '#ef4444'; // red-500
+};
 
 const formatDate = (date: Date): string => {
-  return format(date, "dd MMMM yyyy", {locale: es})
-}
+  return format(date, 'dd MMMM yyyy', { locale: es });
+};
 
 // Action handlers
 const scheduleFollowUp = () => {
-  console.log("Programar seguimiento")
+  console.log('Programar seguimiento');
   // TODO: Implement follow-up scheduling
-}
+};
 
 const sendToParents = () => {
-  console.log("Enviar notificación a padres")
+  console.log('Enviar notificación a padres');
   // TODO: Implement parent notification
-}
+};
 
 const createStudyPlan = () => {
-  console.log("Crear plan de estudio")
+  console.log('Crear plan de estudio');
   // TODO: Implement study plan creation
-}
+};
 
 const viewResources = () => {
-  console.log("Ver recursos adicionales")
+  console.log('Ver recursos adicionales');
   // TODO: Navigate to resources view
-}
+};
 
 const executeAction = (action: any, recommendation: any) => {
-  console.log("Ejecutar acción:", action, recommendation)
+  console.log('Ejecutar acción:', action, recommendation);
   // TODO: Implement action handlers
-}
+};
 
 const toggleMilestone = (goalId: string, milestoneId: string) => {
-  const goal = goals.value.find((g) => g.id === goalId)
+  const goal = goals.value.find((g) => g.id === goalId);
   if (goal) {
-    const milestone = goal.milestones.find((m) => m.id === milestoneId)
+    const milestone = goal.milestones.find((m) => m.id === milestoneId);
     if (milestone) {
-      milestone.completed = !milestone.completed
+      milestone.completed = !milestone.completed;
     }
   }
-}
+};
 
 onMounted(() => {
   if (!student.value) {
-    studentsStore.fetchStudents()
+    studentsStore.fetchStudents();
   }
-})
+});
 </script>
 
 <style scoped>

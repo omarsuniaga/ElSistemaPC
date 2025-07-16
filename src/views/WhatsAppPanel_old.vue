@@ -673,245 +673,245 @@
 </template>
 
 <script setup lang="ts">
-import {ref, reactive, onMounted} from "vue"
-import {QrCodeIcon, CogIcon, ClockIcon, PaperAirplaneIcon} from "@heroicons/vue/24/outline"
-import WhatsAppQR from "@/components/WhatsAppQR.vue"
-import {useWhatsApp} from "@/composables/useWhatsApp"
+import { ref, reactive, onMounted } from 'vue';
+import { QrCodeIcon, CogIcon, ClockIcon, PaperAirplaneIcon } from '@heroicons/vue/24/outline';
+import WhatsAppQR from '@/components/WhatsAppQR.vue';
+import { useWhatsApp } from '@/composables/useWhatsApp';
 
 // Estado de las tabs
-const activeTab = ref("qr")
-const isInitializing = ref(false)
+const activeTab = ref('qr');
+const isInitializing = ref(false);
 
 const tabs = [
-  {id: "qr", name: "Conexión QR", icon: QrCodeIcon},
-  {id: "config", name: "Configuración", icon: CogIcon},
-  {id: "history", name: "Historial", icon: ClockIcon},
-  {id: "test", name: "Prueba", icon: PaperAirplaneIcon},
-]
+  { id: 'qr', name: 'Conexión QR', icon: QrCodeIcon },
+  { id: 'config', name: 'Configuración', icon: CogIcon },
+  { id: 'history', name: 'Historial', icon: ClockIcon },
+  { id: 'test', name: 'Prueba', icon: PaperAirplaneIcon },
+];
 
 // Estado de configuración
 const notifications = reactive({
   newStudent: true,
   classReminder: true,
   payment: true,
-})
+});
 
 const schedules = reactive({
-  classReminder: "09:00",
-  paymentReminder: "18:00",
-})
+  classReminder: '09:00',
+  paymentReminder: '18:00',
+});
 
-const saving = ref(false)
+const saving = ref(false);
 
 // Estado de historial de mensajes
 const messages = ref([
   {
     id: 1,
-    recipient: "+1234567890",
-    content: "Recordatorio: Tienes clase de piano mañana a las 3:00 PM",
-    status: "sent",
+    recipient: '+1234567890',
+    content: 'Recordatorio: Tienes clase de piano mañana a las 3:00 PM',
+    status: 'sent',
     timestamp: new Date(Date.now() - 86400000), // Ayer
   },
   {
     id: 2,
-    recipient: "+0987654321",
-    content: "Bienvenido a la Academia Musical! Tu primera clase será el lunes.",
-    status: "sent",
+    recipient: '+0987654321',
+    content: 'Bienvenido a la Academia Musical! Tu primera clase será el lunes.',
+    status: 'sent',
     timestamp: new Date(Date.now() - 172800000), // Hace 2 días
   },
-])
+]);
 
 // Estado de mensaje de prueba
 const testMessage = reactive({
-  phone: "",
+  phone: '',
   content:
-    "🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.",
-})
+    '🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.',
+});
 
-const sendingTest = ref(false)
+const sendingTest = ref(false);
 
 // Estado de conexión de WhatsApp
-const connectionStatus = ref("checking")
+const connectionStatus = ref('checking');
 
 // Métodos
 const checkFunctionStatus = async () => {
   try {
-    const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/status")
+    const response = await fetch('https://whatsappapi-4ffilcsmva-uc.a.run.app/status');
     if (response.ok) {
-      const data = await response.json()
-      console.log("📊 Estado WhatsApp:", data)
+      const data = await response.json();
+      console.log('📊 Estado WhatsApp:', data);
 
-      if (data.status === "connected" && data.isReady) {
-        connectionStatus.value = "connected"
-      } else if (data.status === "qr_ready" || data.status === "connecting") {
-        connectionStatus.value = "connecting"
+      if (data.status === 'connected' && data.isReady) {
+        connectionStatus.value = 'connected';
+      } else if (data.status === 'qr_ready' || data.status === 'connecting') {
+        connectionStatus.value = 'connecting';
       } else {
-        connectionStatus.value = "function-not-available"
+        connectionStatus.value = 'function-not-available';
       }
     } else {
-      connectionStatus.value = "function-not-available"
+      connectionStatus.value = 'function-not-available';
     }
   } catch (error) {
-    console.error("❌ Error verificando estado:", error)
-    connectionStatus.value = "function-not-available"
+    console.error('❌ Error verificando estado:', error);
+    connectionStatus.value = 'function-not-available';
   }
-}
+};
 
 const openConnectionPage = () => {
   // Abrir la página de conexión simplificada
-  window.open("/whatsapp-connection.html", "_blank", "width=600,height=800")
-}
+  window.open('/whatsapp-connection.html', '_blank', 'width=600,height=800');
+};
 
 const disconnectWhatsApp = async () => {
-  if (!confirm("¿Estás seguro de que quieres desconectar WhatsApp?")) {
-    return
+  if (!confirm('¿Estás seguro de que quieres desconectar WhatsApp?')) {
+    return;
   }
 
   try {
-    console.log("� Desconectando WhatsApp...")
+    console.log('� Desconectando WhatsApp...');
 
-    const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/disconnect", {
-      method: "POST",
+    const response = await fetch('https://whatsappapi-4ffilcsmva-uc.a.run.app/disconnect', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
-    })
+    });
 
     if (response.ok) {
-      const result = await response.json()
-      console.log("✅ WhatsApp desconectado:", result)
-      connectionStatus.value = "function-not-available"
-      alert("✅ WhatsApp desconectado correctamente")
+      const result = await response.json();
+      console.log('✅ WhatsApp desconectado:', result);
+      connectionStatus.value = 'function-not-available';
+      alert('✅ WhatsApp desconectado correctamente');
     } else {
-      const errorData = await response.json()
-      throw new Error(errorData.error || errorData.message || "Error al desconectar")
+      const errorData = await response.json();
+      throw new Error(errorData.error || errorData.message || 'Error al desconectar');
     }
   } catch (error) {
-    console.error("❌ Error desconectando WhatsApp:", error)
+    console.error('❌ Error desconectando WhatsApp:', error);
     alert(
-      "❌ Error al desconectar: " + (error instanceof Error ? error.message : "Error desconocido")
-    )
+      '❌ Error al desconectar: ' + (error instanceof Error ? error.message : 'Error desconocido'),
+    );
   }
-}
+};
 
 const getStatusMessage = () => {
   switch (connectionStatus.value) {
-    case "connected":
-      return "WhatsApp conectado y listo para enviar mensajes"
-    case "function-not-available":
-      return 'WhatsApp desconectado. Haz clic en "Conectar WhatsApp"'
-    case "checking":
-      return "Verificando estado..."
-    default:
-      return "Estado desconocido"
+  case 'connected':
+    return 'WhatsApp conectado y listo para enviar mensajes';
+  case 'function-not-available':
+    return 'WhatsApp desconectado. Haz clic en "Conectar WhatsApp"';
+  case 'checking':
+    return 'Verificando estado...';
+  default:
+    return 'Estado desconocido';
   }
-}
+};
 
 const saveConfig = async () => {
-  saving.value = true
+  saving.value = true;
 
   try {
     // Simular guardado de configuración
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Aquí guardarías la configuración en Firestore o tu backend
-    console.log("Configuración guardada:", {notifications, schedules})
+    console.log('Configuración guardada:', { notifications, schedules });
 
-    alert("✅ Configuración guardada correctamente")
+    alert('✅ Configuración guardada correctamente');
   } catch (error) {
-    console.error("Error guardando configuración:", error)
-    alert("❌ Error al guardar la configuración")
+    console.error('Error guardando configuración:', error);
+    alert('❌ Error al guardar la configuración');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const sendTestMessage = async () => {
-  if (!testMessage.phone || !testMessage.content) return
+  if (!testMessage.phone || !testMessage.content) return;
 
-  sendingTest.value = true
+  sendingTest.value = true;
 
   try {
-    console.log("📱 Enviando mensaje de prueba...", {
+    console.log('📱 Enviando mensaje de prueba...', {
       phone: testMessage.phone,
       message: testMessage.content,
-    })
+    });
 
     // Usar la nueva URL correcta de Firebase Functions
-    const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message", {
-      method: "POST",
+    const response = await fetch('https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         number: testMessage.phone, // Cambio: usar 'number' en lugar de 'phoneNumber'
         message: testMessage.content,
       }),
-    })
+    });
 
-    const result = await response.json()
-    console.log("📊 Respuesta del servidor:", result)
+    const result = await response.json();
+    console.log('📊 Respuesta del servidor:', result);
 
     if (response.ok && result.success) {
-      alert("✅ Mensaje enviado correctamente!\n\nDetalles: " + (result.messageId || "Enviado"))
+      alert('✅ Mensaje enviado correctamente!\n\nDetalles: ' + (result.messageId || 'Enviado'));
 
       // Agregar al historial
       messages.value.unshift({
         id: Date.now(),
         recipient: testMessage.phone,
         content: testMessage.content,
-        status: "sent",
+        status: 'sent',
         timestamp: new Date(),
-      })
+      });
 
       // Limpiar formulario
-      testMessage.phone = ""
+      testMessage.phone = '';
       testMessage.content =
-        "🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente."
+        '🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.';
     } else {
-      throw new Error(result.error || result.message || "Error desconocido al enviar mensaje")
+      throw new Error(result.error || result.message || 'Error desconocido al enviar mensaje');
     }
   } catch (error) {
-    console.error("❌ Error enviando mensaje:", error)
-    const errorMessage = error instanceof Error ? error.message : "Error desconocido"
+    console.error('❌ Error enviando mensaje:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     alert(
-      "❌ Error al enviar mensaje:\n\n" +
+      '❌ Error al enviar mensaje:\n\n' +
         errorMessage +
-        "\n\nVerifica que WhatsApp esté conectado correctamente."
-    )
+        '\n\nVerifica que WhatsApp esté conectado correctamente.',
+    );
 
     // Agregar al historial como error
     messages.value.unshift({
       id: Date.now(),
       recipient: testMessage.phone,
       content: testMessage.content,
-      status: "error",
+      status: 'error',
       timestamp: new Date(),
-    })
+    });
   } finally {
-    sendingTest.value = false
+    sendingTest.value = false;
   }
-}
+};
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("es-ES", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
 
 const goToQRConnection = () => {
   // Abrir la página de conexión en una nueva ventana
-  window.open("/whatsapp-connection.html", "_blank", "width=800,height=600")
-}
+  window.open('/whatsapp-connection.html', '_blank', 'width=800,height=600');
+};
 
 // Inicialización
 onMounted(() => {
-  checkFunctionStatus()
-})
+  checkFunctionStatus();
+});
 </script>
 
 <style scoped>

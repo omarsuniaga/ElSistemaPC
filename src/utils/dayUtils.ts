@@ -11,7 +11,7 @@
  */
 export const getDayIndex = (dayString: string | number): number => {
   // Si ya es un número, retornarlo
-  if (typeof dayString === "number") return dayString
+  if (typeof dayString === 'number') return dayString;
 
   // 🔄 NUEVO MAPEO: Lunes=0, Domingo=6 (formato corregido para alineación)
   const dayMapping: Record<string, number> = {
@@ -70,33 +70,33 @@ export const getDayIndex = (dayString: string | number): number => {
     sunday: 6,
     
     // Números como string - NUEVO MAPEO LUNES=0
-    "0": 0,
-    "1": 1,
-    "2": 2,
-    "3": 3,
-    "4": 4,
-    "5": 5,
-    "6": 6,
-  }
+    '0': 0,
+    '1': 1,
+    '2': 2,
+    '3': 3,
+    '4': 4,
+    '5': 5,
+    '6': 6,
+  };
 
   // Normalizar: quitar espacios y convertir a string
-  const normalized = String(dayString).trim()
+  const normalized = String(dayString).trim();
   
   // Buscar en el mapeo directo
   if (normalized in dayMapping) {
-    return dayMapping[normalized]
+    return dayMapping[normalized];
   }
   
   // Buscar en minúsculas como fallback
-  const lowercased = normalized.toLowerCase()
+  const lowercased = normalized.toLowerCase();
   if (lowercased in dayMapping) {
-    return dayMapping[lowercased]
+    return dayMapping[lowercased];
   }
   
   // Log de warning para días no reconocidos
-  console.warn(`⚠️ [getDayIndex] Día no reconocido: "${dayString}" (normalizado: "${normalized}")`)
-  return -1
-}
+  console.warn(`⚠️ [getDayIndex] Día no reconocido: "${dayString}" (normalizado: "${normalized}")`);
+  return -1;
+};
 
 /**
  * Verifica si una clase está programada para un día específico de la semana
@@ -105,39 +105,39 @@ export const getDayIndex = (dayString: string | number): number => {
  * @returns true si la clase está programada para ese día
  */
 export const isClassScheduledForDay = (classItem: any, targetDayOfWeek: number): boolean => {
-  const schedule = classItem.schedule
+  const schedule = classItem.schedule;
   if (!schedule) {
-    console.log(`[isClassScheduledForDay] Clase "${classItem.name}": NO tiene schedule`)
-    return false
+    console.log(`[isClassScheduledForDay] Clase "${classItem.name}": NO tiene schedule`);
+    return false;
   }
 
   // Manejar diferentes estructuras de horario
-  let slots = []
+  let slots = [];
   if (schedule.slots && Array.isArray(schedule.slots)) {
-    slots = schedule.slots
+    slots = schedule.slots;
   } else if (schedule.day) {
     // Estructura legacy con day directo
-    slots = [schedule]
+    slots = [schedule];
   }
 
   console.log(
-    `[isClassScheduledForDay] Clase "${classItem.name}": Verificando ${slots.length} slots para día ${targetDayOfWeek}`
-  )
+    `[isClassScheduledForDay] Clase "${classItem.name}": Verificando ${slots.length} slots para día ${targetDayOfWeek}`,
+  );
   
   const hasMatchingDay = slots.some((slot: any) => {
-    const slotDayIndex = getDayIndex(slot.day)
-    const matches = slotDayIndex === targetDayOfWeek
+    const slotDayIndex = getDayIndex(slot.day);
+    const matches = slotDayIndex === targetDayOfWeek;
     console.log(
-      `[isClassScheduledForDay]   Slot "${slot.day}" -> índice ${slotDayIndex}, día buscado ${targetDayOfWeek}: ${matches ? "MATCH" : "no match"}`
-    )
-    return matches
-  })
+      `[isClassScheduledForDay]   Slot "${slot.day}" -> índice ${slotDayIndex}, día buscado ${targetDayOfWeek}: ${matches ? 'MATCH' : 'no match'}`,
+    );
+    return matches;
+  });
 
   console.log(
-    `[isClassScheduledForDay] Clase "${classItem.name}": Resultado final = ${hasMatchingDay}`
-  )
-  return hasMatchingDay
-}
+    `[isClassScheduledForDay] Clase "${classItem.name}": Resultado final = ${hasMatchingDay}`,
+  );
+  return hasMatchingDay;
+};
 
 /**
  * Filtra clases del maestro que están programadas para un día específico
@@ -149,50 +149,50 @@ export const isClassScheduledForDay = (classItem: any, targetDayOfWeek: number):
 export const getClassesForTeacherOnDay = (
   allClasses: any[],
   teacherId: string,
-  dayOfWeek: number
+  dayOfWeek: number,
 ): any[] => {
-  console.log(`[getClassesForTeacherOnDay] === FILTRADO PARA DÍA ${dayOfWeek} ===`)
-  console.log(`[getClassesForTeacherOnDay] Total clases: ${allClasses.length}`)
-  console.log(`[getClassesForTeacherOnDay] TeacherId: ${teacherId}`)
+  console.log(`[getClassesForTeacherOnDay] === FILTRADO PARA DÍA ${dayOfWeek} ===`);
+  console.log(`[getClassesForTeacherOnDay] Total clases: ${allClasses.length}`);
+  console.log(`[getClassesForTeacherOnDay] TeacherId: ${teacherId}`);
   
   // 1. Clases donde el maestro es principal
   const primaryClasses = allClasses.filter((cls: any) => {
-    const isPrimary = cls.teacherId === teacherId
-    const isScheduled = isClassScheduledForDay(cls, dayOfWeek)
+    const isPrimary = cls.teacherId === teacherId;
+    const isScheduled = isClassScheduledForDay(cls, dayOfWeek);
     console.log(
-      `[getClassesForTeacherOnDay] Clase "${cls.name}": isPrimary=${isPrimary}, isScheduled=${isScheduled}`
-    )
-    return isPrimary && isScheduled
-  })
+      `[getClassesForTeacherOnDay] Clase "${cls.name}": isPrimary=${isPrimary}, isScheduled=${isScheduled}`,
+    );
+    return isPrimary && isScheduled;
+  });
 
   // 2. Clases donde el maestro es colaborador
   const collaborativeClasses = allClasses.filter((cls: any) => {
     // Verificar si NO es el profesor principal (evitar duplicados)
-    if (cls.teacherId === teacherId) return false
+    if (cls.teacherId === teacherId) return false;
 
     // Verificar si está en el array de teachers
     const isCollaborator = cls.teachers?.some((teacher: any) => {
-      if (typeof teacher === "string") {
-        return teacher === teacherId
-      } else if (typeof teacher === "object" && teacher.teacherId) {
-        return teacher.teacherId === teacherId
+      if (typeof teacher === 'string') {
+        return teacher === teacherId;
+      } else if (typeof teacher === 'object' && teacher.teacherId) {
+        return teacher.teacherId === teacherId;
       }
-      return false
-    })
+      return false;
+    });
 
-    if (!isCollaborator) return false
+    if (!isCollaborator) return false;
 
-    const isScheduled = isClassScheduledForDay(cls, dayOfWeek)
+    const isScheduled = isClassScheduledForDay(cls, dayOfWeek);
     console.log(
-      `[getClassesForTeacherOnDay] Clase compartida "${cls.name}": isCollaborator=${isCollaborator}, isScheduled=${isScheduled}`
-    )
-    return isScheduled
-  })
+      `[getClassesForTeacherOnDay] Clase compartida "${cls.name}": isCollaborator=${isCollaborator}, isScheduled=${isScheduled}`,
+    );
+    return isScheduled;
+  });
 
-  const totalClasses = [...primaryClasses, ...collaborativeClasses]
+  const totalClasses = [...primaryClasses, ...collaborativeClasses];
   console.log(
-    `[getClassesForTeacherOnDay] Resultado: ${primaryClasses.length} principales + ${collaborativeClasses.length} compartidas = ${totalClasses.length} total`
-  )
+    `[getClassesForTeacherOnDay] Resultado: ${primaryClasses.length} principales + ${collaborativeClasses.length} compartidas = ${totalClasses.length} total`,
+  );
   
-  return totalClasses
-}
+  return totalClasses;
+};

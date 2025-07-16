@@ -536,14 +536,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed} from "vue"
-import {useRouter} from "vue-router"
-import {storeToRefs} from "pinia"
-import {useClassesStore} from "../store/classes"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useStudentsStore} from "../../Students/store/students"
-import {defineAsyncComponent, type Component} from "vue"
-import {useNotification} from "../../../composables/useNotification"
+import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import { useClassesStore } from '../store/classes';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useStudentsStore } from '../../Students/store/students';
+import { defineAsyncComponent, type Component } from 'vue';
+import { useNotification } from '../../../composables/useNotification';
 
 // Heroicons
 import {
@@ -557,10 +557,10 @@ import {
   CalendarIcon,
   ShareIcon,
   ExclamationTriangleIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Tipos
-import type {ClassData} from "../types/class"
+import type { ClassData } from '../types/class';
 
 // Helper function para async components
 type ComponentModule = {default: Component}
@@ -569,91 +569,91 @@ type ComponentLoader = () => Promise<ComponentModule>
 function createAsyncComponent(loader: ComponentLoader, delay = 200, timeout = 3000) {
   return defineAsyncComponent({
     loader: async () => {
-      const component = await loader()
-      return component
+      const component = await loader();
+      return component;
     },
     delay,
     timeout,
-  })
+  });
 }
 
 // Componentes async
-const ClassList = createAsyncComponent(() => import("../components/ClassList.vue"))
+const ClassList = createAsyncComponent(() => import('../components/ClassList.vue'));
 
-const ClassFormDialog = createAsyncComponent(() => import("../components/ClassFormDialog.vue"))
+const ClassFormDialog = createAsyncComponent(() => import('../components/ClassFormDialog.vue'));
 
-const ClassScheduleView = createAsyncComponent(() => import("../components/WeeklyScheduleView.vue"))
+const ClassScheduleView = createAsyncComponent(() => import('../components/WeeklyScheduleView.vue'));
 
-const SharedClassesList = createAsyncComponent(() => import("../components/SharedClassesList.vue"))
+const SharedClassesList = createAsyncComponent(() => import('../components/SharedClassesList.vue'));
 
 // Router y stores
-const router = useRouter()
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
+const router = useRouter();
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
 
 // Sistema de notificaciones simple
 const showNotification = (
   message: string,
-  type: "success" | "error" | "warning" | "info" = "info"
+  type: 'success' | 'error' | 'warning' | 'info' = 'info',
 ) => {
   // Crear una notificación temporal usando alert como fallback
-  if (type === "error") {
-    console.error("❌", message)
-    alert(`Error: ${message}`)
-  } else if (type === "success") {
-    console.log("✅", message)
-    alert(`Éxito: ${message}`)
+  if (type === 'error') {
+    console.error('❌', message);
+    alert(`Error: ${message}`);
+  } else if (type === 'success') {
+    console.log('✅', message);
+    alert(`Éxito: ${message}`);
   } else {
-    console.log(message)
-    alert(message)
+    console.log(message);
+    alert(message);
   }
-}
+};
 
 // Estado reactivo
-const tab = ref<"classes" | "schedule" | "shared">("classes")
-const showCreateDialog = ref(false)
-const showDeleteDialog = ref(false)
-const showFilters = ref(false)
-const editingClass = ref<ClassData | null>(null)
-const loading = ref(true)
-const deleting = ref(false)
+const tab = ref<'classes' | 'schedule' | 'shared'>('classes');
+const showCreateDialog = ref(false);
+const showDeleteDialog = ref(false);
+const showFilters = ref(false);
+const editingClass = ref<ClassData | null>(null);
+const loading = ref(true);
+const deleting = ref(false);
 
 // Permissions modal
-const showPermissionsModal = ref(false)
-const selectedClassForPermissions = ref<ClassData | null>(null)
-const tempPermissions = ref<Record<string, string[]>>({})
+const showPermissionsModal = ref(false);
+const selectedClassForPermissions = ref<ClassData | null>(null);
+const tempPermissions = ref<Record<string, string[]>>({});
 
 // Filtros
-const searchQuery = ref("")
-const selectedInstrument = ref("")
-const selectedTeacher = ref("")
-const selectedStatus = ref("")
+const searchQuery = ref('');
+const selectedInstrument = ref('');
+const selectedTeacher = ref('');
+const selectedStatus = ref('');
 
 // Obtener datos del store
-const {classes} = storeToRefs(classesStore)
-const {teachers} = storeToRefs(teachersStore)
-const {students} = storeToRefs(studentsStore)
+const { classes } = storeToRefs(classesStore);
+const { teachers } = storeToRefs(teachersStore);
+const { students } = storeToRefs(studentsStore);
 
 // Computed properties mejoradas
 const filteredClasses = computed(() => {
-  let filtered = [...classes.value]
+  let filtered = [...classes.value];
 
   // Filtro por búsqueda
   if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(
       (cls) =>
         cls.name?.toLowerCase().includes(query) ||
         cls.level?.toLowerCase().includes(query) ||
         cls.instrument?.toLowerCase().includes(query) ||
-        getTeacherName(cls.teacherId).toLowerCase().includes(query)
-    )
+        getTeacherName(cls.teacherId).toLowerCase().includes(query),
+    );
   }
 
   // Filtro por instrumento
   if (selectedInstrument.value) {
-    filtered = filtered.filter((cls) => cls.instrument === selectedInstrument.value)
+    filtered = filtered.filter((cls) => cls.instrument === selectedInstrument.value);
   }
 
   // Filtro por maestro
@@ -663,57 +663,57 @@ const filteredClasses = computed(() => {
         cls.teacherId === selectedTeacher.value ||
         (cls.teachers &&
           Array.isArray(cls.teachers) &&
-          cls.teachers.includes(selectedTeacher.value))
-    )
+          cls.teachers.includes(selectedTeacher.value)),
+    );
   }
 
   // Filtro por estado
   if (selectedStatus.value) {
     switch (selectedStatus.value) {
-      case "active":
-        filtered = filtered.filter((cls) => cls.status === "active")
-        break
-      case "inactive":
-        filtered = filtered.filter((cls) => cls.status === "inactive")
-        break
-      case "shared":
-        filtered = filtered.filter(
-          (cls) => cls.teachers && Array.isArray(cls.teachers) && cls.teachers.length > 0
-        )
-        break
+    case 'active':
+      filtered = filtered.filter((cls) => cls.status === 'active');
+      break;
+    case 'inactive':
+      filtered = filtered.filter((cls) => cls.status === 'inactive');
+      break;
+    case 'shared':
+      filtered = filtered.filter(
+        (cls) => cls.teachers && Array.isArray(cls.teachers) && cls.teachers.length > 0,
+      );
+      break;
     }
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 const sharedClasses = computed(() => {
   // Usar la nueva lógica con la propiedad 'teachers' de Firestore
   const shared = classes.value.filter(
-    (cls) => cls.teachers && Array.isArray(cls.teachers) && cls.teachers.length > 0
-  )
+    (cls) => cls.teachers && Array.isArray(cls.teachers) && cls.teachers.length > 0,
+  );
 
-  console.log("🔗 AdminClassesView - Clases compartidas encontradas:", shared.length)
+  console.log('🔗 AdminClassesView - Clases compartidas encontradas:', shared.length);
   shared.forEach((cls) => {
-    console.log(`- ${cls.name}: teachers = [${cls.teachers?.join(", ")}]`)
-  })
+    console.log(`- ${cls.name}: teachers = [${cls.teachers?.join(', ')}]`);
+  });
 
-  return shared
-})
+  return shared;
+});
 
 const availableInstruments = computed(() => {
-  const instruments = new Set(classes.value.map((cls) => cls.instrument).filter(Boolean))
-  return Array.from(instruments).sort()
-})
+  const instruments = new Set(classes.value.map((cls) => cls.instrument).filter(Boolean));
+  return Array.from(instruments).sort();
+});
 
 const totalStudents = computed(() => {
-  return classes.value.reduce((total, cls) => total + (cls.studentIds?.length || 0), 0)
-})
+  return classes.value.reduce((total, cls) => total + (cls.studentIds?.length || 0), 0);
+});
 
 const activeTeachers = computed(() => {
-  const teacherIds = new Set(classes.value.map((cls) => cls.teacherId).filter(Boolean))
-  return teacherIds.size
-})
+  const teacherIds = new Set(classes.value.map((cls) => cls.teacherId).filter(Boolean));
+  return teacherIds.size;
+});
 
 const hasActiveFilters = computed(() => {
   return !!(
@@ -721,208 +721,208 @@ const hasActiveFilters = computed(() => {
     selectedInstrument.value ||
     selectedTeacher.value ||
     selectedStatus.value
-  )
-})
+  );
+});
 
 // Métodos auxiliares
 const getTeacherName = (teacherId?: string): string => {
-  if (!teacherId) return "Sin asignar"
-  const teacher = teachers.value.find((t) => t.id === teacherId)
-  return teacher ? teacher.name : "Maestro no encontrado"
-}
+  if (!teacherId) return 'Sin asignar';
+  const teacher = teachers.value.find((t) => t.id === teacherId);
+  return teacher ? teacher.name : 'Maestro no encontrado';
+};
 
 const clearAllFilters = () => {
-  searchQuery.value = ""
-  selectedInstrument.value = ""
-  selectedTeacher.value = ""
-  selectedStatus.value = ""
-  showFilters.value = false
-}
+  searchQuery.value = '';
+  selectedInstrument.value = '';
+  selectedTeacher.value = '';
+  selectedStatus.value = '';
+  showFilters.value = false;
+};
 
 // Cargar datos iniciales
 const loadInitialData = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     // Forzar recarga de datos desde Firestore
-    await classesStore.forceSync()
+    await classesStore.forceSync();
 
     // Si aún no hay clases, intentar cargarlas de nuevo
     if (classesStore.getAllClasses.length === 0) {
-      await classesStore.fetchClasses()
+      await classesStore.fetchClasses();
     }
 
     // Mostrar notificación si hay clases cargadas
     if (classesStore.getAllClasses.length > 0) {
-      console.log(`Cargadas ${classesStore.getAllClasses.length} clases`)
+      console.log(`Cargadas ${classesStore.getAllClasses.length} clases`);
     }
   } catch (error) {
-    console.error("Error cargando clases:", error)
-    showNotification("Error al cargar las clases. Por favor, inténtalo de nuevo.", "error")
+    console.error('Error cargando clases:', error);
+    showNotification('Error al cargar las clases. Por favor, inténtalo de nuevo.', 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Lifecycle
-onMounted(loadInitialData)
+onMounted(loadInitialData);
 
 // Métodos de la UI
 const editClass = (classItem: ClassData) => {
-  editingClass.value = {...classItem}
-  showCreateDialog.value = true
-}
+  editingClass.value = { ...classItem };
+  showCreateDialog.value = true;
+};
 
 const confirmDelete = (classItem: ClassData) => {
-  editingClass.value = {...classItem}
-  showDeleteDialog.value = true
-}
+  editingClass.value = { ...classItem };
+  showDeleteDialog.value = true;
+};
 
 const viewSchedule = (classItem: ClassData) => {
-  tab.value = "schedule"
+  tab.value = 'schedule';
   // Aquí podrías añadir lógica para resaltar el horario de la clase seleccionada
-}
+};
 
 const manageSharing = (classItem: ClassData) => {
   // Implementar gestión de compartir clases
-  editingClass.value = {...classItem}
-  selectedClassForPermissions.value = classItem
-  tempPermissions.value = {...classItem.permissions} || {}
-  showPermissionsModal.value = true
-}
+  editingClass.value = { ...classItem };
+  selectedClassForPermissions.value = classItem;
+  tempPermissions.value = { ...classItem.permissions } || {};
+  showPermissionsModal.value = true;
+};
 
 const managePermissions = (classItem: ClassData) => {
   // Implementar gestión de permisos para clases compartidas
-  editingClass.value = {...classItem}
-  selectedClassForPermissions.value = classItem
-  tempPermissions.value = {...classItem.permissions} || {}
-  showPermissionsModal.value = true
-}
+  editingClass.value = { ...classItem };
+  selectedClassForPermissions.value = classItem;
+  tempPermissions.value = { ...classItem.permissions } || {};
+  showPermissionsModal.value = true;
+};
 
 // Funciones de gestión de permisos
 const closePermissionsModal = () => {
-  showPermissionsModal.value = false
-  selectedClassForPermissions.value = null
-  tempPermissions.value = {}
-}
+  showPermissionsModal.value = false;
+  selectedClassForPermissions.value = null;
+  tempPermissions.value = {};
+};
 
 const getSharedTeachers = (classItem: ClassData | null) => {
-  if (!classItem?.teachers || !Array.isArray(classItem.teachers)) return []
+  if (!classItem?.teachers || !Array.isArray(classItem.teachers)) return [];
 
   return classItem.teachers
     .filter((teacherItem) => {
-      const teacherId = typeof teacherItem === "string" ? teacherItem : teacherItem.teacherId
-      return teacherId !== classItem.teacherId // Exclude the owner
+      const teacherId = typeof teacherItem === 'string' ? teacherItem : teacherItem.teacherId;
+      return teacherId !== classItem.teacherId; // Exclude the owner
     })
     .map((teacherItem) => {
-      const teacherId = typeof teacherItem === "string" ? teacherItem : teacherItem.teacherId
-      const teacher = teachers.value?.find((t) => t.id === teacherId)
+      const teacherId = typeof teacherItem === 'string' ? teacherItem : teacherItem.teacherId;
+      const teacher = teachers.value?.find((t) => t.id === teacherId);
       return {
         id: teacherId,
         name: teacher?.name || `Maestro ${teacherId}`,
-      }
-    })
-}
+      };
+    });
+};
 
 const getTeacherPermissions = (classItem: ClassData | null, teacherId: string): string[] => {
-  if (!classItem?.permissions || typeof classItem.permissions !== "object") return ["read"]
+  if (!classItem?.permissions || typeof classItem.permissions !== 'object') return ['read'];
 
-  return classItem.permissions[teacherId] || ["read"]
-}
+  return classItem.permissions[teacherId] || ['read'];
+};
 
 const getPermissionText = (permissions: string[]): string => {
-  if (!permissions || permissions.length === 0) return "Sin permisos"
+  if (!permissions || permissions.length === 0) return 'Sin permisos';
 
-  if (permissions.includes("manage")) return "Administrador"
-  if (permissions.includes("write")) return "Editor"
-  if (permissions.includes("read")) return "Solo lectura"
+  if (permissions.includes('manage')) return 'Administrador';
+  if (permissions.includes('write')) return 'Editor';
+  if (permissions.includes('read')) return 'Solo lectura';
 
-  return "Permisos personalizados"
-}
+  return 'Permisos personalizados';
+};
 
 const getPermissionLevel = (classItem: ClassData | null, teacherId: string): string => {
-  const permissions = getTeacherPermissions(classItem, teacherId)
+  const permissions = getTeacherPermissions(classItem, teacherId);
 
-  if (permissions.includes("manage")) return "manage"
-  if (permissions.includes("write")) return "write"
-  return "read"
-}
+  if (permissions.includes('manage')) return 'manage';
+  if (permissions.includes('write')) return 'write';
+  return 'read';
+};
 
 const updatePermission = (teacherId: string, level: string) => {
   switch (level) {
-    case "read":
-      tempPermissions.value[teacherId] = ["read"]
-      break
-    case "write":
-      tempPermissions.value[teacherId] = ["read", "write"]
-      break
-    case "manage":
-      tempPermissions.value[teacherId] = ["read", "write", "manage"]
-      break
-    default:
-      tempPermissions.value[teacherId] = ["read"]
+  case 'read':
+    tempPermissions.value[teacherId] = ['read'];
+    break;
+  case 'write':
+    tempPermissions.value[teacherId] = ['read', 'write'];
+    break;
+  case 'manage':
+    tempPermissions.value[teacherId] = ['read', 'write', 'manage'];
+    break;
+  default:
+    tempPermissions.value[teacherId] = ['read'];
   }
-}
+};
 
 const savePermissions = async () => {
-  if (!selectedClassForPermissions.value) return
+  if (!selectedClassForPermissions.value) return;
 
   try {
-    loading.value = true
+    loading.value = true;
 
     // Update the class with new permissions
     const updatedClass = {
       ...selectedClassForPermissions.value,
       permissions: tempPermissions.value,
-    }
+    };
 
-    await classesStore.updateClass(selectedClassForPermissions.value.id, updatedClass)
+    await classesStore.updateClass(selectedClassForPermissions.value.id, updatedClass);
 
-    closePermissionsModal()
+    closePermissionsModal();
 
     // Refresh data to reflect changes
-    await loadInitialData()
+    await loadInitialData();
   } catch (error) {
-    console.error("Error al guardar permisos:", error)
+    console.error('Error al guardar permisos:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const closeDialog = () => {
-  showCreateDialog.value = false
-  editingClass.value = null
-}
+  showCreateDialog.value = false;
+  editingClass.value = null;
+};
 
 // Métodos CRUD mejorados
 const handleSave = async (classData: ClassData) => {
   try {
-    loading.value = true
+    loading.value = true;
 
     // Validar datos mínimos
     if (!classData.name?.trim() || !classData.instrument || !classData.teacherId) {
-      showNotification("Por favor complete todos los campos requeridos", "error")
-      loading.value = false
-      return
+      showNotification('Por favor complete todos los campos requeridos', 'error');
+      loading.value = false;
+      return;
     }
 
     // Preparar datos para guardar
     const classToSave = {
       ...classData,
       name: classData.name.trim(),
-      description: classData.description?.trim() || "",
-      status: classData.status || "active",
+      description: classData.description?.trim() || '',
+      status: classData.status || 'active',
       studentIds: classData.studentIds || [],
       sharedWith: classData.sharedWith || [],
-      schedule: classData.schedule || {slots: []},
+      schedule: classData.schedule || { slots: [] },
       updatedAt: new Date().toISOString(),
-    }
+    };
 
     // Debug: Verificar el horario recibido
-    console.log("📅 Datos de horario recibidos:", {
+    console.log('📅 Datos de horario recibidos:', {
       schedule: classToSave.schedule,
       slots: classToSave.schedule?.slots,
       slotsLength: classToSave.schedule?.slots?.length,
-    })
+    });
 
     if (editingClass.value?.id) {
       // Actualizar clase existente - No validar horario para actualizaciones
@@ -934,17 +934,17 @@ const handleSave = async (classData: ClassData) => {
         // Mantener el historial de cambios si existe
         changeHistory: [
           ...(editingClass.value.changeHistory || []),
-          {timestamp: new Date().toISOString(), changes: "Actualización de la clase"},
+          { timestamp: new Date().toISOString(), changes: 'Actualización de la clase' },
         ],
-      })
+      });
 
-      showNotification(`✅ Clase "${classToSave.name}" actualizada exitosamente`, "success")
+      showNotification(`✅ Clase "${classToSave.name}" actualizada exitosamente`, 'success');
     } else {
       // Crear nueva clase - Validar horario solo para clases nuevas
-      const now = new Date().toISOString()
+      const now = new Date().toISOString();
 
       // Excluir el campo 'id' para nuevas clases ya que Firestore lo genera automáticamente
-      const {id, createdAt, updatedAt, ...classDataWithoutId} = classToSave
+      const { id, createdAt, updatedAt, ...classDataWithoutId } = classToSave;
 
       const newClass = {
         ...classDataWithoutId,
@@ -952,98 +952,98 @@ const handleSave = async (classData: ClassData) => {
         createdAt: now,
         permissions: classToSave.teacherId
           ? {
-              [classToSave.teacherId]: ["read", "write", "manage"],
-            }
+            [classToSave.teacherId]: ['read', 'write', 'manage'],
+          }
           : {},
         // Inicializar historial de cambios
-        changeHistory: [{timestamp: now, changes: "Creación de la clase"}],
-      }
+        changeHistory: [{ timestamp: now, changes: 'Creación de la clase' }],
+      };
 
       // Validar que tenga al menos un horario SOLO para clases nuevas
       if (!newClass.schedule?.slots?.length || newClass.schedule.slots.length === 0) {
-        console.warn("⚠️ Validación de horario falló:", {
+        console.warn('⚠️ Validación de horario falló:', {
           schedule: newClass.schedule,
           slots: newClass.schedule?.slots,
           hasSlots: Boolean(newClass.schedule?.slots?.length),
-        })
-        showNotification("Debe agregar al menos un horario para la clase", "error")
-        loading.value = false
-        return // No cerrar el modal, solo salir de la función
+        });
+        showNotification('Debe agregar al menos un horario para la clase', 'error');
+        loading.value = false;
+        return; // No cerrar el modal, solo salir de la función
       }
 
       // Debug: Verificar que no se incluya el campo 'id' para nuevas clases
-      console.log("🆕 Datos de nueva clase (sin id):", newClass)
-      console.log("🔍 ¿Incluye campo id?", "id" in newClass ? "SÍ - ERROR" : "NO - CORRECTO")
+      console.log('🆕 Datos de nueva clase (sin id):', newClass);
+      console.log('🔍 ¿Incluye campo id?', 'id' in newClass ? 'SÍ - ERROR' : 'NO - CORRECTO');
 
       // Guardar la nueva clase
-      const savedClass = await classesStore.addClass(newClass)
-      console.log("✅ Clase guardada en Firestore:", savedClass)
+      const savedClass = await classesStore.addClass(newClass);
+      console.log('✅ Clase guardada en Firestore:', savedClass);
 
       // Verificar que la clase aparezca en el listado inmediatamente
-      console.log("📋 Total de clases después de crear:", classes.value.length)
-      const justCreated = classes.value.find((c) => c.id === savedClass.id)
-      console.log("🔍 Clase recién creada encontrada en el listado:", justCreated ? "SÍ" : "NO")
+      console.log('📋 Total de clases después de crear:', classes.value.length);
+      const justCreated = classes.value.find((c) => c.id === savedClass.id);
+      console.log('🔍 Clase recién creada encontrada en el listado:', justCreated ? 'SÍ' : 'NO');
 
-      showNotification(`✅ Clase "${newClass.name}" creada exitosamente`, "success")
+      showNotification(`✅ Clase "${newClass.name}" creada exitosamente`, 'success');
     }
 
     // Solo cerrar diálogo si no hubo errores (no necesitamos recargar datos ya que el store se actualiza automáticamente)
-    closeDialog()
+    closeDialog();
   } catch (error) {
-    console.error("❌ Error al guardar la clase:", error)
-    const errorMessage = error instanceof Error ? error.message : "Error desconocido"
-    showNotification(`❌ Error al guardar la clase: ${errorMessage}`, "error")
+    console.error('❌ Error al guardar la clase:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    showNotification(`❌ Error al guardar la clase: ${errorMessage}`, 'error');
 
     // Debug: Verificar estado después del error
-    console.log("📊 Estado después del error:", {
+    console.log('📊 Estado después del error:', {
       totalClasses: classes.value.length,
       editingClassId: editingClass.value?.id,
       isCreatingNew: !editingClass.value?.id,
-    })
+    });
 
     // No cerrar el modal en caso de error
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const deleteClass = async () => {
-  if (!editingClass.value?.id) return
+  if (!editingClass.value?.id) return;
 
-  const classToDelete = editingClass.value
-  const classId = classToDelete.id
-  deleting.value = true
+  const classToDelete = editingClass.value;
+  const classId = classToDelete.id;
+  deleting.value = true;
 
   try {
     // Eliminar de Firestore y actualizar el store local automáticamente
-    await classesStore.removeClass(classId)
+    await classesStore.removeClass(classId);
 
     // Verificar que la clase se eliminó correctamente del store
-    const stillExists = classes.value.find((c) => c.id === classId)
+    const stillExists = classes.value.find((c) => c.id === classId);
     if (stillExists) {
-      console.warn("La clase aún existe en el store local, forzando actualización...")
-      await classesStore.fetchClasses()
+      console.warn('La clase aún existe en el store local, forzando actualización...');
+      await classesStore.fetchClasses();
     }
 
     // Mostrar notificación de éxito
-    showNotification(`✅ Clase "${classToDelete.name}" eliminada exitosamente`, "success")
+    showNotification(`✅ Clase "${classToDelete.name}" eliminada exitosamente`, 'success');
 
     // Cerrar diálogo inmediatamente
-    showDeleteDialog.value = false
-    editingClass.value = null
+    showDeleteDialog.value = false;
+    editingClass.value = null;
   } catch (error) {
-    console.error("Error al eliminar la clase:", error)
-    const errorMessage = error instanceof Error ? error.message : "Error desconocido"
-    showNotification(`❌ Error al eliminar la clase: ${errorMessage}`, "error")
+    console.error('Error al eliminar la clase:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    showNotification(`❌ Error al eliminar la clase: ${errorMessage}`, 'error');
   } finally {
-    deleting.value = false
+    deleting.value = false;
   }
-}
+};
 
 const closeDeleteDialog = (): void => {
-  showDeleteDialog.value = false
-  editingClass.value = null
-}
+  showDeleteDialog.value = false;
+  editingClass.value = null;
+};
 </script>
 
 <style scoped>

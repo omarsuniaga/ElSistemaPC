@@ -82,10 +82,10 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {XMarkIcon, CheckIcon} from "@heroicons/vue/24/outline"
-import {useStudentsStore} from "../store/students"
-import StudentAvatar from "./StudentAvatar.vue"
+import { ref, computed, onMounted, watch } from 'vue';
+import { XMarkIcon, CheckIcon } from '@heroicons/vue/24/outline';
+import { useStudentsStore } from '../store/students';
+import StudentAvatar from './StudentAvatar.vue';
 
 const props = defineProps({
   expanded: {
@@ -100,14 +100,14 @@ const props = defineProps({
     type: Array as () => Student[],
     default: () => [],
   },
-})
+});
 
-defineEmits(["toggle-panel", "select-student", "update:search"])
+defineEmits(['toggle-panel', 'select-student', 'update:search']);
 
-const studentsStore = useStudentsStore()
-const searchQuery = ref("")
-const isLoading = ref(true)
-const error = ref("")
+const studentsStore = useStudentsStore();
+const searchQuery = ref('');
+const isLoading = ref(true);
+const error = ref('');
 
 interface Student {
   id: number | string
@@ -118,50 +118,50 @@ interface Student {
 }
 
 const filteredStudents = computed(() => {
-  const searchTerm = searchQuery.value.toLowerCase().trim()
-  const students = studentsStore.students
+  const searchTerm = searchQuery.value.toLowerCase().trim();
+  const students = studentsStore.students;
 
-  if (!searchTerm) return students
+  if (!searchTerm) return students;
 
   return students.filter(
     (student: Student): boolean =>
-      (student.nombre?.toLowerCase() ?? "").includes(searchTerm) ||
-      (student.apellido?.toLowerCase() ?? "").includes(searchTerm) ||
-      (student.instrumento?.toLowerCase() ?? "").includes(searchTerm)
-  )
-})
+      (student.nombre?.toLowerCase() ?? '').includes(searchTerm) ||
+      (student.apellido?.toLowerCase() ?? '').includes(searchTerm) ||
+      (student.instrumento?.toLowerCase() ?? '').includes(searchTerm),
+  );
+});
 
 const isSelected = (student: Student) => {
-  return props.selectedStudents.some((s: Student) => s.id === student.id)
-}
+  return props.selectedStudents.some((s: Student) => s.id === student.id);
+};
 
 const loadStudents = async () => {
-  isLoading.value = true
-  error.value = ""
+  isLoading.value = true;
+  error.value = '';
 
   try {
     // La función fetchItems del store base ya maneja el caché
-    await studentsStore.fetchItems()
+    await studentsStore.fetchItems();
   } catch (err) {
-    error.value = "Error al cargar los estudiantes"
-    console.error("Error loading students:", err)
+    error.value = 'Error al cargar los estudiantes';
+    console.error('Error loading students:', err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Cargar estudiantes cuando el componente se monta
-onMounted(loadStudents)
+onMounted(loadStudents);
 
 // Ver cambios en el store y recargar si es necesario
 watch(
   () => studentsStore.items.length,
   (newLength) => {
     if (newLength === 0) {
-      loadStudents()
+      loadStudents();
     }
-  }
-)
+  },
+);
 </script>
 
 <style scoped>

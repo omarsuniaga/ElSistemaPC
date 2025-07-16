@@ -36,34 +36,34 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import ObservationsHistoryTable from "../components/ObservationsHistoryTable.vue"
-import {useAuthStore} from "../../../stores/auth"
-import {useTeachersStore} from "../../Teachers/store/teachers"
+import { computed } from 'vue';
+import ObservationsHistoryTable from '../components/ObservationsHistoryTable.vue';
+import { useAuthStore } from '../../../stores/auth';
+import { useTeachersStore } from '../../Teachers/store/teachers';
 
-const authStore = useAuthStore()
-const teachersStore = useTeachersStore()
+const authStore = useAuthStore();
+const teachersStore = useTeachersStore();
 
 // Determine if current user is a teacher or admin
 const isTeacher = computed(() => {
-  return authStore.user?.role === "teacher"
-})
+  return authStore.user?.role === 'teacher';
+});
 
 const isAdmin = computed(() => {
-  return authStore.user?.role === "admin"
-})
+  return authStore.user?.role === 'admin';
+});
 
 // Get current user ID (UID or teacher ID)
 const currentUserId = computed(() => {
-  if (!authStore.user) return ""
+  if (!authStore.user) return '';
 
-  const teacherId = authStore.user.uid
-  const teacher = teachersStore.getTeacherByAuthUid(teacherId)
+  const teacherId = authStore.user.uid;
+  const teacher = teachersStore.getTeacherByAuthUid(teacherId);
 
   // If teacher found in store, use that ID
-  if (teacher) return teacher.id
+  if (teacher) return teacher.id;
 
   // Fall back to auth UID
-  return teacherId
-})
+  return teacherId;
+});
 </script>

@@ -5,8 +5,8 @@
         👥 Usuarios
       </h3>
       <button
-        @click="openUsers"
         class="text-blue-600 hover:text-blue-800 text-xs font-medium"
+        @click="openUsers"
       >
         Ver →
       </button>
@@ -26,11 +26,11 @@
 </template>
 
 <script setup lang="ts">
-import { moduleManager } from '../../core/ModuleManager'
+import { moduleManager } from '../../core/ModuleManager';
 
 const openUsers = () => {
   // Activar el módulo montaje y navegar a la vista de usuarios
-  moduleManager.activateModule('montaje')
-  moduleManager.emitEvent('navigate', { module: 'montaje', view: 'users' })
-}
+  moduleManager.activateModule('montaje');
+  moduleManager.emitEvent('navigate', { module: 'montaje', view: 'users' });
+};
 </script>

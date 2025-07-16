@@ -147,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 import {
   UserGroupIcon,
   AcademicCapIcon,
@@ -156,29 +156,29 @@ import {
   ChartBarIcon,
   CheckIcon,
   InformationCircleIcon,
-} from "@heroicons/vue/24/outline"
-import {usePDFReportTypes} from "../../composables/usePDFReportTypes"
+} from '@heroicons/vue/24/outline';
+import { usePDFReportTypes } from '../../composables/usePDFReportTypes';
 
 // Props
 interface Props {
   modelValue: string
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
-  "update:modelValue": [value: string]
-}>()
+  'update:modelValue': [value: string]
+}>();
 
 // Composables
-const {reportTypes, iconColors, getReportTypeById, getFieldLabel} = usePDFReportTypes()
+const { reportTypes, iconColors, getReportTypeById, getFieldLabel } = usePDFReportTypes();
 
 // Computed
 const selectedReportType = computed({
   get: () => props.modelValue,
-  set: (value) => emit("update:modelValue", value),
-})
+  set: (value) => emit('update:modelValue', value),
+});
 
 // Funciones
 const getIconComponent = (iconName: string) => {
@@ -188,7 +188,7 @@ const getIconComponent = (iconName: string) => {
     UserIcon,
     ClipboardDocumentCheckIcon,
     ChartBarIcon,
-  }
-  return iconMap[iconName] || UserGroupIcon
-}
+  };
+  return iconMap[iconName] || UserGroupIcon;
+};
 </script>

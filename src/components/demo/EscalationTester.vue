@@ -173,9 +173,9 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, ref, computed, onMounted} from "vue"
-import {addDoc, collection, serverTimestamp} from "firebase/firestore"
-import {db} from "../../firebase"
+import { defineComponent, ref, computed, onMounted } from 'vue';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../firebase';
 import {
   InformationCircleIcon,
   ExclamationTriangleIcon,
@@ -186,7 +186,7 @@ import {
   XMarkIcon,
   CheckIcon,
   TrashIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 // import { notifyUnexcusedAbsences, countWeeklyAbsences } from '../../../services/attendanceNotifications.ts'
 
 interface MockStudent {
@@ -225,7 +225,7 @@ interface TestResult {
 }
 
 export default defineComponent({
-  name: "EscalationTester",
+  name: 'EscalationTester',
   components: {
     InformationCircleIcon,
     ExclamationTriangleIcon,
@@ -238,189 +238,189 @@ export default defineComponent({
     TrashIcon,
   },
   setup() {
-    const selectedStudent = ref<MockStudent | null>(null)
-    const testWeek = ref("")
-    const weekDays = ref<WeekDay[]>([])
-    const currentAbsenceCount = ref(0)
-    const currentEscalationLevel = ref(1)
-    const previewMessage = ref("")
-    const testing = ref(false)
-    const creating = ref(false)
-    const sending = ref(false)
-    const testResults = ref<TestResult[]>([])
+    const selectedStudent = ref<MockStudent | null>(null);
+    const testWeek = ref('');
+    const weekDays = ref<WeekDay[]>([]);
+    const currentAbsenceCount = ref(0);
+    const currentEscalationLevel = ref(1);
+    const previewMessage = ref('');
+    const testing = ref(false);
+    const creating = ref(false);
+    const sending = ref(false);
+    const testResults = ref<TestResult[]>([]);
 
     // Estudiantes de prueba
     const mockStudents: MockStudent[] = [
       {
-        id: "test_student_1",
-        nombre: "Ana",
-        apellido: "García",
-        tlf_madre: "+1234567890",
-        tlf_padre: "+0987654321",
+        id: 'test_student_1',
+        nombre: 'Ana',
+        apellido: 'García',
+        tlf_madre: '+1234567890',
+        tlf_padre: '+0987654321',
       },
       {
-        id: "test_student_2",
-        nombre: "Carlos",
-        apellido: "Rodríguez",
-        tlf_madre: "+1122334455",
-        tlf_padre: "+5544332211",
+        id: 'test_student_2',
+        nombre: 'Carlos',
+        apellido: 'Rodríguez',
+        tlf_madre: '+1122334455',
+        tlf_padre: '+5544332211',
       },
       {
-        id: "test_student_3",
-        nombre: "María",
-        apellido: "López",
-        tlf_madre: "+9988776655",
-        tlf_padre: "+6677889900",
+        id: 'test_student_3',
+        nombre: 'María',
+        apellido: 'López',
+        tlf_madre: '+9988776655',
+        tlf_padre: '+6677889900',
       },
-    ]
+    ];
 
     // Niveles de escalación
     const escalationLevels: EscalationLevel[] = [
       {
         number: 1,
-        title: "Tono Suave",
-        description: "1 inasistencia",
-        trigger: "Primera ausencia injustificada en la semana",
-        tone: "Amable y comprensivo",
-        objective: "Recordatorio suave sobre la importancia de asistir",
-        icon: "info",
+        title: 'Tono Suave',
+        description: '1 inasistencia',
+        trigger: 'Primera ausencia injustificada en la semana',
+        tone: 'Amable y comprensivo',
+        objective: 'Recordatorio suave sobre la importancia de asistir',
+        icon: 'info',
         iconComponent: InformationCircleIcon,
       },
       {
         number: 2,
-        title: "Tono Reclamativo",
-        description: "2 inasistencias",
-        trigger: "Segunda ausencia injustificada en la semana",
-        tone: "Firme recordando disciplina y responsabilidad",
-        objective: "Enfatizar la importancia de la disciplina musical",
-        icon: "alert-triangle",
+        title: 'Tono Reclamativo',
+        description: '2 inasistencias',
+        trigger: 'Segunda ausencia injustificada en la semana',
+        tone: 'Firme recordando disciplina y responsabilidad',
+        objective: 'Enfatizar la importancia de la disciplina musical',
+        icon: 'alert-triangle',
         iconComponent: ExclamationTriangleIcon,
       },
       {
         number: 3,
-        title: "Solicitud de Explicación",
-        description: "3 inasistencias",
-        trigger: "Tercera ausencia injustificada en la semana",
-        tone: "Formal solicitando contacto obligatorio",
-        objective: "Requerir explicación del representante en 24h",
-        icon: "phone",
+        title: 'Solicitud de Explicación',
+        description: '3 inasistencias',
+        trigger: 'Tercera ausencia injustificada en la semana',
+        tone: 'Formal solicitando contacto obligatorio',
+        objective: 'Requerir explicación del representante en 24h',
+        icon: 'phone',
         iconComponent: PhoneIcon,
       },
       {
         number: 4,
-        title: "Caso Extremo",
-        description: "4+ inasistencias",
-        trigger: "Cuatro o más ausencias en la semana",
-        tone: "Urgente con citación obligatoria",
-        objective: "Citación presencial y evaluación de continuidad",
-        icon: "alert-octagon",
+        title: 'Caso Extremo',
+        description: '4+ inasistencias',
+        trigger: 'Cuatro o más ausencias en la semana',
+        tone: 'Urgente con citación obligatoria',
+        objective: 'Citación presencial y evaluación de continuidad',
+        icon: 'alert-octagon',
         iconComponent: ExclamationCircleIcon,
       },
-    ]
+    ];
 
     // Información de la semana
     const weekInfo = computed(() => {
-      if (!testWeek.value) return ""
-      const [year, week] = testWeek.value.split("-W")
-      return `Semana ${week} del ${year}`
-    })
+      if (!testWeek.value) return '';
+      const [year, week] = testWeek.value.split('-W');
+      return `Semana ${week} del ${year}`;
+    });
 
     /**
      * Obtiene el nivel de escalación según el número de ausencias
      */
     const getEscalationLevel = (absences: number): number => {
-      if (absences === 1) return 1
-      if (absences === 2) return 2
-      if (absences === 3) return 3
-      if (absences >= 4) return 4
-      return 1
-    }
+      if (absences === 1) return 1;
+      if (absences === 2) return 2;
+      if (absences === 3) return 3;
+      if (absences >= 4) return 4;
+      return 1;
+    };
 
     /**
      * Actualiza las fechas de la semana cuando se selecciona una semana
      */
     const updateWeekDates = () => {
-      if (!testWeek.value) return
+      if (!testWeek.value) return;
 
-      const [year, week] = testWeek.value.split("-W")
-      const startDate = new Date(parseInt(year), 0, 1 + (parseInt(week) - 1) * 7)
-      const day = startDate.getDay()
-      const monday = new Date(startDate.getTime() - (day - 1) * 24 * 60 * 60 * 1000)
+      const [year, week] = testWeek.value.split('-W');
+      const startDate = new Date(parseInt(year), 0, 1 + (parseInt(week) - 1) * 7);
+      const day = startDate.getDay();
+      const monday = new Date(startDate.getTime() - (day - 1) * 24 * 60 * 60 * 1000);
 
-      const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+      const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
       weekDays.value = days.map((name, index) => {
-        const date = new Date(monday.getTime() + index * 24 * 60 * 60 * 1000)
+        const date = new Date(monday.getTime() + index * 24 * 60 * 60 * 1000);
         return {
           name,
-          date: date.toISOString().split("T")[0],
+          date: date.toISOString().split('T')[0],
           absent: false,
-        }
-      })
+        };
+      });
 
-      updateAbsenceCount()
-    }
+      updateAbsenceCount();
+    };
 
     /**
      * Actualiza el conteo de ausencias
      */
     const updateAbsenceCount = () => {
-      currentAbsenceCount.value = weekDays.value.filter((day) => day.absent).length
-      currentEscalationLevel.value = getEscalationLevel(currentAbsenceCount.value)
-    }
+      currentAbsenceCount.value = weekDays.value.filter((day) => day.absent).length;
+      currentEscalationLevel.value = getEscalationLevel(currentAbsenceCount.value);
+    };
 
     /**
      * Crea ausencias simuladas en Firebase
      */
     const createSimulatedAbsences = async () => {
-      if (!selectedStudent.value || currentAbsenceCount.value === 0) return
+      if (!selectedStudent.value || currentAbsenceCount.value === 0) return;
 
       try {
-        creating.value = true
+        creating.value = true;
 
         // Crear documentos de ausencia para cada día marcado
         for (const day of weekDays.value) {
           if (day.absent) {
             const attendanceDoc = {
-              teacherId: "test_teacher",
-              classId: "test_class",
+              teacherId: 'test_teacher',
+              classId: 'test_class',
               fecha: day.date,
               data: {
-                presentes: ["other_student_1", "other_student_2"],
+                presentes: ['other_student_1', 'other_student_2'],
                 ausentes: [selectedStudent.value.id],
                 tarde: [],
                 justificacion: [],
               },
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
-            }
+            };
 
-            await addDoc(collection(db, "ASISTENCIAS"), attendanceDoc)
-            console.log(`✅ Ausencia creada para ${day.name} (${day.date})`)
+            await addDoc(collection(db, 'ASISTENCIAS'), attendanceDoc);
+            console.log(`✅ Ausencia creada para ${day.name} (${day.date})`);
           }
         }
 
         alert(
-          `✅ Se crearon ${currentAbsenceCount.value} ausencias simuladas para ${selectedStudent.value.nombre}`
-        )
+          `✅ Se crearon ${currentAbsenceCount.value} ausencias simuladas para ${selectedStudent.value.nombre}`,
+        );
       } catch (error) {
-        console.error("Error creando ausencias simuladas:", error)
-        alert("❌ Error creando ausencias simuladas")
+        console.error('Error creando ausencias simuladas:', error);
+        alert('❌ Error creando ausencias simuladas');
       } finally {
-        creating.value = false
+        creating.value = false;
       }
-    }
+    };
 
     /**
      * Prueba un nivel específico de escalación
      */
     const testEscalationLevel = async (level: number) => {
-      if (!selectedStudent.value) return
+      if (!selectedStudent.value) return;
 
       try {
-        testing.value = true
+        testing.value = true;
 
         // Simular el conteo de ausencias
-        const mockAbsenceCount = level === 1 ? 1 : level === 2 ? 2 : level === 3 ? 3 : 4
+        const mockAbsenceCount = level === 1 ? 1 : level === 2 ? 2 : level === 3 ? 3 : 4;
 
         // Obtener el mensaje según el nivel
         const templates = {
@@ -431,30 +431,30 @@ export default defineComponent({
           3: `IMPORTANTE: El estudiante ${selectedStudent.value.nombre} ${selectedStudent.value.apellido} ha registrado su TERCERA ausencia injustificada esta semana. Esta situación es preocupante y afecta significativamente su progreso académico. SOLICITAMOS que el representante se comunique con la dirección de la academia EN LAS PRÓXIMAS 24 HORAS para proporcionar una explicación sobre las razones de estas inasistencias. Es necesario evaluar la continuidad en el programa. ⚠️📞`,
 
           4: `🚨 CASO EXTREMO - CITACIÓN OBLIGATORIA 🚨\n\nEl estudiante ${selectedStudent.value.nombre} ${selectedStudent.value.apellido} ha registrado CUATRO O MÁS ausencias injustificadas esta semana. Esta es una situación CRÍTICA que requiere atención INMEDIATA.\n\nSE REQUIERE la presencia OBLIGATORIA del representante en las oficinas de la sede para una reunión con la dirección académica.\n\nTemas a tratar:\n• Explicación detallada de las ausencias\n• Evaluación de continuidad en el programa\n• Posibles medidas disciplinarias\n• Plan de recuperación académica\n\nPor favor, contactar URGENTEMENTE para agendar cita. La situación académica del estudiante está en riesgo.`,
-        }
+        };
 
-        previewMessage.value = templates[level as keyof typeof templates] || templates[1]
-        currentEscalationLevel.value = level
-        currentAbsenceCount.value = mockAbsenceCount
+        previewMessage.value = templates[level as keyof typeof templates] || templates[1];
+        currentEscalationLevel.value = level;
+        currentAbsenceCount.value = mockAbsenceCount;
       } catch (error) {
-        console.error("Error probando escalación:", error)
+        console.error('Error probando escalación:', error);
       } finally {
-        testing.value = false
+        testing.value = false;
       }
-    }
+    };
 
     /**
      * Envía mensaje de prueba
      */
     const sendTestMessage = async () => {
-      if (!selectedStudent.value || !previewMessage.value) return
+      if (!selectedStudent.value || !previewMessage.value) return;
 
       try {
-        sending.value = true
+        sending.value = true;
 
         // Simular envío (aquí se integraría con WhatsApp real)
         // const result = await notifyUnexcusedAbsences([selectedStudent.value.id])
-        const result = {success: 1, failed: 0} // Mock result
+        const result = { success: 1, failed: 0 }; // Mock result
 
         const testResult: TestResult = {
           timestamp: new Date(),
@@ -463,66 +463,66 @@ export default defineComponent({
           absenceCount: currentAbsenceCount.value,
           message: previewMessage.value,
           success: result.success > 0,
-          error: result.success === 0 ? "Error en envío" : undefined,
-        }
+          error: result.success === 0 ? 'Error en envío' : undefined,
+        };
 
-        testResults.value.unshift(testResult)
+        testResults.value.unshift(testResult);
 
         if (testResult.success) {
-          alert("✅ Mensaje enviado exitosamente")
+          alert('✅ Mensaje enviado exitosamente');
         } else {
-          alert("❌ Error enviando mensaje")
+          alert('❌ Error enviando mensaje');
         }
       } catch (error) {
-        console.error("Error enviando mensaje:", error)
-        alert("❌ Error enviando mensaje de prueba")
+        console.error('Error enviando mensaje:', error);
+        alert('❌ Error enviando mensaje de prueba');
       } finally {
-        sending.value = false
+        sending.value = false;
       }
-    }
+    };
 
     /**
      * Limpia la vista previa
      */
     const clearPreview = () => {
-      previewMessage.value = ""
-      currentEscalationLevel.value = 1
-      currentAbsenceCount.value = 0
-    }
+      previewMessage.value = '';
+      currentEscalationLevel.value = 1;
+      currentAbsenceCount.value = 0;
+    };
 
     /**
      * Limpia los resultados
      */
     const clearResults = () => {
-      testResults.value = []
-    }
+      testResults.value = [];
+    };
 
     /**
      * Formatea la hora
      */
     const formatTime = (date: Date): string => {
-      return date.toLocaleString("es-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
-        day: "2-digit",
-        month: "2-digit",
-      })
-    }
+      return date.toLocaleString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+      });
+    };
 
     // Inicialización
     onMounted(() => {
       // Establecer semana actual por defecto
-      const now = new Date()
-      const year = now.getFullYear()
+      const now = new Date();
+      const year = now.getFullYear();
       const week = Math.ceil(
         ((now.getTime() - new Date(year, 0, 1).getTime()) / 86400000 +
           new Date(year, 0, 1).getDay() +
           1) /
-          7
-      )
-      testWeek.value = `${year}-W${week.toString().padStart(2, "0")}`
-      updateWeekDates()
-    })
+          7,
+      );
+      testWeek.value = `${year}-W${week.toString().padStart(2, '0')}`;
+      updateWeekDates();
+    });
 
     return {
       selectedStudent,
@@ -547,9 +547,9 @@ export default defineComponent({
       clearPreview,
       clearResults,
       formatTime,
-    }
+    };
   },
-})
+});
 </script>
 
 <style scoped>

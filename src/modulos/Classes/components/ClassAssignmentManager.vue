@@ -281,8 +281,8 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from "vue"
-import type {ClassData} from "../types/class"
+import { computed, ref } from 'vue';
+import type { ClassData } from '../types/class';
 import {
   AcademicCapIcon,
   UserIcon,
@@ -292,139 +292,139 @@ import {
   ChevronDownIcon,
   CheckIcon,
   ArrowPathIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Mock data - replace with actual stores
 const availableTeachers = ref([
-  {id: "1", name: "María González"},
-  {id: "2", name: "Carlos Rodríguez"},
-  {id: "3", name: "Ana Martínez"},
-])
+  { id: '1', name: 'María González' },
+  { id: '2', name: 'Carlos Rodríguez' },
+  { id: '3', name: 'Ana Martínez' },
+]);
 
 const availableStudents = ref([
-  {id: "1", name: "Juan Pérez"},
-  {id: "2", name: "Laura Jiménez"},
-  {id: "3", name: "Miguel Torres"},
-  {id: "4", name: "Sofia López"},
-])
+  { id: '1', name: 'Juan Pérez' },
+  { id: '2', name: 'Laura Jiménez' },
+  { id: '3', name: 'Miguel Torres' },
+  { id: '4', name: 'Sofia López' },
+]);
 
 const props = defineProps<{
   classes: ClassData[]
-}>()
+}>();
 
 const emit = defineEmits<{
-  (e: "update-class", classId: string, updates: Partial<ClassData>): void
-  (e: "save-assignments", classId: string): void
-}>()
+  (e: 'update-class', classId: string, updates: Partial<ClassData>): void
+  (e: 'save-assignments', classId: string): void
+}>();
 
-const expandedClasses = ref<string[]>([])
+const expandedClasses = ref<string[]>([]);
 
 // Computed stats
-const totalClasses = computed(() => props.classes.length)
-const classesWithTeacher = computed(() => props.classes.filter((c) => c.teacherId).length)
-const classesWithStudents = computed(() => props.classes.filter((c) => c.studentIds?.length).length)
-const classesWithSchedule = computed(() => props.classes.filter((c) => c.schedule).length)
+const totalClasses = computed(() => props.classes.length);
+const classesWithTeacher = computed(() => props.classes.filter((c) => c.teacherId).length);
+const classesWithStudents = computed(() => props.classes.filter((c) => c.studentIds?.length).length);
+const classesWithSchedule = computed(() => props.classes.filter((c) => c.schedule).length);
 
 // Methods
 function toggleExpanded(classId: string) {
-  const index = expandedClasses.value.indexOf(classId)
+  const index = expandedClasses.value.indexOf(classId);
   if (index > -1) {
-    expandedClasses.value.splice(index, 1)
+    expandedClasses.value.splice(index, 1);
   } else {
-    expandedClasses.value.push(classId)
+    expandedClasses.value.push(classId);
   }
 }
 
 function assignTeacher(classId: string, teacherId: string) {
-  emit("update-class", classId, {teacherId: teacherId || undefined})
+  emit('update-class', classId, { teacherId: teacherId || undefined });
 }
 
 function toggleStudent(classId: string, studentId: string) {
-  const classItem = props.classes.find((c) => c.id === classId)
-  if (!classItem) return
+  const classItem = props.classes.find((c) => c.id === classId);
+  if (!classItem) return;
 
-  const currentStudents = classItem.studentIds || []
-  const index = currentStudents.indexOf(studentId)
+  const currentStudents = classItem.studentIds || [];
+  const index = currentStudents.indexOf(studentId);
 
-  let updatedStudents
+  let updatedStudents;
   if (index > -1) {
-    updatedStudents = currentStudents.filter((id) => id !== studentId)
+    updatedStudents = currentStudents.filter((id) => id !== studentId);
   } else {
-    updatedStudents = [...currentStudents, studentId]
+    updatedStudents = [...currentStudents, studentId];
   }
 
-  emit("update-class", classId, {studentIds: updatedStudents})
+  emit('update-class', classId, { studentIds: updatedStudents });
 }
 
 function getScheduleDay(schedule: any): string {
-  return schedule?.day || ""
+  return schedule?.day || '';
 }
 
 function getScheduleStartTime(schedule: any): string {
-  return schedule?.startTime || ""
+  return schedule?.startTime || '';
 }
 
 function getScheduleEndTime(schedule: any): string {
-  return schedule?.endTime || ""
+  return schedule?.endTime || '';
 }
 
 function updateScheduleDay(classId: string, day: string) {
-  const classItem = props.classes.find((c) => c.id === classId)
-  if (!classItem) return
+  const classItem = props.classes.find((c) => c.id === classId);
+  if (!classItem) return;
 
   const schedule = {
     ...classItem.schedule,
     day,
-  }
+  };
 
-  emit("update-class", classId, {schedule})
+  emit('update-class', classId, { schedule });
 }
 
 function updateScheduleStartTime(classId: string, startTime: string) {
-  const classItem = props.classes.find((c) => c.id === classId)
-  if (!classItem) return
+  const classItem = props.classes.find((c) => c.id === classId);
+  if (!classItem) return;
 
   const schedule = {
     ...classItem.schedule,
     startTime,
-  }
+  };
 
-  emit("update-class", classId, {schedule})
+  emit('update-class', classId, { schedule });
 }
 
 function updateScheduleEndTime(classId: string, endTime: string) {
-  const classItem = props.classes.find((c) => c.id === classId)
-  if (!classItem) return
+  const classItem = props.classes.find((c) => c.id === classId);
+  if (!classItem) return;
 
   const schedule = {
     ...classItem.schedule,
     endTime,
-  }
+  };
 
-  emit("update-class", classId, {schedule})
+  emit('update-class', classId, { schedule });
 }
 
 function formatSchedule(schedule: any): string {
-  if (!schedule) return "Sin horario"
+  if (!schedule) return 'Sin horario';
 
   if (schedule.day && schedule.startTime && schedule.endTime) {
-    return `${schedule.day}: ${schedule.startTime} - ${schedule.endTime}`
+    return `${schedule.day}: ${schedule.startTime} - ${schedule.endTime}`;
   }
 
-  return "Horario incompleto"
+  return 'Horario incompleto';
 }
 
 function saveAssignments(classId: string) {
-  emit("save-assignments", classId)
+  emit('save-assignments', classId);
 }
 
 function resetAssignments(classId: string) {
   // Reset to original state
-  emit("update-class", classId, {
+  emit('update-class', classId, {
     teacherId: undefined,
     studentIds: [],
     schedule: undefined,
-  })
+  });
 }
 </script>
 

@@ -4,59 +4,59 @@
  * Fase 1 - Iniciativa 5: Coordinación Central
  */
 
-import {useOfflineStore} from "@/services/offlineService"
-import {useSyncStore} from "@/composables/sync/useOfflineSync"
-import {useNotificationStore} from "@/composables/ui/useNotifications"
-import {storeToRefs} from "pinia"
+import { useOfflineStore } from '@/services/offlineService';
+import { useSyncStore } from '@/composables/sync/useOfflineSync';
+import { useNotificationStore } from '@/composables/ui/useNotifications';
+import { storeToRefs } from 'pinia';
 
 // ==================== COMPOSABLE PRINCIPAL PWA ====================
 
 export function usePWA() {
   // Stores
-  const offlineStore = useOfflineStore()
-  const syncStore = useSyncStore()
-  const notificationStore = useNotificationStore()
+  const offlineStore = useOfflineStore();
+  const syncStore = useSyncStore();
+  const notificationStore = useNotificationStore();
 
   // Estados reactivos
-  const {isOnline, syncStats, storageInfo} = storeToRefs(offlineStore)
-  const {syncStatus, pendingOperations, lastSyncTime} = storeToRefs(syncStore)
-  const {hasActiveNotifications, unreadCount} = storeToRefs(notificationStore)
+  const { isOnline, syncStats, storageInfo } = storeToRefs(offlineStore);
+  const { syncStatus, pendingOperations, lastSyncTime } = storeToRefs(syncStore);
+  const { hasActiveNotifications, unreadCount } = storeToRefs(notificationStore);
 
   // ==================== INICIALIZACIÓN ====================
 
   async function initializePWA() {
     try {
-      console.log("🚀 Inicializando PWA...")
+      console.log('🚀 Inicializando PWA...');
 
       // Inicializar notificaciones
-      notificationStore.initialize()
+      notificationStore.initialize();
 
       // Solicitar permisos de notificación
-      await notificationStore.requestPermission()
+      await notificationStore.requestPermission();
 
       // Inicializar sistema offline
-      await offlineStore.autoInitialize()
+      await offlineStore.autoInitialize();
 
       // Inicializar sincronización
-      await syncStore.initializePWA()
+      await syncStore.initializePWA();
 
-      console.log("✅ PWA inicializada exitosamente")
+      console.log('✅ PWA inicializada exitosamente');
 
       // Mostrar notificación de bienvenida si es la primera vez
-      const isFirstTime = localStorage.getItem("pwa-initialized") === null
+      const isFirstTime = localStorage.getItem('pwa-initialized') === null;
       if (isFirstTime) {
         notificationStore.showSuccess(
-          "¡Bienvenido!",
-          "La aplicación ya funciona offline. Podrás usar todas las funciones sin conexión."
-        )
-        localStorage.setItem("pwa-initialized", "true")
+          '¡Bienvenido!',
+          'La aplicación ya funciona offline. Podrás usar todas las funciones sin conexión.',
+        );
+        localStorage.setItem('pwa-initialized', 'true');
       }
     } catch (error) {
-      console.error("❌ Error inicializando PWA:", error)
+      console.error('❌ Error inicializando PWA:', error);
       notificationStore.showError(
-        "Error de Inicialización",
-        "Hubo un problema iniciando las funciones offline. Algunas características pueden no estar disponibles."
-      )
+        'Error de Inicialización',
+        'Hubo un problema iniciando las funciones offline. Algunas características pueden no estar disponibles.',
+      );
     }
   }
 
@@ -65,93 +65,93 @@ export function usePWA() {
   function handleConnectionChange() {
     // Este manejador se configurará en onMounted
     if (navigator.onLine) {
-      handleOnline()
+      handleOnline();
     } else {
-      handleOffline()
+      handleOffline();
     }
   }
 
   async function handleOnline() {
-    console.log("🌐 Conexión restaurada")
-    notificationStore.notifyOnlineMode()
-    await offlineStore.handleAppOnline()
+    console.log('🌐 Conexión restaurada');
+    notificationStore.notifyOnlineMode();
+    await offlineStore.handleAppOnline();
   }
 
   function handleOffline() {
-    console.log("📱 Conexión perdida")
-    notificationStore.notifyOfflineMode()
-    offlineStore.handleAppOffline()
+    console.log('📱 Conexión perdida');
+    notificationStore.notifyOfflineMode();
+    offlineStore.handleAppOffline();
   }
 
   // ==================== EVENTOS DE VISIBILIDAD ====================
 
   function handleVisibilityChange() {
-    if (document.visibilityState === "visible") {
+    if (document.visibilityState === 'visible') {
       // App visible - verificar sincronización
-      syncStore.handleAppVisibilityChange()
+      syncStore.handleAppVisibilityChange();
     }
   }
 
   // ==================== INSTALACIÓN PWA ====================
 
-  let deferredPrompt: BeforeInstallPromptEvent | null = null
+  let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
   function handleBeforeInstallPrompt(event: BeforeInstallPromptEvent) {
     // Prevenir que se muestre automáticamente
-    event.preventDefault()
-    deferredPrompt = event
+    event.preventDefault();
+    deferredPrompt = event;
 
     // Mostrar notificación personalizada
-    notificationStore.showToast("Instalación Disponible", {
-      message: "Puedes instalar esta aplicación en tu dispositivo",
-      type: "info",
+    notificationStore.showToast('Instalación Disponible', {
+      message: 'Puedes instalar esta aplicación en tu dispositivo',
+      type: 'info',
       persistent: true,
       actions: [
         {
-          label: "Instalar",
+          label: 'Instalar',
           action: promptInstall,
-          color: "primary",
+          color: 'primary',
         },
         {
-          label: "Más tarde",
+          label: 'Más tarde',
           action: () => {
             // Solo cerrar
           },
         },
       ],
-    })
+    });
   }
 
   async function promptInstall() {
     if (!deferredPrompt) {
       notificationStore.showWarning(
-        "Instalación no disponible",
-        "La aplicación no puede ser instalada en este momento."
-      )
-      return
+        'Instalación no disponible',
+        'La aplicación no puede ser instalada en este momento.',
+      );
+      return;
     }
 
     try {
       // Mostrar el prompt de instalación
-      deferredPrompt.prompt()
+      deferredPrompt.prompt();
 
       // Esperar respuesta del usuario
-      const choiceResult = await deferredPrompt.userChoice
+      const choiceResult = await deferredPrompt.userChoice;
 
-      if (choiceResult.outcome === "accepted") {
+      if (choiceResult.outcome === 'accepted') {
         notificationStore.showSuccess(
-          "¡Aplicación Instalada!",
-          "La aplicación se ha instalado correctamente en tu dispositivo."
-        )
+          '¡Aplicación Instalada!',
+          'La aplicación se ha instalado correctamente en tu dispositivo.',
+        );
       }
 
-      deferredPrompt = null
+      deferredPrompt = null;
     } catch (error) {
-      console.error("Error durante la instalación:", error)
+      console.error('Error durante la instalación:', error);
       notificationStore.showError(
-        "Error de Instalación",
-        "Hubo un problema instalando la aplicación."
-      )
+        'Error de Instalación',
+        'Hubo un problema instalando la aplicación.',
+      );
     }
   }
 
@@ -159,50 +159,50 @@ export function usePWA() {
 
   function handleAppInstalled() {
     notificationStore.showSuccess(
-      "¡Aplicación Instalada!",
-      "Ahora puedes usar la aplicación desde tu pantalla de inicio."
-    )
+      '¡Aplicación Instalada!',
+      'Ahora puedes usar la aplicación desde tu pantalla de inicio.',
+    );
   }
 
   // ==================== UTILIDADES PWA ====================
 
   function isPWAInstalled(): boolean {
     // Verificar si la app está corriendo como PWA instalada
-    const standalone = window.matchMedia("(display-mode: standalone)").matches
-    const fullscreen = window.matchMedia("(display-mode: fullscreen)").matches
-    return standalone || fullscreen || (window.navigator as any).standalone === true
+    const standalone = window.matchMedia('(display-mode: standalone)').matches;
+    const fullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
+    return standalone || fullscreen || (window.navigator as any).standalone === true;
   }
 
   function getPWADisplayMode(): string {
-    if (window.matchMedia("(display-mode: standalone)").matches) return "standalone"
-    if (window.matchMedia("(display-mode: fullscreen)").matches) return "fullscreen"
-    if (window.matchMedia("(display-mode: minimal-ui)").matches) return "minimal-ui"
-    return "browser"
+    if (window.matchMedia('(display-mode: standalone)').matches) return 'standalone';
+    if (window.matchMedia('(display-mode: fullscreen)').matches) return 'fullscreen';
+    if (window.matchMedia('(display-mode: minimal-ui)').matches) return 'minimal-ui';
+    return 'browser';
   }
 
   async function sharePWA() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Music Academy App",
-          text: "Aplicación para gestión de academia musical",
+          title: 'Music Academy App',
+          text: 'Aplicación para gestión de academia musical',
           url: window.location.origin,
-        })
+        });
 
-        notificationStore.showSuccess("Compartido exitosamente")
+        notificationStore.showSuccess('Compartido exitosamente');
       } catch (error) {
-        if ((error as Error).name !== "AbortError") {
-          console.error("Error compartiendo:", error)
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error compartiendo:', error);
         }
       }
     } else {
       // Fallback: copiar al portapapeles
       try {
-        await navigator.clipboard.writeText(window.location.origin)
-        notificationStore.showSuccess("Enlace copiado al portapapeles")
+        await navigator.clipboard.writeText(window.location.origin);
+        notificationStore.showSuccess('Enlace copiado al portapapeles');
       } catch (error) {
-        console.error("Error copiando al portapapeles:", error)
-        notificationStore.showError("No se pudo compartir la aplicación")
+        console.error('Error copiando al portapapeles:', error);
+        notificationStore.showError('No se pudo compartir la aplicación');
       }
     }
   }
@@ -218,54 +218,54 @@ export function usePWA() {
       storageInfo: storageInfo.value,
       pendingOperations: pendingOperations.value,
       lastSync: lastSyncTime.value,
-      notificationsEnabled: notificationStore.permission === "granted",
+      notificationsEnabled: notificationStore.permission === 'granted',
       hasActiveNotifications: hasActiveNotifications.value,
       unreadCount: unreadCount.value,
-    }
+    };
   }
 
   // ==================== DIAGNÓSTICO ====================
 
   async function runPWADiagnostic() {
     const diagnostics = {
-      serviceWorker: "serviceWorker" in navigator,
-      notifications: "Notification" in window,
+      serviceWorker: 'serviceWorker' in navigator,
+      notifications: 'Notification' in window,
       backgroundSync:
-        "serviceWorker" in navigator && "sync" in window.ServiceWorkerRegistration.prototype,
-      indexedDB: "indexedDB" in window,
-      cacheAPI: "caches" in window,
-      webShare: "share" in navigator,
+        'serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype,
+      indexedDB: 'indexedDB' in window,
+      cacheAPI: 'caches' in window,
+      webShare: 'share' in navigator,
       installPrompt: deferredPrompt !== null,
-      pushManager: "serviceWorker" in navigator && "PushManager" in window,
+      pushManager: 'serviceWorker' in navigator && 'PushManager' in window,
       isOnline: navigator.onLine,
-      connection: (navigator as any).connection?.effectiveType || "unknown",
-    }
+      connection: (navigator as any).connection?.effectiveType || 'unknown',
+    };
 
-    console.log("🔍 Diagnóstico PWA:", diagnostics)
-    return diagnostics
+    console.log('🔍 Diagnóstico PWA:', diagnostics);
+    return diagnostics;
   }
 
   // ==================== CICLO DE VIDA ====================
 
   function setupEventListeners() {
     // Registrar event listeners
-    window.addEventListener("online", handleConnectionChange)
-    window.addEventListener("offline", handleConnectionChange)
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener)
-    window.addEventListener("appinstalled", handleAppInstalled)
+    window.addEventListener('online', handleConnectionChange);
+    window.addEventListener('offline', handleConnectionChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     // Verificar estado inicial de conexión
-    handleConnectionChange()
+    handleConnectionChange();
   }
 
   function cleanupEventListeners() {
     // Limpiar event listeners
-    window.removeEventListener("online", handleConnectionChange)
-    window.removeEventListener("offline", handleConnectionChange)
-    document.removeEventListener("visibilitychange", handleVisibilityChange)
-    window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt as EventListener)
-    window.removeEventListener("appinstalled", handleAppInstalled)
+    window.removeEventListener('online', handleConnectionChange);
+    window.removeEventListener('offline', handleConnectionChange);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt as EventListener);
+    window.removeEventListener('appinstalled', handleAppInstalled);
   }
 
   // ==================== RETURN ====================
@@ -306,12 +306,12 @@ export function usePWA() {
     offlineStore,
     syncStore,
     notificationStore,
-  }
+  };
 }
 
 // ==================== TIPO PARA BEFOREINSTALLPROMPT ====================
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>
-  userChoice: Promise<{outcome: "accepted" | "dismissed"}>
+  userChoice: Promise<{outcome: 'accepted' | 'dismissed'}>
 }

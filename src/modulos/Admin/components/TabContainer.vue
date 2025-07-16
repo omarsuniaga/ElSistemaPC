@@ -48,9 +48,9 @@ interface Props {
   activeTab: string
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 defineEmits<{
-  (e: "update:activeTab", value: string): void
-}>()
+  (e: 'update:activeTab', value: string): void
+}>();
 </script>

@@ -1,443 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import type {AttendanceRecord} from "../../Attendance/types/attendance"
-import * as attendanceService from "../../Attendance/service/attendance"
-import {useStudentsStore} from "../store/students"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useAnalyticsStore} from "../../Analytics/store/analytics"
-import {useRouter} from "vue-router"
-import {Bar as BarChart} from "vue-chartjs"
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js"
-import FileUpload from "../../../components/FileUpload.vue"
-import StudentAvatar from "./StudentAvatar.vue"
-
-// Registrar los componentes de Chart.js que necesitamos
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
-
-const props = defineProps({
-  show: {
-    type: Boolean,
-    default: false,
-  },
-  student: {
-    type: Object,
-    default: null,
-  },
-  studentId: {
-    type: String,
-    default: "",
-  },
-  // Nueva prop para datos de análisis del estudiante
-  studentAnalytics: {
-    type: Object,
-    default: () => ({
-      performance: 0,
-      attendance: 0,
-      lastAccess: "",
-      riskFactors: [],
-      recommendedActions: [],
-    }),
-  },
-})
-
-const emit = defineEmits<{
-  (e: "close"): void
-  (e: "edit", id: string): void
-  (e: "view-profile", id: string): void
-  (e: "manage-documents", id: string): void
-}>()
-
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const attendanceRecords = ref<AttendanceRecord[]>([])
-const contentProgress = ref<{title: string; progress: number}[]>([])
-
-// Computed attendance stats
-const attendanceStats = computed(() => {
-  if (!attendanceRecords.value.length) return null
-
-  return {
-    total: attendanceRecords.value.length,
-    present: attendanceRecords.value.filter((r) => r.status === "Presente").length,
-    absent: attendanceRecords.value.filter((r) => r.status === "Ausente").length,
-    justified: attendanceRecords.value.filter((r) => r.status === "Justificado").length,
-    late: attendanceRecords.value.filter((r) => r.status === "Tardanza").length,
-  }
-})
-
-// Computed attendance rate con clasificación según criterios específicos
-const attendanceRate = computed(() => {
-  if (!attendanceStats.value) return 0
-  const {total, present, late = 0} = attendanceStats.value
-  return Math.round(((present + late) / total) * 100)
-})
-
-// Clasificación del estudiante según su porcentaje de asistencia
-const studentClassification = computed(() => {
-  if (!attendanceStats.value || attendanceStats.value.total === 0) {
-    return {
-      type: "Sin datos",
-      color: "gray",
-      description: "No hay datos suficientes para evaluar al estudiante",
-    }
-  }
-
-  const rate = attendanceRate.value
-
-  if (rate >= 70) {
-    return {
-      type: "Responsable",
-      color: "green",
-      description: "Excelente asistencia. El estudiante asiste regularmente a clases.",
-    }
-  } else if (rate >= 40) {
-    return {
-      type: "Irregular",
-      color: "yellow",
-      description: "Asistencia inconsistente. Es necesario mejorar la regularidad.",
-    }
-  } else {
-    return {
-      type: "Crítico",
-      color: "red",
-      description: "Atención requerida. Asistencia muy baja.",
-    }
-  }
-})
-
-// Generando datos de gráfico para Chart.js
-const chartData = computed(() => {
-  if (!attendanceRecords.value.length) {
-    return {
-      labels: ["Sin datos"],
-      datasets: [
-        {
-          label: "Asistencia",
-          data: [0],
-          backgroundColor: "#e5e7eb",
-        },
-      ],
-    }
-  }
-
-  // Agrupar por meses los registros de asistencia
-  const monthlyData = attendanceRecords.value.reduce((acc, record) => {
-    if (!record.Fecha) return acc
-
-    try {
-      const date = new Date(record.Fecha)
-      const month = date.toLocaleDateString("es-ES", {month: "short"})
-
-      if (!acc[month]) {
-        acc[month] = {
-          present: 0,
-          absent: 0,
-          justified: 0,
-          late: 0,
-          total: 0,
-        }
-      }
-
-      acc[month].total++
-
-      const status = (record.status || "").toLowerCase()
-      if (status === "presente" || status === "present") {
-        acc[month].present++
-      } else if (status === "ausente" || status === "absent") {
-        acc[month].absent++
-        if (record.justification) {
-          acc[month].justified++
-        }
-      } else if (status === "tardanza" || status === "tarde" || status === "late") {
-        acc[month].late++
-      }
-    } catch (error) {
-      console.error("Error procesando fecha:", error)
-    }
-
-    return acc
-  }, {})
-
-  // Convertir datos agrupados para Chart.js
-  const months = Object.keys(monthlyData).slice(-3) // Últimos 3 meses para una vista compacta
-
-  return {
-    labels: months,
-    datasets: [
-      {
-        label: "Asistencias",
-        data: months.map((m) => monthlyData[m].present),
-        backgroundColor: "#22c55e",
-      },
-      {
-        label: "Tardanzas",
-        data: months.map((m) => monthlyData[m].late),
-        backgroundColor: "#f59e0b",
-      },
-      {
-        label: "Ausencias",
-        data: months.map((m) => monthlyData[m].absent),
-        backgroundColor: "#ef4444",
-      },
-      {
-        label: "Justificadas",
-        data: months.map((m) => monthlyData[m].justified),
-        backgroundColor: "#a855f7",
-      },
-    ],
-  }
-})
-
-// Opciones para la gráfica de Chart.js
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    x: {
-      stacked: true,
-    },
-    y: {
-      stacked: true,
-      beginAtZero: true,
-    },
-  },
-  plugins: {
-    legend: {
-      display: true,
-      position: "bottom",
-      labels: {
-        boxWidth: 12,
-        padding: 10,
-      },
-    },
-  },
-}
-
-// Load student data when student changes
-watch(
-  () => props.student,
-  async (newStudent) => {
-    if (newStudent) {
-      await loadStudentData(newStudent.id)
-    }
-  },
-  {immediate: true}
-)
-
-// Load student attendance and content data
-async function loadStudentData(studentId: string) {
-  isLoading.value = true
-  error.value = null
-
-  try {
-    // Load attendance records
-    const records = await fetchStudentAttendance(studentId)
-    attendanceRecords.value = records
-
-    // Mock content progress data (replace with actual API call when available)
-    contentProgress.value = [
-      {title: "Teoría Musical", progress: Math.floor(Math.random() * 100)},
-      {title: "Técnica", progress: Math.floor(Math.random() * 100)},
-      {title: "Repertorio", progress: Math.floor(Math.random() * 100)},
-      {title: "Lectura a primera vista", progress: Math.floor(Math.random() * 100)},
-    ]
-  } catch (err: any) {
-    console.error("Error loading student data:", err)
-    error.value = err.message || "Error al cargar los datos del estudiante"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Fetch student attendance records
-async function fetchStudentAttendance(studentId: string): Promise<AttendanceRecord[]> {
-  try {
-    // Get all attendance records
-    const allRecords = await attendanceService.getAttendancesFirebase()
-    // Filter by student ID
-    return allRecords
-      .filter((record) => record.studentId === studentId)
-      .map((record) => ({
-        ...record,
-        justification:
-          typeof record.justification === "string"
-            ? {reason: record.justification}
-            : record.justification,
-      }))
-  } catch (err) {
-    console.error("Error fetching attendance:", err)
-    throw err
-  }
-}
-
-// Get instrument icon based on instrument name
-function getInstrumentIcon(instrument: string): string {
-  const instruments: Record<string, string> = {
-    Piano: "https://cdn-icons-png.flaticon.com/512/3119/3119718.png",
-    Guitarra: "https://cdn-icons-png.flaticon.com/512/3079/3079213.png",
-    Violín: "https://cdn-icons-png.flaticon.com/512/3079/3079267.png",
-    Flauta: "https://cdn-icons-png.flaticon.com/512/3079/3079183.png",
-    Batería: "https://cdn-icons-png.flaticon.com/512/3079/3079218.png",
-    Saxofón: "https://cdn-icons-png.flaticon.com/512/3079/3079257.png",
-    Trompeta: "https://cdn-icons-png.flaticon.com/512/3079/3079264.png",
-    Violonchelo: "https://cdn-icons-png.flaticon.com/512/3079/3079268.png",
-  }
-
-  return instruments[instrument] || "https://cdn-icons-png.flaticon.com/512/3079/3079165.png"
-}
-
-// Get instrument description
-function getInstrumentDescription(instrument: string): string {
-  const descriptions: Record<string, string> = {
-    Piano: "Instrumento de teclado con amplio rango tonal",
-    Guitarra: "Instrumento de cuerda pulsada versátil",
-    Violín: "Instrumento de cuerda frotada de registro agudo",
-    Flauta: "Instrumento de viento-madera de sonido brillante",
-    Batería: "Conjunto de instrumentos de percusión",
-    Saxofón: "Instrumento de viento-madera con lengüeta simple",
-    Trompeta: "Instrumento de viento-metal brillante",
-    Violonchelo: "Instrumento de cuerda frotada de registro grave",
-  }
-
-  return descriptions[instrument] || "Instrumento musical"
-}
-
-// Function to view detailed profile
-function viewProfile() {
-  if (props.student?.id) {
-    emit("view-profile", props.student.id)
-  }
-}
-
-// Function to manage student documents
-function manageDocuments() {
-  if (props.student?.id) {
-    emit("manage-documents", props.student.id)
-  }
-}
-
-// Nuevas propiedades calculadas
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
-const analyticsStore = useAnalyticsStore()
-
-const studentPerformance = computed(() => {
-  // Usar datos de la prop si están disponibles
-  if (props.studentAnalytics && props.studentAnalytics.performance !== undefined) {
-    return props.studentAnalytics.performance
-  }
-
-  // Fallback a cálculos anteriores o valor por defecto
-  // ...código existente para calcular el rendimiento si es necesario...
-  return 0
-})
-
-const studentAttendance = computed(() => {
-  // Usar datos de la prop si están disponibles
-  if (props.studentAnalytics && props.studentAnalytics.attendance !== undefined) {
-    return props.studentAnalytics.attendance
-  }
-
-  // Fallback a cálculos anteriores o valor por defecto
-  // ...código existente para calcular asistencia si es necesario...
-  return 0
-})
-
-const lastAccess = computed(() => {
-  // Usar datos de la prop si están disponibles
-  if (props.studentAnalytics && props.studentAnalytics.lastAccess) {
-    return props.studentAnalytics.lastAccess
-  }
-
-  // Fallback
-  return "No registrado"
-})
-
-const riskFactors = computed(() => {
-  // Usar datos de la prop si están disponibles
-  if (props.studentAnalytics && props.studentAnalytics.riskFactors) {
-    return props.studentAnalytics.riskFactors
-  }
-
-  return []
-})
-
-const recommendedActions = computed(() => {
-  // Usar datos de la prop si están disponibles
-  if (props.studentAnalytics && props.studentAnalytics.recommendedActions) {
-    return props.studentAnalytics.recommendedActions
-  }
-
-  return []
-})
-
-// Agregar el router
-const router = useRouter()
-
-// Agregar la función viewSchedule
-const viewSchedule = () => {
-  if (props.student?.id) {
-    router.push({name: "studentSchedule", params: {id: props.student.id}})
-  } else {
-    console.error("No se puede mostrar el horario: ID de estudiante no disponible")
-  }
-}
-
-// Funciones para manejar la subida de fotos de perfil
-function isValidImageUrl(url: string | undefined): boolean {
-  if (!url) return false
-  return (
-    typeof url === "string" &&
-    (url.startsWith("http") || url.startsWith("https") || url.startsWith("data:image"))
-  )
-}
-
-function handleImageError(event: Event) {
-  // Si la imagen falla al cargar, usar el avatar generado
-  const imgElement = event.target as HTMLImageElement
-  if (imgElement && student.value?.nombre) {
-    imgElement.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.value.nombre}`
-  }
-}
-
-function handleProfilePhotoUpload(url: string) {
-  if (!student.value?.id) return
-
-  console.log("[StudentDrawer] URL de foto recibida:", url)
-
-  // Verificar que sea una URL válida de Firebase Storage
-  if (!url.includes("firebasestorage.googleapis.com")) {
-    console.error("[StudentDrawer] URL inválida:", url)
-    emit("error", "La URL de la imagen no es válida")
-    return
-  }
-
-  // Actualizar el avatar del estudiante
-  studentsStore
-    .updateStudent(student.value.id, {avatar: url})
-    .then(() => {
-      console.log("[StudentDrawer] Avatar actualizado correctamente")
-      // No es necesario hacer nada más, la UI se actualiza automáticamente
-    })
-    .catch((error) => {
-      console.error("[StudentDrawer] Error al actualizar avatar:", error)
-      emit("error", `Error al guardar foto: ${error.message || "Error desconocido"}`)
-    })
-}
-
-function handleUploadError(message: string) {
-  console.error("[StudentDrawer] Error de subida:", message)
-  emit("error", message)
-}
-</script>
 <template>
   <div
     v-if="show"
@@ -950,3 +510,443 @@ function handleUploadError(message: string) {
     </div>
   </div>
 </template>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue';
+import type { AttendanceRecord } from '../../Attendance/types/attendance';
+import * as attendanceService from '../../Attendance/service/attendance';
+import { useStudentsStore } from '../store/students';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useAnalyticsStore } from '../../Analytics/store/analytics';
+import { useRouter } from 'vue-router';
+import { Bar as BarChart } from 'vue-chartjs';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import FileUpload from '../../../components/FileUpload.vue';
+import StudentAvatar from './StudentAvatar.vue';
+
+// Registrar los componentes de Chart.js que necesitamos
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false,
+  },
+  student: {
+    type: Object,
+    default: null,
+  },
+  studentId: {
+    type: String,
+    default: '',
+  },
+  // Nueva prop para datos de análisis del estudiante
+  studentAnalytics: {
+    type: Object,
+    default: () => ({
+      performance: 0,
+      attendance: 0,
+      lastAccess: '',
+      riskFactors: [],
+      recommendedActions: [],
+    }),
+  },
+});
+
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'edit', id: string): void
+  (e: 'view-profile', id: string): void
+  (e: 'manage-documents', id: string): void
+}>();
+
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const attendanceRecords = ref<AttendanceRecord[]>([]);
+const contentProgress = ref<{title: string; progress: number}[]>([]);
+
+// Computed attendance stats
+const attendanceStats = computed(() => {
+  if (!attendanceRecords.value.length) return null;
+
+  return {
+    total: attendanceRecords.value.length,
+    present: attendanceRecords.value.filter((r) => r.status === 'Presente').length,
+    absent: attendanceRecords.value.filter((r) => r.status === 'Ausente').length,
+    justified: attendanceRecords.value.filter((r) => r.status === 'Justificado').length,
+    late: attendanceRecords.value.filter((r) => r.status === 'Tardanza').length,
+  };
+});
+
+// Computed attendance rate con clasificación según criterios específicos
+const attendanceRate = computed(() => {
+  if (!attendanceStats.value) return 0;
+  const { total, present, late = 0 } = attendanceStats.value;
+  return Math.round(((present + late) / total) * 100);
+});
+
+// Clasificación del estudiante según su porcentaje de asistencia
+const studentClassification = computed(() => {
+  if (!attendanceStats.value || attendanceStats.value.total === 0) {
+    return {
+      type: 'Sin datos',
+      color: 'gray',
+      description: 'No hay datos suficientes para evaluar al estudiante',
+    };
+  }
+
+  const rate = attendanceRate.value;
+
+  if (rate >= 70) {
+    return {
+      type: 'Responsable',
+      color: 'green',
+      description: 'Excelente asistencia. El estudiante asiste regularmente a clases.',
+    };
+  } else if (rate >= 40) {
+    return {
+      type: 'Irregular',
+      color: 'yellow',
+      description: 'Asistencia inconsistente. Es necesario mejorar la regularidad.',
+    };
+  } else {
+    return {
+      type: 'Crítico',
+      color: 'red',
+      description: 'Atención requerida. Asistencia muy baja.',
+    };
+  }
+});
+
+// Generando datos de gráfico para Chart.js
+const chartData = computed(() => {
+  if (!attendanceRecords.value.length) {
+    return {
+      labels: ['Sin datos'],
+      datasets: [
+        {
+          label: 'Asistencia',
+          data: [0],
+          backgroundColor: '#e5e7eb',
+        },
+      ],
+    };
+  }
+
+  // Agrupar por meses los registros de asistencia
+  const monthlyData = attendanceRecords.value.reduce((acc, record) => {
+    if (!record.Fecha) return acc;
+
+    try {
+      const date = new Date(record.Fecha);
+      const month = date.toLocaleDateString('es-ES', { month: 'short' });
+
+      if (!acc[month]) {
+        acc[month] = {
+          present: 0,
+          absent: 0,
+          justified: 0,
+          late: 0,
+          total: 0,
+        };
+      }
+
+      acc[month].total++;
+
+      const status = (record.status || '').toLowerCase();
+      if (status === 'presente' || status === 'present') {
+        acc[month].present++;
+      } else if (status === 'ausente' || status === 'absent') {
+        acc[month].absent++;
+        if (record.justification) {
+          acc[month].justified++;
+        }
+      } else if (status === 'tardanza' || status === 'tarde' || status === 'late') {
+        acc[month].late++;
+      }
+    } catch (error) {
+      console.error('Error procesando fecha:', error);
+    }
+
+    return acc;
+  }, {});
+
+  // Convertir datos agrupados para Chart.js
+  const months = Object.keys(monthlyData).slice(-3); // Últimos 3 meses para una vista compacta
+
+  return {
+    labels: months,
+    datasets: [
+      {
+        label: 'Asistencias',
+        data: months.map((m) => monthlyData[m].present),
+        backgroundColor: '#22c55e',
+      },
+      {
+        label: 'Tardanzas',
+        data: months.map((m) => monthlyData[m].late),
+        backgroundColor: '#f59e0b',
+      },
+      {
+        label: 'Ausencias',
+        data: months.map((m) => monthlyData[m].absent),
+        backgroundColor: '#ef4444',
+      },
+      {
+        label: 'Justificadas',
+        data: months.map((m) => monthlyData[m].justified),
+        backgroundColor: '#a855f7',
+      },
+    ],
+  };
+});
+
+// Opciones para la gráfica de Chart.js
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    x: {
+      stacked: true,
+    },
+    y: {
+      stacked: true,
+      beginAtZero: true,
+    },
+  },
+  plugins: {
+    legend: {
+      display: true,
+      position: 'bottom',
+      labels: {
+        boxWidth: 12,
+        padding: 10,
+      },
+    },
+  },
+};
+
+// Load student data when student changes
+watch(
+  () => props.student,
+  async (newStudent) => {
+    if (newStudent) {
+      await loadStudentData(newStudent.id);
+    }
+  },
+  { immediate: true },
+);
+
+// Load student attendance and content data
+async function loadStudentData(studentId: string) {
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    // Load attendance records
+    const records = await fetchStudentAttendance(studentId);
+    attendanceRecords.value = records;
+
+    // Mock content progress data (replace with actual API call when available)
+    contentProgress.value = [
+      { title: 'Teoría Musical', progress: Math.floor(Math.random() * 100) },
+      { title: 'Técnica', progress: Math.floor(Math.random() * 100) },
+      { title: 'Repertorio', progress: Math.floor(Math.random() * 100) },
+      { title: 'Lectura a primera vista', progress: Math.floor(Math.random() * 100) },
+    ];
+  } catch (err: any) {
+    console.error('Error loading student data:', err);
+    error.value = err.message || 'Error al cargar los datos del estudiante';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Fetch student attendance records
+async function fetchStudentAttendance(studentId: string): Promise<AttendanceRecord[]> {
+  try {
+    // Get all attendance records
+    const allRecords = await attendanceService.getAttendancesFirebase();
+    // Filter by student ID
+    return allRecords
+      .filter((record) => record.studentId === studentId)
+      .map((record) => ({
+        ...record,
+        justification:
+          typeof record.justification === 'string'
+            ? { reason: record.justification }
+            : record.justification,
+      }));
+  } catch (err) {
+    console.error('Error fetching attendance:', err);
+    throw err;
+  }
+}
+
+// Get instrument icon based on instrument name
+function getInstrumentIcon(instrument: string): string {
+  const instruments: Record<string, string> = {
+    Piano: 'https://cdn-icons-png.flaticon.com/512/3119/3119718.png',
+    Guitarra: 'https://cdn-icons-png.flaticon.com/512/3079/3079213.png',
+    Violín: 'https://cdn-icons-png.flaticon.com/512/3079/3079267.png',
+    Flauta: 'https://cdn-icons-png.flaticon.com/512/3079/3079183.png',
+    Batería: 'https://cdn-icons-png.flaticon.com/512/3079/3079218.png',
+    Saxofón: 'https://cdn-icons-png.flaticon.com/512/3079/3079257.png',
+    Trompeta: 'https://cdn-icons-png.flaticon.com/512/3079/3079264.png',
+    Violonchelo: 'https://cdn-icons-png.flaticon.com/512/3079/3079268.png',
+  };
+
+  return instruments[instrument] || 'https://cdn-icons-png.flaticon.com/512/3079/3079165.png';
+}
+
+// Get instrument description
+function getInstrumentDescription(instrument: string): string {
+  const descriptions: Record<string, string> = {
+    Piano: 'Instrumento de teclado con amplio rango tonal',
+    Guitarra: 'Instrumento de cuerda pulsada versátil',
+    Violín: 'Instrumento de cuerda frotada de registro agudo',
+    Flauta: 'Instrumento de viento-madera de sonido brillante',
+    Batería: 'Conjunto de instrumentos de percusión',
+    Saxofón: 'Instrumento de viento-madera con lengüeta simple',
+    Trompeta: 'Instrumento de viento-metal brillante',
+    Violonchelo: 'Instrumento de cuerda frotada de registro grave',
+  };
+
+  return descriptions[instrument] || 'Instrumento musical';
+}
+
+// Function to view detailed profile
+function viewProfile() {
+  if (props.student?.id) {
+    emit('view-profile', props.student.id);
+  }
+}
+
+// Function to manage student documents
+function manageDocuments() {
+  if (props.student?.id) {
+    emit('manage-documents', props.student.id);
+  }
+}
+
+// Nuevas propiedades calculadas
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
+const analyticsStore = useAnalyticsStore();
+
+const studentPerformance = computed(() => {
+  // Usar datos de la prop si están disponibles
+  if (props.studentAnalytics && props.studentAnalytics.performance !== undefined) {
+    return props.studentAnalytics.performance;
+  }
+
+  // Fallback a cálculos anteriores o valor por defecto
+  // ...código existente para calcular el rendimiento si es necesario...
+  return 0;
+});
+
+const studentAttendance = computed(() => {
+  // Usar datos de la prop si están disponibles
+  if (props.studentAnalytics && props.studentAnalytics.attendance !== undefined) {
+    return props.studentAnalytics.attendance;
+  }
+
+  // Fallback a cálculos anteriores o valor por defecto
+  // ...código existente para calcular asistencia si es necesario...
+  return 0;
+});
+
+const lastAccess = computed(() => {
+  // Usar datos de la prop si están disponibles
+  if (props.studentAnalytics && props.studentAnalytics.lastAccess) {
+    return props.studentAnalytics.lastAccess;
+  }
+
+  // Fallback
+  return 'No registrado';
+});
+
+const riskFactors = computed(() => {
+  // Usar datos de la prop si están disponibles
+  if (props.studentAnalytics && props.studentAnalytics.riskFactors) {
+    return props.studentAnalytics.riskFactors;
+  }
+
+  return [];
+});
+
+const recommendedActions = computed(() => {
+  // Usar datos de la prop si están disponibles
+  if (props.studentAnalytics && props.studentAnalytics.recommendedActions) {
+    return props.studentAnalytics.recommendedActions;
+  }
+
+  return [];
+});
+
+// Agregar el router
+const router = useRouter();
+
+// Agregar la función viewSchedule
+const viewSchedule = () => {
+  if (props.student?.id) {
+    router.push({ name: 'studentSchedule', params: { id: props.student.id } });
+  } else {
+    console.error('No se puede mostrar el horario: ID de estudiante no disponible');
+  }
+};
+
+// Funciones para manejar la subida de fotos de perfil
+function isValidImageUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  return (
+    typeof url === 'string' &&
+    (url.startsWith('http') || url.startsWith('https') || url.startsWith('data:image'))
+  );
+}
+
+function handleImageError(event: Event) {
+  // Si la imagen falla al cargar, usar el avatar generado
+  const imgElement = event.target as HTMLImageElement;
+  if (imgElement && student.value?.nombre) {
+    imgElement.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.value.nombre}`;
+  }
+}
+
+function handleProfilePhotoUpload(url: string) {
+  if (!student.value?.id) return;
+
+  console.log('[StudentDrawer] URL de foto recibida:', url);
+
+  // Verificar que sea una URL válida de Firebase Storage
+  if (!url.includes('firebasestorage.googleapis.com')) {
+    console.error('[StudentDrawer] URL inválida:', url);
+    emit('error', 'La URL de la imagen no es válida');
+    return;
+  }
+
+  // Actualizar el avatar del estudiante
+  studentsStore
+    .updateStudent(student.value.id, { avatar: url })
+    .then(() => {
+      console.log('[StudentDrawer] Avatar actualizado correctamente');
+      // No es necesario hacer nada más, la UI se actualiza automáticamente
+    })
+    .catch((error) => {
+      console.error('[StudentDrawer] Error al actualizar avatar:', error);
+      emit('error', `Error al guardar foto: ${error.message || 'Error desconocido'}`);
+    });
+}
+
+function handleUploadError(message: string) {
+  console.error('[StudentDrawer] Error de subida:', message);
+  emit('error', message);
+}
+</script>

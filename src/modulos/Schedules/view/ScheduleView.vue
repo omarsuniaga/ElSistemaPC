@@ -1,221 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useSchedule} from "../../../composables/useSchedule"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useScheduleStore} from "../store/schedule"
-import ScheduleNavigation from "../components/ScheduleNavigation.vue"
-import ScheduleEntryForm from "../components/ScheduleEntryForm.vue"
-import ScheduleCalendarView from "../components/ScheduleCalendarView.vue"
-
-// Stores y composables
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore()
-const scheduleStore = useScheduleStore()
-const {isLoading, error, loadingCount, classStats, loadData, validateScheduleConflicts} =
-  useSchedule()
-
-// Estados reactivos
-const showScheduleForm = ref(false)
-const showDiagnostic = ref(false)
-const diagnosticInfo = ref("")
-const showMessageToast = ref(false)
-const messageText = ref("")
-const messageType = ref<"success" | "error">("success")
-const editMode = ref(false)
-const currentEditData = ref<any>({})
-const showDetailsModal = ref(false)
-const selectedClassDetails = ref<any>(null)
-const showConfirmDeleteModal = ref(false)
-const classToDelete = ref<string | null>(null)
-const viewMode = ref<"list" | "calendar">("list")
-const showStudentsModal = ref(false)
-const selectedStudentsList = ref<any[]>([])
-
-// Computed Properties
-const hasData = computed(() => classesStore.classes.length > 0)
-
-interface ClassData {
-  id: string
-  name: string
-  schedule?: string | Schedule
-  teacherId?: string
-  studentIds?: string[]
-  instrument?: string
-  level?: string
-  [key: string]: any
-}
-
-// Enhancedclasses computed property
-const enhancedClasses = computed(() => {
-  if (!classesStore.classes) return []
-
-  return classesStore.classes.map((class_: ClassData) => {
-    const teacher = teachersStore.teachers.find((t: {id: string}) => t.id === class_.teacherId)
-    const formattedSchedule = formatSchedule(class_.schedule || null)
-    const studentCount = class_.studentIds?.length || 0
-
-    return {
-      ...class_,
-      teacherName: teacher?.name || "Sin asignar",
-      studentCount,
-      formattedSchedule,
-      status: getClassStatus(class_),
-    }
-  })
-})
-
-interface Schedule {
-  days: string[]
-  startTime: string
-  endTime: string
-}
-
-const formatSchedule = (schedule: string | Schedule | null): Schedule | null => {
-  if (!schedule) return null
-
-  if (typeof schedule === "string") {
-    const parts = schedule.split(" ")
-    if (parts.length >= 4) {
-      return {
-        days: [parts[0]],
-        startTime: parts[1],
-        endTime: parts[3],
-      }
-    }
-  }
-
-  if (typeof schedule === "object" && "days" in schedule) {
-    return schedule as Schedule
-  }
-
-  return null
-}
-
-const getClassStatus = (class_: any): string => {
-  if (!class_.teacherId) return "no_teacher"
-  if (!class_.schedule) return "not_scheduled"
-  if (!class_.studentIds?.length) return "no_students"
-  return "ready"
-}
-
-// Funciones de manejo de clases
-const handleSaveSchedule = async (formData: any) => {
-  try {
-    isLoading.value = true
-
-    // Validar conflictos antes de guardar
-    const conflicts = validateScheduleConflicts(formData.data.schedule, formData.data.id)
-    if (conflicts.length > 0) {
-      throw new Error(`Conflictos encontrados: ${conflicts.join(", ")}`)
-    }
-
-    if (editMode.value) {
-      await classesStore.updateClass(formData.data)
-    } else {
-      await classesStore.addClass(formData.data)
-    }
-    closeScheduleForm()
-    await loadData()
-    showMessage("Información guardada correctamente")
-  } catch (err: any) {
-    showMessage(`Error: ${err.message}`, "error")
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const deleteClass = async () => {
-  if (!classToDelete.value) return
-  try {
-    isLoading.value = true
-    await classesStore.removeClass(classToDelete.value)
-    showMessage("Clase eliminada correctamente")
-    showConfirmDeleteModal.value = false
-    await loadData()
-  } catch (err: any) {
-    showMessage(`Error: ${err.message}`, "error")
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const viewClassDetails = (classData: any) => {
-  selectedClassDetails.value = classData
-  showDetailsModal.value = true
-}
-
-const editClass = (classData: any) => {
-  editMode.value = true
-  currentEditData.value = {...classData}
-  showScheduleForm.value = true
-  showDetailsModal.value = false
-}
-
-const confirmDeleteClass = (classId: string) => {
-  classToDelete.value = classId
-  showConfirmDeleteModal.value = true
-}
-
-// Message Function
-const showMessage = (text: string, type: "success" | "error" = "success") => {
-  messageText.value = text
-  messageType.value = type
-  showMessageToast.value = true
-  setTimeout(() => (showMessageToast.value = false), 3000)
-}
-
-// Modal Control Functions
-const openNewScheduleForm = () => {
-  editMode.value = false
-  currentEditData.value = {}
-  showScheduleForm.value = true
-}
-
-const closeScheduleForm = () => {
-  showScheduleForm.value = false
-}
-
-// Función de diagnóstico
-const runDiagnostic = () => {
-  const issues: string[] = []
-  enhancedClasses.value.forEach((class_) => {
-    if (!class_.schedule) {
-      issues.push(`Clase "${class_.name}": Sin horario asignado`)
-    }
-    if (!class_.teacherId) {
-      issues.push(`Clase "${class_.name}": Sin profesor asignado`)
-    }
-    if (!class_.studentIds?.length) {
-      issues.push(`Clase "${class_.name}": Sin estudiantes inscritos`)
-    }
-  })
-
-  diagnosticInfo.value = issues.length
-    ? `Problemas encontrados:\n${issues.join("\n")}`
-    : "No se encontraron problemas en los horarios."
-  showDiagnostic.value = true
-}
-
-const fixSchedules = async () => {
-  try {
-    isLoading.value = true
-    const result = await scheduleStore.fixInvalidSchedules()
-    if (result.success) {
-      showMessage(result.message, "success")
-      await loadData()
-    } else {
-      showMessage(`Error: ${result.error}`, "error")
-    }
-  } catch (error) {
-    showMessage(`Error inesperado: ${error.message}`, "error")
-  } finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(loadData)
-</script>
 <template>
   <div class="p-4 md:p-6">
     <h1 class="text-2xl font-bold mb-4">Gestión de Horarios</h1>
@@ -907,3 +689,221 @@ onMounted(loadData)
     </div>
   </div>
 </template>
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useSchedule } from '../../../composables/useSchedule';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useScheduleStore } from '../store/schedule';
+import ScheduleNavigation from '../components/ScheduleNavigation.vue';
+import ScheduleEntryForm from '../components/ScheduleEntryForm.vue';
+import ScheduleCalendarView from '../components/ScheduleCalendarView.vue';
+
+// Stores y composables
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore();
+const scheduleStore = useScheduleStore();
+const { isLoading, error, loadingCount, classStats, loadData, validateScheduleConflicts } =
+  useSchedule();
+
+// Estados reactivos
+const showScheduleForm = ref(false);
+const showDiagnostic = ref(false);
+const diagnosticInfo = ref('');
+const showMessageToast = ref(false);
+const messageText = ref('');
+const messageType = ref<'success' | 'error'>('success');
+const editMode = ref(false);
+const currentEditData = ref<any>({});
+const showDetailsModal = ref(false);
+const selectedClassDetails = ref<any>(null);
+const showConfirmDeleteModal = ref(false);
+const classToDelete = ref<string | null>(null);
+const viewMode = ref<'list' | 'calendar'>('list');
+const showStudentsModal = ref(false);
+const selectedStudentsList = ref<any[]>([]);
+
+// Computed Properties
+const hasData = computed(() => classesStore.classes.length > 0);
+
+interface ClassData {
+  id: string
+  name: string
+  schedule?: string | Schedule
+  teacherId?: string
+  studentIds?: string[]
+  instrument?: string
+  level?: string
+  [key: string]: any
+}
+
+// Enhancedclasses computed property
+const enhancedClasses = computed(() => {
+  if (!classesStore.classes) return [];
+
+  return classesStore.classes.map((class_: ClassData) => {
+    const teacher = teachersStore.teachers.find((t: {id: string}) => t.id === class_.teacherId);
+    const formattedSchedule = formatSchedule(class_.schedule || null);
+    const studentCount = class_.studentIds?.length || 0;
+
+    return {
+      ...class_,
+      teacherName: teacher?.name || 'Sin asignar',
+      studentCount,
+      formattedSchedule,
+      status: getClassStatus(class_),
+    };
+  });
+});
+
+interface Schedule {
+  days: string[]
+  startTime: string
+  endTime: string
+}
+
+const formatSchedule = (schedule: string | Schedule | null): Schedule | null => {
+  if (!schedule) return null;
+
+  if (typeof schedule === 'string') {
+    const parts = schedule.split(' ');
+    if (parts.length >= 4) {
+      return {
+        days: [parts[0]],
+        startTime: parts[1],
+        endTime: parts[3],
+      };
+    }
+  }
+
+  if (typeof schedule === 'object' && 'days' in schedule) {
+    return schedule as Schedule;
+  }
+
+  return null;
+};
+
+const getClassStatus = (class_: any): string => {
+  if (!class_.teacherId) return 'no_teacher';
+  if (!class_.schedule) return 'not_scheduled';
+  if (!class_.studentIds?.length) return 'no_students';
+  return 'ready';
+};
+
+// Funciones de manejo de clases
+const handleSaveSchedule = async (formData: any) => {
+  try {
+    isLoading.value = true;
+
+    // Validar conflictos antes de guardar
+    const conflicts = validateScheduleConflicts(formData.data.schedule, formData.data.id);
+    if (conflicts.length > 0) {
+      throw new Error(`Conflictos encontrados: ${conflicts.join(', ')}`);
+    }
+
+    if (editMode.value) {
+      await classesStore.updateClass(formData.data);
+    } else {
+      await classesStore.addClass(formData.data);
+    }
+    closeScheduleForm();
+    await loadData();
+    showMessage('Información guardada correctamente');
+  } catch (err: any) {
+    showMessage(`Error: ${err.message}`, 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const deleteClass = async () => {
+  if (!classToDelete.value) return;
+  try {
+    isLoading.value = true;
+    await classesStore.removeClass(classToDelete.value);
+    showMessage('Clase eliminada correctamente');
+    showConfirmDeleteModal.value = false;
+    await loadData();
+  } catch (err: any) {
+    showMessage(`Error: ${err.message}`, 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const viewClassDetails = (classData: any) => {
+  selectedClassDetails.value = classData;
+  showDetailsModal.value = true;
+};
+
+const editClass = (classData: any) => {
+  editMode.value = true;
+  currentEditData.value = { ...classData };
+  showScheduleForm.value = true;
+  showDetailsModal.value = false;
+};
+
+const confirmDeleteClass = (classId: string) => {
+  classToDelete.value = classId;
+  showConfirmDeleteModal.value = true;
+};
+
+// Message Function
+const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
+  messageText.value = text;
+  messageType.value = type;
+  showMessageToast.value = true;
+  setTimeout(() => (showMessageToast.value = false), 3000);
+};
+
+// Modal Control Functions
+const openNewScheduleForm = () => {
+  editMode.value = false;
+  currentEditData.value = {};
+  showScheduleForm.value = true;
+};
+
+const closeScheduleForm = () => {
+  showScheduleForm.value = false;
+};
+
+// Función de diagnóstico
+const runDiagnostic = () => {
+  const issues: string[] = [];
+  enhancedClasses.value.forEach((class_) => {
+    if (!class_.schedule) {
+      issues.push(`Clase "${class_.name}": Sin horario asignado`);
+    }
+    if (!class_.teacherId) {
+      issues.push(`Clase "${class_.name}": Sin profesor asignado`);
+    }
+    if (!class_.studentIds?.length) {
+      issues.push(`Clase "${class_.name}": Sin estudiantes inscritos`);
+    }
+  });
+
+  diagnosticInfo.value = issues.length
+    ? `Problemas encontrados:\n${issues.join('\n')}`
+    : 'No se encontraron problemas en los horarios.';
+  showDiagnostic.value = true;
+};
+
+const fixSchedules = async () => {
+  try {
+    isLoading.value = true;
+    const result = await scheduleStore.fixInvalidSchedules();
+    if (result.success) {
+      showMessage(result.message, 'success');
+      await loadData();
+    } else {
+      showMessage(`Error: ${result.error}`, 'error');
+    }
+  } catch (error) {
+    showMessage(`Error inesperado: ${error.message}`, 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(loadData);
+</script>

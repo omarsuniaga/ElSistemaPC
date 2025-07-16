@@ -109,9 +109,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {useRouter} from "vue-router"
-import {useRBACStore} from "@/stores/rbacStore"
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useRBACStore } from '@/stores/rbacStore';
 import {
   UsersIcon,
   UserIcon,
@@ -121,7 +121,7 @@ import {
   PlusIcon,
   PencilIcon,
   ChartBarIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface QuickAction {
   id: string
@@ -141,7 +141,7 @@ interface Props {
   icon: string
   route: string
   count?: number
-  color?: "blue" | "green" | "purple" | "orange" | "red" | "yellow" | "indigo"
+  color?: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'yellow' | 'indigo'
   permission?: {module: string; action: string}
   loading?: boolean
   stats?: Stat[]
@@ -150,16 +150,16 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  color: "blue",
+  color: 'blue',
   loading: false,
-})
+});
 
 const emit = defineEmits<{
   quickAction: [action: QuickAction]
-}>()
+}>();
 
-const router = useRouter()
-const rbacStore = useRBACStore()
+const router = useRouter();
+const rbacStore = useRBACStore();
 
 // Icon mapping
 const iconComponents = {
@@ -170,66 +170,66 @@ const iconComponents = {
   PlusIcon,
   PencilIcon,
   ChartBarIcon,
-}
+};
 
 // Computed properties
 const hasPermission = computed(() => {
-  if (!props.permission) return true
-  return rbacStore.hasPermission(props.permission.module, props.permission.action)
-})
+  if (!props.permission) return true;
+  return rbacStore.hasPermission(props.permission.module, props.permission.action);
+});
 
 const iconComponent = computed(
-  () => iconComponents[props.icon as keyof typeof iconComponents] || UsersIcon
-)
+  () => iconComponents[props.icon as keyof typeof iconComponents] || UsersIcon,
+);
 
 const cardClasses = computed(() => ({
-  "transform hover:scale-102 hover:shadow-lg": true,
-  "cursor-not-allowed opacity-50": props.loading,
-}))
+  'transform hover:scale-102 hover:shadow-lg': true,
+  'cursor-not-allowed opacity-50': props.loading,
+}));
 
 const gradientClass = computed(
-  () => `bg-gradient-to-br from-${props.color}-500 to-${props.color}-600`
-)
+  () => `bg-gradient-to-br from-${props.color}-500 to-${props.color}-600`,
+);
 
 const iconBgClass = computed(
   () =>
-    `bg-${props.color}-50 dark:bg-${props.color}-900/20 group-hover:bg-${props.color}-100 dark:group-hover:bg-${props.color}-900/30`
-)
+    `bg-${props.color}-50 dark:bg-${props.color}-900/20 group-hover:bg-${props.color}-100 dark:group-hover:bg-${props.color}-900/30`,
+);
 
-const iconClass = computed(() => `text-${props.color}-600 dark:text-${props.color}-400`)
+const iconClass = computed(() => `text-${props.color}-600 dark:text-${props.color}-400`);
 
 const badgeClass = computed(
   () =>
-    `bg-${props.color}-100 dark:bg-${props.color}-900/30 text-${props.color}-800 dark:text-${props.color}-200`
-)
+    `bg-${props.color}-100 dark:bg-${props.color}-900/30 text-${props.color}-800 dark:text-${props.color}-200`,
+);
 
-const statValueClass = computed(() => `text-${props.color}-600 dark:text-${props.color}-400`)
+const statValueClass = computed(() => `text-${props.color}-600 dark:text-${props.color}-400`);
 
-const progressBarClass = computed(() => `bg-${props.color}-500`)
+const progressBarClass = computed(() => `bg-${props.color}-500`);
 
 // Methods
 const navigateToRoute = async () => {
-  if (props.loading || !hasPermission.value) return
+  if (props.loading || !hasPermission.value) return;
 
   try {
-    await router.push(props.route)
+    await router.push(props.route);
   } catch (error) {
-    console.error("Navigation error:", error)
+    console.error('Navigation error:', error);
   }
-}
+};
 
 const handleQuickAction = (action: QuickAction) => {
-  emit("quickAction", action)
-}
+  emit('quickAction', action);
+};
 
 const formatCount = (count: number): string => {
   if (count >= 1000000) {
-    return `${(count / 1000000).toFixed(1)}M`
+    return `${(count / 1000000).toFixed(1)}M`;
   } else if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`
+    return `${(count / 1000).toFixed(1)}K`;
   }
-  return count.toString()
-}
+  return count.toString();
+};
 </script>
 
 <style scoped>

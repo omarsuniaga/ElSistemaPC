@@ -360,17 +360,17 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import { useStudentsStore } from "@/modulos/Students/store/students"
-import { useAttendanceStore } from "@/modulos/Attendance/store/attendance"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useStudentsStore } from '@/modulos/Students/store/students';
+import { useAttendanceStore } from '@/modulos/Attendance/store/attendance';
 import {
   notifyUnexcusedAbsences,
   notifyLateStudents,
   notifyJustifiedAbsences,
   MESSAGE_TEMPLATES,
   type MessageTemplate,
-} from "@/services/attendanceNotifications"
-import { WhatsAppMessageValidator, logVerificationReport } from "@/utils/whatsappMessageValidator"
+} from '@/services/attendanceNotifications';
+import { WhatsAppMessageValidator, logVerificationReport } from '@/utils/whatsappMessageValidator';
 
 // Props
 interface Props {
@@ -383,20 +383,20 @@ interface Props {
     selectedDate?: string
   }
   // 🎯 Tipo de notificación inicial (para abrir directamente en la pestaña correcta)
-  initialTab?: "ausentes" | "tarde" | "justificado"
+  initialTab?: 'ausentes' | 'tarde' | 'justificado'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isVisible: false,
   reportData: undefined,
-  initialTab: "ausentes",
-})
+  initialTab: 'ausentes',
+});
 
 // Emits
 const emit = defineEmits<{
   close: []
   messagesSent: [result: { success: number; failed: number; messages: any[] }]
-}>()
+}>();
 
 // Interfaces
 interface StudentData {
@@ -408,7 +408,7 @@ interface StudentData {
     madre?: string
     padre?: string
   }
-  status: "ausente" | "tarde" | "justificado"
+  status: 'ausente' | 'tarde' | 'justificado'
   absenceCount?: number
   escalationLevel?: number
   time?: string
@@ -417,23 +417,23 @@ interface StudentData {
 
 interface MessageDestination {
   studentId: string
-  recipientType: "madre" | "padre"
+  recipientType: 'madre' | 'padre'
   phoneNumber: string
   studentData: StudentData
 }
 
 // Stores
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
 
 // State
-const loading = ref(false)
-const sending = ref(false)
-const selectedPeriod = ref("today")
-const activeTab = ref("ausentes")
-const selectedTemplate = ref("")
-const customMessage = ref("")
-const selectedRecipients = ref<MessageDestination[]>([])
+const loading = ref(false);
+const sending = ref(false);
+const selectedPeriod = ref('today');
+const activeTab = ref('ausentes');
+const selectedTemplate = ref('');
+const customMessage = ref('');
+const selectedRecipients = ref<MessageDestination[]>([]);
 
 // Student data by type
 const studentsData = ref<{
@@ -444,22 +444,22 @@ const studentsData = ref<{
   ausentes: [],
   tarde: [],
   justificado: [],
-})
+});
 
 // Configuration
 const notificationTabs = [
-  { id: "ausentes", name: "Ausentes", icon: "❌" },
-  { id: "tarde", name: "Tardanzas", icon: "⏰" },
-  { id: "justificado", name: "Justificadas", icon: "📝" },
-]
+  { id: 'ausentes', name: 'Ausentes', icon: '❌' },
+  { id: 'tarde', name: 'Tardanzas', icon: '⏰' },
+  { id: 'justificado', name: 'Justificadas', icon: '📝' },
+];
 
 const messageTemplates = {
   ausentes: [
     {
-      id: "ausente_amable",
-      name: "Recordatorio Amable",
-      tone: "Amigable",
-      description: "Mensaje cordial recordando la importancia de la asistencia",
+      id: 'ausente_amable',
+      name: 'Recordatorio Amable',
+      tone: 'Amigable',
+      description: 'Mensaje cordial recordando la importancia de la asistencia',
       content: `Hola {parentType},
 
 Esperamos que estén bien. Notamos que {studentName} no asistió a su clase de música hoy ({date}).
@@ -472,10 +472,10 @@ Saludos cordiales,
 {academyName} 🎵`,
     },
     {
-      id: "ausente_disciplinario",
-      name: "Tono Disciplinario",
-      tone: "Formal",
-      description: "Mensaje más serio sobre responsabilidad",
+      id: 'ausente_disciplinario',
+      name: 'Tono Disciplinario',
+      tone: 'Formal',
+      description: 'Mensaje más serio sobre responsabilidad',
       content: `Estimado/a {parentType},
 
 Le informamos que {studentName} ha faltado a su clase de música el día {date}.
@@ -488,10 +488,10 @@ Atentamente,
 {academyName}`,
     },
     {
-      id: "ausente_explicacion",
-      name: "Solicitud de Explicación",
-      tone: "Requerimiento",
-      description: "Solicitud formal de explicación",
+      id: 'ausente_explicacion',
+      name: 'Solicitud de Explicación',
+      tone: 'Requerimiento',
+      description: 'Solicitud formal de explicación',
       content: `{parentType},
 
 {studentName} ha acumulado varias ausencias en sus clases de música.
@@ -506,10 +506,10 @@ Administración`,
   ],
   tarde: [
     {
-      id: "tarde_recordatorio",
-      name: "Recordatorio de Puntualidad",
-      tone: "Amigable",
-      description: "Mensaje amable sobre la importancia de la puntualidad",
+      id: 'tarde_recordatorio',
+      name: 'Recordatorio de Puntualidad',
+      tone: 'Amigable',
+      description: 'Mensaje amable sobre la importancia de la puntualidad',
       content: `Hola {parentType},
 
 {studentName} llegó tarde a su clase de música hoy ({date}).
@@ -522,10 +522,10 @@ Agradecemos su colaboración para que {studentName} llegue a tiempo a sus próxi
 {academyName} 🎵`,
     },
     {
-      id: "tarde_disciplinario",
-      name: "Llamado de Atención",
-      tone: "Formal",
-      description: "Mensaje más serio sobre tardanzas repetidas",
+      id: 'tarde_disciplinario',
+      name: 'Llamado de Atención',
+      tone: 'Formal',
+      description: 'Mensaje más serio sobre tardanzas repetidas',
       content: `Estimado/a {parentType},
 
 Le informamos que {studentName} ha llegado tarde a su clase de música.
@@ -540,10 +540,10 @@ Atentamente,
   ],
   justificado: [
     {
-      id: "justificado_informativo",
-      name: "Información de Recuperación",
-      tone: "Informativo",
-      description: "Información sobre próximas actividades y recuperación",
+      id: 'justificado_informativo',
+      name: 'Información de Recuperación',
+      tone: 'Informativo',
+      description: 'Información sobre próximas actividades y recuperación',
       content: `Hola {parentType},
 
 Hemos recibido la justificación por la ausencia de {studentName} el día {date}.
@@ -560,10 +560,10 @@ Saludos,
 {academyName} 🎵`,
     },
     {
-      id: "justificado_seguimiento",
-      name: "Seguimiento Personalizado",
-      tone: "Personalizado",
-      description: "Mensaje de seguimiento con atención personalizada",
+      id: 'justificado_seguimiento',
+      name: 'Seguimiento Personalizado',
+      tone: 'Personalizado',
+      description: 'Mensaje de seguimiento con atención personalizada',
       content: `{parentType},
 
 Entendemos la situación que impidió que {studentName} asistiera a su clase ({date}).
@@ -581,157 +581,157 @@ Contacte con nosotros para coordinar el mejor plan.
 Equipo Pedagógico`,
     },
   ],
-}
+};
 
 // Computed
 const getActiveStudents = () => {
-  return studentsData.value[activeTab.value] || []
-}
+  return studentsData.value[activeTab.value] || [];
+};
 
 const getStudentsByType = (type: string) => {
-  return studentsData.value[type] || []
-}
+  return studentsData.value[type] || [];
+};
 
 const getActiveTabLabel = () => {
-  const tab = notificationTabs.find((t) => t.id === activeTab.value)
-  return tab ? tab.name.toLowerCase() : ""
-}
+  const tab = notificationTabs.find((t) => t.id === activeTab.value);
+  return tab ? tab.name.toLowerCase() : '';
+};
 
 const getTemplatesForActiveTab = () => {
-  return messageTemplates[activeTab.value] || []
-}
+  return messageTemplates[activeTab.value] || [];
+};
 
 const getSelectedRecipients = () => {
   return selectedRecipients.value.filter((r) => 
-    getActiveStudents().some((s) => s.id === r.studentId)
-  )
-}
+    getActiveStudents().some((s) => s.id === r.studentId),
+  );
+};
 
 const getPreviewMessage = () => {
   if (!selectedTemplate.value || !customMessage.value) {
-    return "Selecciona una plantilla y/o escribe un mensaje personalizado"
+    return 'Selecciona una plantilla y/o escribe un mensaje personalizado';
   }
 
   // Get first selected recipient for preview
-  const firstRecipient = getSelectedRecipients()[0]
+  const firstRecipient = getSelectedRecipients()[0];
   if (!firstRecipient) {
     // 🔍 Verificar mensaje sin destinatario
-    const validation = WhatsAppMessageValidator.validateMessageContent(customMessage.value)
+    const validation = WhatsAppMessageValidator.validateMessageContent(customMessage.value);
     if (!validation.isValid) {
-      console.warn("⚠️ Mensaje personalizado tiene problemas:", validation.warnings)
+      console.warn('⚠️ Mensaje personalizado tiene problemas:', validation.warnings);
     }
-    return customMessage.value
+    return customMessage.value;
   }
 
-  const processedMessage = replaceVariables(customMessage.value, firstRecipient)
+  const processedMessage = replaceVariables(customMessage.value, firstRecipient);
   
   // 🔍 Verificar mensaje procesado
-  const validation = WhatsAppMessageValidator.validateMessageContent(processedMessage)
+  const validation = WhatsAppMessageValidator.validateMessageContent(processedMessage);
   if (!validation.isValid) {
-    console.warn("⚠️ Mensaje procesado tiene problemas:", validation.warnings)
+    console.warn('⚠️ Mensaje procesado tiene problemas:', validation.warnings);
   }
   
-  return processedMessage
-}
+  return processedMessage;
+};
 
 // 🔍 Función para obtener el estado de validación del mensaje
 const getMessageValidationStatus = () => {
-  const message = customMessage.value || ""
+  const message = customMessage.value || '';
   
   if (!message) {
     return {
-      icon: "❓",
-      text: "Sin mensaje",
-      class: "text-gray-500",
-      textClass: "text-gray-500",
-    }
+      icon: '❓',
+      text: 'Sin mensaje',
+      class: 'text-gray-500',
+      textClass: 'text-gray-500',
+    };
   }
   
-  const validation = WhatsAppMessageValidator.validateMessageContent(message)
+  const validation = WhatsAppMessageValidator.validateMessageContent(message);
   
   if (validation.isValid) {
     return {
-      icon: "✅",
-      text: "Mensaje válido",
-      class: "text-green-600",
-      textClass: "text-green-600",
-    }
+      icon: '✅',
+      text: 'Mensaje válido',
+      class: 'text-green-600',
+      textClass: 'text-green-600',
+    };
   } else {
     return {
-      icon: "⚠️",
+      icon: '⚠️',
       text: `Problemas: ${validation.warnings.length}`,
-      class: "text-yellow-600",
-      textClass: "text-yellow-600",
-    }
+      class: 'text-yellow-600',
+      textClass: 'text-yellow-600',
+    };
   }
-}
+};
 
 // 🔍 Funciones para validación de números de teléfono
 const getPhoneValidationIcon = (phone: string) => {
-  const validation = WhatsAppMessageValidator.validatePhoneNumber(phone)
-  return validation.isValid ? "✅" : "⚠️"
-}
+  const validation = WhatsAppMessageValidator.validatePhoneNumber(phone);
+  return validation.isValid ? '✅' : '⚠️';
+};
 
 const getPhoneValidationClass = (phone: string) => {
-  const validation = WhatsAppMessageValidator.validatePhoneNumber(phone)
-  return validation.isValid ? "text-green-600 ml-1" : "text-yellow-600 ml-1"
-}
+  const validation = WhatsAppMessageValidator.validatePhoneNumber(phone);
+  return validation.isValid ? 'text-green-600 ml-1' : 'text-yellow-600 ml-1';
+};
 
 // 🔍 Funciones para conteo de validación
 const getValidPhoneCount = () => {
   return getSelectedRecipients().filter(
-    (recipient) => WhatsAppMessageValidator.validatePhoneNumber(recipient.phoneNumber).isValid
-  ).length
-}
+    (recipient) => WhatsAppMessageValidator.validatePhoneNumber(recipient.phoneNumber).isValid,
+  ).length;
+};
 
 const getInvalidPhoneCount = () => {
   return getSelectedRecipients().filter(
-    (recipient) => !WhatsAppMessageValidator.validatePhoneNumber(recipient.phoneNumber).isValid
-  ).length
-}
+    (recipient) => !WhatsAppMessageValidator.validatePhoneNumber(recipient.phoneNumber).isValid,
+  ).length;
+};
 
 // Methods
 const getStatusIcon = (status: string) => {
   const icons = {
-    ausentes: "❌",
-    tarde: "⏰",
-    justificado: "📝",
-  }
-  return icons[status] || "❓"
-}
+    ausentes: '❌',
+    tarde: '⏰',
+    justificado: '📝',
+  };
+  return icons[status] || '❓';
+};
 
 const getStatusText = (status: string) => {
   const texts = {
-    ausentes: "Ausencia sin justificar",
-    tarde: "Llegada tardía",
-    justificado: "Ausencia justificada",
-  }
-  return texts[status] || status
-}
+    ausentes: 'Ausencia sin justificar',
+    tarde: 'Llegada tardía',
+    justificado: 'Ausencia justificada',
+  };
+  return texts[status] || status;
+};
 
 const hasValidPhoneNumbers = (student: StudentData) => {
-  return student.phoneNumbers && (student.phoneNumbers.madre || student.phoneNumbers.padre)
-}
+  return student.phoneNumbers && (student.phoneNumbers.madre || student.phoneNumbers.padre);
+};
 
-const isRecipientSelected = (studentId: string, recipientType: "madre" | "padre") => {
+const isRecipientSelected = (studentId: string, recipientType: 'madre' | 'padre') => {
   return selectedRecipients.value.some(
-    (r) => r.studentId === studentId && r.recipientType === recipientType
-  )
-}
+    (r) => r.studentId === studentId && r.recipientType === recipientType,
+  );
+};
 
 const toggleRecipient = (
   studentId: string,
-  recipientType: "madre" | "padre",
+  recipientType: 'madre' | 'padre',
   phoneNumber: string,
-  studentData: StudentData
+  studentData: StudentData,
 ) => {
   const existingIndex = selectedRecipients.value.findIndex(
-    (r) => r.studentId === studentId && r.recipientType === recipientType
-  )
+    (r) => r.studentId === studentId && r.recipientType === recipientType,
+  );
 
   if (existingIndex >= 0) {
     // Remove
-    selectedRecipients.value.splice(existingIndex, 1)
+    selectedRecipients.value.splice(existingIndex, 1);
   } else {
     // Add
     selectedRecipients.value.push({
@@ -739,51 +739,51 @@ const toggleRecipient = (
       recipientType,
       phoneNumber,
       studentData,
-    })
+    });
   }
-}
+};
 
 const selectTemplate = (templateId: string) => {
-  selectedTemplate.value = templateId
-  const template = getTemplatesForActiveTab().find((t) => t.id === templateId)
+  selectedTemplate.value = templateId;
+  const template = getTemplatesForActiveTab().find((t) => t.id === templateId);
   if (template) {
-    customMessage.value = template.content
+    customMessage.value = template.content;
   }
-}
+};
 
 const replaceVariables = (message: string, recipient: MessageDestination) => {
-  const student = recipient.studentData
-  const parentType = recipient.recipientType === "madre" ? "Madre" : "Padre"
-  const studentName = `${student.nombre} ${student.apellido}`
-  const date = new Date().toLocaleDateString("es-ES")
-  const academyName = "Music Academy"
+  const student = recipient.studentData;
+  const parentType = recipient.recipientType === 'madre' ? 'Madre' : 'Padre';
+  const studentName = `${student.nombre} ${student.apellido}`;
+  const date = new Date().toLocaleDateString('es-ES');
+  const academyName = 'Music Academy';
 
   return message
     .replace(/{studentName}/g, studentName)
     .replace(/{parentType}/g, parentType)
     .replace(/{date}/g, date)
-    .replace(/{academyName}/g, academyName)
-}
+    .replace(/{academyName}/g, academyName);
+};
 
 const fetchStudentsData = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    await studentsStore.fetchStudents()
+    await studentsStore.fetchStudents();
     
     // Get date range based on selected period
-    const today = new Date()
-    let startDate = new Date(today)
+    const today = new Date();
+    let startDate = new Date(today);
     
     switch (selectedPeriod.value) {
-      case "today":
-        startDate = new Date(today)
-        break
-      case "week":
-        startDate.setDate(today.getDate() - 7)
-        break
-      case "month":
-        startDate.setDate(today.getDate() - 30)
-        break
+    case 'today':
+      startDate = new Date(today);
+      break;
+    case 'week':
+      startDate.setDate(today.getDate() - 7);
+      break;
+    case 'month':
+      startDate.setDate(today.getDate() - 30);
+      break;
     }
 
     // Mock data - In real implementation, get from attendance service
@@ -793,12 +793,12 @@ const fetchStudentsData = async () => {
         id: student.id,
         nombre: student.nombre,
         apellido: student.apellido,
-        instrumento: student.instrumento || "Piano",
+        instrumento: student.instrumento || 'Piano',
         phoneNumbers: {
           madre: student.numero_telefono_madre,
           padre: student.numero_telefono_padre,
         },
-        status: "ausente" as const,
+        status: 'ausente' as const,
         absenceCount: Math.floor(Math.random() * 4) + 1,
         escalationLevel: Math.floor(Math.random() * 4) + 1,
       })),
@@ -806,58 +806,58 @@ const fetchStudentsData = async () => {
         id: student.id,
         nombre: student.nombre,
         apellido: student.apellido,
-        instrumento: student.instrumento || "Guitarra",
+        instrumento: student.instrumento || 'Guitarra',
         phoneNumbers: {
           madre: student.numero_telefono_madre,
           padre: student.numero_telefono_padre,
         },
-        status: "tarde" as const,
-        time: "10:15 AM",
+        status: 'tarde' as const,
+        time: '10:15 AM',
       })),
       justificado: studentsStore.students.slice(5, 7).map((student) => ({
         id: student.id,
         nombre: student.nombre,
         apellido: student.apellido,
-        instrumento: student.instrumento || "Violín",
+        instrumento: student.instrumento || 'Violín',
         phoneNumbers: {
           madre: student.numero_telefono_madre,
           padre: student.numero_telefono_padre,
         },
-        status: "justificado" as const,
-        reason: "Cita médica",
+        status: 'justificado' as const,
+        reason: 'Cita médica',
       })),
-    }
+    };
 
-    studentsData.value = mockStudentsData
+    studentsData.value = mockStudentsData;
   } catch (error) {
-    console.error("Error fetching students data:", error)
+    console.error('Error fetching students data:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const sendMessages = async () => {
-  if (getSelectedRecipients().length === 0) return
+  if (getSelectedRecipients().length === 0) return;
 
-  const recipients = getSelectedRecipients()
+  const recipients = getSelectedRecipients();
   
   // 🔍 VERIFICACIÓN COMPLETA DEL MENSAJE Y DESTINATARIOS
-  console.log("🔍 Iniciando verificación de mensajes WhatsApp...")
+  console.log('🔍 Iniciando verificación de mensajes WhatsApp...');
   
   const verificationReport = WhatsAppMessageValidator.generateVerificationReport(
     recipients,
     customMessage.value || getPreviewMessage(),
-    activeTab.value
-  )
+    activeTab.value,
+  );
   
   // Mostrar reporte completo en consola
-  logVerificationReport(verificationReport)
+  logVerificationReport(verificationReport);
   
   // Verificar si hay problemas críticos
   if (!verificationReport.canProceed) {
-    const errorMsg = `❌ No se puede proceder con el envío:\n\n${verificationReport.recommendations.join("\n")}`
-    alert(errorMsg)
-    return
+    const errorMsg = `❌ No se puede proceder con el envío:\n\n${verificationReport.recommendations.join('\n')}`;
+    alert(errorMsg);
+    return;
   }
   
   // Mostrar advertencias si las hay
@@ -865,11 +865,11 @@ const sendMessages = async () => {
     ...verificationReport.validations.phones.warnings,
     ...verificationReport.validations.message.warnings,
     ...verificationReport.validations.students.warnings,
-  ]
+  ];
   
   if (allWarnings.length > 0) {
-    const warningMsg = `⚠️ Advertencias encontradas:\n\n${allWarnings.join("\n")}\n\n¿Desea continuar de todas formas?`
-    if (!confirm(warningMsg)) return
+    const warningMsg = `⚠️ Advertencias encontradas:\n\n${allWarnings.join('\n')}\n\n¿Desea continuar de todas formas?`;
+    if (!confirm(warningMsg)) return;
   }
   
   // Confirmación final con detalles
@@ -883,34 +883,34 @@ const sendMessages = async () => {
 • Estudiantes verificados: ${verificationReport.validations.students.correct.length}
 
 📝 Vista previa del mensaje:
-"${verificationReport.validations.message.processedMessage.substring(0, 200)}${verificationReport.validations.message.processedMessage.length > 200 ? "..." : ""}"
+"${verificationReport.validations.message.processedMessage.substring(0, 200)}${verificationReport.validations.message.processedMessage.length > 200 ? '...' : ''}"
 
-¿Confirma el envío?`
+¿Confirma el envío?`;
   
-  if (!confirm(finalMessage)) return
+  if (!confirm(finalMessage)) return;
 
-  sending.value = true
+  sending.value = true;
   try {
     // Group recipients by student ID for the notification service
-    const studentIds = [...new Set(recipients.map((r) => r.studentId))]
+    const studentIds = [...new Set(recipients.map((r) => r.studentId))];
     
-    let result
+    let result;
     
     switch (activeTab.value) {
-      case "ausentes":
-        result = await notifyUnexcusedAbsences(studentIds)
-        break
-      case "tarde":
-        result = await notifyLateStudents(studentIds)
-        break
-      case "justificado":
-        result = await notifyJustifiedAbsences(studentIds)
-        break
-      default:
-        throw new Error("Tipo de notificación no válido")
+    case 'ausentes':
+      result = await notifyUnexcusedAbsences(studentIds);
+      break;
+    case 'tarde':
+      result = await notifyLateStudents(studentIds);
+      break;
+    case 'justificado':
+      result = await notifyJustifiedAbsences(studentIds);
+      break;
+    default:
+      throw new Error('Tipo de notificación no válido');
     }
 
-    emit("messagesSent", result)
+    emit('messagesSent', result);
     
     const successMsg = `✅ Mensajes enviados exitosamente!
     
@@ -919,57 +919,57 @@ const sendMessages = async () => {
 • Fallidos: ${result.failed}
 • Total procesados: ${result.success + result.failed}
 
-${result.failed > 0 ? "⚠️ Revise los logs para detalles de los envíos fallidos." : "🎉 Todos los mensajes fueron enviados correctamente."}`
+${result.failed > 0 ? '⚠️ Revise los logs para detalles de los envíos fallidos.' : '🎉 Todos los mensajes fueron enviados correctamente.'}`;
     
-    alert(successMsg)
+    alert(successMsg);
     
     if (result.success > 0) {
-      close()
+      close();
     }
   } catch (error) {
-    console.error("Error sending messages:", error)
-    alert(`❌ Error enviando mensajes: ${error.message || "Error desconocido"}`)
+    console.error('Error sending messages:', error);
+    alert(`❌ Error enviando mensajes: ${error.message || 'Error desconocido'}`);
   } finally {
-    sending.value = false
+    sending.value = false;
   }
-}
+};
 
 const close = () => {
-  emit("close")
+  emit('close');
   // Reset state
-  selectedRecipients.value = []
-  selectedTemplate.value = ""
-  customMessage.value = ""
-  activeTab.value = "ausentes"
-}
+  selectedRecipients.value = [];
+  selectedTemplate.value = '';
+  customMessage.value = '';
+  activeTab.value = 'ausentes';
+};
 
 // 📊 Función para cargar datos del reporte diario
 const loadReportData = () => {
-  if (!props.reportData) return
+  if (!props.reportData) return;
   
-  console.log("📊 [WhatsApp Modal] Cargando datos del reporte diario:", props.reportData)
+  console.log('📊 [WhatsApp Modal] Cargando datos del reporte diario:', props.reportData);
   
   // Convertir datos del reporte al formato esperado por el modal
   const convertedData: any = {
     ausentes: [],
     tarde: [],
-    justificado: []
-  }
+    justificado: [],
+  };
   
   // Convertir ausencias sin justificar
   if (props.reportData.unjustifiedAbsences) {
     convertedData.ausentes = props.reportData.unjustifiedAbsences.map((student: any) => ({
       id: student.studentId || student.id,
       nombre: student.name || student.studentName,
-      apellido: "",
-      clase: student.className || "",
-      instrumento: "N/A",
+      apellido: '',
+      clase: student.className || '',
+      instrumento: 'N/A',
       phoneNumbers: {
-        madre: "N/A", // Se obtendrá del store
-        padre: "N/A"  // Se obtendrá del store
+        madre: 'N/A', // Se obtendrá del store
+        padre: 'N/A',  // Se obtendrá del store
       },
-      absenceCount: student.absenceCount || 1
-    }))
+      absenceCount: student.absenceCount || 1,
+    }));
   }
   
   // Convertir estudiantes tarde
@@ -977,15 +977,15 @@ const loadReportData = () => {
     convertedData.tarde = props.reportData.lateStudents.map((student: any) => ({
       id: student.studentId || student.id,
       nombre: student.name || student.studentName,
-      apellido: "",
-      clase: student.className || "",
-      instrumento: "N/A",
+      apellido: '',
+      clase: student.className || '',
+      instrumento: 'N/A',
       phoneNumbers: {
-        madre: "N/A",
-        padre: "N/A"
+        madre: 'N/A',
+        padre: 'N/A',
       },
-      lateTime: student.time
-    }))
+      lateTime: student.time,
+    }));
   }
   
   // Convertir ausencias justificadas
@@ -993,66 +993,66 @@ const loadReportData = () => {
     convertedData.justificado = props.reportData.justifiedAbsences.map((student: any) => ({
       id: student.studentId || student.id,
       nombre: student.name || student.studentName,
-      apellido: "",
-      clase: student.className || "",
-      instrumento: "N/A",
+      apellido: '',
+      clase: student.className || '',
+      instrumento: 'N/A',
       phoneNumbers: {
-        madre: "N/A",
-        padre: "N/A"
+        madre: 'N/A',
+        padre: 'N/A',
       },
-      reason: student.reason || ""
-    }))
+      reason: student.reason || '',
+    }));
   }
   
   // Actualizar datos del modal
-  studentsData.value = convertedData
+  studentsData.value = convertedData;
   
   // Cambiar a la pestaña inicial especificada
   if (props.initialTab) {
-    activeTab.value = props.initialTab
+    activeTab.value = props.initialTab;
   }
   
-  console.log("✅ [WhatsApp Modal] Datos del reporte cargados:", convertedData)
-}
+  console.log('✅ [WhatsApp Modal] Datos del reporte cargados:', convertedData);
+};
 
 // Lifecycle
 onMounted(async () => {
-  await fetchStudentsData()
+  await fetchStudentsData();
   
   // Si hay datos del reporte, cargarlos
   if (props.reportData) {
-    loadReportData()
+    loadReportData();
   }
   
   // Auto-select first template if available
-  const templates = getTemplatesForActiveTab()
+  const templates = getTemplatesForActiveTab();
   if (templates.length > 0) {
-    selectTemplate(templates[0].id)
+    selectTemplate(templates[0].id);
   }
-})
+});
 
 // 👀 Watcher para reaccionar cuando se abra el modal con nuevos datos
 watch(
   () => props.isVisible,
   (newValue) => {
     if (newValue && props.reportData) {
-      console.log("📊 [WhatsApp Modal] Modal abierto con datos del reporte")
-      loadReportData()
+      console.log('📊 [WhatsApp Modal] Modal abierto con datos del reporte');
+      loadReportData();
     }
-  }
-)
+  },
+);
 
 // 📊 Watcher para cambios en los datos del reporte
 watch(
   () => props.reportData,
   (newData) => {
     if (newData && props.isVisible) {
-      console.log("📊 [WhatsApp Modal] Datos del reporte actualizados")
-      loadReportData()
+      console.log('📊 [WhatsApp Modal] Datos del reporte actualizados');
+      loadReportData();
     }
   },
-  {deep: true}
-)
+  { deep: true },
+);
 </script>
 
 <style scoped>

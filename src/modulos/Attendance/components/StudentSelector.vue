@@ -216,7 +216,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
+import { ref, computed, watch } from 'vue';
 
 // Types
 interface Student {
@@ -236,98 +236,98 @@ interface Props {
 }
 
 interface Emits {
-  (e: "update:modelValue", value: string[]): void
-  (e: "students-changed", value: string[]): void
+  (e: 'update:modelValue', value: string[]): void
+  (e: 'students-changed', value: string[]): void
 }
 
 // Props and emits
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
 // Reactive state
-const searchQuery = ref("")
+const searchQuery = ref('');
 const filters = ref({
-  instrument: "",
-  level: "",
-})
+  instrument: '',
+  level: '',
+});
 
 // Computed properties
 const selectedStudents = computed({
   get: () => props.modelValue,
   set: (value: string[]) => {
-    emit("update:modelValue", value)
-    emit("students-changed", value)
+    emit('update:modelValue', value);
+    emit('students-changed', value);
   },
-})
+});
 
 const filteredStudents = computed(() => {
-  let students = props.availableStudents
+  let students = props.availableStudents;
 
   // Filter by search query
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     students = students.filter((student) =>
-      `${student.nombre} ${student.apellido}`.toLowerCase().includes(query)
-    )
+      `${student.nombre} ${student.apellido}`.toLowerCase().includes(query),
+    );
   }
 
   // Filter by instrument
   if (filters.value.instrument) {
-    students = students.filter((student) => student.instrumento === filters.value.instrument)
+    students = students.filter((student) => student.instrumento === filters.value.instrument);
   }
 
   // Filter by level
   if (filters.value.level) {
-    students = students.filter((student) => student.nivel === filters.value.level)
+    students = students.filter((student) => student.nivel === filters.value.level);
   }
 
   return students.sort((a, b) =>
-    `${a.nombre} ${a.apellido}`.localeCompare(`${b.nombre} ${b.apellido}`)
-  )
-})
+    `${a.nombre} ${a.apellido}`.localeCompare(`${b.nombre} ${b.apellido}`),
+  );
+});
 
 const availableInstruments = computed(() => {
   const instruments = [
     ...new Set(props.availableStudents.map((student) => student.instrumento).filter(Boolean)),
-  ]
-  return instruments.sort()
-})
+  ];
+  return instruments.sort();
+});
 
 const availableLevels = computed(() => {
   const levels = [
     ...new Set(props.availableStudents.map((student) => student.nivel).filter(Boolean)),
-  ]
-  return levels.sort()
-})
+  ];
+  return levels.sort();
+});
 
 // Methods
 const getStudentName = (studentId: string) => {
-  const student = props.availableStudents.find((s) => s.id === studentId)
-  return student ? `${student.nombre} ${student.apellido}` : studentId
-}
+  const student = props.availableStudents.find((s) => s.id === studentId);
+  return student ? `${student.nombre} ${student.apellido}` : studentId;
+};
 
 const selectAll = () => {
-  const allFilteredIds = filteredStudents.value.map((student) => student.id)
-  const newSelection = [...new Set([...selectedStudents.value, ...allFilteredIds])]
-  selectedStudents.value = newSelection
-}
+  const allFilteredIds = filteredStudents.value.map((student) => student.id);
+  const newSelection = [...new Set([...selectedStudents.value, ...allFilteredIds])];
+  selectedStudents.value = newSelection;
+};
 
 const deselectAll = () => {
-  const filteredIds = new Set(filteredStudents.value.map((student) => student.id))
-  selectedStudents.value = selectedStudents.value.filter((id) => !filteredIds.has(id))
-}
+  const filteredIds = new Set(filteredStudents.value.map((student) => student.id));
+  selectedStudents.value = selectedStudents.value.filter((id) => !filteredIds.has(id));
+};
 
 const removeStudent = (studentId: string) => {
-  selectedStudents.value = selectedStudents.value.filter((id) => id !== studentId)
-}
+  selectedStudents.value = selectedStudents.value.filter((id) => id !== studentId);
+};
 
 const clearFilters = () => {
-  searchQuery.value = ""
+  searchQuery.value = '';
   filters.value = {
-    instrument: "",
-    level: "",
-  }
-}
+    instrument: '',
+    level: '',
+  };
+};
 </script>
 
 <style scoped>

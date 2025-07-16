@@ -89,7 +89,7 @@
           class="px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
           @click="handleViewAttendance"
         >
-          Ver Asistencia
+          Ver/Editar Asistencia
         </button>
 
         <!-- Botón secundario -->
@@ -110,11 +110,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { CalendarService } from '../services/CalendarService'
-import StatusBadge from './StatusBadge.vue'
-import RoleBadge from './RoleBadge.vue'
-import type { DayClassItem, ClassTimeSlot } from '../types/calendar.types'
+import { computed } from 'vue';
+import { CalendarService } from '../services/CalendarService';
+import StatusBadge from './StatusBadge.vue';
+import RoleBadge from './RoleBadge.vue';
+import type { DayClassItem, ClassTimeSlot } from '../types/calendar.types';
 
 // Props
 interface Props {
@@ -122,65 +122,65 @@ interface Props {
   currentDate?: string
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
   'take-attendance': [classId: string]
   'view-attendance': [classId: string]
   'edit-class': [classId: string]
-}>()
+}>();
 
 // Computed
 const cardClasses = computed(() => {
-  const classes = []
+  const classes = [];
   
   if (props.classItem.hasAttendanceRecord) {
-    classes.push('border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/10')
+    classes.push('border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/10');
   } else if (props.classItem.canTakeAttendance) {
-    classes.push('border-blue-200 dark:border-blue-700')
+    classes.push('border-blue-200 dark:border-blue-700');
   } else {
-    classes.push('border-gray-200 dark:border-gray-600 opacity-75')
+    classes.push('border-gray-200 dark:border-gray-600 opacity-75');
   }
   
-  return classes.join(' ')
-})
+  return classes.join(' ');
+});
 
 const classStatus = computed(() => {
-  if (props.classItem.hasAttendanceRecord) return 'completed'
-  if (props.classItem.canTakeAttendance) return 'pending'
-  return 'readonly'
-})
+  if (props.classItem.hasAttendanceRecord) return 'completed';
+  if (props.classItem.canTakeAttendance) return 'pending';
+  return 'readonly';
+});
 
 const teacherName = computed(() => {
-  const teacherId = props.classItem.teacherId
-  return `${teacherId.substring(0, 8)}...` // Mostrar ID truncado
-})
+  const teacherId = props.classItem.teacherId;
+  return `${teacherId.substring(0, 8)}...`; // Mostrar ID truncado
+});
 
 const todayTimeSlots = computed((): ClassTimeSlot[] => {
   if (!props.currentDate || !props.classItem.schedule?.slots) {
-    return []
+    return [];
   }
 
-  const dayName = CalendarService.getDayName(props.currentDate)
+  const dayName = CalendarService.getDayName(props.currentDate);
   
   return props.classItem.schedule.slots.filter(slot => 
-    slot.day.toLowerCase() === dayName.toLowerCase()
-  )
-})
+    slot.day.toLowerCase() === dayName.toLowerCase(),
+  );
+});
 
 // Methods
 const handleTakeAttendance = () => {
-  emit('take-attendance', props.classItem.id)
-}
+  emit('take-attendance', props.classItem.id);
+};
 
 const handleViewAttendance = () => {
-  emit('view-attendance', props.classItem.id)
-}
+  emit('view-attendance', props.classItem.id);
+};
 
 const handleEditClass = () => {
-  emit('edit-class', props.classItem.id)
-}
+  emit('edit-class', props.classItem.id);
+};
 </script>
 
 <style scoped>

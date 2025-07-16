@@ -200,107 +200,107 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useSuperusuario} from "../composables/useSuperusuario"
-import EditUserModal from "../components/EditUserModal.vue"
+import { ref, computed, onMounted } from 'vue';
+import { useSuperusuario } from '../composables/useSuperusuario';
+import EditUserModal from '../components/EditUserModal.vue';
 
 // Composable
-const {users, loading, error, loadUsers, createUser, toggleUserStatus} = useSuperusuario()
+const { users, loading, error, loadUsers, createUser, toggleUserStatus } = useSuperusuario();
 
 // State
-const searchQuery = ref("")
-const roleFilter = ref("")
-const currentPage = ref(1)
-const pageSize = 10
-const showCreateUserModal = ref(false)
-const showEditUserModal = ref(false)
-const selectedUser = ref(null)
-const creating = ref(false)
+const searchQuery = ref('');
+const roleFilter = ref('');
+const currentPage = ref(1);
+const pageSize = 10;
+const showCreateUserModal = ref(false);
+const showEditUserModal = ref(false);
+const selectedUser = ref(null);
+const creating = ref(false);
 
 const newUser = ref({
-  email: "",
-  displayName: "",
-  role: "",
-  password: "",
-})
+  email: '',
+  displayName: '',
+  role: '',
+  password: '',
+});
 
 // Computed
 const filteredUsers = computed(() => {
-  if (!users.value) return []
+  if (!users.value) return [];
 
   return users.value.filter((user) => {
     const matchesSearch =
       !searchQuery.value ||
       user.email?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      user.displayName?.toLowerCase().includes(searchQuery.value.toLowerCase())
+      user.displayName?.toLowerCase().includes(searchQuery.value.toLowerCase());
 
-    const matchesRole = !roleFilter.value || user.role === roleFilter.value
+    const matchesRole = !roleFilter.value || user.role === roleFilter.value;
 
-    return matchesSearch && matchesRole
-  })
-})
+    return matchesSearch && matchesRole;
+  });
+});
 
-const totalPages = computed(() => Math.ceil(filteredUsers.value.length / pageSize))
+const totalPages = computed(() => Math.ceil(filteredUsers.value.length / pageSize));
 
 const paginatedUsers = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  const end = start + pageSize
-  return filteredUsers.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * pageSize;
+  const end = start + pageSize;
+  return filteredUsers.value.slice(start, end);
+});
 
 const visiblePages = computed(() => {
-  const pages = []
-  const total = totalPages.value
-  const current = currentPage.value
+  const pages = [];
+  const total = totalPages.value;
+  const current = currentPage.value;
 
   if (total <= 7) {
     for (let i = 1; i <= total; i++) {
-      pages.push(i)
+      pages.push(i);
     }
   } else {
     if (current <= 4) {
-      for (let i = 1; i <= 5; i++) pages.push(i)
-      pages.push("...")
-      pages.push(total)
+      for (let i = 1; i <= 5; i++) pages.push(i);
+      pages.push('...');
+      pages.push(total);
     } else if (current >= total - 3) {
-      pages.push(1)
-      pages.push("...")
-      for (let i = total - 4; i <= total; i++) pages.push(i)
+      pages.push(1);
+      pages.push('...');
+      for (let i = total - 4; i <= total; i++) pages.push(i);
     } else {
-      pages.push(1)
-      pages.push("...")
-      for (let i = current - 1; i <= current + 1; i++) pages.push(i)
-      pages.push("...")
-      pages.push(total)
+      pages.push(1);
+      pages.push('...');
+      for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+      pages.push('...');
+      pages.push(total);
     }
   }
 
-  return pages
-})
+  return pages;
+});
 
 // Methods
 const getRoleColor = (role: string) => {
   const colors = {
-    Superusuario: "bg-purple-100 text-purple-800",
-    Director: "bg-red-100 text-red-800",
-    Admin: "bg-orange-100 text-orange-800",
-    Maestro: "bg-blue-100 text-blue-800",
-    Monitor: "bg-green-100 text-green-800",
-    Colaborador: "bg-gray-100 text-gray-800",
-  }
-  return colors[role as keyof typeof colors] || "bg-gray-100 text-gray-800"
-}
+    Superusuario: 'bg-purple-100 text-purple-800',
+    Director: 'bg-red-100 text-red-800',
+    Admin: 'bg-orange-100 text-orange-800',
+    Maestro: 'bg-blue-100 text-blue-800',
+    Monitor: 'bg-green-100 text-green-800',
+    Colaborador: 'bg-gray-100 text-gray-800',
+  };
+  return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+};
 
 const formatDate = (date: Date | string) => {
-  const d = typeof date === "string" ? new Date(date) : date
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d)
-}
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d);
+};
 
 const createNewUser = async () => {
   if (
@@ -309,70 +309,70 @@ const createNewUser = async () => {
     !newUser.value.role ||
     !newUser.value.password
   ) {
-    alert("Todos los campos son requeridos")
-    return
+    alert('Todos los campos son requeridos');
+    return;
   }
 
-  creating.value = true
+  creating.value = true;
   try {
-    await createUser(newUser.value)
-    showCreateUserModal.value = false
-    newUser.value = {email: "", displayName: "", role: "", password: ""}
-    await loadUsers() // Refresh the list
+    await createUser(newUser.value);
+    showCreateUserModal.value = false;
+    newUser.value = { email: '', displayName: '', role: '', password: '' };
+    await loadUsers(); // Refresh the list
   } catch (err) {
-    console.error("Error creating user:", err)
-    alert("Error al crear usuario: " + (err as Error).message)
+    console.error('Error creating user:', err);
+    alert('Error al crear usuario: ' + (err as Error).message);
   } finally {
-    creating.value = false
+    creating.value = false;
   }
-}
+};
 
 const editUser = (user: any) => {
-  console.log("Navegando a módulo: usuarios")
-  console.log("Editando usuario:", user.id)
-  selectedUser.value = user
-  showEditUserModal.value = true
-  console.log("Modal de edición abierto para usuario:", user.email)
-  console.log("Datos del usuario seleccionado:", selectedUser.value)
-  console.log("Estado del modal de edición:", showEditUserModal.value)
-  console.log("Lista de usuarios actual:", users.value)
-}
+  console.log('Navegando a módulo: usuarios');
+  console.log('Editando usuario:', user.id);
+  selectedUser.value = user;
+  showEditUserModal.value = true;
+  console.log('Modal de edición abierto para usuario:', user.email);
+  console.log('Datos del usuario seleccionado:', selectedUser.value);
+  console.log('Estado del modal de edición:', showEditUserModal.value);
+  console.log('Lista de usuarios actual:', users.value);
+};
 
 const closeEditModal = () => {
-  showEditUserModal.value = false
-  selectedUser.value = null
-}
+  showEditUserModal.value = false;
+  selectedUser.value = null;
+};
 
 const handleUserUpdated = (updatedUser: any) => {
-  console.log("Usuario actualizado:", updatedUser)
+  console.log('Usuario actualizado:', updatedUser);
   // Actualizar la lista local si es necesario
-  const index = users.value?.findIndex((u) => u.id === updatedUser.id)
+  const index = users.value?.findIndex((u) => u.id === updatedUser.id);
   if (index !== undefined && index >= 0 && users.value) {
-    users.value[index] = updatedUser
+    users.value[index] = updatedUser;
   }
   // Recargar la lista para asegurar datos consistentes
-  loadUsers()
-}
+  loadUsers();
+};
 
 const changeUserRole = (user: any) => {
-  const newRole = prompt(`Cambiar rol de ${user.email} (actual: ${user.role}):`, user.role)
+  const newRole = prompt(`Cambiar rol de ${user.email} (actual: ${user.role}):`, user.role);
   if (newRole && newRole !== user.role) {
     // TODO: Implementar cambio de rol
-    console.log("Cambiando rol:", user.id, newRole)
+    console.log('Cambiando rol:', user.id, newRole);
   }
-}
+};
 
 const deleteUser = (user: any) => {
   if (confirm(`¿Estás seguro de que deseas eliminar al usuario ${user.email}?`)) {
     // TODO: Implementar eliminación
-    console.log("Eliminando usuario:", user.id)
+    console.log('Eliminando usuario:', user.id);
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadUsers()
-})
+  loadUsers();
+});
 </script>
 
 <style scoped>

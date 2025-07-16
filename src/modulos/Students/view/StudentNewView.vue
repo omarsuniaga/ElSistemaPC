@@ -1,72 +1,3 @@
-<script setup lang="ts">
-import {ref} from "vue"
-import {useRouter} from "vue-router"
-import {useStudentsStore} from "../store/students"
-import {PlusCircleIcon} from "@heroicons/vue/24/outline"
-
-const router = useRouter()
-const studentsStore = useStudentsStore()
-
-const newStudent = ref({
-  nombre: "",
-  apellido: "",
-  instrumento: "",
-  edad: "",
-  tlf: "",
-  email: "",
-  direccion: "",
-  observaciones: "",
-  nac: "",
-  sexo: "Masculino",
-  madre: "",
-  padre: "",
-  tlf_madre: "",
-  tlf_padre: "",
-  colegio_trabajo: "",
-  horario_colegio_trabajo: "",
-  grupo: ["Teoría Musical"] as string[],
-  clase: "",
-  fecInscripcion: new Date().toISOString().split("T")[0],
-})
-
-const isLoading = ref(false)
-const error = ref("")
-
-const instruments = ["Piano", "Violín", "Guitarra"]
-
-const classes = [
-  "Piano - Nivel 1",
-  "Piano - Nivel 2",
-  "Violín - Nivel 1",
-  "Violín - Nivel 2",
-  "Guitarra - Nivel 1",
-  "Guitarra - Nivel 2",
-]
-
-const handleSubmit = async () => {
-  isLoading.value = true
-  error.value = ""
-
-  try {
-    await studentsStore.addStudent({
-      ...formData.value,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.value.nombre}`,
-      documentos: {},
-    })
-    router.push("/students")
-  } catch (e) {
-    error.value = "Error al crear el alumno"
-    console.error("Error creating student:", e)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleCancel = () => {
-  router.push("/students")
-}
-</script>
-
 <template>
   <div class="max-w-2xl mx-auto p-4">
     <h1 class="text-2xl font-bold mb-6">Nuevo Alumno</h1>
@@ -195,3 +126,72 @@ const handleCancel = () => {
     </form>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useStudentsStore } from '../store/students';
+import { PlusCircleIcon } from '@heroicons/vue/24/outline';
+
+const router = useRouter();
+const studentsStore = useStudentsStore();
+
+const newStudent = ref({
+  nombre: '',
+  apellido: '',
+  instrumento: '',
+  edad: '',
+  tlf: '',
+  email: '',
+  direccion: '',
+  observaciones: '',
+  nac: '',
+  sexo: 'Masculino',
+  madre: '',
+  padre: '',
+  tlf_madre: '',
+  tlf_padre: '',
+  colegio_trabajo: '',
+  horario_colegio_trabajo: '',
+  grupo: ['Teoría Musical'] as string[],
+  clase: '',
+  fecInscripcion: new Date().toISOString().split('T')[0],
+});
+
+const isLoading = ref(false);
+const error = ref('');
+
+const instruments = ['Piano', 'Violín', 'Guitarra'];
+
+const classes = [
+  'Piano - Nivel 1',
+  'Piano - Nivel 2',
+  'Violín - Nivel 1',
+  'Violín - Nivel 2',
+  'Guitarra - Nivel 1',
+  'Guitarra - Nivel 2',
+];
+
+const handleSubmit = async () => {
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    await studentsStore.addStudent({
+      ...formData.value,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.value.nombre}`,
+      documentos: {},
+    });
+    router.push('/students');
+  } catch (e) {
+    error.value = 'Error al crear el alumno';
+    console.error('Error creating student:', e);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const handleCancel = () => {
+  router.push('/students');
+};
+</script>

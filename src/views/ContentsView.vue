@@ -1,257 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {useContentsStore} from "../modulos/Contents/store/contents"
-import {
-  PlusCircleIcon,
-  FunnelIcon,
-  ArrowDownTrayIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  DocumentTextIcon,
-  AcademicCapIcon,
-  ClipboardDocumentListIcon,
-  MusicalNoteIcon,
-  PencilSquareIcon,
-  TrashIcon,
-} from "@heroicons/vue/24/outline"
-// import BaseCard from '../components/BaseCard.vue'
-import ContentForm from "../components/ContentForm.vue"
-import ConfirmModal from "../components/ConfirmModal.vue"
-import type {Content} from "../types"
-import {jsPDF} from "jspdf"
-import ExcelJS from "exceljs"
-
-const router = useRouter()
-const contentsStore = useContentsStore()
-const showForm = ref(false)
-const showDeleteModal = ref(false)
-const selectedContent = ref<Content | null>(null)
-const expandedContent = ref<number | null>(null)
-// const expandedTheme = ref<number | null>(null)
-const isEditing = ref(false)
-const isLoading = ref(true)
-const error = ref("")
-
-// Filters
-const searchQuery = ref("")
-const filterLevel = ref("")
-const filterClass = ref("")
-const sortBy = ref("title")
-const sortOrder = ref<"asc" | "desc">("asc")
-
-const levels = ["Principiante", "Intermedio", "Avanzado"]
-const classes = ["Piano - Nivel 1", "Violín - Nivel 1", "Guitarra - Nivel 1"]
-
-const filteredContents = computed(() => {
-  let result = [...contentsStore.contents]
-
-  // Apply filters
-  if (filterLevel.value) {
-    result = result.filter((c) => c.level === filterLevel.value)
-  }
-
-  if (filterClass.value) {
-    result = result.filter((c) => c.class === filterClass.value)
-  }
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(
-      (c) => c.title.toLowerCase().includes(query) || c.description.toLowerCase().includes(query)
-    )
-  }
-
-  // Apply sorting
-  result.sort((a, b) => {
-    let comparison = 0
-    switch (sortBy.value) {
-      case "title":
-        comparison = a.title.localeCompare(b.title)
-        break
-      case "level":
-        comparison = a.level.localeCompare(b.level)
-        break
-      case "class":
-        comparison = a.class.localeCompare(b.class)
-        break
-      case "date":
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        break
-    }
-    return sortOrder.value === "desc" ? -comparison : comparison
-  })
-
-  return result
-})
-
-const handleNew = () => {
-  selectedContent.value = null
-  isEditing.value = false
-  showForm.value = true
-}
-
-const handleEdit = (content: Content) => {
-  selectedContent.value = content
-  isEditing.value = true
-  showForm.value = true
-}
-
-const handleDelete = (content: Content) => {
-  selectedContent.value = content
-  showDeleteModal.value = true
-}
-
-const handleFormSubmit = async (data: Partial<Content>) => {
-  try {
-    if (isEditing.value && selectedContent.value) {
-      await contentsStore.updateContent(selectedContent.value.id, data)
-    } else {
-      await contentsStore.addContent(data as Omit<Content, "id" | "createdAt" | "updatedAt">)
-    }
-    showForm.value = false
-    error.value = ""
-  } catch (err) {
-    error.value = "Error al guardar el contenido"
-  }
-}
-
-const handleFormCancel = () => {
-  showForm.value = false
-  selectedContent.value = null
-  isEditing.value = false
-}
-
-const confirmDelete = async () => {
-  if (selectedContent.value) {
-    try {
-      await contentsStore.deleteContent(selectedContent.value.id)
-      showDeleteModal.value = false
-      selectedContent.value = null
-      error.value = ""
-    } catch (err) {
-      error.value = "Error al eliminar el contenido"
-    }
-  }
-}
-
-const exportToPDF = () => {
-  const doc = new jsPDF()
-  let y = 20
-
-  // Title
-  doc.setFontSize(16)
-  doc.text("Contenidos", 20, y)
-  y += 10
-
-  // Contents
-  doc.setFontSize(12)
-  filteredContents.value.forEach((content, index) => {
-    if (y > 270) {
-      doc.addPage()
-      y = 20
-    }
-
-    doc.setFont("helvetica", "bold")
-    doc.text(`${index + 1}. ${content.title}`, 20, y)
-    y += 7
-
-    doc.setFont("helvetica", "normal")
-    doc.text(`Nivel: ${content.level}`, 25, y)
-    y += 7
-    doc.text(`Clase: ${content.class}`, 25, y)
-    y += 7
-    doc.text(`Duración: ${content.duration}`, 25, y)
-    y += 10
-  })
-
-  doc.save("contenidos.pdf")
-}
-
-const exportToExcel = async () => {
-  // Usar ExcelJS en lugar de xlsx para mayor seguridad
-  const workbook = new ExcelJS.Workbook()
-  workbook.creator = "Music Academy App"
-  workbook.lastModifiedBy = "Music Academy App"
-  workbook.created = new Date()
-  workbook.modified = new Date()
-
-  // Crear hoja de trabajo
-  const worksheet = workbook.addWorksheet("Contenidos")
-
-  // Preparar datos para exportar
-  const data = filteredContents.value.map((content) => ({
-    Título: content.title,
-    Descripción: content.description,
-    Nivel: content.level,
-    Clase: content.class,
-    Duración: content.duration,
-    Objetivos: content.objectives.join(", "),
-    Prerequisitos: content.prerequisites.join(", "),
-  }))
-
-  // Añadir encabezados
-  const headers = Object.keys(data[0] || {})
-  worksheet.addRow(headers)
-
-  // Dar formato a los encabezados
-  const headerRow = worksheet.getRow(1)
-  headerRow.font = {bold: true}
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: {argb: "FF2980B9"},
-  }
-
-  // Añadir datos
-  data.forEach((row) => {
-    worksheet.addRow(Object.values(row))
-  })
-
-  // Autoajustar anchos de columna
-  worksheet.columns.forEach((column) => {
-    let maxLength = 10
-    column.eachCell({includeEmpty: false}, (cell) => {
-      const cellLength = cell.value ? cell.value.toString().length : 10
-      maxLength = Math.max(maxLength, cellLength)
-    })
-    column.width = Math.min(maxLength + 2, 30) // Limitar ancho máximo
-  })
-
-  // Generar archivo y descargar
-  const buffer = await workbook.xlsx.writeBuffer()
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = "contenidos.xlsx"
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
-
-const clearFilters = () => {
-  searchQuery.value = ""
-  filterLevel.value = ""
-  filterClass.value = ""
-  sortBy.value = "title"
-  sortOrder.value = "asc"
-}
-
-onMounted(async () => {
-  try {
-    await contentsStore.fetchContents()
-  } catch (err) {
-    error.value = "Error al cargar los contenidos"
-  } finally {
-    isLoading.value = false
-  }
-})
-</script>
-
 <template>
   <div class="py-6">
     <div class="flex justify-between items-center mb-6">
@@ -453,3 +199,257 @@ onMounted(async () => {
     />
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useContentsStore } from '../modulos/Contents/store/contents';
+import {
+  PlusCircleIcon,
+  FunnelIcon,
+  ArrowDownTrayIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  DocumentTextIcon,
+  AcademicCapIcon,
+  ClipboardDocumentListIcon,
+  MusicalNoteIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from '@heroicons/vue/24/outline';
+// import BaseCard from '../components/BaseCard.vue'
+import ContentForm from '../components/ContentForm.vue';
+import ConfirmModal from '../components/ConfirmModal.vue';
+import type { Content } from '../types';
+import { jsPDF } from 'jspdf';
+import ExcelJS from 'exceljs';
+
+const router = useRouter();
+const contentsStore = useContentsStore();
+const showForm = ref(false);
+const showDeleteModal = ref(false);
+const selectedContent = ref<Content | null>(null);
+const expandedContent = ref<number | null>(null);
+// const expandedTheme = ref<number | null>(null)
+const isEditing = ref(false);
+const isLoading = ref(true);
+const error = ref('');
+
+// Filters
+const searchQuery = ref('');
+const filterLevel = ref('');
+const filterClass = ref('');
+const sortBy = ref('title');
+const sortOrder = ref<'asc' | 'desc'>('asc');
+
+const levels = ['Principiante', 'Intermedio', 'Avanzado'];
+const classes = ['Piano - Nivel 1', 'Violín - Nivel 1', 'Guitarra - Nivel 1'];
+
+const filteredContents = computed(() => {
+  let result = [...contentsStore.contents];
+
+  // Apply filters
+  if (filterLevel.value) {
+    result = result.filter((c) => c.level === filterLevel.value);
+  }
+
+  if (filterClass.value) {
+    result = result.filter((c) => c.class === filterClass.value);
+  }
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(
+      (c) => c.title.toLowerCase().includes(query) || c.description.toLowerCase().includes(query),
+    );
+  }
+
+  // Apply sorting
+  result.sort((a, b) => {
+    let comparison = 0;
+    switch (sortBy.value) {
+    case 'title':
+      comparison = a.title.localeCompare(b.title);
+      break;
+    case 'level':
+      comparison = a.level.localeCompare(b.level);
+      break;
+    case 'class':
+      comparison = a.class.localeCompare(b.class);
+      break;
+    case 'date':
+      comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      break;
+    }
+    return sortOrder.value === 'desc' ? -comparison : comparison;
+  });
+
+  return result;
+});
+
+const handleNew = () => {
+  selectedContent.value = null;
+  isEditing.value = false;
+  showForm.value = true;
+};
+
+const handleEdit = (content: Content) => {
+  selectedContent.value = content;
+  isEditing.value = true;
+  showForm.value = true;
+};
+
+const handleDelete = (content: Content) => {
+  selectedContent.value = content;
+  showDeleteModal.value = true;
+};
+
+const handleFormSubmit = async (data: Partial<Content>) => {
+  try {
+    if (isEditing.value && selectedContent.value) {
+      await contentsStore.updateContent(selectedContent.value.id, data);
+    } else {
+      await contentsStore.addContent(data as Omit<Content, 'id' | 'createdAt' | 'updatedAt'>);
+    }
+    showForm.value = false;
+    error.value = '';
+  } catch (err) {
+    error.value = 'Error al guardar el contenido';
+  }
+};
+
+const handleFormCancel = () => {
+  showForm.value = false;
+  selectedContent.value = null;
+  isEditing.value = false;
+};
+
+const confirmDelete = async () => {
+  if (selectedContent.value) {
+    try {
+      await contentsStore.deleteContent(selectedContent.value.id);
+      showDeleteModal.value = false;
+      selectedContent.value = null;
+      error.value = '';
+    } catch (err) {
+      error.value = 'Error al eliminar el contenido';
+    }
+  }
+};
+
+const exportToPDF = () => {
+  const doc = new jsPDF();
+  let y = 20;
+
+  // Title
+  doc.setFontSize(16);
+  doc.text('Contenidos', 20, y);
+  y += 10;
+
+  // Contents
+  doc.setFontSize(12);
+  filteredContents.value.forEach((content, index) => {
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${index + 1}. ${content.title}`, 20, y);
+    y += 7;
+
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Nivel: ${content.level}`, 25, y);
+    y += 7;
+    doc.text(`Clase: ${content.class}`, 25, y);
+    y += 7;
+    doc.text(`Duración: ${content.duration}`, 25, y);
+    y += 10;
+  });
+
+  doc.save('contenidos.pdf');
+};
+
+const exportToExcel = async () => {
+  // Usar ExcelJS en lugar de xlsx para mayor seguridad
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Music Academy App';
+  workbook.lastModifiedBy = 'Music Academy App';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  // Crear hoja de trabajo
+  const worksheet = workbook.addWorksheet('Contenidos');
+
+  // Preparar datos para exportar
+  const data = filteredContents.value.map((content) => ({
+    Título: content.title,
+    Descripción: content.description,
+    Nivel: content.level,
+    Clase: content.class,
+    Duración: content.duration,
+    Objetivos: content.objectives.join(', '),
+    Prerequisitos: content.prerequisites.join(', '),
+  }));
+
+  // Añadir encabezados
+  const headers = Object.keys(data[0] || {});
+  worksheet.addRow(headers);
+
+  // Dar formato a los encabezados
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FF2980B9' },
+  };
+
+  // Añadir datos
+  data.forEach((row) => {
+    worksheet.addRow(Object.values(row));
+  });
+
+  // Autoajustar anchos de columna
+  worksheet.columns.forEach((column) => {
+    let maxLength = 10;
+    column.eachCell({ includeEmpty: false }, (cell) => {
+      const cellLength = cell.value ? cell.value.toString().length : 10;
+      maxLength = Math.max(maxLength, cellLength);
+    });
+    column.width = Math.min(maxLength + 2, 30); // Limitar ancho máximo
+  });
+
+  // Generar archivo y descargar
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'contenidos.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+const clearFilters = () => {
+  searchQuery.value = '';
+  filterLevel.value = '';
+  filterClass.value = '';
+  sortBy.value = 'title';
+  sortOrder.value = 'asc';
+};
+
+onMounted(async () => {
+  try {
+    await contentsStore.fetchContents();
+  } catch (err) {
+    error.value = 'Error al cargar los contenidos';
+  } finally {
+    isLoading.value = false;
+  }
+});
+</script>

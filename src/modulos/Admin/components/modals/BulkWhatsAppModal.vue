@@ -325,9 +325,9 @@ Variables disponibles:
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot} from "@headlessui/vue"
-import {XMarkIcon, ChatBubbleLeftRightIcon} from "@heroicons/vue/24/outline"
+import { ref, computed, watch } from 'vue';
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
+import { XMarkIcon, ChatBubbleLeftRightIcon } from '@heroicons/vue/24/outline';
 
 interface Student {
   id: string
@@ -354,29 +354,29 @@ interface SendProgress {
   total: number
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 const emit = defineEmits<{
   close: []
   sent: [count: number]
-}>()
+}>();
 
 // Constantes
-const maxLength = 4096 // Límite de caracteres de WhatsApp
-const today = new Date().toISOString().split("T")[0]
+const maxLength = 4096; // Límite de caracteres de WhatsApp
+const today = new Date().toISOString().split('T')[0];
 
 // Estado local
-const showRecipientsList = ref(false)
-const selectedTemplate = ref("")
-const isSending = ref(false)
-const sendProgress = ref<SendProgress>({sent: 0, total: 0})
+const showRecipientsList = ref(false);
+const selectedTemplate = ref('');
+const isSending = ref(false);
+const sendProgress = ref<SendProgress>({ sent: 0, total: 0 });
 
 const whatsappData = ref<WhatsAppData>({
-  message: "",
+  message: '',
   includeLink: false,
   scheduleSend: false,
   scheduleDate: today,
-  scheduleTime: "09:00",
-})
+  scheduleTime: '09:00',
+});
 
 // Templates predefinidas
 const templates = {
@@ -423,16 +423,16 @@ Tenemos una novedad importante que queremos compartir contigo:
 
 {academyName}`,
   },
-}
+};
 
 // Computed
 const validPhoneNumbers = computed(() => {
-  return props.selectedStudents.filter((student) => student.phone).length
-})
+  return props.selectedStudents.filter((student) => student.phone).length;
+});
 
 const messageLength = computed(() => {
-  return whatsappData.value.message.length
-})
+  return whatsappData.value.message.length;
+});
 
 const canSend = computed(() => {
   return (
@@ -441,96 +441,96 @@ const canSend = computed(() => {
     !isSending.value &&
     (!whatsappData.value.scheduleSend ||
       (whatsappData.value.scheduleDate && whatsappData.value.scheduleTime))
-  )
-})
+  );
+});
 
 const previewMessage = computed(() => {
-  if (!whatsappData.value.message) return ""
+  if (!whatsappData.value.message) return '';
 
   // Simular reemplazo de variables con el primer estudiante
-  let preview = whatsappData.value.message
+  let preview = whatsappData.value.message;
   if (props.selectedStudents.length > 0) {
-    const firstStudent = props.selectedStudents[0]
+    const firstStudent = props.selectedStudents[0];
     preview = preview
       .replace(/{firstName}/g, firstStudent.firstName)
       .replace(/{lastName}/g, firstStudent.lastName)
-      .replace(/{academyName}/g, "Academia Musical")
+      .replace(/{academyName}/g, 'Academia Musical')
       .replace(/{date}/g, new Date().toLocaleDateString())
       .replace(
         /{time}/g,
-        new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"})
-      )
+        new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      );
   }
 
   if (whatsappData.value.includeLink) {
-    preview += "\n\n🌐 www.academia-musical.com"
+    preview += '\n\n🌐 www.academia-musical.com';
   }
 
-  return preview
-})
+  return preview;
+});
 
 // Methods
 const closeModal = () => {
   if (!isSending.value) {
-    emit("close")
+    emit('close');
   }
-}
+};
 
 const removeRecipient = (studentId: string) => {
-  const updatedStudents = props.selectedStudents.filter((s) => s.id !== studentId)
-  emit("close") // Temporal - idealmente se actualizaría la lista sin cerrar
-}
+  const updatedStudents = props.selectedStudents.filter((s) => s.id !== studentId);
+  emit('close'); // Temporal - idealmente se actualizaría la lista sin cerrar
+};
 
 const loadTemplate = () => {
   if (selectedTemplate.value && templates[selectedTemplate.value as keyof typeof templates]) {
-    const template = templates[selectedTemplate.value as keyof typeof templates]
-    whatsappData.value.message = template.message
+    const template = templates[selectedTemplate.value as keyof typeof templates];
+    whatsappData.value.message = template.message;
   }
-}
+};
 
 const sendMessages = async () => {
-  if (!canSend.value) return
+  if (!canSend.value) return;
 
   try {
-    isSending.value = true
-    const studentsWithPhone = props.selectedStudents.filter((student) => student.phone)
-    sendProgress.value = {sent: 0, total: studentsWithPhone.length}
+    isSending.value = true;
+    const studentsWithPhone = props.selectedStudents.filter((student) => student.phone);
+    sendProgress.value = { sent: 0, total: studentsWithPhone.length };
 
     // Simular envío progresivo
     for (let i = 0; i < studentsWithPhone.length; i++) {
-      const student = studentsWithPhone[i]
+      const student = studentsWithPhone[i];
 
       // Simular procesamiento
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
       // TODO: Implementar envío real de WhatsApp
-      await sendWhatsAppToStudent(student)
+      await sendWhatsAppToStudent(student);
 
-      sendProgress.value.sent++
+      sendProgress.value.sent++;
     }
 
     // Éxito
-    emit("sent", studentsWithPhone.length)
+    emit('sent', studentsWithPhone.length);
 
     // Limpiar formulario
     whatsappData.value = {
-      message: "",
+      message: '',
       includeLink: false,
       scheduleSend: false,
       scheduleDate: today,
-      scheduleTime: "09:00",
-    }
-    selectedTemplate.value = ""
+      scheduleTime: '09:00',
+    };
+    selectedTemplate.value = '';
 
-    closeModal()
+    closeModal();
   } catch (error) {
-    console.error("Error enviando mensajes WhatsApp:", error)
+    console.error('Error enviando mensajes WhatsApp:', error);
     // TODO: Mostrar error al usuario
   } finally {
-    isSending.value = false
-    sendProgress.value = {sent: 0, total: 0}
+    isSending.value = false;
+    sendProgress.value = { sent: 0, total: 0 };
   }
-}
+};
 
 const sendWhatsAppToStudent = async (student: Student) => {
   // TODO: Implementar envío real usando WhatsApp Business API
@@ -538,18 +538,18 @@ const sendWhatsAppToStudent = async (student: Student) => {
     message: whatsappData.value.message
       .replace(/{firstName}/g, student.firstName)
       .replace(/{lastName}/g, student.lastName)
-      .replace(/{academyName}/g, "Academia Musical")
+      .replace(/{academyName}/g, 'Academia Musical')
       .replace(/{date}/g, new Date().toLocaleDateString())
       .replace(
         /{time}/g,
-        new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"})
+        new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
       ),
     scheduleSend: whatsappData.value.scheduleSend,
     scheduleDateTime: whatsappData.value.scheduleSend
       ? `${whatsappData.value.scheduleDate} ${whatsappData.value.scheduleTime}`
       : null,
-  })
-}
+  });
+};
 
 // Watchers
 watch(
@@ -557,20 +557,20 @@ watch(
   (newValue) => {
     if (!newValue) {
       // Reset al cerrar
-      showRecipientsList.value = false
-      selectedTemplate.value = ""
+      showRecipientsList.value = false;
+      selectedTemplate.value = '';
       if (!isSending.value) {
         whatsappData.value = {
-          message: "",
+          message: '',
           includeLink: false,
           scheduleSend: false,
           scheduleDate: today,
-          scheduleTime: "09:00",
-        }
+          scheduleTime: '09:00',
+        };
       }
     }
-  }
-)
+  },
+);
 </script>
 
 <style scoped>

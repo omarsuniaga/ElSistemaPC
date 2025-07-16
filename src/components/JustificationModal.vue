@@ -40,11 +40,12 @@
               >Motivo de la justificación</label
             >
             <textarea
+              ref="justificationInput"
               v-model="justification"
               rows="3"
               class="shadow-sm block w-full sm:text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white rounded-md focus:ring-indigo-500 focus:border-indigo-500 p-2"
               placeholder="Especifique el motivo de la ausencia..."
-            />
+            ></textarea>
           </div>
 
           <div class="mb-4">
@@ -121,7 +122,7 @@
 </template>
 
 <script>
-import {ref, computed, watch} from "vue"
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
 
 export default {
   props: {
@@ -132,112 +133,133 @@ export default {
     attendanceStatus: String,
     existingJustification: Object,
   },
-  emits: ["close", "submit"],
-  setup(props, {emit}) {
-    // Estado local
-    const justification = ref("")
-    const selectedFile = ref(null)
-    const isUploading = ref(false)
-    const uploadProgress = ref(0)
+  emits: ['close', 'submit'],
+  setup(props, { emit }) {
+  // Estado local
+  const justification = ref('');
+  const justificationInput = ref(null); // Will be HTMLTextAreaElement
+  const selectedFile = ref(null);
+  const isUploading = ref(false);
+  const uploadProgress = ref(0);
 
-    // Resetear el formulario cuando se abre el modal
+    // Resetear el formulario cuando se abre el modal y enfocar textarea
     watch(
       () => props.show,
-      (newVal) => {
+      async (newVal) => {
         if (newVal) {
           // Si hay una justificación existente, cargarla
           if (props.existingJustification) {
-            justification.value = props.existingJustification.reason || ""
+            justification.value = props.existingJustification.reason || '';
           } else {
-            justification.value = ""
+            justification.value = '';
           }
-          selectedFile.value = null
-          isUploading.value = false
-          uploadProgress.value = 0
+          selectedFile.value = null;
+          isUploading.value = false;
+          uploadProgress.value = 0;
+          await nextTick();
+          // Foco robusto: intentar varias veces por si el DOM aún no está listo
+          let focused = false;
+          for (let i = 0; i < 3; i++) {
+            if (justificationInput.value && typeof justificationInput.value.focus === 'function') {
+              justificationInput.value.focus();
+              justificationInput.value.select && justificationInput.value.select();
+              focused = document.activeElement === justificationInput.value;
+              if (focused) break;
+              await new Promise(res => setTimeout(res, 30));
+            }
+          }
+          // Fallback para navegadores lentos
+          if (!focused && justificationInput.value) {
+            setTimeout(() => {
+              justificationInput.value && justificationInput.value.focus();
+              justificationInput.value && justificationInput.value.select && justificationInput.value.select();
+            }, 100);
+          }
         }
-      }
-    )
+      },
+    );
 
     const isValid = computed(() => {
-      return justification.value.trim().length > 0
-    })
+      return justification.value.trim().length > 0;
+    });
 
     // Método para formatear la fecha
     const formatDate = (dateString) => {
-      if (!dateString) return ""
+      if (!dateString) return '';
 
       try {
-        const date = new Date(dateString)
-        return new Intl.DateTimeFormat("es-ES", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(date)
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('es-ES', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).format(date);
       } catch (e) {
-        return dateString
+        return dateString;
       }
-    }
+    };
 
     // Método para manejar la subida de archivos
     const handleFileUpload = (event) => {
-      const file = event.target.files[0]
+      const file = event.target.files[0];
       if (file) {
         // Validar tipo de archivo (solo PDF, DOC, DOCX, JPG, PNG)
         const validTypes = [
-          "application/pdf",
-          "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "image/jpeg",
-          "image/png",
-        ]
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'image/jpeg',
+          'image/png',
+        ];
 
         if (!validTypes.includes(file.type)) {
-          alert("Tipo de archivo no válido. Por favor, sube un archivo PDF, DOC, DOCX, JPG o PNG.")
-          event.target.value = null
-          return
+          alert('Tipo de archivo no válido. Por favor, sube un archivo PDF, DOC, DOCX, JPG o PNG.');
+          event.target.value = null;
+          return;
         }
 
         // Validar tamaño (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
-          alert("El archivo es demasiado grande. El tamaño máximo permitido es 5MB.")
-          event.target.value = null
-          return
+          alert('El archivo es demasiado grande. El tamaño máximo permitido es 5MB.');
+          event.target.value = null;
+          return;
         }
 
-        selectedFile.value = file
+        selectedFile.value = file;
       }
-    }
+    };
 
     // Método para eliminar el archivo seleccionado
     const removeFile = () => {
-      selectedFile.value = null
-    }
+      selectedFile.value = null;
+    };
 
     // Método para cerrar el modal
     const closeModal = () => {
-      emit("close")
-    }
+      emit('close');
+    };
 
     // Método para enviar la justificación
     const submitJustification = () => {
-      if (!isValid.value) return
+      if (!isValid.value) return;
 
       // Preparar datos para enviar
       const data = {
         studentId: props.student?.id,
         reason: justification.value.trim(),
         file: selectedFile.value,
-      }
+      };
 
       // Emitir evento con los datos
-      emit("submit", data)
+      emit('submit', data);
 
       // Cerrar el modal
-      closeModal()
-    }
+      closeModal();
+    };
 
     return {
       justification,
+      justificationInput,
       selectedFile,
       isUploading,
       uploadProgress,
@@ -247,9 +269,9 @@ export default {
       removeFile,
       closeModal,
       submitJustification,
-    }
+    };
   },
-}
+};
 </script>
 
 <style scoped>

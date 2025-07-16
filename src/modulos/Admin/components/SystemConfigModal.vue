@@ -256,7 +256,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
+import { ref } from 'vue';
 import {
   XMarkIcon,
   CogIcon,
@@ -264,18 +264,18 @@ import {
   ShieldCheckIcon,
   BellIcon,
   CloudArrowUpIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 const emit = defineEmits<{
   close: []
   updated: [config: any]
-}>()
+}>();
 
 const config = ref({
-  systemName: "Music Academy Manager",
-  timezone: "America/Mexico_City",
-  defaultLanguage: "es",
-  defaultTheme: "light",
+  systemName: 'Music Academy Manager',
+  timezone: 'America/Mexico_City',
+  defaultLanguage: 'es',
+  defaultTheme: 'light',
   sessionDuration: 120,
   maxLoginAttempts: 5,
   requireTwoFactor: false,
@@ -283,21 +283,21 @@ const config = ref({
   emailNotifications: true,
   smsNotifications: false,
   pushNotifications: true,
-  backupFrequency: "daily",
+  backupFrequency: 'daily',
   backupRetention: 30,
-})
+});
 
 const handleSave = async () => {
   try {
-    console.log("Saving system config:", config.value)
+    console.log('Saving system config:', config.value);
 
     // Here you would call your API to save the configuration
     // await updateSystemConfig(config.value)
 
-    emit("updated", config.value)
-    emit("close")
+    emit('updated', config.value);
+    emit('close');
   } catch (error) {
-    console.error("Error saving system config:", error)
+    console.error('Error saving system config:', error);
   }
-}
+};
 </script>

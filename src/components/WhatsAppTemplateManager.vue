@@ -247,26 +247,26 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, nextTick} from "vue"
-import {XMarkIcon, PlusIcon, PencilIcon, TrashIcon} from "@heroicons/vue/24/outline"
+import { ref, computed, watch, nextTick } from 'vue';
+import { XMarkIcon, PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import {
   useWhatsAppPresets,
   type WhatsAppPreset,
   type MessageData,
-} from "../composables/useWhatsAppPresets"
+} from '../composables/useWhatsAppPresets';
 
 interface Props {
   isOpen: boolean
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "template-created", template: WhatsAppPreset): void
-  (e: "template-updated", template: WhatsAppPreset): void
+  (e: 'close'): void
+  (e: 'template-created', template: WhatsAppPreset): void
+  (e: 'template-updated', template: WhatsAppPreset): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
 const {
   presets,
@@ -277,129 +277,129 @@ const {
   updatePreset,
   deletePreset,
   processTemplate,
-} = useWhatsAppPresets()
+} = useWhatsAppPresets();
 
 // Estados del componente
-const selectedTemplate = ref<WhatsAppPreset | null>(null)
-const selectedCategory = ref<string>("")
-const isCreating = ref(false)
-const saving = ref(false)
-const messageTextarea = ref<HTMLTextAreaElement>()
+const selectedTemplate = ref<WhatsAppPreset | null>(null);
+const selectedCategory = ref<string>('');
+const isCreating = ref(false);
+const saving = ref(false);
+const messageTextarea = ref<HTMLTextAreaElement>();
 
 // Formulario de plantilla
 const templateForm = ref({
-  name: "",
-  category: "custom" as "disciplinary" | "administrative" | "reminder" | "custom",
-  template: "",
+  name: '',
+  category: 'custom' as 'disciplinary' | 'administrative' | 'reminder' | 'custom',
+  template: '',
   isActive: true,
   order: 999,
-})
+});
 
 // Variables disponibles
 const availableVariables = [
   {
-    key: "{studentName}",
-    label: "Nombre del estudiante",
-    description: "Nombre completo del estudiante",
+    key: '{studentName}',
+    label: 'Nombre del estudiante',
+    description: 'Nombre completo del estudiante',
   },
   {
-    key: "{representanteName}",
-    label: "Nombre del representante",
-    description: "Nombre del padre/madre/representante",
+    key: '{representanteName}',
+    label: 'Nombre del representante',
+    description: 'Nombre del padre/madre/representante',
   },
   {
-    key: "{representantePhone}",
-    label: "Teléfono",
-    description: "Número de teléfono del representante",
+    key: '{representantePhone}',
+    label: 'Teléfono',
+    description: 'Número de teléfono del representante',
   },
-  {key: "{className}", label: "Clase", description: "Nombre de la clase o materia"},
-  {key: "{date}", label: "Fecha", description: "Fecha actual"},
-  {key: "{absences}", label: "Ausencias", description: "Número de ausencias"},
-  {key: "{teacherName}", label: "Maestro", description: "Nombre del maestro"},
-  {key: "{institutionName}", label: "Institución", description: "Nombre de la institución"},
-  {key: "{startDate}", label: "Fecha de inicio", description: "Fecha de inicio del período"},
-  {key: "{endDate}", label: "Fecha de fin", description: "Fecha de fin del período"},
+  { key: '{className}', label: 'Clase', description: 'Nombre de la clase o materia' },
+  { key: '{date}', label: 'Fecha', description: 'Fecha actual' },
+  { key: '{absences}', label: 'Ausencias', description: 'Número de ausencias' },
+  { key: '{teacherName}', label: 'Maestro', description: 'Nombre del maestro' },
+  { key: '{institutionName}', label: 'Institución', description: 'Nombre de la institución' },
+  { key: '{startDate}', label: 'Fecha de inicio', description: 'Fecha de inicio del período' },
+  { key: '{endDate}', label: 'Fecha de fin', description: 'Fecha de fin del período' },
   {
-    key: "{attendanceRate}",
-    label: "Porcentaje de asistencia",
-    description: "Porcentaje de asistencia del estudiante",
+    key: '{attendanceRate}',
+    label: 'Porcentaje de asistencia',
+    description: 'Porcentaje de asistencia del estudiante',
   },
   {
-    key: "{absenceDetails}",
-    label: "Detalles de ausencias",
-    description: "Detalles específicos de las ausencias",
+    key: '{absenceDetails}',
+    label: 'Detalles de ausencias',
+    description: 'Detalles específicos de las ausencias',
   },
-]
+];
 
 // Datos de ejemplo para vista previa
 const sampleData: MessageData = {
-  studentName: "Juan Pérez",
-  representanteName: "María Pérez",
-  representantePhone: "+58 412-123-4567",
-  className: "Piano Intermedio",
-  date: new Date().toLocaleDateString("es-ES"),
+  studentName: 'Juan Pérez',
+  representanteName: 'María Pérez',
+  representantePhone: '+58 412-123-4567',
+  className: 'Piano Intermedio',
+  date: new Date().toLocaleDateString('es-ES'),
   absences: 3,
-  teacherName: "Prof. García",
-  institutionName: "Academia de Música",
-  startDate: "01/01/2024",
-  endDate: "31/03/2024",
+  teacherName: 'Prof. García',
+  institutionName: 'Academia de Música',
+  startDate: '01/01/2024',
+  endDate: '31/03/2024',
   attendanceRate: 75,
-  absenceDetails: "Ausencias: 05/01/2024, 12/01/2024, 19/01/2024",
-}
+  absenceDetails: 'Ausencias: 05/01/2024, 12/01/2024, 19/01/2024',
+};
 
 // Computed properties
 const filteredTemplates = computed(() => {
-  if (!selectedCategory.value) return presets.value
-  return presets.value.filter((template) => template.category === selectedCategory.value)
-})
+  if (!selectedCategory.value) return presets.value;
+  return presets.value.filter((template) => template.category === selectedCategory.value);
+});
 
 const previewMessage = computed(() => {
-  if (!templateForm.value.template) return ""
-  return processTemplate(templateForm.value.template, sampleData)
-})
+  if (!templateForm.value.template) return '';
+  return processTemplate(templateForm.value.template, sampleData);
+});
 
 const isFormValid = computed(() => {
   return (
     templateForm.value.name.trim() &&
     templateForm.value.template.trim() &&
     templateForm.value.category
-  )
-})
+  );
+});
 
 // Métodos
 const closeModal = () => {
-  selectedTemplate.value = null
-  isCreating.value = false
-  resetForm()
-  emit("close")
-}
+  selectedTemplate.value = null;
+  isCreating.value = false;
+  resetForm();
+  emit('close');
+};
 
 const createNewTemplate = () => {
-  selectedTemplate.value = null
-  isCreating.value = true
-  resetForm()
-}
+  selectedTemplate.value = null;
+  isCreating.value = true;
+  resetForm();
+};
 
 const selectTemplate = (template: WhatsAppPreset) => {
-  selectedTemplate.value = template
-  isCreating.value = false
-  fillForm(template)
-}
+  selectedTemplate.value = template;
+  isCreating.value = false;
+  fillForm(template);
+};
 
 const editTemplate = (template: WhatsAppPreset) => {
-  if (template.isSystem) return
-  selectTemplate(template)
-}
+  if (template.isSystem) return;
+  selectTemplate(template);
+};
 
 const resetForm = () => {
   templateForm.value = {
-    name: "",
-    category: "custom" as "disciplinary" | "administrative" | "reminder" | "custom",
-    template: "",
+    name: '',
+    category: 'custom' as 'disciplinary' | 'administrative' | 'reminder' | 'custom',
+    template: '',
     isActive: true,
     order: 999,
-  }
-}
+  };
+};
 
 const fillForm = (template: WhatsAppPreset) => {
   templateForm.value = {
@@ -408,30 +408,30 @@ const fillForm = (template: WhatsAppPreset) => {
     template: template.template,
     isActive: template.isActive,
     order: template.order,
-  }
-}
+  };
+};
 
 const insertVariable = (variableKey: string) => {
-  if (!messageTextarea.value) return
+  if (!messageTextarea.value) return;
 
-  const textarea = messageTextarea.value
-  const startPos = textarea.selectionStart
-  const endPos = textarea.selectionEnd
-  const textBefore = templateForm.value.template.substring(0, startPos)
-  const textAfter = templateForm.value.template.substring(endPos)
+  const textarea = messageTextarea.value;
+  const startPos = textarea.selectionStart;
+  const endPos = textarea.selectionEnd;
+  const textBefore = templateForm.value.template.substring(0, startPos);
+  const textAfter = templateForm.value.template.substring(endPos);
 
-  templateForm.value.template = textBefore + variableKey + textAfter
+  templateForm.value.template = textBefore + variableKey + textAfter;
 
   nextTick(() => {
-    textarea.focus()
-    textarea.setSelectionRange(startPos + variableKey.length, startPos + variableKey.length)
-  })
-}
+    textarea.focus();
+    textarea.setSelectionRange(startPos + variableKey.length, startPos + variableKey.length);
+  });
+};
 
 const saveTemplate = async () => {
-  if (!isFormValid.value) return
+  if (!isFormValid.value) return;
 
-  saving.value = true
+  saving.value = true;
 
   try {
     const templateData = {
@@ -442,105 +442,105 @@ const saveTemplate = async () => {
       isActive: templateForm.value.isActive,
       isSystem: false,
       order: templateForm.value.order,
-      createdBy: "",
-    }
+      createdBy: '',
+    };
 
     if (isCreating.value) {
-      await addPreset(templateData)
-      emit("template-created", {
+      await addPreset(templateData);
+      emit('template-created', {
         ...templateData,
-        id: "",
+        id: '',
         createdAt: new Date(),
         updatedAt: new Date(),
-      })
+      });
     } else if (selectedTemplate.value && !selectedTemplate.value.isSystem) {
-      await updatePreset(selectedTemplate.value.id, templateData)
-      emit("template-updated", {
+      await updatePreset(selectedTemplate.value.id, templateData);
+      emit('template-updated', {
         ...templateData,
         id: selectedTemplate.value.id,
         createdAt: selectedTemplate.value.createdAt,
         updatedAt: new Date(),
-      })
+      });
     }
 
-    isCreating.value = false
-    selectedTemplate.value = null
-    resetForm()
+    isCreating.value = false;
+    selectedTemplate.value = null;
+    resetForm();
   } catch (err) {
-    console.error("Error saving template:", err)
-    alert("Error al guardar la plantilla")
+    console.error('Error saving template:', err);
+    alert('Error al guardar la plantilla');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const duplicateTemplate = async () => {
-  if (!selectedTemplate.value) return
+  if (!selectedTemplate.value) return;
 
-  templateForm.value.name = `${selectedTemplate.value.name} (Copia)`
-  isCreating.value = true
-  selectedTemplate.value = null
-}
+  templateForm.value.name = `${selectedTemplate.value.name} (Copia)`;
+  isCreating.value = true;
+  selectedTemplate.value = null;
+};
 
 const cancelEdit = () => {
   if (isCreating.value) {
-    isCreating.value = false
-    selectedTemplate.value = null
+    isCreating.value = false;
+    selectedTemplate.value = null;
   } else if (selectedTemplate.value) {
-    fillForm(selectedTemplate.value)
+    fillForm(selectedTemplate.value);
   }
-  resetForm()
-}
+  resetForm();
+};
 
 const deleteTemplate = async (templateId: string) => {
-  if (!confirm("¿Estás seguro de que quieres eliminar esta plantilla?")) return
+  if (!confirm('¿Estás seguro de que quieres eliminar esta plantilla?')) return;
 
   try {
-    await deletePreset(templateId)
+    await deletePreset(templateId);
     if (selectedTemplate.value?.id === templateId) {
-      selectedTemplate.value = null
-      resetForm()
+      selectedTemplate.value = null;
+      resetForm();
     }
   } catch (err) {
-    console.error("Error deleting template:", err)
-    alert("Error al eliminar la plantilla")
+    console.error('Error deleting template:', err);
+    alert('Error al eliminar la plantilla');
   }
-}
+};
 
 const extractVariables = (template: string): string[] => {
-  const matches = template.match(/{[^}]+}/g)
-  return matches ? [...new Set(matches)] : []
-}
+  const matches = template.match(/{[^}]+}/g);
+  return matches ? [...new Set(matches)] : [];
+};
 
 const getCategoryClass = (category: string) => {
   const classes = {
-    disciplinary: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-    administrative: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    reminder: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-    custom: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-  }
-  return classes[category as keyof typeof classes] || classes.custom
-}
+    disciplinary: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    administrative: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    reminder: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+    custom: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  };
+  return classes[category as keyof typeof classes] || classes.custom;
+};
 
 const getCategoryLabel = (category: string) => {
   const labels = {
-    disciplinary: "Disciplinaria",
-    administrative: "Administrativa",
-    reminder: "Recordatorio",
-    custom: "Personalizada",
-  }
-  return labels[category as keyof typeof labels] || "Personalizada"
-}
+    disciplinary: 'Disciplinaria',
+    administrative: 'Administrativa',
+    reminder: 'Recordatorio',
+    custom: 'Personalizada',
+  };
+  return labels[category as keyof typeof labels] || 'Personalizada';
+};
 
 // Watchers
 watch(
   () => props.isOpen,
   (isOpen) => {
     if (isOpen) {
-      loadPresets()
+      loadPresets();
     }
-  }
-)
+  },
+);
 </script>
 
 <style scoped>

@@ -681,13 +681,13 @@ v-if="page !== '...'" :class="[currentPage === page ? 'bg-blue-600 text-white' :
 </template>
 
 <script setup lang="ts">
-import "jspdf-autotable"
-import {jsPDF} from "jspdf"
-import {es} from "date-fns/locale"
-import {ref, computed, onMounted, watch} from "vue"
-import {useClassesStore} from "../modulos/Classes/store/classes"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import {useAttendanceStore} from "../modulos/Attendance/store/attendance"
+import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import { es } from 'date-fns/locale';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useClassesStore } from '../modulos/Classes/store/classes';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
 import {
   format,
   addDays,
@@ -704,15 +704,15 @@ import {
   isValid,
   subDays,
   isWithinInterval,
-} from "date-fns"
+} from 'date-fns';
 
 // Enhanced types and interfaces
 const statusLabels = {
-  P: "Presente",
-  A: "Ausente",
-  T: "Tarde",
-  J: "Justificado",
-}
+  P: 'Presente',
+  A: 'Ausente',
+  T: 'Tarde',
+  J: 'Justificado',
+};
 
 interface AttendanceRecord {
   studentId: string
@@ -720,7 +720,7 @@ interface AttendanceRecord {
   status: AttendanceStatusType
 }
 
-type AttendanceStatusType = "P" | "A" | "T" | "J" | ""
+type AttendanceStatusType = 'P' | 'A' | 'T' | 'J' | ''
 
 interface Student {
   id: string
@@ -743,172 +743,172 @@ interface ClassSchedule {
 }
 
 // Update type for color arrays
-const createColorArray = (r: number, g: number, b: number): [number, number, number] => [r, g, b]
+const createColorArray = (r: number, g: number, b: number): [number, number, number] => [r, g, b];
 
 // Fix the setFillColorForCell function being undefined
 function setFillColorForCell(doc: jsPDF, color: [number, number, number]) {
-  doc.setFillColor(color[0], color[1], color[2])
+  doc.setFillColor(color[0], color[1], color[2]);
 }
 
 // Import stores
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
 
 // State - Adding the missing variables
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const students = ref<Student[]>([])
-const allStudents = ref<Student[]>([])
-const classes = ref<Class[]>([])
-const attendance = ref<AttendanceRecord[]>([])
-const classSchedules = ref<ClassSchedule[]>([])
-const currentDate = ref(new Date())
-const viewMode = ref<"week" | "biweek" | "month" | "custom">("week")
-const selectedClass = ref<string>("")
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+const students = ref<Student[]>([]);
+const allStudents = ref<Student[]>([]);
+const classes = ref<Class[]>([]);
+const attendance = ref<AttendanceRecord[]>([]);
+const classSchedules = ref<ClassSchedule[]>([]);
+const currentDate = ref(new Date());
+const viewMode = ref<'week' | 'biweek' | 'month' | 'custom'>('week');
+const selectedClass = ref<string>('');
 
 // New reactive state
-const searchQuery = ref("")
-const selectedStatuses = ref(["P", "A", "T", "J"])
-const sortColumn = ref("name")
-const sortDirection = ref<"asc" | "desc">("asc")
-const showDateRangeModal = ref(false)
+const searchQuery = ref('');
+const selectedStatuses = ref(['P', 'A', 'T', 'J']);
+const sortColumn = ref('name');
+const sortDirection = ref<'asc' | 'desc'>('asc');
+const showDateRangeModal = ref(false);
 const customDateRange = ref({
-  start: format(subDays(new Date(), 7), "yyyy-MM-dd"),
-  end: format(new Date(), "yyyy-MM-dd"),
-})
+  start: format(subDays(new Date(), 7), 'yyyy-MM-dd'),
+  end: format(new Date(), 'yyyy-MM-dd'),
+});
 
 // Pagination
-const currentPage = ref(1)
-const pageSize = ref(10)
+const currentPage = ref(1);
+const pageSize = ref(10);
 
 // Filtered students by selected class
 const filteredStudents = computed(() => {
   if (!selectedClass.value) {
-    return students.value
+    return students.value;
   }
 
-  return students.value.filter((student) => student.classIds?.includes(selectedClass.value))
-})
+  return students.value.filter((student) => student.classIds?.includes(selectedClass.value));
+});
 
 // Students on current page
 const paginatedStudents = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
 
   // First filter by search query
-  const searchFiltered = searchFilteredStudents.value
+  const searchFiltered = searchFilteredStudents.value;
 
-  return searchFiltered.slice(start, end)
-})
+  return searchFiltered.slice(start, end);
+});
 
 // Total pages
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(searchFilteredStudents.value.length / pageSize.value))
-)
+  Math.max(1, Math.ceil(searchFilteredStudents.value.length / pageSize.value)),
+);
 
 // Pagination range with ellipsis
 const paginationRange = computed(() => {
-  const total = totalPages.value
-  const current = currentPage.value
-  const range = []
+  const total = totalPages.value;
+  const current = currentPage.value;
+  const range = [];
 
   if (total <= 7) {
     for (let i = 1; i <= total; i++) {
-      range.push(i)
+      range.push(i);
     }
   } else {
     if (current <= 3) {
       for (let i = 1; i <= 5; i++) {
-        range.push(i)
+        range.push(i);
       }
-      range.push("...", total)
+      range.push('...', total);
     } else if (current >= total - 2) {
-      range.push(1, "...")
+      range.push(1, '...');
       for (let i = total - 4; i <= total; i++) {
-        range.push(i)
+        range.push(i);
       }
     } else {
-      range.push(1, "...")
+      range.push(1, '...');
       for (let i = current - 1; i <= current + 1; i++) {
-        range.push(i)
+        range.push(i);
       }
-      range.push("...", total)
+      range.push('...', total);
     }
   }
 
-  return range
-})
+  return range;
+});
 
 // Go to today function
 function goToToday() {
-  currentDate.value = new Date()
-  loadAttendanceData()
+  currentDate.value = new Date();
+  loadAttendanceData();
 }
 
 // Sort functions
 function sortBy(column: string) {
   if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc"
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
   } else {
-    sortColumn.value = column
-    sortDirection.value = "asc"
+    sortColumn.value = column;
+    sortDirection.value = 'asc';
   }
 }
 
 // Set preset date range
 function setPresetRange(preset: string) {
-  const today = new Date()
+  const today = new Date();
 
   switch (preset) {
-    case "week":
-      customDateRange.value.start = format(startOfWeek(today, {weekStartsOn: 1}), "yyyy-MM-dd")
-      customDateRange.value.end = format(endOfWeek(today, {weekStartsOn: 1}), "yyyy-MM-dd")
-      break
-    case "month":
-      customDateRange.value.start = format(startOfMonth(today), "yyyy-MM-dd")
-      customDateRange.value.end = format(endOfMonth(today), "yyyy-MM-dd")
-      break
-    case "lastWeek":
-      const lastWeekStart = subWeeks(startOfWeek(today, {weekStartsOn: 1}), 1)
-      customDateRange.value.start = format(lastWeekStart, "yyyy-MM-dd")
-      customDateRange.value.end = format(addDays(lastWeekStart, 6), "yyyy-MM-dd")
-      break
-    case "lastMonth":
-      const lastMonth = subMonths(today, 1)
-      customDateRange.value.start = format(startOfMonth(lastMonth), "yyyy-MM-dd")
-      customDateRange.value.end = format(endOfMonth(lastMonth), "yyyy-MM-dd")
-      break
+  case 'week':
+    customDateRange.value.start = format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    customDateRange.value.end = format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    break;
+  case 'month':
+    customDateRange.value.start = format(startOfMonth(today), 'yyyy-MM-dd');
+    customDateRange.value.end = format(endOfMonth(today), 'yyyy-MM-dd');
+    break;
+  case 'lastWeek':
+    const lastWeekStart = subWeeks(startOfWeek(today, { weekStartsOn: 1 }), 1);
+    customDateRange.value.start = format(lastWeekStart, 'yyyy-MM-dd');
+    customDateRange.value.end = format(addDays(lastWeekStart, 6), 'yyyy-MM-dd');
+    break;
+  case 'lastMonth':
+    const lastMonth = subMonths(today, 1);
+    customDateRange.value.start = format(startOfMonth(lastMonth), 'yyyy-MM-dd');
+    customDateRange.value.end = format(endOfMonth(lastMonth), 'yyyy-MM-dd');
+    break;
   }
 }
 
 // Apply custom date range
 function applyCustomDateRange() {
   // Validate dates
-  const startDate = parseISO(customDateRange.value.start)
-  const endDate = parseISO(customDateRange.value.end)
+  const startDate = parseISO(customDateRange.value.start);
+  const endDate = parseISO(customDateRange.value.end);
 
   if (!isValid(startDate) || !isValid(endDate)) {
-    alert("Por favor ingrese fechas válidas")
-    return
+    alert('Por favor ingrese fechas válidas');
+    return;
   }
 
   if (endDate < startDate) {
-    alert("La fecha de fin debe ser posterior a la fecha de inicio")
-    return
+    alert('La fecha de fin debe ser posterior a la fecha de inicio');
+    return;
   }
 
-  viewMode.value = "custom"
-  currentDate.value = new Date(customDateRange.value.start)
-  showDateRangeModal.value = false
-  loadAttendanceData()
+  viewMode.value = 'custom';
+  currentDate.value = new Date(customDateRange.value.start);
+  showDateRangeModal.value = false;
+  loadAttendanceData();
 }
 
 // Apply filters
 function applyFilters() {
   // Reset to first page when filters change
-  currentPage.value = 1
-  loadAttendanceData()
+  currentPage.value = 1;
+  loadAttendanceData();
 }
 
 // Enhanced computed properties
@@ -916,349 +916,349 @@ function applyFilters() {
 // Filter students with search query
 const searchFilteredStudents = computed(() => {
   if (!searchQuery.value.trim()) {
-    return filteredStudents.value
+    return filteredStudents.value;
   }
 
-  const query = searchQuery.value.toLowerCase().trim()
+  const query = searchQuery.value.toLowerCase().trim();
   return filteredStudents.value.filter(
     (student) =>
-      student.name.toLowerCase().includes(query) || student.classInfo?.toLowerCase().includes(query)
-  )
-})
+      student.name.toLowerCase().includes(query) || student.classInfo?.toLowerCase().includes(query),
+  );
+});
 
 // Sorted students based on column and direction
 const sortedStudents = computed(() => {
   // Start with paginated students that are filtered by search query
-  const students = [...paginatedStudents.value]
+  const students = [...paginatedStudents.value];
 
   // Define status priority order: Present > Late > Justified > Absent > No classes
-  const attendancePriority = {P: 1, T: 2, J: 3, A: 4, "-": 5, "": 6}
+  const attendancePriority = { P: 1, T: 2, J: 3, A: 4, '-': 5, '': 6 };
 
   // First group students by their predominant attendance status
   students.sort((a, b) => {
     // Get predominant status for each student
     const getStudentMainStatus = (student) => {
       // Count status occurrences
-      const statusCounts = {P: 0, T: 0, J: 0, A: 0, "-": 0, "": 0}
+      const statusCounts = { P: 0, T: 0, J: 0, A: 0, '-': 0, '': 0 };
 
       for (const day of visibleDays.value) {
-        const status = getAttendanceStatus(student.id, day)
+        const status = getAttendanceStatus(student.id, day);
         if (status in statusCounts) {
-          statusCounts[status]++
+          statusCounts[status]++;
         }
       }
 
       // Find status with highest priority that has any occurrences
-      for (const status of ["P", "T", "J", "A", "-", ""]) {
+      for (const status of ['P', 'T', 'J', 'A', '-', '']) {
         if (statusCounts[status] > 0) {
-          return status
+          return status;
         }
       }
 
-      return ""
-    }
+      return '';
+    };
 
-    const statusA = getStudentMainStatus(a)
-    const statusB = getStudentMainStatus(b)
+    const statusA = getStudentMainStatus(a);
+    const statusB = getStudentMainStatus(b);
 
     // Compare by status priority first
-    const priorityDiff = attendancePriority[statusA] - attendancePriority[statusB]
-    if (priorityDiff !== 0) return priorityDiff
+    const priorityDiff = attendancePriority[statusA] - attendancePriority[statusB];
+    if (priorityDiff !== 0) return priorityDiff;
 
     // If same status group, then apply the selected sort within the group
-    if (sortColumn.value === "name") {
+    if (sortColumn.value === 'name') {
       // Sort alphabetically by name within the same status group
-      const comparison = a.name.localeCompare(b.name)
-      return sortDirection.value === "asc" ? comparison : -comparison
-    } else if (sortColumn.value === "attendance") {
+      const comparison = a.name.localeCompare(b.name);
+      return sortDirection.value === 'asc' ? comparison : -comparison;
+    } else if (sortColumn.value === 'attendance') {
       // Sort by attendance rate within the same status group
-      const rateA = getStudentAttendanceRate(a.id)
-      const rateB = getStudentAttendanceRate(b.id)
-      const comparison = rateA - rateB
-      return sortDirection.value === "asc" ? comparison : -comparison
+      const rateA = getStudentAttendanceRate(a.id);
+      const rateB = getStudentAttendanceRate(b.id);
+      const comparison = rateA - rateB;
+      return sortDirection.value === 'asc' ? comparison : -comparison;
     }
 
-    return 0
-  })
+    return 0;
+  });
 
-  return students
-})
+  return students;
+});
 
 // Days visible based on view mode or custom range
 const visibleDays = computed(() => {
-  let start: Date
-  let end: Date
+  let start: Date;
+  let end: Date;
 
-  if (viewMode.value === "custom") {
-    start = parseISO(customDateRange.value.start)
-    end = parseISO(customDateRange.value.end)
+  if (viewMode.value === 'custom') {
+    start = parseISO(customDateRange.value.start);
+    end = parseISO(customDateRange.value.end);
   } else {
     switch (viewMode.value) {
-      case "week":
-        start = startOfWeek(currentDate.value, {weekStartsOn: 1})
-        end = endOfWeek(currentDate.value, {weekStartsOn: 1})
-        break
-      case "biweek":
-        start = startOfWeek(currentDate.value, {weekStartsOn: 1})
-        end = addDays(endOfWeek(currentDate.value, {weekStartsOn: 1}), 7)
-        break
-      case "month":
-        start = startOfMonth(currentDate.value)
-        end = endOfMonth(currentDate.value)
-        break
-      default:
-        start = startOfWeek(currentDate.value, {weekStartsOn: 1})
-        end = endOfWeek(currentDate.value, {weekStartsOn: 1})
+    case 'week':
+      start = startOfWeek(currentDate.value, { weekStartsOn: 1 });
+      end = endOfWeek(currentDate.value, { weekStartsOn: 1 });
+      break;
+    case 'biweek':
+      start = startOfWeek(currentDate.value, { weekStartsOn: 1 });
+      end = addDays(endOfWeek(currentDate.value, { weekStartsOn: 1 }), 7);
+      break;
+    case 'month':
+      start = startOfMonth(currentDate.value);
+      end = endOfMonth(currentDate.value);
+      break;
+    default:
+      start = startOfWeek(currentDate.value, { weekStartsOn: 1 });
+      end = endOfWeek(currentDate.value, { weekStartsOn: 1 });
     }
   }
 
   // Limit the number of days to display (max 31 days)
-  const allDays = eachDayOfInterval({start, end})
+  const allDays = eachDayOfInterval({ start, end });
   if (allDays.length > 31) {
-    return allDays.slice(0, 31)
+    return allDays.slice(0, 31);
   }
-  return allDays
-})
+  return allDays;
+});
 
 // Texto para mostrar el rango de fechas actual
 const dateRangeText = computed(() => {
-  const firstDay = visibleDays.value[0]
-  const lastDay = visibleDays.value[visibleDays.value.length - 1]
+  const firstDay = visibleDays.value[0];
+  const lastDay = visibleDays.value[visibleDays.value.length - 1];
 
-  const firstMonth = format(firstDay, "MMMM", {locale: es})
-  const lastMonth = format(lastDay, "MMMM", {locale: es})
+  const firstMonth = format(firstDay, 'MMMM', { locale: es });
+  const lastMonth = format(lastDay, 'MMMM', { locale: es });
 
   if (firstMonth === lastMonth) {
-    return `${format(firstDay, "d", {locale: es})} - ${format(lastDay, "d", {locale: es})} ${firstMonth}`
+    return `${format(firstDay, 'd', { locale: es })} - ${format(lastDay, 'd', { locale: es })} ${firstMonth}`;
   } else {
-    return `${format(firstDay, "d MMM", {locale: es})} - ${format(lastDay, "d MMM", {locale: es})}`
+    return `${format(firstDay, 'd MMM', { locale: es })} - ${format(lastDay, 'd MMM', { locale: es })}`;
   }
-})
+});
 
 // Formatear nombre de día
 function formatDayName(date: Date): string {
-  return format(date, "EEE", {locale: es})
+  return format(date, 'EEE', { locale: es });
 }
 
 // Formatear número de día
 function formatDayNumber(date: Date): string {
-  return format(date, "d", {locale: es})
+  return format(date, 'd', { locale: es });
 }
 
 // Obtener iniciales para avatar
 function getInitials(name: string): string {
   return name
-    .split(" ")
+    .split(' ')
     .map((word) => word[0])
     .slice(0, 2)
-    .join("")
-    .toUpperCase()
+    .join('')
+    .toUpperCase();
 }
 
 // Obtener estado de asistencia
 function getAttendanceStatus(studentId: string, date: Date): string {
-  const dateStr = format(date, "yyyy-MM-dd")
-  const record = attendance.value.find((a) => a.studentId === studentId && a.date === dateStr)
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const record = attendance.value.find((a) => a.studentId === studentId && a.date === dateStr);
 
   if (!record) {
-    const dayOfWeek = date.getDay()
+    const dayOfWeek = date.getDay();
     const hasClass = classSchedules.value.some(
-      (s) => s.studentId === studentId && s.dayOfWeek === dayOfWeek
-    )
-    return hasClass ? "-" : ""
+      (s) => s.studentId === studentId && s.dayOfWeek === dayOfWeek,
+    );
+    return hasClass ? '-' : '';
   }
 
-  return record.status
+  return record.status;
 }
 
 // Obtener clase CSS para celda de asistencia
 function getAttendanceClass(studentId: string, date: Date): string {
-  const dateStr = format(date, "yyyy-MM-dd")
-  const record = attendance.value.find((a) => a.studentId === studentId && a.date === dateStr)
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const record = attendance.value.find((a) => a.studentId === studentId && a.date === dateStr);
 
   // Si no hay registro pero ese día de la semana tiene clase programada, muestra gris
   if (!record) {
-    const dayOfWeek = date.getDay()
+    const dayOfWeek = date.getDay();
     const hasClass = classSchedules.value.some(
-      (s) => s.studentId === studentId && s.dayOfWeek === dayOfWeek
-    )
+      (s) => s.studentId === studentId && s.dayOfWeek === dayOfWeek,
+    );
 
     return hasClass
-      ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-600"
-      : ""
+      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-600'
+      : '';
   }
 
   switch (record.status) {
-    case "P":
-      return "bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800"
-    case "A":
-      return "bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800"
-    case "T":
-      return "bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-800"
-    case "J":
-      return "bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800"
-    default:
-      return ""
+  case 'P':
+    return 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800';
+  case 'A':
+    return 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800';
+  case 'T':
+    return 'bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-800';
+  case 'J':
+    return 'bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800';
+  default:
+    return '';
   }
 }
 
 // Navegar al período anterior
 function navigatePrevious() {
   switch (viewMode.value) {
-    case "week":
-      currentDate.value = subWeeks(currentDate.value, 1)
-      break
-    case "biweek":
-      currentDate.value = subWeeks(currentDate.value, 2)
-      break
-    case "month":
-      currentDate.value = subMonths(currentDate.value, 1)
-      break
+  case 'week':
+    currentDate.value = subWeeks(currentDate.value, 1);
+    break;
+  case 'biweek':
+    currentDate.value = subWeeks(currentDate.value, 2);
+    break;
+  case 'month':
+    currentDate.value = subMonths(currentDate.value, 1);
+    break;
   }
-  loadAttendanceData()
+  loadAttendanceData();
 }
 
 // Navegar al período siguiente
 function navigateNext() {
   switch (viewMode.value) {
-    case "week":
-      currentDate.value = addWeeks(currentDate.value, 1)
-      break
-    case "biweek":
-      currentDate.value = addWeeks(currentDate.value, 2)
-      break
-    case "month":
-      currentDate.value = addMonths(currentDate.value, 1)
-      break
+  case 'week':
+    currentDate.value = addWeeks(currentDate.value, 1);
+    break;
+  case 'biweek':
+    currentDate.value = addWeeks(currentDate.value, 2);
+    break;
+  case 'month':
+    currentDate.value = addMonths(currentDate.value, 1);
+    break;
   }
-  loadAttendanceData()
+  loadAttendanceData();
 }
 
 // Cambiar modo de visualización
 function changeViewMode() {
-  if (viewMode.value === "custom") {
+  if (viewMode.value === 'custom') {
     // When switching to custom, show the date picker modal
-    showDateRangeModal.value = true
+    showDateRangeModal.value = true;
   } else {
     // For standard modes, just load the data
-    loadAttendanceData()
+    loadAttendanceData();
   }
 }
 
 // Cambiar clase seleccionada
 function handleClassChange() {
   // Resetear paginación cuando cambia la clase
-  currentPage.value = 1
-  loadAttendanceData()
+  currentPage.value = 1;
+  loadAttendanceData();
 }
 
 // Cambiar página actual
 function changePage(page: string | number) {
-  if (typeof page === "string") {
-    return
+  if (typeof page === 'string') {
+    return;
   }
-  currentPage.value = page
+  currentPage.value = page;
 }
 
 // Get student attendance rate
 function getStudentAttendanceRate(studentId: string): number {
   // Count total days the student should attend
-  let totalDays = 0
-  let presentDays = 0
+  let totalDays = 0;
+  let presentDays = 0;
 
   visibleDays.value.forEach((day) => {
-    const dateStr = format(day, "yyyy-MM-dd")
-    const record = attendance.value.find((a) => a.studentId === studentId && a.date === dateStr)
+    const dateStr = format(day, 'yyyy-MM-dd');
+    const record = attendance.value.find((a) => a.studentId === studentId && a.date === dateStr);
 
     // Check if student has a class scheduled for this day
-    const dayOfWeek = day.getDay()
+    const dayOfWeek = day.getDay();
     const hasClass = classSchedules.value.some(
-      (s) => s.studentId === studentId && s.dayOfWeek === dayOfWeek
-    )
+      (s) => s.studentId === studentId && s.dayOfWeek === dayOfWeek,
+    );
 
     if (hasClass) {
-      totalDays++
+      totalDays++;
 
-      if (record && (record.status === "P" || record.status === "T" || record.status === "J")) {
-        presentDays++
+      if (record && (record.status === 'P' || record.status === 'T' || record.status === 'J')) {
+        presentDays++;
       }
     }
-  })
+  });
 
-  return totalDays ? Math.round((presentDays / totalDays) * 100) : 0
+  return totalDays ? Math.round((presentDays / totalDays) * 100) : 0;
 }
 
 // Get CSS class for student attendance percentage
 function getStudentAttendanceClass(studentId: string): string {
-  const rate = getStudentAttendanceRate(studentId)
+  const rate = getStudentAttendanceRate(studentId);
 
-  if (rate >= 90) return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-  if (rate >= 75) return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
-  if (rate >= 50) return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
-  return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+  if (rate >= 90) return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+  if (rate >= 75) return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200';
+  if (rate >= 50) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
+  return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
 }
 
 // Get tooltip for attendance cell
 function getAttendanceTooltip(studentId: string, date: Date): string {
-  const status = getAttendanceStatus(studentId, date)
-  const dateFormatted = format(date, "PPP", {locale: es})
+  const status = getAttendanceStatus(studentId, date);
+  const dateFormatted = format(date, 'PPP', { locale: es });
 
   switch (status) {
-    case "P":
-      return `Presente el ${dateFormatted}`
-    case "A":
-      return `Ausente el ${dateFormatted}`
-    case "T":
-      return `Tarde el ${dateFormatted}`
-    case "J":
-      return `Justificado el ${dateFormatted}`
-    case "-":
-      return `Sin registro el ${dateFormatted}`
-    default:
-      return `Sin clase el ${dateFormatted}`
+  case 'P':
+    return `Presente el ${dateFormatted}`;
+  case 'A':
+    return `Ausente el ${dateFormatted}`;
+  case 'T':
+    return `Tarde el ${dateFormatted}`;
+  case 'J':
+    return `Justificado el ${dateFormatted}`;
+  case '-':
+    return `Sin registro el ${dateFormatted}`;
+  default:
+    return `Sin clase el ${dateFormatted}`;
   }
 }
 
 // Calculate attendance statistics
 const attendanceStats = computed(() => {
-  let presentCount = 0
-  let absentCount = 0
-  let lateCount = 0
-  let justifiedCount = 0
-  let totalRecords = 0
+  let presentCount = 0;
+  let absentCount = 0;
+  let lateCount = 0;
+  let justifiedCount = 0;
+  let totalRecords = 0;
 
   // Count all records by status
   attendance.value.forEach((record) => {
     // Only count if we have a selected student
-    const isStudentInFilteredList = filteredStudents.value.some((s) => s.id === record.studentId)
-    if (!isStudentInFilteredList) return
+    const isStudentInFilteredList = filteredStudents.value.some((s) => s.id === record.studentId);
+    if (!isStudentInFilteredList) return;
 
     // Check if date is within visible range
-    const recordDate = parseISO(record.date)
-    const isDateInRange = visibleDays.value.some((day) => format(day, "yyyy-MM-dd") === record.date)
+    const recordDate = parseISO(record.date);
+    const isDateInRange = visibleDays.value.some((day) => format(day, 'yyyy-MM-dd') === record.date);
 
     if (isDateInRange) {
-      totalRecords++
+      totalRecords++;
 
       switch (record.status) {
-        case "P":
-          presentCount++
-          break
-        case "A":
-          absentCount++
-          break
-        case "T":
-          lateCount++
-          break
-        case "J":
-          justifiedCount++
-          break
+      case 'P':
+        presentCount++;
+        break;
+      case 'A':
+        absentCount++;
+        break;
+      case 'T':
+        lateCount++;
+        break;
+      case 'J':
+        justifiedCount++;
+        break;
       }
     }
-  })
+  });
 
   // Avoid division by zero
-  const total = totalRecords || 1
+  const total = totalRecords || 1;
 
   return {
     presentCount,
@@ -1269,8 +1269,8 @@ const attendanceStats = computed(() => {
     absent: Math.round((absentCount / total) * 100),
     late: Math.round((lateCount / total) * 100),
     justified: Math.round((justifiedCount / total) * 100),
-  }
-})
+  };
+});
 
 // Calculate statistics for students without classes in the visible range
 const studentsWithoutClassesStats = computed(() => {
@@ -1278,135 +1278,135 @@ const studentsWithoutClassesStats = computed(() => {
   const studentsWithoutClasses = students.value.filter((student) => {
     // Check if this student has any scheduled class on any visible day
     const hasClassInVisibleDays = visibleDays.value.some((day) => {
-      const dayOfWeek = day.getDay()
+      const dayOfWeek = day.getDay();
       return classSchedules.value.some(
-        (schedule) => schedule.studentId === student.id && schedule.dayOfWeek === dayOfWeek
-      )
-    })
+        (schedule) => schedule.studentId === student.id && schedule.dayOfWeek === dayOfWeek,
+      );
+    });
 
     // If they don't have classes, include them in the count
-    return !hasClassInVisibleDays
-  })
+    return !hasClassInVisibleDays;
+  });
 
-  const count = studentsWithoutClasses.length
-  const total = students.value.length || 1 // Avoid division by zero
-  const percentage = Math.round((count / total) * 100)
+  const count = studentsWithoutClasses.length;
+  const total = students.value.length || 1; // Avoid division by zero
+  const percentage = Math.round((count / total) * 100);
 
   return {
     count,
     percentage,
-  }
-})
+  };
+});
 
 // Update the async function to handle custom date ranges
 async function loadAttendanceData() {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
     // Get the current date range
-    let startDate: string, endDate: string
+    let startDate: string, endDate: string;
 
-    if (viewMode.value === "custom") {
-      startDate = customDateRange.value.start
-      endDate = customDateRange.value.end
+    if (viewMode.value === 'custom') {
+      startDate = customDateRange.value.start;
+      endDate = customDateRange.value.end;
     } else {
-      startDate = format(visibleDays.value[0], "yyyy-MM-dd")
-      endDate = format(visibleDays.value[visibleDays.value.length - 1], "yyyy-MM-dd")
+      startDate = format(visibleDays.value[0], 'yyyy-MM-dd');
+      endDate = format(visibleDays.value[visibleDays.value.length - 1], 'yyyy-MM-dd');
     }
 
     // Filter students by selected class if needed
     if (selectedClass.value) {
       students.value = allStudents.value.filter((student) =>
-        student.classIds?.includes(selectedClass.value)
-      )
+        student.classIds?.includes(selectedClass.value),
+      );
     } else {
-      students.value = [...allStudents.value]
+      students.value = [...allStudents.value];
     }
 
     // Load attendance data from the store
-    await attendanceStore.fetchAttendanceByDateRange(startDate, endDate)
+    await attendanceStore.fetchAttendanceByDateRange(startDate, endDate);
 
     // Map the records from the store to the format we need
-    const attendanceRecords: AttendanceRecord[] = []
+    const attendanceRecords: AttendanceRecord[] = [];
 
     // Get records from the store
-    const records = attendanceStore.records
+    const records = attendanceStore.records;
 
     for (const record of records) {
       // Skip records without a date or student ID
       if (!record.Fecha || !record.studentId) {
-        continue
+        continue;
       }
 
       // Only include records for the filtered students
-      const isStudentInFilteredList = students.value.some((s) => s.id === record.studentId)
-      if (!isStudentInFilteredList) continue
+      const isStudentInFilteredList = students.value.some((s) => s.id === record.studentId);
+      if (!isStudentInFilteredList) continue;
 
       // Only include records for the selected class if one is selected
-      if (selectedClass.value && record.classId !== selectedClass.value) continue
+      if (selectedClass.value && record.classId !== selectedClass.value) continue;
 
       // Convert attendance status to display format
-      let status: AttendanceStatusType
+      let status: AttendanceStatusType;
 
       switch (record.status) {
-        case "Presente":
-          status = "P"
-          break
-        case "Ausente":
-          status = "A"
-          break
-        case "Tardanza":
-          status = "T"
-          break
-        case "Justificado":
-          status = "J"
-          break
-        default:
-          status = ""
+      case 'Presente':
+        status = 'P';
+        break;
+      case 'Ausente':
+        status = 'A';
+        break;
+      case 'Tardanza':
+        status = 'T';
+        break;
+      case 'Justificado':
+        status = 'J';
+        break;
+      default:
+        status = '';
       }
 
       attendanceRecords.push({
         studentId: record.studentId,
         date: record.Fecha,
         status,
-      })
+      });
     }
 
     // Update the local state with the processed records
-    attendance.value = attendanceRecords
+    attendance.value = attendanceRecords;
 
     // Load class schedules to show the gray cells
-    await loadClassSchedules()
+    await loadClassSchedules();
   } catch (err: any) {
-    error.value = `Error al cargar los datos de asistencia: ${err.message}`
-    console.error("Error cargando datos de asistencia:", err)
+    error.value = `Error al cargar los datos de asistencia: ${err.message}`;
+    console.error('Error cargando datos de asistencia:', err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 // Cargar horarios de clase
 async function loadClassSchedules() {
   // Limpiar horarios anteriores
-  classSchedules.value = []
+  classSchedules.value = [];
 
   try {
     // Para cada estudiante, obtener sus horarios de clase
     for (const student of students.value) {
       // Obtener las clases a las que pertenece el estudiante
-      const studentClassIds = student.classIds || []
+      const studentClassIds = student.classIds || [];
 
       // Si hay una clase seleccionada, filtrar solo por esa
       const classesToProcess = selectedClass.value
         ? studentClassIds.filter((id) => id === selectedClass.value)
-        : studentClassIds
+        : studentClassIds;
 
       // Para cada clase del estudiante
       for (const classId of classesToProcess) {
         // Buscar la clase en el store
-        const classData = classesStore.getClassById(classId)
-        if (!classData || !classData.schedule || !classData.schedule.slots) continue
+        const classData = classesStore.getClassById(classId);
+        if (!classData || !classData.schedule || !classData.schedule.slots) continue;
 
         // Procesar los slots de horario de la clase
         for (const slot of classData.schedule.slots) {
@@ -1419,28 +1419,28 @@ async function loadClassSchedules() {
             viernes: 5,
             sábado: 6,
             domingo: 0,
-          }
+          };
 
-          const dayOfWeek = days[slot.day.toLowerCase() as keyof typeof days]
+          const dayOfWeek = days[slot.day.toLowerCase() as keyof typeof days];
 
           // Agregar el horario de clase
           classSchedules.value.push({
             studentId: student.id,
             dayOfWeek,
             time: slot.startTime,
-          })
+          });
         }
       }
     }
   } catch (error) {
-    console.error("Error al cargar horarios de clase:", error)
+    console.error('Error al cargar horarios de clase:', error);
   }
 }
 
 // Cargar datos iniciales
 async function loadData() {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
     // Cargar clases, estudiantes y configuraciones desde los stores
@@ -1448,104 +1448,104 @@ async function loadData() {
       classesStore.fetchClasses(),
       studentsStore.fetchStudents(),
       // Aquí irían más llamadas para cargar datos iniciales
-    ])
+    ]);
 
     // Obtener clases del store
     classes.value = classesStore.classes.map((cls) => ({
       id: cls.id,
       name: cls.name,
       studentIds: cls.studentIds || [],
-    }))
+    }));
 
     // Preparar estudiantes con información de clases
     const allStudentsData = studentsStore.students.map((student) => {
       // Encontrar clases a las que pertenece el estudiante
-      const studentClasses = classes.value.filter((cls) => cls.studentIds?.includes(student.id))
+      const studentClasses = classes.value.filter((cls) => cls.studentIds?.includes(student.id));
 
       // Agregar información de clase
       return {
         id: student.id,
-        name: `${student.nombre || ""} ${student.apellido || ""}`.trim(),
+        name: `${student.nombre || ''} ${student.apellido || ''}`.trim(),
         photoURL: student.photoURL,
         classIds: studentClasses.map((c) => c.id),
-        classInfo: studentClasses.map((c) => c.name).join(", "),
-      }
-    })
+        classInfo: studentClasses.map((c) => c.name).join(', '),
+      };
+    });
 
     // Guardar todos los estudiantes
-    allStudents.value = allStudentsData
+    allStudents.value = allStudentsData;
 
     // Aplicar filtro inicial
     if (selectedClass.value) {
       students.value = allStudentsData.filter((student) =>
-        student.classIds?.includes(selectedClass.value)
-      )
+        student.classIds?.includes(selectedClass.value),
+      );
     } else {
-      students.value = allStudentsData
+      students.value = allStudentsData;
     }
 
     // Cargar datos de asistencia
-    await loadAttendanceData()
+    await loadAttendanceData();
   } catch (err: any) {
-    console.error("Error al cargar datos iniciales:", err)
-    error.value = `Error al cargar datos: ${err.message}`
+    console.error('Error al cargar datos iniciales:', err);
+    error.value = `Error al cargar datos: ${err.message}`;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 // Exportar a PDF
 async function exportToPdf() {
-  if (students.value.length === 0) return
+  if (students.value.length === 0) return;
 
   try {
     // Crear documento PDF con la importación corregida
     const doc = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: "a4",
-    })
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+    });
 
     // Título del documento
-    doc.setFontSize(16)
-    doc.text("Historial de Asistencia", 14, 15)
+    doc.setFontSize(16);
+    doc.text('Historial de Asistencia', 14, 15);
 
     // Período de fechas
-    doc.setFontSize(10)
-    doc.text(`Período: ${dateRangeText.value}`, 14, 22)
+    doc.setFontSize(10);
+    doc.text(`Período: ${dateRangeText.value}`, 14, 22);
 
     // Clase seleccionada
     if (selectedClass.value) {
-      const className = classes.value.find((c) => c.id === selectedClass.value)?.name || ""
-      doc.text(`Clase: ${className}`, 14, 28)
+      const className = classes.value.find((c) => c.id === selectedClass.value)?.name || '';
+      doc.text(`Clase: ${className}`, 14, 28);
     }
 
     // Fecha de generación
-    doc.text(`Generado el: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 34)
+    doc.text(`Generado el: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 34);
 
     // Preparar datos para la tabla
     const tableHeaders = [
-      "Estudiante",
-      ...visibleDays.value.map((day) => format(day, "EEE d", {locale: es})),
-    ]
+      'Estudiante',
+      ...visibleDays.value.map((day) => format(day, 'EEE d', { locale: es })),
+    ];
 
     const tableBody = students.value.map((student) => {
-      const row = [student.name]
+      const row = [student.name];
 
       visibleDays.value.forEach((day) => {
-        const status = getAttendanceStatus(student.id, day)
-        row.push(status || "-")
-      })
+        const status = getAttendanceStatus(student.id, day);
+        row.push(status || '-');
+      });
 
-      return row
-    })
+      return row;
+    });
 
     // Generar tabla con autoTable
     doc.autoTable({
       startY: 40,
       head: [tableHeaders],
       body: tableBody,
-      theme: "grid",
+      theme: 'grid',
       styles: {
         fontSize: 8,
         cellPadding: 2,
@@ -1553,97 +1553,97 @@ async function exportToPdf() {
       headStyles: {
         fillColor: [70, 130, 180],
         textColor: 255,
-        fontStyle: "bold",
+        fontStyle: 'bold',
       },
       columnStyles: {
-        0: {cellWidth: 40}, // Ancho para la columna de nombres
+        0: { cellWidth: 40 }, // Ancho para la columna de nombres
       },
       // Update didDrawCell function to handle color arrays properly
       didDrawCell: (data: any) => {
         // Colorear celdas según estado
-        if (data.section === "body" && data.column.index > 0) {
-          const status = data.cell.text[0]
-          let fillColor: [number, number, number] | undefined
+        if (data.section === 'body' && data.column.index > 0) {
+          const status = data.cell.text[0];
+          let fillColor: [number, number, number] | undefined;
 
           switch (status) {
-            case "P":
-              fillColor = [200, 250, 200]
-              break
-            case "A":
-              fillColor = [250, 200, 200]
-              break
-            case "T":
-              fillColor = [230, 200, 250]
-              break
-            case "J":
-              fillColor = [200, 220, 250]
-              break
+          case 'P':
+            fillColor = [200, 250, 200];
+            break;
+          case 'A':
+            fillColor = [250, 200, 200];
+            break;
+          case 'T':
+            fillColor = [230, 200, 250];
+            break;
+          case 'J':
+            fillColor = [200, 220, 250];
+            break;
           }
 
-          if (fillColor && status !== "-") {
-            setFillColorForCell(doc, fillColor)
-            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, "F")
-            doc.setTextColor(0)
+          if (fillColor && status !== '-') {
+            setFillColorForCell(doc, fillColor);
+            doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+            doc.setTextColor(0);
             doc.text(
               status,
               data.cell.x + data.cell.width / 2,
               data.cell.y + data.cell.height / 2,
               {
-                align: "center",
-                baseline: "middle",
-              }
-            )
+                align: 'center',
+                baseline: 'middle',
+              },
+            );
           }
         }
       },
-    })
+    });
 
     // Agregar leyenda
-    const legendY = (doc as any).lastAutoTable.finalY + 10
+    const legendY = (doc as any).lastAutoTable.finalY + 10;
 
-    doc.setFontSize(8)
-    doc.text("Leyenda:", 14, legendY)
+    doc.setFontSize(8);
+    doc.text('Leyenda:', 14, legendY);
 
     const legends = [
-      {text: "P: Presente", color: createColorArray(200, 250, 200)},
-      {text: "A: Ausente", color: createColorArray(250, 200, 200)},
-      {text: "T: Tarde", color: createColorArray(230, 200, 250)},
-      {text: "J: Justificado", color: createColorArray(200, 220, 250)},
-      {text: "-: Sin clase", color: createColorArray(240, 240, 240)},
-    ]
+      { text: 'P: Presente', color: createColorArray(200, 250, 200) },
+      { text: 'A: Ausente', color: createColorArray(250, 200, 200) },
+      { text: 'T: Tarde', color: createColorArray(230, 200, 250) },
+      { text: 'J: Justificado', color: createColorArray(200, 220, 250) },
+      { text: '-: Sin clase', color: createColorArray(240, 240, 240) },
+    ];
 
     legends.forEach((item, index) => {
-      const x = 14 + index * 30
-      const y = legendY + 6
+      const x = 14 + index * 30;
+      const y = legendY + 6;
 
       // Dibujar rectángulo de color
-      doc.setFillColor(...item.color)
-      doc.rect(x, y - 4, 5, 5, "F")
+      doc.setFillColor(...item.color);
+      doc.rect(x, y - 4, 5, 5, 'F');
 
       // Texto
-      doc.text(item.text, x + 7, y)
-    })
+      doc.text(item.text, x + 7, y);
+    });
 
     // Nombre del archivo
-    const fileName = `asistencia_${format(new Date(), "yyyy-MM-dd")}.pdf`
+    const fileName = `asistencia_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
 
     // Guardar archivo
-    doc.save(fileName)
+    doc.save(fileName);
   } catch (error) {
-    console.error("Error al generar PDF:", error)
-    alert("Error al generar el PDF. Por favor, intente de nuevo.")
+    console.error('Error al generar PDF:', error);
+    alert('Error al generar el PDF. Por favor, intente de nuevo.');
   }
 }
 
 // Cargar datos iniciales cuando el componente se monta
 onMounted(() => {
-  loadData()
-})
+  loadData();
+});
 
 // Vigilar cambios en la clase seleccionada
 watch(selectedClass, () => {
-  handleClassChange()
-})
+  handleClassChange();
+});
 </script>
 
 <style scoped>

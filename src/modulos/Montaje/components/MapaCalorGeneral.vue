@@ -64,109 +64,109 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from "vue"
+import { computed, ref } from 'vue';
 
 interface Props {
   maestroId: string
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 // Estado reactivo
-const diaSeleccionado = ref<any>(null)
+const diaSeleccionado = ref<any>(null);
 
 // Datos simulados (reemplazar con datos reales)
 const ultimosSieteDias = computed(() => {
-  const dias = []
-  const hoy = new Date()
+  const dias = [];
+  const hoy = new Date();
 
   for (let i = 6; i >= 0; i--) {
-    const fecha = new Date(hoy)
-    fecha.setDate(fecha.getDate() - i)
+    const fecha = new Date(hoy);
+    fecha.setDate(fecha.getDate() - i);
 
     // Simular actividad
-    const actividad = Math.floor(Math.random() * 10)
+    const actividad = Math.floor(Math.random() * 10);
 
     dias.push({
-      fecha: fecha.toLocaleDateString("es-ES", {day: "2-digit", month: "2-digit"}),
-      label: fecha.toLocaleDateString("es-ES", {weekday: "short"}),
+      fecha: fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }),
+      label: fecha.toLocaleDateString('es-ES', { weekday: 'short' }),
       actividad,
       intensidad: getIntensidad(actividad),
       horasTrabajas: Math.floor(Math.random() * 8),
-    })
+    });
   }
 
-  return dias
-})
+  return dias;
+});
 
 const obrasProgreso = computed(() => [
-  {id: "1", titulo: "Sinfonía No. 9", progreso: 78},
-  {id: "2", titulo: "Concierto Piano", progreso: 45},
-  {id: "3", titulo: "Bolero", progreso: 92},
-])
+  { id: '1', titulo: 'Sinfonía No. 9', progreso: 78 },
+  { id: '2', titulo: 'Concierto Piano', progreso: 45 },
+  { id: '3', titulo: 'Bolero', progreso: 92 },
+]);
 
 const estadisticas = computed(() => ({
   obrasActivas: 3,
   progresoSemana: 78,
-}))
+}));
 
 const alertas = computed(() => [
   {
-    id: "1",
-    tipo: "warning",
+    id: '1',
+    tipo: 'warning',
     mensaje: 'Obra "Concierto Piano" requiere atención - progreso bajo',
   },
   {
-    id: "2",
-    tipo: "success",
-    mensaje: "Bolero casi completado - excelente trabajo",
+    id: '2',
+    tipo: 'success',
+    mensaje: 'Bolero casi completado - excelente trabajo',
   },
-])
+]);
 
 // Métodos
 function getIntensidad(actividad: number): string {
-  if (actividad === 0) return "baja"
-  if (actividad <= 3) return "media"
-  return "alta"
+  if (actividad === 0) return 'baja';
+  if (actividad <= 3) return 'media';
+  return 'alta';
 }
 
 function getIntensidadClass(intensidad: string): string {
   switch (intensidad) {
-    case "baja":
-      return "bg-gray-200"
-    case "media":
-      return "bg-blue-300"
-    case "alta":
-      return "bg-blue-500"
-    default:
-      return "bg-gray-200"
+  case 'baja':
+    return 'bg-gray-200';
+  case 'media':
+    return 'bg-blue-300';
+  case 'alta':
+    return 'bg-blue-500';
+  default:
+    return 'bg-gray-200';
   }
 }
 
 function getProgresoBarClass(progreso: number): string {
-  if (progreso >= 80) return "bg-green-500"
-  if (progreso >= 50) return "bg-yellow-500"
-  return "bg-red-500"
+  if (progreso >= 80) return 'bg-green-500';
+  if (progreso >= 50) return 'bg-yellow-500';
+  return 'bg-red-500';
 }
 
 function getAlertaClass(tipo: string): string {
   switch (tipo) {
-    case "warning":
-      return "bg-yellow-100 text-yellow-800 border border-yellow-200"
-    case "error":
-      return "bg-red-100 text-red-800 border border-red-200"
-    case "success":
-      return "bg-green-100 text-green-800 border border-green-200"
-    case "info":
-      return "bg-blue-100 text-blue-800 border border-blue-200"
-    default:
-      return "bg-gray-100 text-gray-800 border border-gray-200"
+  case 'warning':
+    return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+  case 'error':
+    return 'bg-red-100 text-red-800 border border-red-200';
+  case 'success':
+    return 'bg-green-100 text-green-800 border border-green-200';
+  case 'info':
+    return 'bg-blue-100 text-blue-800 border border-blue-200';
+  default:
+    return 'bg-gray-100 text-gray-800 border border-gray-200';
   }
 }
 
 function seleccionarDia(dia: any) {
-  diaSeleccionado.value = dia
-  console.log("Día seleccionado:", dia)
+  diaSeleccionado.value = dia;
+  console.log('Día seleccionado:', dia);
   // Emitir evento o mostrar detalles del día
 }
 </script>

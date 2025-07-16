@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
+import { ref } from 'vue';
 
 const props = defineProps({
   src: {
@@ -45,7 +45,7 @@ const props = defineProps({
   },
   alt: {
     type: String,
-    default: "Image",
+    default: 'Image',
   },
   rounded: {
     type: Boolean,
@@ -53,13 +53,13 @@ const props = defineProps({
   },
   imgClass: {
     type: String,
-    default: "w-full h-full",
+    default: 'w-full h-full',
   },
-})
+});
 
-const showFallback = ref(false)
+const showFallback = ref(false);
 
 const handleError = () => {
-  showFallback.value = true
-}
+  showFallback.value = true;
+};
 </script>

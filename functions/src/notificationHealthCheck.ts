@@ -1,9 +1,9 @@
-import * as functions from "firebase-functions"
-import * as admin from "firebase-admin"
+import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
 
 // Asegurarse de que Firebase Admin se inicialice solo una vez
 if (admin.apps.length === 0) {
-  admin.initializeApp()
+  admin.initializeApp();
 }
 
 /**
@@ -28,12 +28,12 @@ export const checkNotificationFunctionsHealth = functions.https.onCall(async (da
     // o verificar la configuración de Baileys si fuera accesible desde aquí.
     // Por ahora, una simple ejecución sin errores indica que la función está operativa.
 
-    return {status: "operational", message: "Las funciones de notificación están operativas."}
+    return { status: 'operational', message: 'Las funciones de notificación están operativas.' };
   } catch (error) {
-    console.error("Error en la verificación de salud de las funciones de notificación:", error)
+    console.error('Error en la verificación de salud de las funciones de notificación:', error);
     throw new functions.https.HttpsError(
-      "internal",
-      "Fallo en la verificación de salud de las funciones de notificación."
-    )
+      'internal',
+      'Fallo en la verificación de salud de las funciones de notificación.',
+    );
   }
-})
+});

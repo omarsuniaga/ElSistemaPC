@@ -5,8 +5,8 @@
  * Verifica que todas las funcionalidades de validación estén implementadas
  */
 
-console.log("🔍 VERIFICACIÓN DEL SISTEMA WHATSAPP");
-console.log("=====================================");
+console.log('🔍 VERIFICACIÓN DEL SISTEMA WHATSAPP');
+console.log('=====================================');
 
 // Verificar archivos principales
 const fs = require('fs');
@@ -14,10 +14,10 @@ const path = require('path');
 
 const files = [
   'src/utils/whatsappMessageValidator.ts',
-  'src/components/WhatsAppNotificacionesModal.vue'
+  'src/components/WhatsAppNotificacionesModal.vue',
 ];
 
-console.log("\n📁 Verificando archivos del sistema:");
+console.log('\n📁 Verificando archivos del sistema:');
 files.forEach(file => {
   const fullPath = path.join(__dirname, file);
   if (fs.existsSync(fullPath)) {
@@ -28,7 +28,7 @@ files.forEach(file => {
 });
 
 // Verificar contenido del validador
-console.log("\n🔍 Verificando WhatsAppMessageValidator:");
+console.log('\n🔍 Verificando WhatsAppMessageValidator:');
 try {
   const validatorContent = fs.readFileSync(path.join(__dirname, 'src/utils/whatsappMessageValidator.ts'), 'utf8');
   
@@ -37,7 +37,7 @@ try {
     { name: 'validatePhoneNumber method', pattern: /static validatePhoneNumber/ },
     { name: 'validateMessageContent method', pattern: /static validateMessageContent/ },
     { name: 'generateVerificationReport method', pattern: /static generateVerificationReport/ },
-    { name: 'logVerificationReport function', pattern: /export const logVerificationReport/ }
+    { name: 'logVerificationReport function', pattern: /export const logVerificationReport/ },
   ];
 
   features.forEach(feature => {
@@ -48,11 +48,11 @@ try {
     }
   });
 } catch (error) {
-  console.log("❌ Error leyendo WhatsAppMessageValidator:", error.message);
+  console.log('❌ Error leyendo WhatsAppMessageValidator:', error.message);
 }
 
 // Verificar integración en el modal
-console.log("\n📱 Verificando integración en WhatsAppNotificacionesModal:");
+console.log('\n📱 Verificando integración en WhatsAppNotificacionesModal:');
 try {
   const modalContent = fs.readFileSync(path.join(__dirname, 'src/components/WhatsAppNotificacionesModal.vue'), 'utf8');
   
@@ -62,7 +62,7 @@ try {
     { name: 'getPhoneValidationIcon function', pattern: /const getPhoneValidationIcon/ },
     { name: 'getValidPhoneCount function', pattern: /const getValidPhoneCount/ },
     { name: 'Verification in sendMessages', pattern: /generateVerificationReport/ },
-    { name: 'Validation indicators in template', pattern: /getPhoneValidationIcon/ }
+    { name: 'Validation indicators in template', pattern: /getPhoneValidationIcon/ },
   ];
 
   integrations.forEach(integration => {
@@ -73,24 +73,24 @@ try {
     }
   });
 } catch (error) {
-  console.log("❌ Error leyendo WhatsAppNotificacionesModal:", error.message);
+  console.log('❌ Error leyendo WhatsAppNotificacionesModal:', error.message);
 }
 
-console.log("\n📊 RESUMEN DEL SISTEMA:");
-console.log("========================");
-console.log("🔍 Validación de números de teléfono: Implementada");
-console.log("📝 Validación de contenido de mensajes: Implementada");
-console.log("👥 Validación de selección de estudiantes: Implementada");
-console.log("📱 Vista previa con validación: Implementada");
-console.log("⚠️ Indicadores visuales de estado: Implementados");
-console.log("📊 Resumen de validación pre-envío: Implementado");
-console.log("🚀 Verificación completa antes del envío: Implementada");
+console.log('\n📊 RESUMEN DEL SISTEMA:');
+console.log('========================');
+console.log('🔍 Validación de números de teléfono: Implementada');
+console.log('📝 Validación de contenido de mensajes: Implementada');
+console.log('👥 Validación de selección de estudiantes: Implementada');
+console.log('📱 Vista previa con validación: Implementada');
+console.log('⚠️ Indicadores visuales de estado: Implementados');
+console.log('📊 Resumen de validación pre-envío: Implementado');
+console.log('🚀 Verificación completa antes del envío: Implementada');
 
-console.log("\n✅ SISTEMA WHATSAPP LISTO PARA USAR");
-console.log("===================================");
-console.log("📱 Los usuarios podrán:");
-console.log("  • Ver validación en tiempo real de números de teléfono");
-console.log("  • Verificar el contenido del mensaje antes del envío");
-console.log("  • Revisar un resumen completo de validación");
-console.log("  • Recibir advertencias sobre problemas detectados");
-console.log("  • Confirmar el envío con información detallada");
+console.log('\n✅ SISTEMA WHATSAPP LISTO PARA USAR');
+console.log('===================================');
+console.log('📱 Los usuarios podrán:');
+console.log('  • Ver validación en tiempo real de números de teléfono');
+console.log('  • Verificar el contenido del mensaje antes del envío');
+console.log('  • Revisar un resumen completo de validación');
+console.log('  • Recibir advertencias sobre problemas detectados');
+console.log('  • Confirmar el envío con información detallada');

@@ -1,5 +1,6 @@
 <template>
-  <div :class="[
+  <div
+:class="[
     'rounded-lg border overflow-hidden',
     themeClasses.surface,
     themeClasses.border
@@ -53,8 +54,8 @@
                 {{ column.label }}
                 <button
                   v-if="column.sortable"
-                  @click="toggleSort(column.key)"
                   :class="['hover:text-gray-900 dark:hover:text-gray-100']"
+                  @click="toggleSort(column.key)"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path 
@@ -127,9 +128,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useTheme } from '../composables/useTheme'
-import { useResponsive } from '../composables/useResponsive'
+import { ref, computed } from 'vue';
+import { useTheme } from '../composables/useTheme';
+import { useResponsive } from '../composables/useResponsive';
 
 interface Column {
   key: string
@@ -144,34 +145,34 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mobileCardView: true
-})
+  mobileCardView: true,
+});
 
-const { themeClasses } = useTheme()
-const { isMobile, tableClasses } = useResponsive()
+const { themeClasses } = useTheme();
+const { isMobile, tableClasses } = useResponsive();
 
-const sortKey = ref<string | null>(null)
-const sortOrder = ref<'asc' | 'desc'>('asc')
+const sortKey = ref<string | null>(null);
+const sortOrder = ref<'asc' | 'desc'>('asc');
 
 const sortedData = computed(() => {
-  if (!sortKey.value) return props.data
+  if (!sortKey.value) return props.data;
 
   return [...props.data].sort((a, b) => {
-    const aVal = a[sortKey.value!]
-    const bVal = b[sortKey.value!]
+    const aVal = a[sortKey.value!];
+    const bVal = b[sortKey.value!];
 
-    if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1
-    if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1
-    return 0
-  })
-})
+    if (aVal < bVal) return sortOrder.value === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortOrder.value === 'asc' ? 1 : -1;
+    return 0;
+  });
+});
 
 const toggleSort = (key: string) => {
   if (sortKey.value === key) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
   } else {
-    sortKey.value = key
-    sortOrder.value = 'asc'
+    sortKey.value = key;
+    sortOrder.value = 'asc';
   }
-}
+};
 </script>

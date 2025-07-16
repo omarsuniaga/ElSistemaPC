@@ -148,8 +148,8 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import type {TeacherClassView} from "../types/class"
+import { computed } from 'vue';
+import type { TeacherClassView } from '../types/class';
 import {
   UserIcon,
   UsersIcon,
@@ -161,39 +161,39 @@ import {
   DocumentTextIcon,
   PencilIcon,
   BuildingOfficeIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface Props {
   classData: TeacherClassView
-  teacherRole: "lead" | "assistant"
+  teacherRole: 'lead' | 'assistant'
 }
 
 interface Emits {
-  (e: "view-details", classData: TeacherClassView): void
-  (e: "take-attendance", classData: TeacherClassView): void
-  (e: "view-attendance", classData: TeacherClassView): void
+  (e: 'view-details', classData: TeacherClassView): void
+  (e: 'take-attendance', classData: TeacherClassView): void
+  (e: 'view-attendance', classData: TeacherClassView): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
 const studentCount = computed(() => {
-  return props.classData.studentIds?.length || 0
-})
+  return props.classData.studentIds?.length || 0;
+});
 
 const scheduleText = computed(() => {
   if (!props.classData.schedule?.slots?.length) {
-    return "Horario no definido"
+    return 'Horario no definido';
   }
 
-  const slots = props.classData.schedule.slots
+  const slots = props.classData.schedule.slots;
   if (slots.length === 1) {
-    const slot = slots[0]
-    return `${slot.day} de ${slot.startTime} a ${slot.endTime}`
+    const slot = slots[0];
+    return `${slot.day} de ${slot.startTime} a ${slot.endTime}`;
   } else {
-    return `${slots.length} sesiones programadas`
+    return `${slots.length} sesiones programadas`;
   }
-})
+});
 </script>
 
 <style scoped>

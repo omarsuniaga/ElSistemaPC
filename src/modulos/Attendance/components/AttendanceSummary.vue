@@ -1,22 +1,3 @@
-<script setup lang="ts">
-import type {AttendanceStatus} from "../types/attendance"
-
-defineProps<{
-  attendanceRecords: Record<string, AttendanceStatus>
-  pendingChangesCount: number
-  hasPendingChanges: boolean
-  onSave: () => void
-}>()
-
-// Make sure the component is exported as default
-defineExpose({})
-if (import.meta.env?.PROD === false) {
-  // @ts-ignore - This ensures the component has a default export
-  // which helps with certain bundlers and IDE tooling
-  const _default = {}
-}
-</script>
-
 <template>
   <!-- Pending changes notification -->
   <div
@@ -60,3 +41,22 @@ if (import.meta.env?.PROD === false) {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import type { AttendanceStatus } from '../types/attendance';
+
+defineProps<{
+  attendanceRecords: Record<string, AttendanceStatus>
+  pendingChangesCount: number
+  hasPendingChanges: boolean
+  onSave: () => void
+}>();
+
+// Make sure the component is exported as default
+defineExpose({});
+if (import.meta.env?.PROD === false) {
+  // @ts-ignore - This ensures the component has a default export
+  // which helps with certain bundlers and IDE tooling
+  const _default = {};
+}
+</script>

@@ -51,7 +51,7 @@ export const RolePermissions: Record<string, MontajePermission[]> = {
     MontajePermission.VIEW_AGGREGATED_REPORTS,
     MontajePermission.EXPORT_REPORTS,
     MontajePermission.MANAGE_PROJECT_MEMBERS,
-    MontajePermission.ASSIGN_INSTRUMENTS
+    MontajePermission.ASSIGN_INSTRUMENTS,
   ],
   
   assistant: [
@@ -59,18 +59,18 @@ export const RolePermissions: Record<string, MontajePermission[]> = {
     MontajePermission.UPDATE_WORKS,
     MontajePermission.READ_COMPASS_STATES,
     MontajePermission.READ_INSTRUMENT_COMPASS_STATES,
-    MontajePermission.VIEW_AGGREGATED_REPORTS
+    MontajePermission.VIEW_AGGREGATED_REPORTS,
   ],
   
   maestro: [
     MontajePermission.READ_WORKS,
     MontajePermission.READ_COMPASS_STATES,
     MontajePermission.READ_INSTRUMENT_COMPASS_STATES,
-    MontajePermission.UPDATE_INSTRUMENT_COMPASS_STATES
+    MontajePermission.UPDATE_INSTRUMENT_COMPASS_STATES,
   ],
   
   musician: [
     MontajePermission.READ_WORKS,
-    MontajePermission.READ_COMPASS_STATES
-  ]
-}
+    MontajePermission.READ_COMPASS_STATES,
+  ],
+};

@@ -1,5 +1,5 @@
 // Tipos de asistencia
-export type AttendanceStatus = "Presente" | "Ausente" | "Tardanza" | "Justificado" | string
+export type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | string
 
 // Interfaces para horarios y slots
 export interface ScheduleSlot {

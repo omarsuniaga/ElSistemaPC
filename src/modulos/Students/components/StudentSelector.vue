@@ -1,60 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import type {Student} from "../types/student"
-
-const props = defineProps<{
-  availableStudents: Student[]
-  selectedStudentIds: string[]
-  isLoading: boolean
-  groupName: string
-}>()
-
-const emit = defineEmits<{
-  (e: "select-student", studentId: string): void
-  (e: "add-selected"): void
-  (e: "cancel"): void
-  (e: "remove-student", studentId: string): void
-}>()
-
-const searchQuery = ref("")
-
-const filteredStudents = computed(() => {
-  if (!searchQuery.value) return []
-
-  return props.availableStudents.filter((student) => {
-    const query = searchQuery.value.toLowerCase()
-    return (
-      student.nombre.toLowerCase().includes(query) || student.apellido.toLowerCase().includes(query)
-    )
-  })
-})
-
-const selectedCount = computed(() => props.selectedStudentIds.length)
-
-const getStudentById = (id: string): Student | undefined => {
-  return props.availableStudents.find((student) => student.id === id)
-}
-
-const getSelectedStudents = computed(() => {
-  return props.selectedStudentIds
-    .map((id) => getStudentById(id))
-    .filter((student) => student !== undefined) as Student[]
-})
-
-const clearSearchQuery = () => {
-  searchQuery.value = ""
-}
-
-const selectAndClear = (studentId: string) => {
-  emit("select-student", studentId)
-  clearSearchQuery()
-}
-
-const removeStudent = (studentId: string) => {
-  emit("remove-student", studentId)
-}
-</script>
-
 <template>
   <div class="space-y-4">
     <!-- Información del grupo -->
@@ -192,3 +135,60 @@ const removeStudent = (studentId: string) => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import type { Student } from '../types/student';
+
+const props = defineProps<{
+  availableStudents: Student[]
+  selectedStudentIds: string[]
+  isLoading: boolean
+  groupName: string
+}>();
+
+const emit = defineEmits<{
+  (e: 'select-student', studentId: string): void
+  (e: 'add-selected'): void
+  (e: 'cancel'): void
+  (e: 'remove-student', studentId: string): void
+}>();
+
+const searchQuery = ref('');
+
+const filteredStudents = computed(() => {
+  if (!searchQuery.value) return [];
+
+  return props.availableStudents.filter((student) => {
+    const query = searchQuery.value.toLowerCase();
+    return (
+      student.nombre.toLowerCase().includes(query) || student.apellido.toLowerCase().includes(query)
+    );
+  });
+});
+
+const selectedCount = computed(() => props.selectedStudentIds.length);
+
+const getStudentById = (id: string): Student | undefined => {
+  return props.availableStudents.find((student) => student.id === id);
+};
+
+const getSelectedStudents = computed(() => {
+  return props.selectedStudentIds
+    .map((id) => getStudentById(id))
+    .filter((student) => student !== undefined) as Student[];
+});
+
+const clearSearchQuery = () => {
+  searchQuery.value = '';
+};
+
+const selectAndClear = (studentId: string) => {
+  emit('select-student', studentId);
+  clearSearchQuery();
+};
+
+const removeStudent = (studentId: string) => {
+  emit('remove-student', studentId);
+};
+</script>

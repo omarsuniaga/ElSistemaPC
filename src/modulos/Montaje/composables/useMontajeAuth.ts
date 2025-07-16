@@ -1,27 +1,27 @@
-import { ref, computed } from 'vue'
-import { firebaseService } from '../services/FirebaseService'
-import type { MontajeUser, AuthSession, UserPreferences } from '../types/auth'
+import { ref, computed } from 'vue';
+import { firebaseService } from '../services/FirebaseService';
+import type { MontajeUser, AuthSession, UserPreferences } from '../types/auth';
 
 const authSession = ref<AuthSession>({
   user: null,
   token: null,
   isAuthenticated: false,
   permissions: [],
-  currentProject: null
-})
+  currentProject: null,
+});
 
 export function useMontajeAuth() {
   const login = async (email: string, password: string) => {
     try {
       // Usar Firebase Authentication del proyecto principal
-      const firebaseUser = await firebaseService.signIn(email, password)
+      const firebaseUser = await firebaseService.signIn(email, password);
       
       if (!firebaseUser) {
-        throw new Error('Error de autenticación')
+        throw new Error('Error de autenticación');
       }
 
       // Obtener datos del usuario desde Firestore
-      let userData = await firebaseService.getDocument('montaje_users', firebaseUser.uid)
+      let userData = await firebaseService.getDocument('montaje_users', firebaseUser.uid);
       
       // Si no existe, crear perfil por defecto
       if (!userData) {
@@ -34,11 +34,11 @@ export function useMontajeAuth() {
           projects: [],
           preferences: getDefaultPreferences(),
           createdAt: new Date().toISOString(),
-          lastLogin: new Date().toISOString()
-        }
+          lastLogin: new Date().toISOString(),
+        };
         
-        await firebaseService.setDocument('montaje_users', firebaseUser.uid, defaultUserData)
-        userData = { id: firebaseUser.uid, ...defaultUserData }
+        await firebaseService.setDocument('montaje_users', firebaseUser.uid, defaultUserData);
+        userData = { id: firebaseUser.uid, ...defaultUserData };
       }
       
       const montajeUser: MontajeUser = {
@@ -51,40 +51,40 @@ export function useMontajeAuth() {
         projects: userData.projects || [],
         preferences: userData.preferences || getDefaultPreferences(),
         createdAt: userData.createdAt,
-        lastLogin: new Date().toISOString()
-      }
+        lastLogin: new Date().toISOString(),
+      };
       
       authSession.value = {
         user: montajeUser,
         token: await firebaseUser.getIdToken(),
         isAuthenticated: true,
         permissions: getPermissionsForRole(montajeUser.role),
-        currentProject: montajeUser.projects[0] || null
-      }
+        currentProject: montajeUser.projects[0] || null,
+      };
       
       // Actualizar último login
       await firebaseService.updateDocument('montaje_users', firebaseUser.uid, {
-        lastLogin: firebaseService.serverTimestamp()
-      })
+        lastLogin: firebaseService.serverTimestamp(),
+      });
       
       // Save to localStorage
       localStorage.setItem('montaje_auth', JSON.stringify({
         ...authSession.value,
-        token: null // No guardar token en localStorage
-      }))
+        token: null, // No guardar token en localStorage
+      }));
       
-      return montajeUser
+      return montajeUser;
     } catch (error) {
-      console.error('Login error:', error)
-      throw new Error('Error de autenticación: ' + (error as Error).message)
+      console.error('Login error:', error);
+      throw new Error('Error de autenticación: ' + (error as Error).message);
     }
-  }
+  };
 
   const logout = async () => {
     try {
-      await firebaseService.signOut()
+      await firebaseService.signOut();
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error('Logout error:', error);
     }
     
     authSession.value = {
@@ -92,20 +92,20 @@ export function useMontajeAuth() {
       token: null,
       isAuthenticated: false,
       permissions: [],
-      currentProject: null
-    }
+      currentProject: null,
+    };
     
-    localStorage.removeItem('montaje_auth')
-  }
+    localStorage.removeItem('montaje_auth');
+  };
 
   const restoreSession = async () => {
     try {
       // Verificar si hay un usuario autenticado en Firebase
-      const firebaseUser = firebaseService.getCurrentUser()
+      const firebaseUser = firebaseService.getCurrentUser();
       
       if (firebaseUser) {
         // Restaurar datos del usuario desde Firestore
-        const userData = await firebaseService.getDocument('montaje_users', firebaseUser.uid)
+        const userData = await firebaseService.getDocument('montaje_users', firebaseUser.uid);
         
         if (userData) {
           const montajeUser: MontajeUser = {
@@ -118,69 +118,69 @@ export function useMontajeAuth() {
             projects: userData.projects || [],
             preferences: userData.preferences || getDefaultPreferences(),
             createdAt: userData.createdAt,
-            lastLogin: userData.lastLogin
-          }
+            lastLogin: userData.lastLogin,
+          };
           
           authSession.value = {
             user: montajeUser,
             token: await firebaseUser.getIdToken(),
             isAuthenticated: true,
             permissions: getPermissionsForRole(montajeUser.role),
-            currentProject: montajeUser.projects[0] || null
-          }
+            currentProject: montajeUser.projects[0] || null,
+          };
           
-          return
+          return;
         }
       }
       
       // Si no hay usuario de Firebase, verificar localStorage como fallback
-      const saved = localStorage.getItem('montaje_auth')
+      const saved = localStorage.getItem('montaje_auth');
       if (saved) {
-        const parsedSession = JSON.parse(saved)
+        const parsedSession = JSON.parse(saved);
         if (parsedSession.user) {
           authSession.value = {
             ...parsedSession,
-            token: null // No restaurar token desde localStorage
-          }
+            token: null, // No restaurar token desde localStorage
+          };
         }
       }
     } catch (error) {
-      console.error('Error restoring session:', error)
-      logout()
+      console.error('Error restoring session:', error);
+      logout();
     }
-  }
+  };
 
   const updatePreferences = async (preferences: Partial<UserPreferences>) => {
-    if (!authSession.value.user) return
+    if (!authSession.value.user) return;
 
     const updatedPreferences = {
       ...authSession.value.user.preferences,
-      ...preferences
-    }
+      ...preferences,
+    };
 
-    authSession.value.user.preferences = updatedPreferences
+    authSession.value.user.preferences = updatedPreferences;
     
     // Actualizar en Firestore
     try {
       await firebaseService.updateDocument('montaje_users', authSession.value.user.id, {
-        preferences: updatedPreferences
-      })
+        preferences: updatedPreferences,
+      });
       
       // Actualizar localStorage
       localStorage.setItem('montaje_auth', JSON.stringify({
         ...authSession.value,
-        token: null
-      }))
+        token: null,
+      }));
     } catch (error) {
-      console.error('Error updating preferences:', error)
+      console.error('Error updating preferences:', error);
     }
-  }
+  };
 
   const hasPermission = (resource: string, action: string): boolean => {
     return authSession.value.permissions.includes(`${resource}:${action}`) ||
            authSession.value.permissions.includes(`${resource}:*`) ||
-           authSession.value.permissions.includes('*:*')
-  }
+           authSession.value.permissions.includes('*:*');
+  };
 
   const getPermissionsForRole = (role: string): string[] => {
     const permissions: Record<string, string[]> = {
@@ -191,7 +191,7 @@ export function useMontajeAuth() {
         'reports:*',
         'members:*',
         'settings:*',
-        'analytics:*'
+        'analytics:*',
       ],
       assistant: [
         'works:read',
@@ -199,18 +199,18 @@ export function useMontajeAuth() {
         'evaluations:*',
         'reports:read',
         'members:read',
-        'analytics:read'
+        'analytics:read',
       ],
       musician: [
         'works:read',
         'evaluations:read',
         'evaluations:create',
-        'reports:read'
-      ]
-    }
+        'reports:read',
+      ],
+    };
     
-    return permissions[role] || []
-  }
+    return permissions[role] || [];
+  };
 
   const getDefaultPreferences = (): UserPreferences => ({
     language: 'es',
@@ -221,15 +221,15 @@ export function useMontajeAuth() {
       evaluationReminders: true,
       sessionReminders: true,
       progressAlerts: true,
-      milestoneNotifications: true
+      milestoneNotifications: true,
     },
     display: {
       theme: 'light',
       compactMode: false,
       defaultView: 'grid',
-      showAdvancedMetrics: false
-    }
-  })
+      showAdvancedMetrics: false,
+    },
+  });
 
   return {
     user: computed(() => authSession.value.user),
@@ -239,6 +239,6 @@ export function useMontajeAuth() {
     logout,
     restoreSession,
     updatePreferences,
-    hasPermission
-  }
+    hasPermission,
+  };
 }

@@ -245,17 +245,17 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 // import { Icon } from '@iconify/vue'; // Commented temporarily for build
-import {usePerformanceDashboard} from "../composables/usePerformanceDashboard"
+import { usePerformanceDashboard } from '../composables/usePerformanceDashboard';
 
 // Emit events
 const emit = defineEmits<{
-  "view-all-top-performers": []
-  "view-all-attention-needed": []
-  "view-student-details": [studentId: string]
-  "contact-student": [studentId: string]
-}>()
+  'view-all-top-performers': []
+  'view-all-attention-needed': []
+  'view-student-details': [studentId: string]
+  'contact-student': [studentId: string]
+}>();
 
 // Composable
 const {
@@ -266,61 +266,61 @@ const {
   studentsNeedingAttention,
   summary,
   fetchStudentsPerformance,
-} = usePerformanceDashboard()
+} = usePerformanceDashboard();
 
 // Métodos
 const refreshData = async () => {
-  await fetchStudentsPerformance()
-}
+  await fetchStudentsPerformance();
+};
 
 const exportReport = () => {
   // Implementar exportación de reporte
-  console.log("Exportando reporte directorial...")
-}
+  console.log('Exportando reporte directorial...');
+};
 
 const getClassificationColor = (classification: string) => {
   const colors: Record<string, string> = {
-    Excelente: "bg-green-500",
-    "Muy bueno": "bg-blue-500",
-    Bueno: "bg-blue-400",
-    Regular: "bg-yellow-500",
-    "Necesita mejora": "bg-orange-500",
-    Preocupante: "bg-red-500",
-  }
-  return colors[classification] || "bg-gray-500"
-}
+    Excelente: 'bg-green-500',
+    'Muy bueno': 'bg-blue-500',
+    Bueno: 'bg-blue-400',
+    Regular: 'bg-yellow-500',
+    'Necesita mejora': 'bg-orange-500',
+    Preocupante: 'bg-red-500',
+  };
+  return colors[classification] || 'bg-gray-500';
+};
 
 const getRankClass = (index: number) => {
-  if (index === 0) return "rank-gold"
-  if (index === 1) return "rank-silver"
-  if (index === 2) return "rank-bronze"
-  return "rank-default"
-}
+  if (index === 0) return 'rank-gold';
+  if (index === 1) return 'rank-silver';
+  if (index === 2) return 'rank-bronze';
+  return 'rank-default';
+};
 
 const getAlertLevel = (student: any) => {
   if (student.overallScore < 50 || student.attendance.attendanceRate < 60) {
-    return "alert-critical"
+    return 'alert-critical';
   }
   if (student.overallScore < 60 || student.attendance.attendanceRate < 75) {
-    return "alert-high"
+    return 'alert-high';
   }
-  return "alert-medium"
-}
+  return 'alert-medium';
+};
 
 const getAlertText = (student: any) => {
   if (student.overallScore < 50 || student.attendanceMetrics.attendanceRate < 60) {
-    return "Crítico"
+    return 'Crítico';
   }
   if (student.overallScore < 60 || student.attendanceMetrics.attendanceRate < 75) {
-    return "Alto"
+    return 'Alto';
   }
-  return "Medio"
-}
+  return 'Medio';
+};
 
 // Lifecycle
 onMounted(() => {
-  refreshData()
-})
+  refreshData();
+});
 </script>
 
 <style scoped>

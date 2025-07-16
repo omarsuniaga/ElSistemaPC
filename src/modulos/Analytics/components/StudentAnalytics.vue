@@ -292,15 +292,15 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {format, parseISO, isValid, formatISO} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAnalyticsStore} from "../store/analytics"
-import {useStudentsStore} from "../../Students/store/students"
-import {useInstrumentoStore} from "../../Instruments/store/instrumento"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useQualificationStore} from "../../Qualifications/store/qualification"
-import {Line, Bar, Doughnut} from "vue-chartjs"
+import { ref, computed, onMounted, watch } from 'vue';
+import { format, parseISO, isValid, formatISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAnalyticsStore } from '../store/analytics';
+import { useStudentsStore } from '../../Students/store/students';
+import { useInstrumentoStore } from '../../Instruments/store/instrumento';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useQualificationStore } from '../../Qualifications/store/qualification';
+import { Line, Bar, Doughnut } from 'vue-chartjs';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -312,7 +312,7 @@ import {
   Title,
   Tooltip,
   Legend,
-} from "chart.js"
+} from 'chart.js';
 
 ChartJS.register(
   CategoryScale,
@@ -323,28 +323,28 @@ ChartJS.register(
   ArcElement,
   Title,
   Tooltip,
-  Legend
-)
+  Legend,
+);
 
-const analyticsStore = useAnalyticsStore()
-const studentsStore = useStudentsStore()
-const instrumentsStore = useInstrumentoStore()
-const attendanceStore = useAttendanceStore()
+const analyticsStore = useAnalyticsStore();
+const studentsStore = useStudentsStore();
+const instrumentsStore = useInstrumentoStore();
+const attendanceStore = useAttendanceStore();
 
 // Estado local
-const isLoading = ref(true)
-const error = ref("")
-const selectedPeriod = ref("currentMonth")
-const showCustomDatePicker = ref(false)
+const isLoading = ref(true);
+const error = ref('');
+const selectedPeriod = ref('currentMonth');
+const showCustomDatePicker = ref(false);
 const customDateRange = ref({
-  startDate: "",
-  endDate: "",
-})
-const riskFilterType = ref("all")
+  startDate: '',
+  endDate: '',
+});
+const riskFilterType = ref('all');
 
 // Añadir variables faltantes
-const selectedStudent = ref(null)
-const studentMetrics = ref({})
+const selectedStudent = ref(null);
+const studentMetrics = ref({});
 
 const metrics = ref({
   totalStudents: 0,
@@ -357,69 +357,69 @@ const metrics = ref({
   levelDistribution: [],
   attendanceTrend: [],
   activityByMonth: [],
-})
+});
 
 // Observar cambios en el periodo seleccionado
 watch(selectedPeriod, (newPeriod) => {
-  if (newPeriod === "custom") {
-    showCustomDatePicker.value = true
+  if (newPeriod === 'custom') {
+    showCustomDatePicker.value = true;
   } else {
-    showCustomDatePicker.value = false
-    loadMetrics()
+    showCustomDatePicker.value = false;
+    loadMetrics();
   }
-})
+});
 
 // Aplicar filtro de fechas personalizado
 function applyCustomDateFilter() {
   if (customDateRange.value.startDate && customDateRange.value.endDate) {
-    loadMetrics()
+    loadMetrics();
   }
 } // Cargar métricas desde el store utilizando datos reales
 async function loadMetrics() {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
     // Preparar datos según el período seleccionado
-    prepareDataBySelectedPeriod()
+    prepareDataBySelectedPeriod();
 
     // Si estamos viendo un estudiante específico
     if (selectedStudent.value) {
       // Obtener métricas del estudiante
-      const studentData = await analyticsStore.fetchStudentMetrics(selectedStudent.value.id)
+      const studentData = await analyticsStore.fetchStudentMetrics(selectedStudent.value.id);
 
       // Verificar que las fechas sean válidas antes de crear objetos Date
       if (studentData.attendanceHistory) {
         studentData.attendanceHistory = studentData.attendanceHistory.map((record) => {
           // Validar que la fecha sea correcta antes de convertirla
-          let date
+          let date;
           try {
             // Asegurarse de que la fecha tenga el formato correcto
-            if (typeof record.date === "string") {
+            if (typeof record.date === 'string') {
               // Intentar parsear la fecha
-              date = parseISO(record.date)
+              date = parseISO(record.date);
               // Verificar que la fecha sea válida
               if (!isValid(date)) {
-                console.warn(`Fecha inválida encontrada: ${record.date}, usando fecha actual`)
-                date = new Date() // Usar fecha actual como fallback
+                console.warn(`Fecha inválida encontrada: ${record.date}, usando fecha actual`);
+                date = new Date(); // Usar fecha actual como fallback
               }
             } else {
               // Si no es string, usar fecha actual
-              date = new Date()
+              date = new Date();
             }
           } catch (e) {
-            console.warn(`Error al procesar fecha: ${record.date}`, e)
-            date = new Date() // Usar fecha actual como fallback
+            console.warn(`Error al procesar fecha: ${record.date}`, e);
+            date = new Date(); // Usar fecha actual como fallback
           }
 
           return {
             ...record,
             date,
-          }
-        })
+          };
+        });
       }
 
-      studentMetrics.value = studentData
+      studentMetrics.value = studentData;
     } else {
       // Obtener métricas generales de estudiantes
       // Calcular métricas reales a partir de los datos disponibles
@@ -430,22 +430,22 @@ async function loadMetrics() {
         averagePerformance: calculateAveragePerformance(),
         atRiskCount: identifyAtRiskStudents().length,
         atRiskPercentage: Math.round(
-          (identifyAtRiskStudents().length / studentsStore.students.length) * 100
+          (identifyAtRiskStudents().length / studentsStore.students.length) * 100,
         ),
         instrumentDistribution: calculateInstrumentDistribution(),
         levelDistribution: calculateLevelDistribution(),
         attendanceTrend: calculateAttendanceTrend(),
         activityByMonth: calculateMonthlyActivity(),
-      }
+      };
     }
 
     // Actualizar gráficos con los nuevos datos
-    updateCharts()
+    updateCharts();
   } catch (err) {
-    console.error("Error cargando métricas de estudiantes:", err)
-    error.value = `Error al cargar métricas: ${err.message}`
+    console.error('Error cargando métricas de estudiantes:', err);
+    error.value = `Error al cargar métricas: ${err.message}`;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
@@ -453,85 +453,85 @@ async function loadMetrics() {
 function updateCharts() {
   // Esta función se llamará después de cargar los datos
   // No es necesario hacer nada si los computed properties ya están actualizando los gráficos
-  console.log("Gráficos actualizados con nuevos datos")
+  console.log('Gráficos actualizados con nuevos datos');
 }
 
 // Helper methods to prepare and calculate real data
 function prepareDataBySelectedPeriod() {
   // Set the time range in the analytics store based on selected period
-  if (selectedPeriod.value !== "custom") {
-    analyticsStore.timeAnalytics.activeRange = selectedPeriod.value
+  if (selectedPeriod.value !== 'custom') {
+    analyticsStore.timeAnalytics.activeRange = selectedPeriod.value;
   } else if (customDateRange.value.startDate && customDateRange.value.endDate) {
     // For custom range, update the custom range dates in the store
     analyticsStore.timeAnalytics.dateRanges.customRange = {
       start: parseISO(customDateRange.value.startDate),
       end: parseISO(customDateRange.value.endDate),
-    }
-    analyticsStore.timeAnalytics.activeRange = "customRange"
+    };
+    analyticsStore.timeAnalytics.activeRange = 'customRange';
   }
 }
 
 // Calculate student growth rate by comparing current student count with previous period
 function calculateStudentGrowth(): number {
   // This calculates growth if not provided by the analytics store
-  const currentStudentCount = studentsStore.students.length
+  const currentStudentCount = studentsStore.students.length;
 
   // Try to get historical student counts if available
-  const enrollmentTrends = analyticsStore.studentMetrics.enrollmentTrends
+  const enrollmentTrends = analyticsStore.studentMetrics.enrollmentTrends;
   if (enrollmentTrends && enrollmentTrends.length >= 2) {
     // Compare current with previous period
-    const latestEntry = enrollmentTrends[enrollmentTrends.length - 1]
-    const previousEntry = enrollmentTrends[enrollmentTrends.length - 2]
+    const latestEntry = enrollmentTrends[enrollmentTrends.length - 1];
+    const previousEntry = enrollmentTrends[enrollmentTrends.length - 2];
 
     if (previousEntry.totalStudents > 0) {
       const growthRate =
         ((latestEntry.totalStudents - previousEntry.totalStudents) / previousEntry.totalStudents) *
-        100
-      return Number(growthRate.toFixed(1))
+        100;
+      return Number(growthRate.toFixed(1));
     }
   }
 
   // Fallback: check if we can calculate from student registration dates
-  let previousPeriodStudents = 0
-  const now = new Date()
-  const previousPeriodStartDate = new Date()
-  previousPeriodStartDate.setMonth(now.getMonth() - 1)
+  let previousPeriodStudents = 0;
+  const now = new Date();
+  const previousPeriodStartDate = new Date();
+  previousPeriodStartDate.setMonth(now.getMonth() - 1);
 
   studentsStore.students.forEach((student) => {
     // If student has registration date before previous period start
     if (student.registrationDate && new Date(student.registrationDate) < previousPeriodStartDate) {
-      previousPeriodStudents++
+      previousPeriodStudents++;
     }
-  })
+  });
 
   if (previousPeriodStudents > 0) {
     return Number(
-      (((currentStudentCount - previousPeriodStudents) / previousPeriodStudents) * 100).toFixed(1)
-    )
+      (((currentStudentCount - previousPeriodStudents) / previousPeriodStudents) * 100).toFixed(1),
+    );
   }
 
-  return 0 // If we can't calculate growth, return 0
+  return 0; // If we can't calculate growth, return 0
 }
 
 // Calculate real average attendance from attendance records
 function calculateAverageAttendance(): number {
-  const records = attendanceStore.records
+  const records = attendanceStore.records;
 
   if (!records || records.length === 0) {
-    return 0
+    return 0;
   }
 
-  let presentCount = 0
-  const totalCount = records.length
+  let presentCount = 0;
+  const totalCount = records.length;
 
   records.forEach((record) => {
-    const status = record.status?.toLowerCase()
-    if (status === "presente" || status === "present" || status === "justificado") {
-      presentCount++
+    const status = record.status?.toLowerCase();
+    if (status === 'presente' || status === 'present' || status === 'justificado') {
+      presentCount++;
     }
-  })
+  });
 
-  return Math.round((presentCount / totalCount) * 100)
+  return Math.round((presentCount / totalCount) * 100);
 }
 
 // Calculate real average student performance
@@ -539,119 +539,119 @@ function calculateAveragePerformance(): number {
   // Check if we can access qualifications data
   try {
     // Try importing qualification store but handle case where it may not exist
-    const {useQualificationStore} = require("../../Qualifications/store/qualification")
-    const qualificationStore = useQualificationStore()
+    const { useQualificationStore } = require('../../Qualifications/store/qualification');
+    const qualificationStore = useQualificationStore();
 
     if (qualificationStore?.qualifications?.length > 0) {
       // Calculate average from qualifications
       const sum = qualificationStore.qualifications.reduce(
         (acc, qual) => acc + (qual.score || 0),
-        0
-      )
-      return Math.round((sum / qualificationStore.qualifications.length) * 100)
+        0,
+      );
+      return Math.round((sum / qualificationStore.qualifications.length) * 100);
     }
   } catch (error) {
-    console.log("Qualification store not available or has incorrect structure:", error)
+    console.log('Qualification store not available or has incorrect structure:', error);
   }
 
   // If no qualification data, check if students have performance properties
   if (studentsStore.students && studentsStore.students.length > 0) {
     // Try to find performance data in student objects
     const studentsWithPerformance = studentsStore.students.filter(
-      (student) => student.performance || student.averageScore || student.qualifications
-    )
+      (student) => student.performance || student.averageScore || student.qualifications,
+    );
 
     if (studentsWithPerformance.length > 0) {
       const sum = studentsWithPerformance.reduce((acc, student) => {
-        return acc + (student.performance || student.averageScore || 0)
-      }, 0)
+        return acc + (student.performance || student.averageScore || 0);
+      }, 0);
 
-      return Math.round(sum / studentsWithPerformance.length)
+      return Math.round(sum / studentsWithPerformance.length);
     }
   }
 
-  return 75 // Fallback value if no real data available
+  return 75; // Fallback value if no real data available
 }
 
 // Identify students at risk using various factors
 function identifyAtRiskStudents(): any[] {
-  const atRiskStudents = []
+  const atRiskStudents = [];
 
   // Get students with attendance issues
-  const attendanceThreshold = 70 // Below this percentage is considered at risk
+  const attendanceThreshold = 70; // Below this percentage is considered at risk
 
   // Group attendance records by student
-  const studentAttendance = {}
+  const studentAttendance = {};
   attendanceStore.records.forEach((record) => {
     if (!studentAttendance[record.studentId]) {
       studentAttendance[record.studentId] = {
         present: 0,
         total: 0,
-      }
+      };
     }
 
-    studentAttendance[record.studentId].total++
+    studentAttendance[record.studentId].total++;
 
-    const status = (record.status || "").toLowerCase()
+    const status = (record.status || '').toLowerCase();
     if (
-      status === "presente" ||
-      status === "present" ||
-      status === "p" ||
-      status === "justificado" ||
-      status === "justified" ||
-      status === "j"
+      status === 'presente' ||
+      status === 'present' ||
+      status === 'p' ||
+      status === 'justificado' ||
+      status === 'justified' ||
+      status === 'j'
     ) {
-      studentAttendance[record.studentId].present++
+      studentAttendance[record.studentId].present++;
     }
-  })
+  });
 
   // Find students with attendance issues
   Object.entries(studentAttendance).forEach(([studentId, data]: [string, any]) => {
     if (data.total > 0) {
-      const attendanceRate = (data.present / data.total) * 100
+      const attendanceRate = (data.present / data.total) * 100;
 
       if (attendanceRate < attendanceThreshold) {
         // Find student data
-        const student = studentsStore.students.find((s) => s.id === studentId)
+        const student = studentsStore.students.find((s) => s.id === studentId);
 
         if (student) {
           atRiskStudents.push({
             id: studentId,
-            name: student.name || `${student.firstName} ${student.lastName || ""}`,
-            instrument: student.instrument || "No asignado",
-            riskType: "attendance",
+            name: student.name || `${student.firstName} ${student.lastName || ''}`,
+            instrument: student.instrument || 'No asignado',
+            riskType: 'attendance',
             currentValue: Math.round(attendanceRate),
-          })
+          });
         }
       }
     }
-  })
+  });
 
   // Identify performance issues (if data available)
   // This would need access to qualification data, adjusting based on your exact data structure
 
-  return atRiskStudents
+  return atRiskStudents;
 }
 
 // Calculate instrument distribution from real student data
 function calculateInstrumentDistribution(): any[] {
-  const instrumentCounts = {}
+  const instrumentCounts = {};
 
   studentsStore.students.forEach((student) => {
     if (student.instrument) {
       if (!instrumentCounts[student.instrument]) {
-        instrumentCounts[student.instrument] = 0
+        instrumentCounts[student.instrument] = 0;
       }
-      instrumentCounts[student.instrument]++
+      instrumentCounts[student.instrument]++;
     }
-  })
+  });
 
   // Convert to array format for chart
   return Object.entries(instrumentCounts).map(([name, count]) => ({
     name,
     count,
     percentage: Math.round((Number(count) / studentsStore.students.length) * 100),
-  }))
+  }));
 }
 
 // Calculate level distribution from real student data
@@ -660,18 +660,18 @@ function calculateLevelDistribution(): any[] {
     Principiante: 0,
     Intermedio: 0,
     Avanzado: 0,
-    "No asignado": 0,
-  }
+    'No asignado': 0,
+  };
 
   studentsStore.students.forEach((student) => {
-    const level = student.level || "No asignado"
+    const level = student.level || 'No asignado';
     if (levelCounts[level] !== undefined) {
-      levelCounts[level]++
+      levelCounts[level]++;
     } else {
       // If the level doesn't match our predefined categories
-      levelCounts["No asignado"]++
+      levelCounts['No asignado']++;
     }
-  })
+  });
 
   // Convert to array format for chart
   return Object.entries(levelCounts)
@@ -679,58 +679,58 @@ function calculateLevelDistribution(): any[] {
     .map(([level, count]) => ({
       level,
       count,
-    }))
+    }));
 }
 
 // Calculate attendance trend from real attendance data
 function calculateAttendanceTrend(): any[] {
   // Group attendance records by date
-  const attendanceByDate = {}
+  const attendanceByDate = {};
 
   attendanceStore.records.forEach((record) => {
     // Check for both possible date field names (Fecha or date)
-    const dateValue = record.Fecha || record.date
+    const dateValue = record.Fecha || record.date;
 
     if (dateValue) {
       // Ensure the date is valid
-      let dateKey = dateValue
+      let dateKey = dateValue;
 
       try {
         // Try to format as YYYY-MM-DD if it's a Date object or ISO string
         if (dateValue instanceof Date) {
-          dateKey = formatISO(dateValue, {representation: "date"})
-        } else if (typeof dateValue === "string") {
+          dateKey = formatISO(dateValue, { representation: 'date' });
+        } else if (typeof dateValue === 'string') {
           // Try to parse and then format consistently
-          const parsedDate = parseISO(dateValue)
+          const parsedDate = parseISO(dateValue);
           if (isValid(parsedDate)) {
-            dateKey = formatISO(parsedDate, {representation: "date"})
+            dateKey = formatISO(parsedDate, { representation: 'date' });
           }
         }
       } catch (err) {
-        console.warn("Could not format date, using as-is:", dateValue)
+        console.warn('Could not format date, using as-is:', dateValue);
       }
 
       if (!attendanceByDate[dateKey]) {
         attendanceByDate[dateKey] = {
           present: 0,
           total: 0,
-        }
+        };
       }
 
-      attendanceByDate[dateKey].total++
+      attendanceByDate[dateKey].total++;
 
       // Check different status formats
-      const status = (record.status || "").toLowerCase()
+      const status = (record.status || '').toLowerCase();
       if (
-        status === "presente" ||
-        status === "present" ||
-        status === "justificado" ||
-        status === "justified"
+        status === 'presente' ||
+        status === 'present' ||
+        status === 'justificado' ||
+        status === 'justified'
       ) {
-        attendanceByDate[dateKey].present++
+        attendanceByDate[dateKey].present++;
       }
     }
-  })
+  });
 
   // Convert to array format for chart
   return Object.entries(attendanceByDate)
@@ -738,229 +738,229 @@ function calculateAttendanceTrend(): any[] {
     .map(([date, data]: [string, any]) => ({
       date,
       rate: data.total > 0 ? Math.round((data.present / data.total) * 100) : 0,
-    }))
+    }));
 }
 
 // Calculate monthly activity from real attendance data
 function calculateMonthlyActivity(): any[] {
   // Group attendance records by month
-  const activityByMonth = {}
+  const activityByMonth = {};
 
   attendanceStore.records.forEach((record) => {
     // Check for both possible date field names (Fecha or date)
-    const dateValue = record.Fecha || record.date
+    const dateValue = record.Fecha || record.date;
 
     if (dateValue) {
       try {
         // Safely parse the date
-        let date
+        let date;
         if (dateValue instanceof Date) {
-          date = dateValue
-        } else if (typeof dateValue === "string") {
-          date = parseISO(dateValue)
+          date = dateValue;
+        } else if (typeof dateValue === 'string') {
+          date = parseISO(dateValue);
         } else {
-          return // Skip this record if date is in an unexpected format
+          return; // Skip this record if date is in an unexpected format
         }
 
         // Verify the date is valid before using it
         if (!isValid(date)) {
-          console.warn("Invalid date in record:", dateValue)
-          return // Skip invalid dates
+          console.warn('Invalid date in record:', dateValue);
+          return; // Skip invalid dates
         }
 
         // Format month data
-        const monthYearKey = format(date, "yyyy-MM")
-        const monthName = format(date, "MMMM", {locale: es})
+        const monthYearKey = format(date, 'yyyy-MM');
+        const monthName = format(date, 'MMMM', { locale: es });
 
         if (!activityByMonth[monthYearKey]) {
           activityByMonth[monthYearKey] = {
             month: monthName,
             count: 0,
-          }
+          };
         }
 
-        activityByMonth[monthYearKey].count++
+        activityByMonth[monthYearKey].count++;
       } catch (error) {
-        console.warn("Error processing date:", dateValue, error)
+        console.warn('Error processing date:', dateValue, error);
       }
     }
-  })
+  });
 
   // Convert to array format for chart
   return Object.values(activityByMonth).sort((a: any, b: any) => {
     // Sort by month number rather than name to get chronological order
     try {
       // Try to extract month number from name for proper sorting
-      const aMonthIndex = es.months.indexOf(a.month.toLowerCase())
-      const bMonthIndex = es.months.indexOf(b.month.toLowerCase())
-      return aMonthIndex - bMonthIndex
+      const aMonthIndex = es.months.indexOf(a.month.toLowerCase());
+      const bMonthIndex = es.months.indexOf(b.month.toLowerCase());
+      return aMonthIndex - bMonthIndex;
     } catch (error) {
       // Fallback to string comparison if above fails
-      return a.month.localeCompare(b.month)
+      return a.month.localeCompare(b.month);
     }
-  })
+  });
 }
 
 // Obtener etiqueta de tipo de riesgo
 function getRiskTypeLabel(riskType) {
   switch (riskType) {
-    case "attendance":
-      return "Asistencia"
-    case "performance":
-      return "Rendimiento"
-    case "payments":
-      return "Pagos"
-    default:
-      return "Desconocido"
+  case 'attendance':
+    return 'Asistencia';
+  case 'performance':
+    return 'Rendimiento';
+  case 'payments':
+    return 'Pagos';
+  default:
+    return 'Desconocido';
   }
 }
 
 // Datos para gráfica de distribución por instrumento
 const instrumentDistributionChart = computed(() => {
-  const instrumentData = metrics.value.instrumentDistribution
+  const instrumentData = metrics.value.instrumentDistribution;
 
   return {
     labels: instrumentData.map((item) => item.name),
     datasets: [
       {
-        label: "Estudiantes",
+        label: 'Estudiantes',
         data: instrumentData.map((item) => item.count),
         backgroundColor: [
-          "rgba(255, 99, 132, 0.6)",
-          "rgba(54, 162, 235, 0.6)",
-          "rgba(255, 206, 86, 0.6)",
-          "rgba(75, 192, 192, 0.6)",
-          "rgba(153, 102, 255, 0.6)",
-          "rgba(255, 159, 64, 0.6)",
+          'rgba(255, 99, 132, 0.6)',
+          'rgba(54, 162, 235, 0.6)',
+          'rgba(255, 206, 86, 0.6)',
+          'rgba(75, 192, 192, 0.6)',
+          'rgba(153, 102, 255, 0.6)',
+          'rgba(255, 159, 64, 0.6)',
         ],
       },
     ],
-  }
-})
+  };
+});
 
 // Datos para gráfica de distribución por nivel
 const levelDistributionChart = computed(() => {
-  const levelData = metrics.value.levelDistribution
+  const levelData = metrics.value.levelDistribution;
 
   return {
     labels: levelData.map((item) => item.level),
     datasets: [
       {
-        label: "Estudiantes",
+        label: 'Estudiantes',
         data: levelData.map((item) => item.count),
-        backgroundColor: "rgba(99, 102, 241, 0.6)",
+        backgroundColor: 'rgba(99, 102, 241, 0.6)',
       },
     ],
-  }
-})
+  };
+});
 
 // Datos para gráfica de tendencia de asistencia
 const attendanceTrendChart = computed(() => {
-  const trendData = metrics.value.attendanceTrend
+  const trendData = metrics.value.attendanceTrend;
 
   return {
-    labels: trendData.map((item) => format(parseISO(item.date), "dd/MM")),
+    labels: trendData.map((item) => format(parseISO(item.date), 'dd/MM')),
     datasets: [
       {
-        label: "Tasa de Asistencia",
+        label: 'Tasa de Asistencia',
         data: trendData.map((item) => item.rate),
-        borderColor: "rgb(16, 185, 129)",
-        backgroundColor: "rgba(16, 185, 129, 0.1)",
+        borderColor: 'rgb(16, 185, 129)',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
         tension: 0.4,
         fill: true,
       },
     ],
-  }
-})
+  };
+});
 
 // Datos para gráfica de actividad por mes
 const activityByMonthChart = computed(() => {
-  const monthlyData = metrics.value.activityByMonth
+  const monthlyData = metrics.value.activityByMonth;
 
   return {
     labels: monthlyData.map((item) => item.month),
     datasets: [
       {
-        label: "Actividad",
+        label: 'Actividad',
         data: monthlyData.map((item) => item.count),
-        backgroundColor: "rgba(99, 102, 241, 0.6)",
+        backgroundColor: 'rgba(99, 102, 241, 0.6)',
       },
     ],
-  }
-})
+  };
+});
 
 // Alumnos con mejor rendimiento (simulados)
 const topPerformingStudents = computed(() => {
-  const students = []
+  const students = [];
 
   for (let i = 0; i < 5; i++) {
     students.push({
       id: `top-student-${i + 1}`,
       name: `Estudiante Top ${i + 1}`,
-      instrument: ["Piano", "Guitarra", "Violín", "Flauta", "Batería"][i],
-      level: i < 3 ? "Avanzado" : "Intermedio",
+      instrument: ['Piano', 'Guitarra', 'Violín', 'Flauta', 'Batería'][i],
+      level: i < 3 ? 'Avanzado' : 'Intermedio',
       progress: 90 + Math.floor(Math.random() * 10), // 90-99%
-    })
+    });
   }
 
-  return students
-})
+  return students;
+});
 
 // Fallback functions that generate mock data when real data isn't available
 
 // Generate mock at-risk students
 function generateMockAtRiskStudents() {
   return [
-    {id: "1", name: "Gabriel Mendez", performance: 62, instrument: "Violín"},
-    {id: "2", name: "Sara Linares", performance: 58, instrument: "Piano"},
-    {id: "3", name: "Miguel Torres", performance: 65, instrument: "Guitarra"},
-    {id: "4", name: "Valentina Ruiz", performance: 59, instrument: "Flauta"},
-  ]
+    { id: '1', name: 'Gabriel Mendez', performance: 62, instrument: 'Violín' },
+    { id: '2', name: 'Sara Linares', performance: 58, instrument: 'Piano' },
+    { id: '3', name: 'Miguel Torres', performance: 65, instrument: 'Guitarra' },
+    { id: '4', name: 'Valentina Ruiz', performance: 59, instrument: 'Flauta' },
+  ];
 }
 
 // Generate mock instrument distribution
 function generateMockInstrumentDistribution() {
   return [
-    {name: "Piano", count: 24, percentage: 25},
-    {name: "Violín", count: 20, percentage: 21},
-    {name: "Guitarra", count: 18, percentage: 19},
-    {name: "Flauta", count: 12, percentage: 13},
-    {name: "Otros", count: 21, percentage: 22},
-  ]
+    { name: 'Piano', count: 24, percentage: 25 },
+    { name: 'Violín', count: 20, percentage: 21 },
+    { name: 'Guitarra', count: 18, percentage: 19 },
+    { name: 'Flauta', count: 12, percentage: 13 },
+    { name: 'Otros', count: 21, percentage: 22 },
+  ];
 }
 
 // Generate mock attendance trend for the past 30 days
 function generateMockAttendanceTrend() {
-  const result = []
-  const today = new Date()
+  const result = [];
+  const today = new Date();
 
   for (let i = 30; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(today.getDate() - i)
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
 
     // Create a semi-realistic pattern with variations
-    let rate = 85 + Math.sin(i * 0.5) * 15 + (Math.random() * 8 - 4)
-    rate = Math.min(100, Math.max(65, Math.round(rate))) // Keep between 65% and 100%
+    let rate = 85 + Math.sin(i * 0.5) * 15 + (Math.random() * 8 - 4);
+    rate = Math.min(100, Math.max(65, Math.round(rate))); // Keep between 65% and 100%
 
     result.push({
-      date: format(date, "yyyy-MM-dd"),
+      date: format(date, 'yyyy-MM-dd'),
       rate,
-    })
+    });
   }
 
-  return result
+  return result;
 }
 
 // Alumnos en riesgo filtrados
 const filteredAtRiskStudents = computed(() => {
-  const atRiskStudentsList = generateMockAtRiskStudents()
+  const atRiskStudentsList = generateMockAtRiskStudents();
 
-  if (riskFilterType.value === "all") {
-    return atRiskStudentsList
+  if (riskFilterType.value === 'all') {
+    return atRiskStudentsList;
   }
 
-  return atRiskStudentsList.filter((student) => student.riskType === riskFilterType.value)
-})
+  return atRiskStudentsList.filter((student) => student.riskType === riskFilterType.value);
+});
 
 // Opciones para gráficos de Doughnut
 const doughnutOptions = {
@@ -968,10 +968,10 @@ const doughnutOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: "right" as const,
+      position: 'right' as const,
     },
   },
-}
+};
 
 // Opciones para gráficos de barras
 const barChartOptions = {
@@ -987,7 +987,7 @@ const barChartOptions = {
       beginAtZero: true,
     },
   },
-}
+};
 
 // Opciones para gráficos de línea
 const lineChartOptions = {
@@ -995,7 +995,7 @@ const lineChartOptions = {
   maintainAspectRatio: false,
   plugins: {
     tooltip: {
-      mode: "index" as const,
+      mode: 'index' as const,
       intersect: false,
     },
   },
@@ -1006,10 +1006,10 @@ const lineChartOptions = {
       max: 100,
     },
   },
-}
+};
 
 // Cargar datos iniciales
 onMounted(() => {
-  loadMetrics()
-})
+  loadMetrics();
+});
 </script>

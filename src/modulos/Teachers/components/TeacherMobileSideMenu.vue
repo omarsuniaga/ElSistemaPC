@@ -1,22 +1,3 @@
-<script setup lang="ts">
-import {BookOpenIcon, Squares2X2Icon, ChartBarIcon, BellIcon} from "@heroicons/vue/24/outline"
-
-defineProps<{activeTab: string}>()
-const emit = defineEmits(["set-active-tab", "close-menu"])
-
-const menuItems = [
-  {id: "classes", name: "Mis Clases", icon: BookOpenIcon},
-  {id: "notifications", name: "Notificaciones", icon: BellIcon},
-  {id: "analytics", name: "Analítica", icon: ChartBarIcon},
-  {id: "dashboard", name: "Dashboard", icon: Squares2X2Icon},
-]
-
-const handleItemClick = (tabId: string) => {
-  emit("set-active-tab", tabId)
-  emit("close-menu")
-}
-</script>
-
 <template>
   <div>
     <!-- Mobile menu overlay -->
@@ -71,3 +52,22 @@ const handleItemClick = (tabId: string) => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { BookOpenIcon, Squares2X2Icon, ChartBarIcon, BellIcon } from '@heroicons/vue/24/outline';
+
+defineProps<{activeTab: string}>();
+const emit = defineEmits(['set-active-tab', 'close-menu']);
+
+const menuItems = [
+  { id: 'classes', name: 'Mis Clases', icon: BookOpenIcon },
+  { id: 'notifications', name: 'Notificaciones', icon: BellIcon },
+  { id: 'analytics', name: 'Analítica', icon: ChartBarIcon },
+  { id: 'dashboard', name: 'Dashboard', icon: Squares2X2Icon },
+];
+
+const handleItemClick = (tabId: string) => {
+  emit('set-active-tab', tabId);
+  emit('close-menu');
+};
+</script>

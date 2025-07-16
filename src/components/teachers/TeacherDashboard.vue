@@ -134,14 +134,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, reactive} from "vue"
-import {format, formatDistance} from "date-fns"
-import {es} from "date-fns/locale"
-import Chart from "chart.js/auto"
-import {useTeachersStore} from "../../modulos/Teachers/store/teachers"
-import {useClassesStore} from "../../modulos/Classes/store/classes"
-import {useStudentsStore} from "../../modulos/Students/store/students"
-import AbsenceAlertList from "@/components/AbsenceAlertList.vue"
+import { ref, onMounted, reactive } from 'vue';
+import { format, formatDistance } from 'date-fns';
+import { es } from 'date-fns/locale';
+import Chart from 'chart.js/auto';
+import { useTeachersStore } from '../../modulos/Teachers/store/teachers';
+import { useClassesStore } from '../../modulos/Classes/store/classes';
+import { useStudentsStore } from '../../modulos/Students/store/students';
+import AbsenceAlertList from '@/components/AbsenceAlertList.vue';
 import {
   ClockIcon,
   ChartBarIcon,
@@ -152,19 +152,19 @@ import {
   PencilSquareIcon,
   ChatBubbleLeftEllipsisIcon,
   ExclamationTriangleIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Refs
-const attendanceChartRef = ref(null)
-let attendanceChart = null
+const attendanceChartRef = ref(null);
+let attendanceChart = null;
 
 // Stores
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
 
 // Datos para simular
-const teacherId = "1" // En un caso real, se obtendría del usuario autenticado
+const teacherId = '1'; // En un caso real, se obtendría del usuario autenticado
 
 // Estado de los datos
 interface ClassType {
@@ -186,104 +186,104 @@ interface Student {
   photoURL?: string
 }
 
-const nextClassTime = ref<Date | null>(null)
-const students = ref<Student[]>([])
+const nextClassTime = ref<Date | null>(null);
+const students = ref<Student[]>([]);
 const attendanceStats = reactive({
   total: 0,
   present: 0,
   absent: 0,
   justified: 0,
   rate: 0,
-})
-const nextClass = ref<ClassType | null>(null)
+});
+const nextClass = ref<ClassType | null>(null);
 
 // Actividades recientes (simuladas)
 const recentActivities = [
   {
-    type: "attendance",
-    title: "Registro de asistencia",
-    description: "Has registrado la asistencia para la clase de Piano Nivel 1",
+    type: 'attendance',
+    title: 'Registro de asistencia',
+    description: 'Has registrado la asistencia para la clase de Piano Nivel 1',
     timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 horas atrás
   },
   {
-    type: "comment",
-    title: "Nuevo comentario",
-    description: "Has añadido una observación para el estudiante Carlos Pérez",
+    type: 'comment',
+    title: 'Nuevo comentario',
+    description: 'Has añadido una observación para el estudiante Carlos Pérez',
     timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 horas atrás
   },
   {
-    type: "class",
-    title: "Clase completada",
-    description: "Has finalizado la clase de Guitarra Nivel 2",
+    type: 'class',
+    title: 'Clase completada',
+    description: 'Has finalizado la clase de Guitarra Nivel 2',
     timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 día atrás
   },
   {
-    type: "evaluation",
-    title: "Evaluación registrada",
-    description: "Has evaluado el desempeño de 5 estudiantes",
+    type: 'evaluation',
+    title: 'Evaluación registrada',
+    description: 'Has evaluado el desempeño de 5 estudiantes',
     timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000), // 2 días atrás
   },
-]
+];
 
 // Funciones auxiliares
 const formatDateTime = (date) => {
-  if (!date) return ""
-  return format(new Date(date), "EEEE d 'de' MMMM, h:mm a", {locale: es})
-}
+  if (!date) return '';
+  return format(new Date(date), 'EEEE d \'de\' MMMM, h:mm a', { locale: es });
+};
 
 const formatTimeAgo = (date) => {
-  return formatDistance(new Date(date), new Date(), {addSuffix: true, locale: es})
-}
+  return formatDistance(new Date(date), new Date(), { addSuffix: true, locale: es });
+};
 
 const getActivityIcon = (type) => {
   switch (type) {
-    case "attendance":
-      return ClipboardDocumentCheckIcon
-    case "comment":
-      return ChatBubbleLeftEllipsisIcon
-    case "evaluation":
-      return PencilSquareIcon
-    case "class":
-      return ClipboardDocumentListIcon
-    default:
-      return ClockIcon
+  case 'attendance':
+    return ClipboardDocumentCheckIcon;
+  case 'comment':
+    return ChatBubbleLeftEllipsisIcon;
+  case 'evaluation':
+    return PencilSquareIcon;
+  case 'class':
+    return ClipboardDocumentListIcon;
+  default:
+    return ClockIcon;
   }
-}
+};
 
 const getActivityIconClass = (type) => {
   switch (type) {
-    case "attendance":
-      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-    case "comment":
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-    case "evaluation":
-      return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-    case "class":
-      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-    default:
-      return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+  case 'attendance':
+    return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+  case 'comment':
+    return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+  case 'evaluation':
+    return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+  case 'class':
+    return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+  default:
+    return 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
   }
-}
+};
 
 // Inicializar la gráfica de asistencia
 const initAttendanceChart = () => {
-  if (!attendanceChartRef.value) return
+  if (!attendanceChartRef.value) return;
 
-  const ctx = attendanceChartRef.value.getContext("2d")
+  const ctx = attendanceChartRef.value.getContext('2d');
 
   attendanceChart = new Chart(ctx, {
-    type: "doughnut",
+    type: 'doughnut',
     data: {
-      labels: ["Presentes", "Ausentes", "Justificados"],
+      labels: ['Presentes', 'Ausentes', 'Justificados'],
       datasets: [
         {
           data: [attendanceStats.present, attendanceStats.absent, attendanceStats.justified],
           backgroundColor: [
-            "rgba(34, 197, 94, 0.8)", // Verde para presentes
-            "rgba(239, 68, 68, 0.8)", // Rojo para ausentes
-            "rgba(59, 130, 246, 0.8)", // Azul para justificados
+            'rgba(34, 197, 94, 0.8)', // Verde para presentes
+            'rgba(239, 68, 68, 0.8)', // Rojo para ausentes
+            'rgba(59, 130, 246, 0.8)', // Azul para justificados
           ],
-          borderColor: ["rgba(34, 197, 94, 1)", "rgba(239, 68, 68, 1)", "rgba(59, 130, 246, 1)"],
+          borderColor: ['rgba(34, 197, 94, 1)', 'rgba(239, 68, 68, 1)', 'rgba(59, 130, 246, 1)'],
           borderWidth: 1,
         },
       ],
@@ -293,61 +293,61 @@ const initAttendanceChart = () => {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: "bottom",
+          position: 'bottom',
         },
       },
     },
-  })
-}
+  });
+};
 
 // Cargar datos
 onMounted(async () => {
   try {
     // Cargar clases
     if (classesStore.classes.length === 0) {
-      await classesStore.fetchClasses()
+      await classesStore.fetchClasses();
     }
 
     // Obtener próxima clase
-    const teacherClasses = classesStore.classes.filter((c) => c.teacherId === teacherId)
-    const now = new Date()
+    const teacherClasses = classesStore.classes.filter((c) => c.teacherId === teacherId);
+    const now = new Date();
     const upcomingClasses = teacherClasses
       .filter((c) => new Date(c.nextDate) > now)
-      .sort((a, b) => new Date(a.nextDate).getTime() - new Date(b.nextDate).getTime())
+      .sort((a, b) => new Date(a.nextDate).getTime() - new Date(b.nextDate).getTime());
 
     if (upcomingClasses.length > 0) {
-      nextClass.value = upcomingClasses[0]
+      nextClass.value = upcomingClasses[0];
       if (nextClass.value) {
-        nextClassTime.value = new Date(nextClass.value.nextDate)
+        nextClassTime.value = new Date(nextClass.value.nextDate);
       }
     }
 
     // Cargar estudiantes
     if (studentsStore.students.length === 0) {
-      await studentsStore.fetchStudents()
+      await studentsStore.fetchStudents();
     }
 
     // Filtrar estudiantes del profesor
-    const studentIds = new Set()
+    const studentIds = new Set();
     teacherClasses.forEach((c) => {
-      c.studentIds?.forEach((id) => studentIds.add(id))
-    })
+      c.studentIds?.forEach((id) => studentIds.add(id));
+    });
 
-    students.value = studentsStore.students.filter((s) => studentIds.has(s.id))
+    students.value = studentsStore.students.filter((s) => studentIds.has(s.id));
 
     // Simular datos de asistencia (en un caso real se obtendrían de un store)
-    attendanceStats.total = 120
-    attendanceStats.present = 90
-    attendanceStats.absent = 20
-    attendanceStats.justified = 10
-    attendanceStats.rate = attendanceStats.present / attendanceStats.total
+    attendanceStats.total = 120;
+    attendanceStats.present = 90;
+    attendanceStats.absent = 20;
+    attendanceStats.justified = 10;
+    attendanceStats.rate = attendanceStats.present / attendanceStats.total;
 
     // Inicializar gráfica después de que los datos estén listos
-    initAttendanceChart()
+    initAttendanceChart();
   } catch (error) {
-    console.error("Error al cargar datos del dashboard:", error)
+    console.error('Error al cargar datos del dashboard:', error);
   }
-})
+});
 </script>
 
 <style scoped>

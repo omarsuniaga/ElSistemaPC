@@ -218,10 +218,10 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {useMontaje} from "../composables/useMontaje"
-import type {PlanAccion, Obra} from "../types"
-import {useAuthStore} from "@/stores/auth"
+import { ref, computed, watch } from 'vue';
+import { useMontaje } from '../composables/useMontaje';
+import type { PlanAccion, Obra } from '../types';
+import { useAuthStore } from '@/stores/auth';
 
 interface Props {
   isOpen: boolean
@@ -230,39 +230,39 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "saved", plan: PlanAccion): void
+  (e: 'close'): void
+  (e: 'saved', plan: PlanAccion): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
-const {createPlan, updatePlan} = useMontaje()
-const authStore = useAuthStore()
+const { createPlan, updatePlan } = useMontaje();
+const authStore = useAuthStore();
 
-const isSubmitting = ref(false)
+const isSubmitting = ref(false);
 
-const isEditing = computed(() => !!props.plan)
+const isEditing = computed(() => !!props.plan);
 
 const form = ref({
-  nombre: "",
-  descripcion: "",
-  obraId: "",
-  fechaInicio: "",
-  fechaFin: "",
-  maestroResponsableId: authStore.user?.uid || "",
-  maestroResponsableNombre: authStore.user?.displayName || "",
-  objetivos: [""],
+  nombre: '',
+  descripcion: '',
+  obraId: '',
+  fechaInicio: '',
+  fechaFin: '',
+  maestroResponsableId: authStore.user?.uid || '',
+  maestroResponsableNombre: authStore.user?.displayName || '',
+  objetivos: [''],
   fases: [
     {
-      nombre: "",
-      descripcion: "",
-      fechaInicio: "",
-      fechaFin: "",
+      nombre: '',
+      descripcion: '',
+      fechaInicio: '',
+      fechaFin: '',
       orden: 1,
     },
   ],
-})
+});
 
 watch(
   () => props.plan,
@@ -270,64 +270,64 @@ watch(
     if (newPlan) {
       form.value = {
         nombre: newPlan.nombre,
-        descripcion: newPlan.descripcion || "",
+        descripcion: newPlan.descripcion || '',
         obraId: newPlan.obraId,
-        fechaInicio: newPlan.fechaInicio.split("T")[0],
-        fechaFin: newPlan.fechaFin.split("T")[0],
-        maestroResponsableId: newPlan.maestroResponsableId || authStore.user?.uid || "",
+        fechaInicio: newPlan.fechaInicio.split('T')[0],
+        fechaFin: newPlan.fechaFin.split('T')[0],
+        maestroResponsableId: newPlan.maestroResponsableId || authStore.user?.uid || '',
         maestroResponsableNombre:
-          newPlan.maestroResponsableNombre || authStore.user?.displayName || "",
-        objetivos: newPlan.objetivos.length > 0 ? [...newPlan.objetivos] : [""],
+          newPlan.maestroResponsableNombre || authStore.user?.displayName || '',
+        objetivos: newPlan.objetivos.length > 0 ? [...newPlan.objetivos] : [''],
         fases:
           newPlan.fases.length > 0
             ? [...newPlan.fases]
             : [
-                {
-                  nombre: "",
-                  descripcion: "",
-                  fechaInicio: "",
-                  fechaFin: "",
-                  orden: 1,
-                },
-              ],
-      }
+              {
+                nombre: '',
+                descripcion: '',
+                fechaInicio: '',
+                fechaFin: '',
+                orden: 1,
+              },
+            ],
+      };
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 const addObjective = () => {
-  form.value.objetivos.push("")
-}
+  form.value.objetivos.push('');
+};
 
 const removeObjective = (index: number) => {
   if (form.value.objetivos.length > 1) {
-    form.value.objetivos.splice(index, 1)
+    form.value.objetivos.splice(index, 1);
   }
-}
+};
 
 const addPhase = () => {
   form.value.fases.push({
-    nombre: "",
-    descripcion: "",
-    fechaInicio: "",
-    fechaFin: "",
+    nombre: '',
+    descripcion: '',
+    fechaInicio: '',
+    fechaFin: '',
     orden: form.value.fases.length + 1,
-  })
-}
+  });
+};
 
 const removePhase = (index: number) => {
   if (form.value.fases.length > 1) {
-    form.value.fases.splice(index, 1)
+    form.value.fases.splice(index, 1);
     // Reorder phases
     form.value.fases.forEach((fase, i) => {
-      fase.orden = i + 1
-    })
+      fase.orden = i + 1;
+    });
   }
-}
+};
 
 const handleSubmit = async () => {
-  isSubmitting.value = true
+  isSubmitting.value = true;
 
   try {
     const planData = {
@@ -338,48 +338,48 @@ const handleSubmit = async () => {
       fechaFin: form.value.fechaFin,
       maestroResponsableId: form.value.maestroResponsableId,
       maestroResponsableNombre: form.value.maestroResponsableNombre,
-      objetivos: form.value.objetivos.filter((obj) => obj.trim() !== ""),
-      fases: form.value.fases.filter((fase) => fase.nombre.trim() !== ""),
-    }
+      objetivos: form.value.objetivos.filter((obj) => obj.trim() !== ''),
+      fases: form.value.fases.filter((fase) => fase.nombre.trim() !== ''),
+    };
 
-    let savedPlan: PlanAccion
+    let savedPlan: PlanAccion;
 
     if (isEditing.value && props.plan) {
-      savedPlan = await updatePlan(props.plan.id, planData)
+      savedPlan = await updatePlan(props.plan.id, planData);
     } else {
-      savedPlan = await createPlan(planData)
+      savedPlan = await createPlan(planData);
     }
 
-    emit("saved", savedPlan)
-    closeModal()
+    emit('saved', savedPlan);
+    closeModal();
   } catch (error) {
-    console.error("Error saving plan:", error)
+    console.error('Error saving plan:', error);
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 
 const closeModal = () => {
-  emit("close")
+  emit('close');
   // Reset form
   form.value = {
-    nombre: "",
-    descripcion: "",
-    obraId: "",
-    fechaInicio: "",
-    fechaFin: "",
-    maestroResponsableId: authStore.user?.uid || "",
-    maestroResponsableNombre: authStore.user?.displayName || "",
-    objetivos: [""],
+    nombre: '',
+    descripcion: '',
+    obraId: '',
+    fechaInicio: '',
+    fechaFin: '',
+    maestroResponsableId: authStore.user?.uid || '',
+    maestroResponsableNombre: authStore.user?.displayName || '',
+    objetivos: [''],
     fases: [
       {
-        nombre: "",
-        descripcion: "",
-        fechaInicio: "",
-        fechaFin: "",
+        nombre: '',
+        descripcion: '',
+        fechaInicio: '',
+        fechaFin: '',
         orden: 1,
       },
     ],
-  }
-}
+  };
+};
 </script>

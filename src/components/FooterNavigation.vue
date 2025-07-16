@@ -49,70 +49,70 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref, onMounted, onUnmounted} from "vue"
-import {useRoute} from "vue-router"
-import {useAuthStore} from "../stores/auth"
-import {teacherMenuItems, adminMenuItems} from "../modulos/Teachers/constants/menuItems"
-import {superusuarioMenuItems} from "../modulos/Superusuario/constants/menuItems"
-import {HomeIcon, UserIcon} from "@heroicons/vue/24/outline"
-import {useGeneralNotifications} from "../modulos/Teachers/composables/useGeneralNotifications"
+import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import { teacherMenuItems, adminMenuItems } from '../modulos/Teachers/constants/menuItems';
+import { superusuarioMenuItems } from '../modulos/Superusuario/constants/menuItems';
+import { HomeIcon, UserIcon } from '@heroicons/vue/24/outline';
+import { useGeneralNotifications } from '../modulos/Teachers/composables/useGeneralNotifications';
 
-const route = useRoute()
-const authStore = useAuthStore()
+const route = useRoute();
+const authStore = useAuthStore();
 
 // Notification system for teachers
-const {unreadCount, loadNotifications, setupRealtimeListener} = useGeneralNotifications()
+const { unreadCount, loadNotifications, setupRealtimeListener } = useGeneralNotifications();
 
-const unreadNotificationsCount = computed(() => unreadCount.value)
+const unreadNotificationsCount = computed(() => unreadCount.value);
 
-const unsubscribe: (() => void) | null = null
+const unsubscribe: (() => void) | null = null;
 
 // Initialize notifications for teachers
 onMounted(() => {
   if (authStore.isTeacher) {
-    loadNotifications()
-    setupRealtimeListener()
+    loadNotifications();
+    setupRealtimeListener();
   }
-})
+});
 
 onUnmounted(() => {
   if (unsubscribe) {
-    unsubscribe()
+    unsubscribe();
   }
-})
+});
 // Remove unused computed property since route.path is used directly
 
 // Determinar si la navegación debe mostrarse (ocultar en rutas públicas)
 const shouldShowNavigation = computed(() => {
   // Verificar si el usuario está autenticado
-  if (!authStore.isLoggedIn) return false
+  if (!authStore.isLoggedIn) return false;
 
   // Lista de rutas públicas donde no se debe mostrar la navegación
-  const publicRoutes = ["/login", "/register", "/reset-password", "/forgot-password"]
+  const publicRoutes = ['/login', '/register', '/reset-password', '/forgot-password'];
 
   // No mostrar navegación en rutas públicas
-  if (publicRoutes.includes(route.path)) return false
+  if (publicRoutes.includes(route.path)) return false;
 
   // Por defecto, mostrar la navegación
-  return true
-})
+  return true;
+});
 
 // Determinar si una ruta está activa (para resaltarla)
 const isRouteActive = (path: string) => {
   // Caso especial para la ruta raíz
-  if (path === "/") {
-    return route.path === "/" || route.path === "/dashboard"
+  if (path === '/') {
+    return route.path === '/' || route.path === '/dashboard';
   }
 
   // Comparación más precisa para evitar activación múltiple
-  if (path !== "/") {
+  if (path !== '/') {
     // Extraer componentes de las rutas
-    const routeParts = route.path.split("/").filter(Boolean)
-    const itemParts = path.split("/").filter(Boolean)
+    const routeParts = route.path.split('/').filter(Boolean);
+    const itemParts = path.split('/').filter(Boolean);
 
     // Si la ruta del menú es exactamente igual a la ruta actual
     if (route.path === path) {
-      return true
+      return true;
     }
 
     // Si no es exacta, verificar que la ruta actual comience con la ruta del elemento del menú
@@ -122,10 +122,10 @@ const isRouteActive = (path: string) => {
       itemParts.every((part, index) => part === routeParts[index])
     ) {
       // Verificar que no exista un ítem de menú más específico que coincida mejor
-      const menuItems = [...teacherMenuItems, ...adminMenuItems, ...superusuarioMenuItems]
+      const menuItems = [...teacherMenuItems, ...adminMenuItems, ...superusuarioMenuItems];
       const hasBetterMatch = menuItems.some((menuItem) => {
         // Convertir la ruta del menú en componentes
-        const menuItemParts = menuItem.to.split("/").filter(Boolean)
+        const menuItemParts = menuItem.to.split('/').filter(Boolean);
 
         // Un menú es mejor coincidencia si:
         // 1. No es el mismo ítem que estamos evaluando
@@ -135,30 +135,30 @@ const isRouteActive = (path: string) => {
           menuItem.to !== path &&
           menuItemParts.length > itemParts.length &&
           menuItemParts.every((part, idx) => part === routeParts[idx])
-        )
-      })
+        );
+      });
 
-      return !hasBetterMatch
+      return !hasBetterMatch;
     }
 
     // Caso especial para la sección de asistencia
-    if (path.includes("/attendance") || path.includes("/teacher/attendance")) {
+    if (path.includes('/attendance') || path.includes('/teacher/attendance')) {
       // Verificar si estamos en alguna ruta relacionada con la asistencia
-      const isAttendanceRoute = route.path.includes("/attendance")
+      const isAttendanceRoute = route.path.includes('/attendance');
 
       // Manejo especial para la ruta del calendario frente a la página de asistencia detallada
-      if (path.endsWith("/attendance/calendar") || path === "/attendance") {
+      if (path.endsWith('/attendance/calendar') || path === '/attendance') {
         // Este es el ítem de navegación principal de asistencia
-        return isAttendanceRoute && !route.params.classId
+        return isAttendanceRoute && !route.params.classId;
       } else if (isAttendanceRoute) {
         // Para páginas específicas de asistencia (con ID de clase)
-        return route.params.classId !== undefined
+        return route.params.classId !== undefined;
       }
     }
   }
 
-  return false
-}
+  return false;
+};
 
 // Items de navegación basados en el rol del usuario - usando las mismas constantes que Navigation.vue
 const navigationItems = computed(() => {
@@ -171,38 +171,38 @@ const navigationItems = computed(() => {
       superusuarioMenuItems[2], // Roles
       superusuarioMenuItems[3], // Permisos
       superusuarioMenuItems[4], // Sistema
-    ]
+    ];
   }
 
   // Para directores o administradores
   else if (authStore.isDirector || authStore.isAdmin) {
     // Mostrar hasta 5 elementos del menú de admin
-    return adminMenuItems.slice(0, 5)
+    return adminMenuItems.slice(0, 5);
   }
 
   // Para maestros
   else if (authStore.isTeacher) {
     // Mostrar hasta 5 elementos del menú de maestros
-    return teacherMenuItems.slice(0, 5)
+    return teacherMenuItems.slice(0, 5);
   }
 
-  return []
-})
+  return [];
+});
 
 // Computed para determinar las columnas del grid dinámicamente
 const gridCols = computed(() => {
-  const itemCount = navigationItems.value.length
+  const itemCount = navigationItems.value.length;
   switch (itemCount) {
-    case 3:
-      return "grid-cols-3"
-    case 4:
-      return "grid-cols-4"
-    case 5:
-      return "grid-cols-5"
-    default:
-      return "grid-cols-4"
+  case 3:
+    return 'grid-cols-3';
+  case 4:
+    return 'grid-cols-4';
+  case 5:
+    return 'grid-cols-5';
+  default:
+    return 'grid-cols-4';
   }
-})
+});
 </script>
 
 <style scoped>

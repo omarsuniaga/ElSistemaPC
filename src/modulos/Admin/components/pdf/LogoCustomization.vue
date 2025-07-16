@@ -120,8 +120,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
-import {PhotoIcon} from "@heroicons/vue/24/outline"
+import { ref } from 'vue';
+import { PhotoIcon } from '@heroicons/vue/24/outline';
 
 // Props
 interface Props {
@@ -131,46 +131,46 @@ interface Props {
   }
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
-  "logo-upload": [file: File]
-  "remove-logo": []
-  "update:pdfOptions": [value: any]
-}>()
+  'logo-upload': [file: File]
+  'remove-logo': []
+  'update:pdfOptions': [value: any]
+}>();
 
 // Refs
-const fileInput = ref<HTMLInputElement>()
+const fileInput = ref<HTMLInputElement>();
 
 // Funciones
 const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
 
   if (file) {
     // Validar tipo de archivo
-    if (!file.type.startsWith("image/")) {
-      alert("Por favor selecciona un archivo de imagen válido")
-      return
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona un archivo de imagen válido');
+      return;
     }
 
     // Validar tamaño (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert("El archivo es demasiado grande. Máximo 5MB")
-      return
+      alert('El archivo es demasiado grande. Máximo 5MB');
+      return;
     }
 
-    emit("logo-upload", file)
+    emit('logo-upload', file);
 
     // Limpiar input
     if (fileInput.value) {
-      fileInput.value.value = ""
+      fileInput.value.value = '';
     }
   }
-}
+};
 
 const handleRemoveLogo = () => {
-  emit("remove-logo")
-}
+  emit('remove-logo');
+};
 </script>

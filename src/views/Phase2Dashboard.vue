@@ -223,116 +223,116 @@ Performance & Security Monitoring
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted, watch} from "vue"
-import {usePerformanceMonitor} from "@/composables/performance/usePerformanceMonitor"
-import {useSecurity} from "@/composables/security/useSecurity"
-import {useCache} from "@/composables/cache/useAdvancedCache"
-import {useMonitoring} from "@/composables/monitoring/useRealUserMonitoring"
-import {useCodeQuality} from "@/composables/quality/useCodeQuality"
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { usePerformanceMonitor } from '@/composables/performance/usePerformanceMonitor';
+import { useSecurity } from '@/composables/security/useSecurity';
+import { useCache } from '@/composables/cache/useAdvancedCache';
+import { useMonitoring } from '@/composables/monitoring/useRealUserMonitoring';
+import { useCodeQuality } from '@/composables/quality/useCodeQuality';
 
 // Componentes
-import MetricCard from "@/components/dashboard/MetricCard.vue"
-import PerformanceSection from "@/components/dashboard/PerformanceSection.vue"
-import SecuritySection from "@/components/dashboard/SecuritySection.vue"
-import CacheSection from "@/components/dashboard/CacheSection.vue"
-import MonitoringSection from "@/components/dashboard/MonitoringSection.vue"
-import CodeQualitySection from "@/components/dashboard/CodeQualitySection.vue"
-import AlertsPanel from "@/components/dashboard/AlertsPanel.vue"
+import MetricCard from '@/components/dashboard/MetricCard.vue';
+import PerformanceSection from '@/components/dashboard/PerformanceSection.vue';
+import SecuritySection from '@/components/dashboard/SecuritySection.vue';
+import CacheSection from '@/components/dashboard/CacheSection.vue';
+import MonitoringSection from '@/components/dashboard/MonitoringSection.vue';
+import CodeQualitySection from '@/components/dashboard/CodeQualitySection.vue';
+import AlertsPanel from '@/components/dashboard/AlertsPanel.vue';
 
 // Composables
-const performanceStore = usePerformanceMonitor()
-const securityStore = useSecurity()
-const cacheStore = useCache()
-const monitoringStore = useMonitoring()
-const codeQualityStore = useCodeQuality()
+const performanceStore = usePerformanceMonitor();
+const securityStore = useSecurity();
+const cacheStore = useCache();
+const monitoringStore = useMonitoring();
+const codeQualityStore = useCodeQuality();
 
 // Estado local
-const activeTab = ref("performance")
-const speedDialOpen = ref(false)
-const isLoading = ref(false)
-const loadingMessage = ref("")
-const lastUpdate = ref(new Date())
-const updateInterval = ref<number | null>(null)
+const activeTab = ref('performance');
+const speedDialOpen = ref(false);
+const isLoading = ref(false);
+const loadingMessage = ref('');
+const lastUpdate = ref(new Date());
+const updateInterval = ref<number | null>(null);
 
 // Métricas reactivas
 const performanceMetrics = computed(() => ({
   overallScore: performanceStore.performanceScore,
   trend: performanceStore.trend,
   vitals: performanceStore.webVitals,
-}))
+}));
 
 const securityMetrics = computed(() => ({
   score: securityStore.securityScore,
-  trend: "stable",
+  trend: 'stable',
   violations: securityStore.criticalViolations.length,
-}))
+}));
 
 const cacheMetrics = computed(() => ({
   hitRate: cacheStore.stats.hitRate,
-  trend: cacheStore.cacheHealth === "excellent" ? "improving" : "stable",
+  trend: cacheStore.cacheHealth === 'excellent' ? 'improving' : 'stable',
   totalSize: cacheStore.stats.totalSize,
-}))
+}));
 
 const codeQualityMetrics = computed(() => ({
   overallScore: codeQualityStore.overallScore,
   trend:
     codeQualityStore.reviews.length > 1
       ? codeQualityStore.reviews[codeQualityStore.reviews.length - 1].trend
-      : "stable",
+      : 'stable',
   issues: codeQualityStore.criticalIssues.length,
-}))
+}));
 
-const webVitals = computed(() => performanceStore.webVitals)
-const resourceMetrics = computed(() => performanceStore.resourceTiming)
-const securityConfig = computed(() => securityStore.config)
-const securityViolations = computed(() => securityStore.recentViolations)
-const securityAudit = computed(() => securityStore.lastAudit)
-const cacheStats = computed(() => cacheStore.stats)
-const cacheStrategies = computed(() => cacheStore.config.strategies)
-const cacheHealth = computed(() => cacheStore.cacheHealth)
-const currentSession = computed(() => monitoringStore.currentSession)
-const userMetrics = computed(() => monitoringStore.getSessionSummary())
-const userErrors = computed(() => monitoringStore.currentSession?.errors || [])
-const codeMetrics = computed(() => codeQualityStore.metrics)
-const qualityGates = computed(() => codeQualityStore.qualityGates)
-const qualityRecommendations = computed(() => codeQualityStore.generateRecommendations())
+const webVitals = computed(() => performanceStore.webVitals);
+const resourceMetrics = computed(() => performanceStore.resourceTiming);
+const securityConfig = computed(() => securityStore.config);
+const securityViolations = computed(() => securityStore.recentViolations);
+const securityAudit = computed(() => securityStore.lastAudit);
+const cacheStats = computed(() => cacheStore.stats);
+const cacheStrategies = computed(() => cacheStore.config.strategies);
+const cacheHealth = computed(() => cacheStore.cacheHealth);
+const currentSession = computed(() => monitoringStore.currentSession);
+const userMetrics = computed(() => monitoringStore.getSessionSummary());
+const userErrors = computed(() => monitoringStore.currentSession?.errors || []);
+const codeMetrics = computed(() => codeQualityStore.metrics);
+const qualityGates = computed(() => codeQualityStore.qualityGates);
+const qualityRecommendations = computed(() => codeQualityStore.generateRecommendations());
 
 // Alertas críticas
 const criticalAlerts = computed(() => {
-  const alerts: any[] = []
+  const alerts: any[] = [];
 
   if (performanceMetrics.value.overallScore < 50) {
     alerts.push({
-      id: "perf-critical",
-      type: "error",
-      title: "Performance Crítico",
-      message: "El rendimiento del sistema está por debajo del 50%",
-      action: "analyzePerformance",
-    })
+      id: 'perf-critical',
+      type: 'error',
+      title: 'Performance Crítico',
+      message: 'El rendimiento del sistema está por debajo del 50%',
+      action: 'analyzePerformance',
+    });
   }
 
   if (securityMetrics.value.violations > 0) {
     alerts.push({
-      id: "security-violations",
-      type: "warning",
-      title: "Violaciones de Seguridad",
+      id: 'security-violations',
+      type: 'warning',
+      title: 'Violaciones de Seguridad',
       message: `${securityMetrics.value.violations} violaciones críticas detectadas`,
-      action: "runSecurityAudit",
-    })
+      action: 'runSecurityAudit',
+    });
   }
 
   if (cacheMetrics.value.hitRate < 60) {
     alerts.push({
-      id: "cache-poor",
-      type: "info",
-      title: "Cache Performance Bajo",
-      message: "La efectividad del caché está por debajo del 60%",
-      action: "optimizeCache",
-    })
+      id: 'cache-poor',
+      type: 'info',
+      title: 'Cache Performance Bajo',
+      message: 'La efectividad del caché está por debajo del 60%',
+      action: 'optimizeCache',
+    });
   }
 
-  return alerts
-})
+  return alerts;
+});
 
 // Métodos de utilidad
 function getOverallStatusColor() {
@@ -341,198 +341,198 @@ function getOverallStatusColor() {
     securityMetrics.value.score,
     cacheMetrics.value.hitRate,
     codeQualityMetrics.value.overallScore,
-  ]
+  ];
 
-  const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length
+  const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
 
-  if (avgScore >= 80) return "success"
-  if (avgScore >= 60) return "warning"
-  return "error"
+  if (avgScore >= 80) return 'success';
+  if (avgScore >= 60) return 'warning';
+  return 'error';
 }
 
 function getOverallStatusIcon() {
-  const color = getOverallStatusColor()
+  const color = getOverallStatusColor();
   switch (color) {
-    case "success":
-      return "mdi-check-circle"
-    case "warning":
-      return "mdi-alert-circle"
-    case "error":
-      return "mdi-close-circle"
-    default:
-      return "mdi-help-circle"
+  case 'success':
+    return 'mdi-check-circle';
+  case 'warning':
+    return 'mdi-alert-circle';
+  case 'error':
+    return 'mdi-close-circle';
+  default:
+    return 'mdi-help-circle';
   }
 }
 
 function getOverallStatusText() {
-  const color = getOverallStatusColor()
+  const color = getOverallStatusColor();
   switch (color) {
-    case "success":
-      return "Sistema Óptimo"
-    case "warning":
-      return "Requiere Atención"
-    case "error":
-      return "Estado Crítico"
-    default:
-      return "Evaluando..."
+  case 'success':
+    return 'Sistema Óptimo';
+  case 'warning':
+    return 'Requiere Atención';
+  case 'error':
+    return 'Estado Crítico';
+  default:
+    return 'Evaluando...';
   }
 }
 
 function getScoreColor(score: number) {
-  if (score >= 80) return "success"
-  if (score >= 60) return "warning"
-  return "error"
+  if (score >= 80) return 'success';
+  if (score >= 60) return 'warning';
+  return 'error';
 }
 
 function formatTime(date: Date) {
-  return date.toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  })
+  return date.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 }
 
 // Métodos de acción
 async function analyzePerformance() {
-  isLoading.value = true
-  loadingMessage.value = "Analizando rendimiento..."
+  isLoading.value = true;
+  loadingMessage.value = 'Analizando rendimiento...';
 
   try {
-    await performanceStore.analyzePerformance()
-    lastUpdate.value = new Date()
+    await performanceStore.analyzePerformance();
+    lastUpdate.value = new Date();
   } catch (error) {
-    console.error("Error analizando performance:", error)
+    console.error('Error analizando performance:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 async function optimizePerformance() {
-  isLoading.value = true
-  loadingMessage.value = "Optimizando rendimiento..."
+  isLoading.value = true;
+  loadingMessage.value = 'Optimizando rendimiento...';
 
   try {
-    await performanceStore.optimizeResources()
-    await analyzePerformance()
+    await performanceStore.optimizeResources();
+    await analyzePerformance();
   } catch (error) {
-    console.error("Error optimizando performance:", error)
+    console.error('Error optimizando performance:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 async function runSecurityAudit() {
-  isLoading.value = true
-  loadingMessage.value = "Ejecutando auditoría de seguridad..."
+  isLoading.value = true;
+  loadingMessage.value = 'Ejecutando auditoría de seguridad...';
 
   try {
-    await securityStore.performSecurityAudit()
-    lastUpdate.value = new Date()
+    await securityStore.performSecurityAudit();
+    lastUpdate.value = new Date();
   } catch (error) {
-    console.error("Error en auditoría de seguridad:", error)
+    console.error('Error en auditoría de seguridad:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 async function updateSecurityConfig(config: any) {
-  securityStore.updateSecurityConfig(config)
-  await runSecurityAudit()
+  securityStore.updateSecurityConfig(config);
+  await runSecurityAudit();
 }
 
 async function clearCache(strategy?: string) {
-  isLoading.value = true
-  loadingMessage.value = "Limpiando caché..."
+  isLoading.value = true;
+  loadingMessage.value = 'Limpiando caché...';
 
   try {
-    await cacheStore.clear(strategy)
-    lastUpdate.value = new Date()
+    await cacheStore.clear(strategy);
+    lastUpdate.value = new Date();
   } catch (error) {
-    console.error("Error limpiando caché:", error)
+    console.error('Error limpiando caché:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 async function optimizeCache() {
-  isLoading.value = true
-  loadingMessage.value = "Optimizando configuración de caché..."
+  isLoading.value = true;
+  loadingMessage.value = 'Optimizando configuración de caché...';
 
   try {
     // Lógica de optimización automática
-    const newConfig = {...cacheStore.config}
+    const newConfig = { ...cacheStore.config };
 
     // Ajustar TTL basado en hit rate
     if (cacheStore.stats.hitRate < 70) {
       Object.keys(newConfig.strategies).forEach((key) => {
-        newConfig.strategies[key].ttl *= 1.5 // Aumentar TTL
-      })
+        newConfig.strategies[key].ttl *= 1.5; // Aumentar TTL
+      });
     }
 
-    cacheStore.updateConfig(newConfig)
-    lastUpdate.value = new Date()
+    cacheStore.updateConfig(newConfig);
+    lastUpdate.value = new Date();
   } catch (error) {
-    console.error("Error optimizando caché:", error)
+    console.error('Error optimizando caché:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 function startMonitoring(userId?: string) {
-  monitoringStore.initializeMonitoring(userId)
+  monitoringStore.initializeMonitoring(userId);
 }
 
 function exportMonitoringData() {
-  const data = monitoringStore.getSessionSummary()
-  const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"})
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `monitoring-data-${new Date().toISOString().split("T")[0]}.json`
-  a.click()
-  URL.revokeObjectURL(url)
+  const data = monitoringStore.getSessionSummary();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `monitoring-data-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 async function analyzeCodeQuality() {
-  isLoading.value = true
-  loadingMessage.value = "Analizando calidad de código..."
+  isLoading.value = true;
+  loadingMessage.value = 'Analizando calidad de código...';
 
   try {
-    await codeQualityStore.analyzeCodeQuality()
-    lastUpdate.value = new Date()
+    await codeQualityStore.analyzeCodeQuality();
+    lastUpdate.value = new Date();
   } catch (error) {
-    console.error("Error analizando calidad:", error)
+    console.error('Error analizando calidad:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 async function fixCodeIssues() {
-  isLoading.value = true
-  loadingMessage.value = "Corrigiendo problemas automáticos..."
+  isLoading.value = true;
+  loadingMessage.value = 'Corrigiendo problemas automáticos...';
 
   try {
-    await codeQualityStore.fixAutomaticIssues()
-    await analyzeCodeQuality()
+    await codeQualityStore.fixAutomaticIssues();
+    await analyzeCodeQuality();
   } catch (error) {
-    console.error("Error corrigiendo problemas:", error)
+    console.error('Error corrigiendo problemas:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 // Métodos del speed dial
 async function refreshAllMetrics() {
-  isLoading.value = true
-  loadingMessage.value = "Actualizando todas las métricas..."
+  isLoading.value = true;
+  loadingMessage.value = 'Actualizando todas las métricas...';
 
   try {
-    await Promise.allSettled([analyzePerformance(), runSecurityAudit(), analyzeCodeQuality()])
-    lastUpdate.value = new Date()
+    await Promise.allSettled([analyzePerformance(), runSecurityAudit(), analyzeCodeQuality()]);
+    lastUpdate.value = new Date();
   } catch (error) {
-    console.error("Error actualizando métricas:", error)
+    console.error('Error actualizando métricas:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
@@ -556,70 +556,70 @@ function exportReport() {
       gates: qualityGates.value,
       recommendations: qualityRecommendations.value,
     },
-  }
+  };
 
-  const blob = new Blob([JSON.stringify(report, null, 2)], {type: "application/json"})
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `fase2-report-${new Date().toISOString().split("T")[0]}.json`
-  a.click()
-  URL.revokeObjectURL(url)
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fase2-report-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 async function runAutoOptimizations() {
-  isLoading.value = true
-  loadingMessage.value = "Ejecutando optimizaciones automáticas..."
+  isLoading.value = true;
+  loadingMessage.value = 'Ejecutando optimizaciones automáticas...';
 
   try {
     // Optimizaciones automáticas
-    await Promise.allSettled([optimizePerformance(), optimizeCache(), fixCodeIssues()])
+    await Promise.allSettled([optimizePerformance(), optimizeCache(), fixCodeIssues()]);
 
     // Actualizar métricas después de optimizar
-    await refreshAllMetrics()
+    await refreshAllMetrics();
   } catch (error) {
-    console.error("Error en optimizaciones automáticas:", error)
+    console.error('Error en optimizaciones automáticas:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 async function runEmergencyCheck() {
-  isLoading.value = true
-  loadingMessage.value = "Ejecutando verificación de emergencia..."
+  isLoading.value = true;
+  loadingMessage.value = 'Ejecutando verificación de emergencia...';
 
   try {
     // Verificar problemas críticos
-    const criticalIssues = []
+    const criticalIssues = [];
 
     if (performanceMetrics.value.overallScore < 30) {
-      criticalIssues.push("Performance extremadamente bajo")
+      criticalIssues.push('Performance extremadamente bajo');
     }
 
     if (securityMetrics.value.violations > 5) {
-      criticalIssues.push("Múltiples violaciones de seguridad")
+      criticalIssues.push('Múltiples violaciones de seguridad');
     }
 
     if (criticalIssues.length > 0) {
-      alert(`⚠️ PROBLEMAS CRÍTICOS DETECTADOS:\n\n${criticalIssues.join("\n")}`)
+      alert(`⚠️ PROBLEMAS CRÍTICOS DETECTADOS:\n\n${criticalIssues.join('\n')}`);
     } else {
-      alert("✅ No se detectaron problemas críticos")
+      alert('✅ No se detectaron problemas críticos');
     }
   } catch (error) {
-    console.error("Error en verificación de emergencia:", error)
+    console.error('Error en verificación de emergencia:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 function dismissAlert(alertId: string) {
   // Lógica para descartar alerta
-  console.log("Alert dismissed:", alertId)
+  console.log('Alert dismissed:', alertId);
 }
 
 function resolveAlert(alertId: string) {
   // Lógica para resolver alerta
-  console.log("Alert resolved:", alertId)
+  console.log('Alert resolved:', alertId);
 }
 
 // Lifecycle
@@ -631,40 +631,40 @@ onMounted(async () => {
     cacheStore.initializeCache(),
     monitoringStore.initializeMonitoring(),
     codeQualityStore.analyzeCodeQuality(),
-  ])
+  ]);
 
   // Configurar actualización automática cada 5 minutos
   updateInterval.value = window.setInterval(
     () => {
-      refreshAllMetrics()
+      refreshAllMetrics();
     },
-    5 * 60 * 1000
-  )
+    5 * 60 * 1000,
+  );
 
-  lastUpdate.value = new Date()
-})
+  lastUpdate.value = new Date();
+});
 
 onUnmounted(() => {
   if (updateInterval.value) {
-    clearInterval(updateInterval.value)
+    clearInterval(updateInterval.value);
   }
-})
+});
 
 // Watchers
 watch(activeTab, (newTab) => {
   // Actualizar métricas específicas cuando se cambia de tab
   switch (newTab) {
-    case "performance":
-      analyzePerformance()
-      break
-    case "security":
-      runSecurityAudit()
-      break
-    case "quality":
-      analyzeCodeQuality()
-      break
+  case 'performance':
+    analyzePerformance();
+    break;
+  case 'security':
+    runSecurityAudit();
+    break;
+  case 'quality':
+    analyzeCodeQuality();
+    break;
   }
-})
+});
 </script>
 
 <style scoped>

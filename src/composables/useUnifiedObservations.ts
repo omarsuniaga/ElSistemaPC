@@ -1,8 +1,8 @@
 // Función para obtener observaciones de la colección unificada
 // Agrega esta función al store de attendance o crea un nuevo composable
 
-import {collection, query, where, getDocs} from "firebase/firestore"
-import {db} from "../firebase"
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 /**
  * Obtiene observaciones unificadas para una clase específica
@@ -11,13 +11,13 @@ import {db} from "../firebase"
  */
 export async function fetchUnifiedObservationsForClass(classId: string) {
   try {
-    console.log(`[UnifiedObservations] Fetching observations for class: ${classId}`)
-    const q = query(collection(db, "OBSERVACIONES_UNIFICADAS"), where("classId", "==", classId))
-    const querySnapshot = await getDocs(q)
-    const observations: any[] = []
+    console.log(`[UnifiedObservations] Fetching observations for class: ${classId}`);
+    const q = query(collection(db, 'OBSERVACIONES_UNIFICADAS'), where('classId', '==', classId));
+    const querySnapshot = await getDocs(q);
+    const observations: any[] = [];
 
     querySnapshot.forEach((doc) => {
-      const data = doc.data()
+      const data = doc.data();
       observations.push({
         id: doc.id,
         ...data,
@@ -26,24 +26,24 @@ export async function fetchUnifiedObservationsForClass(classId: string) {
         studentName: data.studentName || null,
         authorName: data.author,
         fecha: data.date,
-        type: data.type || "general",
-      })
-    })
+        type: data.type || 'general',
+      });
+    });
 
     // Ordenar manualmente por fecha de creación (más reciente primero)
     observations.sort((a, b) => {
-      const dateA = new Date(a.createdAt || a.date)
-      const dateB = new Date(b.createdAt || b.date)
-      return dateB.getTime() - dateA.getTime()
-    })
+      const dateA = new Date(a.createdAt || a.date);
+      const dateB = new Date(b.createdAt || b.date);
+      return dateB.getTime() - dateA.getTime();
+    });
 
     console.log(
-      `[UnifiedObservations] Found ${observations.length} observations for class ${classId}`
-    )
-    return observations
+      `[UnifiedObservations] Found ${observations.length} observations for class ${classId}`,
+    );
+    return observations;
   } catch (error) {
-    console.error("[UnifiedObservations] Error fetching observations:", error)
-    throw error
+    console.error('[UnifiedObservations] Error fetching observations:', error);
+    throw error;
   }
 }
 
@@ -54,15 +54,15 @@ export async function fetchUnifiedObservationsForClass(classId: string) {
  */
 export async function fetchUnifiedObservationsForTeacher(teacherId: string) {
   try {
-    console.log(`[UnifiedObservations] Fetching observations for teacher: ${teacherId}`)
+    console.log(`[UnifiedObservations] Fetching observations for teacher: ${teacherId}`);
 
-    const q = query(collection(db, "OBSERVACIONES_UNIFICADAS"), where("authorId", "==", teacherId))
+    const q = query(collection(db, 'OBSERVACIONES_UNIFICADAS'), where('authorId', '==', teacherId));
 
-    const querySnapshot = await getDocs(q)
-    const observations: any[] = []
+    const querySnapshot = await getDocs(q);
+    const observations: any[] = [];
 
     querySnapshot.forEach((doc) => {
-      const data = doc.data()
+      const data = doc.data();
       observations.push({
         id: doc.id,
         ...data,
@@ -71,23 +71,23 @@ export async function fetchUnifiedObservationsForTeacher(teacherId: string) {
         studentName: data.studentName || null,
         authorName: data.author,
         fecha: data.date,
-        type: data.type || "general",
-      })
-    })
+        type: data.type || 'general',
+      });
+    });
 
     // Ordenar manualmente por fecha de creación (más reciente primero)
     observations.sort((a, b) => {
-      const dateA = new Date(a.createdAt || a.date)
-      const dateB = new Date(b.createdAt || b.date)
-      return dateB.getTime() - dateA.getTime()
-    })
+      const dateA = new Date(a.createdAt || a.date);
+      const dateB = new Date(b.createdAt || b.date);
+      return dateB.getTime() - dateA.getTime();
+    });
 
     console.log(
-      `[UnifiedObservations] Found ${observations.length} observations for teacher ${teacherId}`
-    )
-    return observations
+      `[UnifiedObservations] Found ${observations.length} observations for teacher ${teacherId}`,
+    );
+    return observations;
   } catch (error) {
-    console.error("[UnifiedObservations] Error fetching teacher observations:", error)
-    throw error
+    console.error('[UnifiedObservations] Error fetching teacher observations:', error);
+    throw error;
   }
 }

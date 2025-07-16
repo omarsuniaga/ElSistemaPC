@@ -260,14 +260,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import {useMontaje} from "../composables/useMontaje"
-import type {Plan, Objective, Work} from "../types"
-import PlanFormModal from "../components/PlanFormModal.vue"
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useMontaje } from '../composables/useMontaje';
+import type { Plan, Objective, Work } from '../types';
+import PlanFormModal from '../components/PlanFormModal.vue';
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 const {
   currentPlan: plan,
   loading,
@@ -276,148 +276,148 @@ const {
   getPlanById,
   associatedWorks,
   availableWorks,
-} = useMontaje()
+} = useMontaje();
 
 // State
-const showEditModal = ref(false)
-const showObjectiveModal = ref(false)
-const showWorksModal = ref(false)
-const selectedWorks = ref<string[]>([])
+const showEditModal = ref(false);
+const showObjectiveModal = ref(false);
+const showWorksModal = ref(false);
+const selectedWorks = ref<string[]>([]);
 
 // New objective form
 const newObjective = ref<Partial<Objective>>({
-  title: "",
-  description: "",
-  priority: "MEDIUM",
-  deadline: "",
+  title: '',
+  description: '',
+  priority: 'MEDIUM',
+  deadline: '',
   completed: false,
-})
+});
 
 // Computed
 const completedWorks = computed(
-  () => associatedWorks.value.filter((work) => work.status === "COMPLETED").length
-)
+  () => associatedWorks.value.filter((work) => work.status === 'COMPLETED').length,
+);
 
-const totalWorks = computed(() => associatedWorks.value.length)
+const totalWorks = computed(() => associatedWorks.value.length);
 
 const worksProgress = computed(() =>
-  totalWorks.value > 0 ? (completedWorks.value / totalWorks.value) * 100 : 0
-)
+  totalWorks.value > 0 ? (completedWorks.value / totalWorks.value) * 100 : 0,
+);
 
 const completedObjectives = computed(
-  () => plan.value?.objectives.filter((obj) => obj.completed).length ?? 0
-)
+  () => plan.value?.objectives.filter((obj) => obj.completed).length ?? 0,
+);
 
-const totalObjectives = computed(() => plan.value?.objectives.length ?? 0)
+const totalObjectives = computed(() => plan.value?.objectives.length ?? 0);
 
 const objectivesProgress = computed(() =>
-  totalObjectives.value > 0 ? (completedObjectives.value / totalObjectives.value) * 100 : 0
-)
+  totalObjectives.value > 0 ? (completedObjectives.value / totalObjectives.value) * 100 : 0,
+);
 
 // Methods
 const handleUpdatePlan = async (planData: Partial<Plan>) => {
   if (plan.value) {
     try {
-      await updatePlan(plan.value.id, planData)
-      showEditModal.value = false
+      await updatePlan(plan.value.id, planData);
+      showEditModal.value = false;
     } catch (error) {
-      console.error("Error updating plan:", error)
+      console.error('Error updating plan:', error);
     }
   }
-}
+};
 
 const toggleObjectiveCompletion = async (objective: Objective) => {
   if (plan.value) {
     const updatedObjectives = plan.value.objectives.map((obj) =>
-      obj.id === objective.id ? {...obj, completed: !obj.completed} : obj
-    )
-    await updatePlan(plan.value.id, {objectives: updatedObjectives})
+      obj.id === objective.id ? { ...obj, completed: !obj.completed } : obj,
+    );
+    await updatePlan(plan.value.id, { objectives: updatedObjectives });
   }
-}
+};
 
 const addObjective = async () => {
   if (plan.value && newObjective.value.title) {
     const objective: Objective = {
       id: Date.now().toString(),
       title: newObjective.value.title,
-      description: newObjective.value.description || "",
-      priority: newObjective.value.priority as "HIGH" | "MEDIUM" | "LOW",
+      description: newObjective.value.description || '',
+      priority: newObjective.value.priority as 'HIGH' | 'MEDIUM' | 'LOW',
       deadline: newObjective.value.deadline!,
       completed: false,
-    }
+    };
 
-    const updatedObjectives = [...plan.value.objectives, objective]
-    await updatePlan(plan.value.id, {objectives: updatedObjectives})
-    closeObjectiveModal()
+    const updatedObjectives = [...plan.value.objectives, objective];
+    await updatePlan(plan.value.id, { objectives: updatedObjectives });
+    closeObjectiveModal();
   }
-}
+};
 
 const closeObjectiveModal = () => {
-  showObjectiveModal.value = false
+  showObjectiveModal.value = false;
   newObjective.value = {
-    title: "",
-    description: "",
-    priority: "MEDIUM",
-    deadline: "",
+    title: '',
+    description: '',
+    priority: 'MEDIUM',
+    deadline: '',
     completed: false,
-  }
-}
+  };
+};
 
 const toggleWorkSelection = (workId: string) => {
-  const index = selectedWorks.value.indexOf(workId)
+  const index = selectedWorks.value.indexOf(workId);
   if (index > -1) {
-    selectedWorks.value.splice(index, 1)
+    selectedWorks.value.splice(index, 1);
   } else {
-    selectedWorks.value.push(workId)
+    selectedWorks.value.push(workId);
   }
-}
+};
 
 const associateWorks = async () => {
   if (plan.value) {
-    const updatedWorkIds = [...(plan.value.workIds || []), ...selectedWorks.value]
-    await updatePlan(plan.value.id, {workIds: updatedWorkIds})
-    closeWorksModal()
+    const updatedWorkIds = [...(plan.value.workIds || []), ...selectedWorks.value];
+    await updatePlan(plan.value.id, { workIds: updatedWorkIds });
+    closeWorksModal();
   }
-}
+};
 
 const closeWorksModal = () => {
-  showWorksModal.value = false
-  selectedWorks.value = []
-}
+  showWorksModal.value = false;
+  selectedWorks.value = [];
+};
 
 const viewWork = (work: Work) => {
-  router.push(`/montaje/obras/${work.id}`)
-}
+  router.push(`/montaje/obras/${work.id}`);
+};
 
 const exportPlan = () => {
   // Implementation for PDF export
-  console.log("Exporting plan to PDF...")
-}
+  console.log('Exporting plan to PDF...');
+};
 
 const getStatusLabel = (status: string) => {
   const labels: Record<string, string> = {
-    DRAFT: "Borrador",
-    ACTIVE: "Activo",
-    COMPLETED: "Completado",
-    ARCHIVED: "Archivado",
-  }
-  return labels[status] || status
-}
+    DRAFT: 'Borrador',
+    ACTIVE: 'Activo',
+    COMPLETED: 'Completado',
+    ARCHIVED: 'Archivado',
+  };
+  return labels[status] || status;
+};
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
+  return new Date(date).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
 
 onMounted(async () => {
-  const planId = route.params.id as string
+  const planId = route.params.id as string;
   if (planId) {
-    await getPlanById(planId)
+    await getPlanById(planId);
   }
-})
+});
 </script>
 
 <style scoped>

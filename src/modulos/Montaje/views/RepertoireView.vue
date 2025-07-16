@@ -168,11 +168,11 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import type {Repertorio} from "../types"
-import {useRepertorio} from "../composables/useRepertorio"
-import RepertoireCard from "../components/RepertoireCard.vue"
-import RepertoireFormModal from "../components/RepertoireFormModal.vue"
+import { ref, computed, onMounted } from 'vue';
+import type { Repertorio } from '../types';
+import { useRepertorio } from '../composables/useRepertorio';
+import RepertoireCard from '../components/RepertoireCard.vue';
+import RepertoireFormModal from '../components/RepertoireFormModal.vue';
 
 const {
   repertorios,
@@ -181,140 +181,140 @@ const {
   createRepertorio,
   updateRepertorio,
   deleteRepertorio: deleteRepertoirioService,
-} = useRepertorio()
+} = useRepertorio();
 
 const filters = ref({
-  tipo: "",
-  estado: "",
-  nivel: "",
-  search: "",
-})
+  tipo: '',
+  estado: '',
+  nivel: '',
+  search: '',
+});
 
-const currentPage = ref(1)
-const itemsPerPage = ref(9)
-const showCreateModal = ref(false)
-const showEditModal = ref(false)
-const showDeleteModal = ref(false)
-const selectedRepertoire = ref<Repertorio | null>(null)
+const currentPage = ref(1);
+const itemsPerPage = ref(9);
+const showCreateModal = ref(false);
+const showEditModal = ref(false);
+const showDeleteModal = ref(false);
+const selectedRepertoire = ref<Repertorio | null>(null);
 
 const filteredRepertoires = computed(() => {
-  let filtered = repertorios.value
+  let filtered = repertorios.value;
 
   if (filters.value.tipo) {
-    filtered = filtered.filter((r) => r.tipo === filters.value.tipo)
+    filtered = filtered.filter((r) => r.tipo === filters.value.tipo);
   }
 
   if (filters.value.estado) {
-    filtered = filtered.filter((r) => r.estado === filters.value.estado)
+    filtered = filtered.filter((r) => r.estado === filters.value.estado);
   }
 
   if (filters.value.nivel) {
-    filtered = filtered.filter((r) => r.nivelDificultad === parseInt(filters.value.nivel))
+    filtered = filtered.filter((r) => r.nivelDificultad === parseInt(filters.value.nivel));
   }
 
   if (filters.value.search) {
-    const search = filters.value.search.toLowerCase()
+    const search = filters.value.search.toLowerCase();
     filtered = filtered.filter(
       (r) =>
         r.nombre.toLowerCase().includes(search) ||
         r.descripcion?.toLowerCase().includes(search) ||
-        r.etiquetas?.some((tag) => tag.toLowerCase().includes(search))
-    )
+        r.etiquetas?.some((tag) => tag.toLowerCase().includes(search)),
+    );
   }
 
   // Paginación
-  const startIndex = (currentPage.value - 1) * itemsPerPage.value
-  return filtered.slice(startIndex, startIndex + itemsPerPage.value)
-})
+  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
+  return filtered.slice(startIndex, startIndex + itemsPerPage.value);
+});
 
 const totalPages = computed(() => {
-  let filtered = repertorios.value
+  let filtered = repertorios.value;
 
   if (filters.value.tipo) {
-    filtered = filtered.filter((r) => r.tipo === filters.value.tipo)
+    filtered = filtered.filter((r) => r.tipo === filters.value.tipo);
   }
 
   if (filters.value.estado) {
-    filtered = filtered.filter((r) => r.estado === filters.value.estado)
+    filtered = filtered.filter((r) => r.estado === filters.value.estado);
   }
 
   if (filters.value.nivel) {
-    filtered = filtered.filter((r) => r.nivelDificultad === parseInt(filters.value.nivel))
+    filtered = filtered.filter((r) => r.nivelDificultad === parseInt(filters.value.nivel));
   }
 
   if (filters.value.search) {
-    const search = filters.value.search.toLowerCase()
+    const search = filters.value.search.toLowerCase();
     filtered = filtered.filter(
       (r) =>
         r.nombre.toLowerCase().includes(search) ||
         r.descripcion?.toLowerCase().includes(search) ||
-        r.etiquetas?.some((tag) => tag.toLowerCase().includes(search))
-    )
+        r.etiquetas?.some((tag) => tag.toLowerCase().includes(search)),
+    );
   }
 
-  return Math.ceil(filtered.length / itemsPerPage.value)
-})
+  return Math.ceil(filtered.length / itemsPerPage.value);
+});
 
 const visiblePages = computed(() => {
-  const pages = []
-  const maxVisible = 5
-  const start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
-  const end = Math.min(totalPages.value, start + maxVisible - 1)
+  const pages = [];
+  const maxVisible = 5;
+  const start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2));
+  const end = Math.min(totalPages.value, start + maxVisible - 1);
 
   for (let i = start; i <= end; i++) {
-    pages.push(i)
+    pages.push(i);
   }
 
-  return pages
-})
+  return pages;
+});
 
 const editRepertoire = (repertoire: Repertorio) => {
-  selectedRepertoire.value = repertoire
-  showEditModal.value = true
-}
+  selectedRepertoire.value = repertoire;
+  showEditModal.value = true;
+};
 
 const deleteRepertoire = (repertoire: Repertorio) => {
-  selectedRepertoire.value = repertoire
-  showDeleteModal.value = true
-}
+  selectedRepertoire.value = repertoire;
+  showDeleteModal.value = true;
+};
 
 const viewRepertoire = (repertoire: Repertorio) => {
   // Navegar a vista de detalle
-  console.log("View repertoire:", repertoire.id)
-}
+  console.log('View repertoire:', repertoire.id);
+};
 
 const saveRepertoire = async (repertoire: Repertorio) => {
   try {
     if (showEditModal.value && selectedRepertoire.value) {
-      await updateRepertorio(selectedRepertoire.value.id, repertoire)
+      await updateRepertorio(selectedRepertoire.value.id, repertoire);
     } else {
-      await createRepertorio(repertoire)
+      await createRepertorio(repertoire);
     }
-    closeModals()
+    closeModals();
   } catch (error) {
-    console.error("Error saving repertoire:", error)
+    console.error('Error saving repertoire:', error);
   }
-}
+};
 
 const confirmDelete = async () => {
   if (selectedRepertoire.value) {
     try {
-      await deleteRepertoirioService(selectedRepertoire.value.id)
-      showDeleteModal.value = false
-      selectedRepertoire.value = null
+      await deleteRepertoirioService(selectedRepertoire.value.id);
+      showDeleteModal.value = false;
+      selectedRepertoire.value = null;
     } catch (error) {
-      console.error("Error deleting repertoire:", error)
+      console.error('Error deleting repertoire:', error);
     }
   }
-}
+};
 
 const closeModals = () => {
-  showCreateModal.value = false
-  showEditModal.value = false
-  selectedRepertoire.value = null
-}
+  showCreateModal.value = false;
+  showEditModal.value = false;
+  selectedRepertoire.value = null;
+};
 
 onMounted(() => {
-  loadRepertorios()
-})
+  loadRepertorios();
+});
 </script>

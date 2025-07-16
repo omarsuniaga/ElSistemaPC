@@ -1,43 +1,3 @@
-<script setup lang="ts">
-import {ref, onMounted} from "vue"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useStudentsStore} from "../../Students/store/students"
-import ScheduleManagerComponent from "../components/ScheduleManager.vue"
-
-// Estado reactivo
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-
-// Función para cargar datos
-const loadData = async () => {
-  try {
-    isLoading.value = true
-    error.value = null
-
-    // Carga paralela de los datos necesarios
-    await Promise.all([
-      useTeachersStore().fetchTeachers(),
-      useClassesStore().fetchClasses(),
-      useStudentsStore().fetchStudents(),
-    ])
-
-    return true
-  } catch (err) {
-    console.error("Error al cargar datos:", err)
-    error.value = "Error al cargar datos. Por favor, intenta nuevamente."
-    return false
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Inicializar datos al montar el componente
-onMounted(async () => {
-  await loadData()
-})
-</script>
-
 <template>
   <div class="schedule-manager-view p-4 max-w-7xl mx-auto">
     <h1 class="text-2xl font-bold mb-6">Gestión de Horarios</h1>
@@ -64,6 +24,46 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useStudentsStore } from '../../Students/store/students';
+import ScheduleManagerComponent from '../components/ScheduleManager.vue';
+
+// Estado reactivo
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+
+// Función para cargar datos
+const loadData = async () => {
+  try {
+    isLoading.value = true;
+    error.value = null;
+
+    // Carga paralela de los datos necesarios
+    await Promise.all([
+      useTeachersStore().fetchTeachers(),
+      useClassesStore().fetchClasses(),
+      useStudentsStore().fetchStudents(),
+    ]);
+
+    return true;
+  } catch (err) {
+    console.error('Error al cargar datos:', err);
+    error.value = 'Error al cargar datos. Por favor, intenta nuevamente.';
+    return false;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Inicializar datos al montar el componente
+onMounted(async () => {
+  await loadData();
+});
+</script>
 
 <style scoped>
 .schedule-manager-view {

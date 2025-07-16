@@ -230,9 +230,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import type {NotificacionMontaje} from "../types"
-import {formatDate} from "../utils"
+import { ref, computed } from 'vue';
+import type { NotificacionMontaje } from '../types';
+import { formatDate } from '../utils';
 
 interface Props {
   notifications: NotificacionMontaje[]
@@ -241,136 +241,136 @@ interface Props {
 }
 
 interface Emits {
-  (e: "mark-as-read", notification: NotificacionMontaje): void
-  (e: "mark-all-as-read"): void
-  (e: "dismiss", notification: NotificacionMontaje): void
-  (e: "view-details", notification: NotificacionMontaje): void
-  (e: "load-more"): void
-  (e: "refresh"): void
+  (e: 'mark-as-read', notification: NotificacionMontaje): void
+  (e: 'mark-all-as-read'): void
+  (e: 'dismiss', notification: NotificacionMontaje): void
+  (e: 'view-details', notification: NotificacionMontaje): void
+  (e: 'load-more'): void
+  (e: 'refresh'): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
-const currentFilter = ref("all")
+const currentFilter = ref('all');
 
 const filterOptions = computed(() => {
-  const all = props.notifications.length
-  const unread = props.notifications.filter((n) => !n.leida).length
-  const evaluations = props.notifications.filter((n) => n.tipo === "evaluacion").length
-  const deadlines = props.notifications.filter((n) => n.tipo === "vencimiento").length
-  const reminders = props.notifications.filter((n) => n.tipo === "recordatorio").length
+  const all = props.notifications.length;
+  const unread = props.notifications.filter((n) => !n.leida).length;
+  const evaluations = props.notifications.filter((n) => n.tipo === 'evaluacion').length;
+  const deadlines = props.notifications.filter((n) => n.tipo === 'vencimiento').length;
+  const reminders = props.notifications.filter((n) => n.tipo === 'recordatorio').length;
 
   return [
-    {value: "all", label: "Todas", count: all},
-    {value: "unread", label: "No leídas", count: unread},
-    {value: "evaluacion", label: "Evaluaciones", count: evaluations},
-    {value: "vencimiento", label: "Vencimientos", count: deadlines},
-    {value: "recordatorio", label: "Recordatorios", count: reminders},
-  ]
-})
+    { value: 'all', label: 'Todas', count: all },
+    { value: 'unread', label: 'No leídas', count: unread },
+    { value: 'evaluacion', label: 'Evaluaciones', count: evaluations },
+    { value: 'vencimiento', label: 'Vencimientos', count: deadlines },
+    { value: 'recordatorio', label: 'Recordatorios', count: reminders },
+  ];
+});
 
 const filteredNotifications = computed(() => {
-  let filtered = props.notifications
+  let filtered = props.notifications;
 
   switch (currentFilter.value) {
-    case "unread":
-      filtered = filtered.filter((n) => !n.leida)
-      break
-    case "evaluacion":
-    case "vencimiento":
-    case "recordatorio":
-      filtered = filtered.filter((n) => n.tipo === currentFilter.value)
-      break
+  case 'unread':
+    filtered = filtered.filter((n) => !n.leida);
+    break;
+  case 'evaluacion':
+  case 'vencimiento':
+  case 'recordatorio':
+    filtered = filtered.filter((n) => n.tipo === currentFilter.value);
+    break;
   }
 
   return filtered.sort((a, b) => {
     // Sort by read status first (unread first), then by date
-    if (!a.leida && b.leida) return -1
-    if (a.leida && !b.leida) return 1
-    return new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime()
-  })
-})
+    if (!a.leida && b.leida) return -1;
+    if (a.leida && !b.leida) return 1;
+    return new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime();
+  });
+});
 
 const unreadCount = computed(() => {
-  return props.notifications.filter((n) => !n.leida).length
-})
+  return props.notifications.filter((n) => !n.leida).length;
+});
 
 const getNotificationIconClass = (type: string) => {
   switch (type) {
-    case "evaluacion":
-      return "bg-green-100 text-green-600"
-    case "vencimiento":
-      return "bg-red-100 text-red-600"
-    case "recordatorio":
-      return "bg-yellow-100 text-yellow-600"
-    default:
-      return "bg-blue-100 text-blue-600"
+  case 'evaluacion':
+    return 'bg-green-100 text-green-600';
+  case 'vencimiento':
+    return 'bg-red-100 text-red-600';
+  case 'recordatorio':
+    return 'bg-yellow-100 text-yellow-600';
+  default:
+    return 'bg-blue-100 text-blue-600';
   }
-}
+};
 
 const getPriorityClass = (priority: string) => {
   switch (priority) {
-    case "baja":
-      return "bg-gray-100 text-gray-800"
-    case "alta":
-      return "bg-orange-100 text-orange-800"
-    case "critica":
-      return "bg-red-100 text-red-800"
-    default:
-      return "bg-yellow-100 text-yellow-800"
+  case 'baja':
+    return 'bg-gray-100 text-gray-800';
+  case 'alta':
+    return 'bg-orange-100 text-orange-800';
+  case 'critica':
+    return 'bg-red-100 text-red-800';
+  default:
+    return 'bg-yellow-100 text-yellow-800';
   }
-}
+};
 
 const getPriorityLabel = (priority: string) => {
   switch (priority) {
-    case "baja":
-      return "Baja"
-    case "alta":
-      return "Alta"
-    case "critica":
-      return "Crítica"
-    default:
-      return "Media"
+  case 'baja':
+    return 'Baja';
+  case 'alta':
+    return 'Alta';
+  case 'critica':
+    return 'Crítica';
+  default:
+    return 'Media';
   }
-}
+};
 
 const getEntityTypeLabel = (type: string) => {
   switch (type) {
-    case "obra":
-      return "Obra"
-    case "plan":
-      return "Plan"
-    case "frase":
-      return "Frase"
-    default:
-      return type
+  case 'obra':
+    return 'Obra';
+  case 'plan':
+    return 'Plan';
+  case 'frase':
+    return 'Frase';
+  default:
+    return type;
   }
-}
+};
 
 const markAsRead = (notification: NotificacionMontaje) => {
   if (!notification.leida) {
-    emit("mark-as-read", notification)
+    emit('mark-as-read', notification);
   }
-}
+};
 
 const markAllAsRead = () => {
-  emit("mark-all-as-read")
-}
+  emit('mark-all-as-read');
+};
 
 const dismissNotification = (notification: NotificacionMontaje) => {
-  emit("dismiss", notification)
-}
+  emit('dismiss', notification);
+};
 
 const viewDetails = (notification: NotificacionMontaje) => {
-  emit("view-details", notification)
-}
+  emit('view-details', notification);
+};
 
 const loadMoreNotifications = () => {
-  emit("load-more")
-}
+  emit('load-more');
+};
 
 const refreshNotifications = () => {
-  emit("refresh")
-}
+  emit('refresh');
+};
 </script>

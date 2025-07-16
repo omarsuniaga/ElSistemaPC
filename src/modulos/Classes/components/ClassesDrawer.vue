@@ -1,89 +1,3 @@
-<script setup lang="ts">
-import {computed, ref} from "vue"
-import {useTeachersStore} from "../../../modulos/Teachers/store/teachers"
-import {useStudentsStore} from "../../../modulos/Students/store/students"
-import {
-  PencilIcon,
-  TrashIcon,
-  UserGroupIcon,
-  XMarkIcon,
-  CalendarIcon,
-  ClockIcon,
-  AcademicCapIcon,
-  ExclamationCircleIcon,
-  UserIcon,
-  ChevronRightIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/vue/24/outline"
-import Modal from "../../../shared/Modal.vue"
-import StudentAvatar from "../../Students/components/StudentAvatar.vue"
-
-const props = defineProps({
-  show: Boolean,
-  classItem: Object,
-})
-
-const showDeleteConfirm = ref(false)
-
-const emit = defineEmits(["close", "edit", "delete", "manage-students"])
-
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
-
-const getTeacherName = (teacherId) => {
-  if (!teacherId) return "Sin profesor asignado"
-  const teacher = teachersStore.teachers.find((t) => t.id === teacherId)
-  return teacher?.name ?? "Profesor no encontrado"
-}
-
-const teacherAvatar = computed(() => {
-  if (!props.classItem?.teacherId) return ""
-  const teacher = teachersStore.teachers.find((t) => t.id === props.classItem.teacherId)
-  return teacher?.avatar || ""
-})
-
-const teacherName = computed(() => getTeacherName(props.classItem?.teacherId))
-
-const students = computed(() => {
-  if (!props.classItem?.studentIds) return []
-  return studentsStore.students.filter((s) => props.classItem.studentIds.includes(s.id))
-})
-
-const studentCount = computed(() => {
-  return props.classItem?.studentIds?.length || 0
-})
-
-const formattedSchedule = computed(() => {
-  if (!props.classItem?.schedule?.slots?.length) {
-    return []
-  }
-
-  return props.classItem.schedule.slots.map((slot) => ({
-    day: slot.day || "",
-    time: `${slot.startTime || ""} - ${slot.endTime || ""}`,
-  }))
-})
-
-const daysOfWeek = {
-  monday: "Lunes",
-  tuesday: "Martes",
-  wednesday: "Miércoles",
-  thursday: "Jueves",
-  friday: "Viernes",
-  saturday: "Sábado",
-  sunday: "Domingo",
-}
-
-const translateDay = (day) => {
-  return daysOfWeek[day.toLowerCase()] || day
-}
-
-const getStudents = computed(() => {
-  if (!props.classItem?.studentIds) return []
-  return studentsStore.students.filter((s) => props.classItem.studentIds.includes(s.id)).slice(0, 5) // Only show first 5 students
-})
-</script>
-
 <template>
   <div
     v-if="show"
@@ -456,3 +370,89 @@ const getStudents = computed(() => {
     </div>
   </Modal>
 </template>
+
+<script setup lang="ts">
+import { computed, ref } from 'vue';
+import { useTeachersStore } from '../../../modulos/Teachers/store/teachers';
+import { useStudentsStore } from '../../../modulos/Students/store/students';
+import {
+  PencilIcon,
+  TrashIcon,
+  UserGroupIcon,
+  XMarkIcon,
+  CalendarIcon,
+  ClockIcon,
+  AcademicCapIcon,
+  ExclamationCircleIcon,
+  UserIcon,
+  ChevronRightIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/vue/24/outline';
+import Modal from '../../../shared/Modal.vue';
+import StudentAvatar from '../../Students/components/StudentAvatar.vue';
+
+const props = defineProps({
+  show: Boolean,
+  classItem: Object,
+});
+
+const showDeleteConfirm = ref(false);
+
+const emit = defineEmits(['close', 'edit', 'delete', 'manage-students']);
+
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
+
+const getTeacherName = (teacherId) => {
+  if (!teacherId) return 'Sin profesor asignado';
+  const teacher = teachersStore.teachers.find((t) => t.id === teacherId);
+  return teacher?.name ?? 'Profesor no encontrado';
+};
+
+const teacherAvatar = computed(() => {
+  if (!props.classItem?.teacherId) return '';
+  const teacher = teachersStore.teachers.find((t) => t.id === props.classItem.teacherId);
+  return teacher?.avatar || '';
+});
+
+const teacherName = computed(() => getTeacherName(props.classItem?.teacherId));
+
+const students = computed(() => {
+  if (!props.classItem?.studentIds) return [];
+  return studentsStore.students.filter((s) => props.classItem.studentIds.includes(s.id));
+});
+
+const studentCount = computed(() => {
+  return props.classItem?.studentIds?.length || 0;
+});
+
+const formattedSchedule = computed(() => {
+  if (!props.classItem?.schedule?.slots?.length) {
+    return [];
+  }
+
+  return props.classItem.schedule.slots.map((slot) => ({
+    day: slot.day || '',
+    time: `${slot.startTime || ''} - ${slot.endTime || ''}`,
+  }));
+});
+
+const daysOfWeek = {
+  monday: 'Lunes',
+  tuesday: 'Martes',
+  wednesday: 'Miércoles',
+  thursday: 'Jueves',
+  friday: 'Viernes',
+  saturday: 'Sábado',
+  sunday: 'Domingo',
+};
+
+const translateDay = (day) => {
+  return daysOfWeek[day.toLowerCase()] || day;
+};
+
+const getStudents = computed(() => {
+  if (!props.classItem?.studentIds) return [];
+  return studentsStore.students.filter((s) => props.classItem.studentIds.includes(s.id)).slice(0, 5); // Only show first 5 students
+});
+</script>

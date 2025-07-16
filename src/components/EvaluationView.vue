@@ -118,189 +118,189 @@
 </template>
 
 <script setup>
-import {ref} from "vue"
-import RecursiveMenu from "./RecursiveMenu.vue"
+import { ref } from 'vue';
+import RecursiveMenu from './RecursiveMenu.vue';
 
 // Modo de evaluación (global)
-const evaluationMode = ref(false)
+const evaluationMode = ref(false);
 
 // Cards de evaluación: cada card representa una evaluación de un grupo de alumnos
-const evaluationCards = ref([])
+const evaluationCards = ref([]);
 // Card activa para edición (si existe)
-const activeCard = ref(null)
+const activeCard = ref(null);
 // Array de alumnos seleccionados (selectedStudents)
-const selectedStudents = ref([])
+const selectedStudents = ref([]);
 // Contador global para nombres únicos
-let globalGroupCounter = 1
+let globalGroupCounter = 1;
 
 // Datos simulados de alumnos
 const students = ref([
-  {id: 1, name: "Patricia Lopez", avatar: "https://i.pravatar.cc/150?u=patricia"},
-  {id: 2, name: "Maria Albonoz", avatar: "https://i.pravatar.cc/150?u=maria"},
-  {id: 3, name: "Dyankeson Lamprea", avatar: "https://i.pravatar.cc/150?u=dyankeson"},
-  {id: 4, name: "Edelyn Abreu", avatar: "https://i.pravatar.cc/150?u=edelyn"},
-  {id: 5, name: "Eilyn Michelle", avatar: "https://i.pravatar.cc/150?u=eilyn"},
-  {id: 6, name: "Yuraima Mujica", avatar: "https://i.pravatar.cc/150?u=yuraima"},
-  {id: 7, name: "John Doe", avatar: "https://i.pravatar.cc/150?u=johndoe"},
-])
+  { id: 1, name: 'Patricia Lopez', avatar: 'https://i.pravatar.cc/150?u=patricia' },
+  { id: 2, name: 'Maria Albonoz', avatar: 'https://i.pravatar.cc/150?u=maria' },
+  { id: 3, name: 'Dyankeson Lamprea', avatar: 'https://i.pravatar.cc/150?u=dyankeson' },
+  { id: 4, name: 'Edelyn Abreu', avatar: 'https://i.pravatar.cc/150?u=edelyn' },
+  { id: 5, name: 'Eilyn Michelle', avatar: 'https://i.pravatar.cc/150?u=eilyn' },
+  { id: 6, name: 'Yuraima Mujica', avatar: 'https://i.pravatar.cc/150?u=yuraima' },
+  { id: 7, name: 'John Doe', avatar: 'https://i.pravatar.cc/150?u=johndoe' },
+]);
 
 // Datos simulados: menú recursivo de contenidos (estructura recursiva)
 const contents = ref([
   {
-    title: "Figuras Rítmicas Básicas",
+    title: 'Figuras Rítmicas Básicas',
     children: [
       {
-        title: "Teoría y Solfeo",
+        title: 'Teoría y Solfeo',
         children: [
-          {title: "Unidad de Tiempo", type: "indicator"},
-          {title: "Ritmo Base", type: "indicator"},
+          { title: 'Unidad de Tiempo', type: 'indicator' },
+          { title: 'Ritmo Base', type: 'indicator' },
         ],
       },
       {
-        title: "Aplicaciones Prácticas",
-        children: [{title: "Ejercicios de Ritmo", type: "indicator"}],
+        title: 'Aplicaciones Prácticas',
+        children: [{ title: 'Ejercicios de Ritmo', type: 'indicator' }],
       },
     ],
   },
   {
-    title: "Escalas Mayores",
+    title: 'Escalas Mayores',
     children: [
       {
-        title: "Teoría Musical",
-        children: [{title: "Construcción de Escalas", type: "indicator"}],
+        title: 'Teoría Musical',
+        children: [{ title: 'Construcción de Escalas', type: 'indicator' }],
       },
       {
-        title: "Ejercicios Prácticos",
-        children: [{title: "Ejercicios de Escalas", type: "indicator"}],
+        title: 'Ejercicios Prácticos',
+        children: [{ title: 'Ejercicios de Escalas', type: 'indicator' }],
       },
     ],
   },
   {
-    title: "Cifrado Armónico",
+    title: 'Cifrado Armónico',
     children: [
       {
-        title: "Acordes",
+        title: 'Acordes',
         children: [
-          {title: "Triada Mayor", type: "indicator"},
-          {title: "Triada Menor", type: "indicator"},
+          { title: 'Triada Mayor', type: 'indicator' },
+          { title: 'Triada Menor', type: 'indicator' },
         ],
       },
     ],
   },
-])
+]);
 
 // Alterna el modo global de evaluación: Evaluar <-> Guardar
 const toggleEvaluationMode = () => {
   if (!evaluationMode.value) {
-    evaluationMode.value = true
+    evaluationMode.value = true;
   } else {
     // Al presionar "Guardar", se guardan todas las cards en edición
     evaluationCards.value.forEach((card) => {
       if (!card.locked) {
-        saveCard(card)
+        saveCard(card);
       }
-    })
-    evaluationMode.value = false
+    });
+    evaluationMode.value = false;
   }
-}
+};
 
 // Al seleccionar un alumno se agrega al array (evitando duplicados)
 const selectStudent = (student) => {
-  const exists = selectedStudents.value.some((s) => s.id === student.id)
+  const exists = selectedStudents.value.some((s) => s.id === student.id);
   if (!exists) {
-    selectedStudents.value.push(student)
+    selectedStudents.value.push(student);
   }
-}
+};
 
 // Retorna el grupo de alumnos ordenado alfabéticamente
 const sortedStudents = (group) => {
-  return group.slice().sort((a, b) => a.name.localeCompare(b.name))
-}
+  return group.slice().sort((a, b) => a.name.localeCompare(b.name));
+};
 
 // Crea una nueva card de evaluación usando los alumnos seleccionados y limpia el array
 const createEvaluationCard = () => {
-  if (selectedStudents.value.length === 0) return
+  if (selectedStudents.value.length === 0) return;
   const newCard = {
     id: Date.now(),
     group: [...selectedStudents.value],
-    contentTitle: "",
-    contentSubtitle: "",
+    contentTitle: '',
+    contentSubtitle: '',
     indicators: [],
     locked: false,
-  }
-  evaluationCards.value.push(newCard)
-  activeCard.value = newCard
-  selectedStudents.value = []
-  return newCard
-}
+  };
+  evaluationCards.value.push(newCard);
+  activeCard.value = newCard;
+  selectedStudents.value = [];
+  return newCard;
+};
 
 // Maneja la selección de un indicador desde el menú recursivo
 // parentChain es un array con los títulos de cada nivel (por ejemplo, [Contenido, Tema])
 const handleContentSelection = (item, parentChain) => {
-  if (!evaluationMode.value) return
+  if (!evaluationMode.value) return;
 
   if (!activeCard.value || activeCard.value.locked) {
-    activeCard.value = createEvaluationCard()
+    activeCard.value = createEvaluationCard();
   }
-  const card = activeCard.value
+  const card = activeCard.value;
 
   // Se asignan el título y subtítulo según el parentChain e indicador
   if (parentChain && parentChain.length >= 2) {
-    card.contentTitle = parentChain[0]
-    card.contentSubtitle = parentChain[1] + " - " + item.title
+    card.contentTitle = parentChain[0];
+    card.contentSubtitle = parentChain[1] + ' - ' + item.title;
   } else {
-    card.contentTitle = parentChain ? parentChain[0] : ""
-    card.contentSubtitle = item.title
+    card.contentTitle = parentChain ? parentChain[0] : '';
+    card.contentSubtitle = item.title;
   }
 
   // Genera un nombre único para el indicador
-  const uniqueId = generateUniqueName(item, card)
+  const uniqueId = generateUniqueName(item, card);
   const newIndicator = {
     uniqueId,
     label: item.title,
     score: 0,
     selectedStudents: card.group,
-  }
-  const exists = card.indicators.find((ind) => ind.uniqueId === uniqueId)
+  };
+  const exists = card.indicators.find((ind) => ind.uniqueId === uniqueId);
   if (exists) {
-    newIndicator.uniqueId = uniqueId + "_" + globalGroupCounter++
+    newIndicator.uniqueId = uniqueId + '_' + globalGroupCounter++;
   }
-  card.indicators.push(newIndicator)
-}
+  card.indicators.push(newIndicator);
+};
 
 // Genera un nombre único combinando la fecha, el contenido, grupo e indicador
 const generateUniqueName = (item, card) => {
-  const now = new Date()
-  const day = String(now.getDate()).padStart(2, "0")
-  const month = String(now.getMonth() + 1).padStart(2, "0")
-  const year = now.getFullYear()
-  const groupId = card.group.length ? card.group[0].id : "group"
-  return `${day}${month}${year}_${card.contentTitle.toLowerCase().replace(/\s+/g, "_")}_${groupId}_${item.title.toLowerCase().replace(/\s+/g, "_")}`
-}
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const groupId = card.group.length ? card.group[0].id : 'group';
+  return `${day}${month}${year}_${card.contentTitle.toLowerCase().replace(/\s+/g, '_')}_${groupId}_${item.title.toLowerCase().replace(/\s+/g, '_')}`;
+};
 
 // Alterna el modo de edición en una card: si está bloqueada, se vuelve a habilitar, y viceversa
 const toggleCardEdit = (card) => {
   if (card.locked) {
-    card.locked = false
+    card.locked = false;
   } else {
-    saveCard(card)
+    saveCard(card);
   }
-}
+};
 
 // Simula la acción de guardar la card (donde se llamarían los métodos CRUD del store de Pinia)
 const saveCard = (card) => {
-  card.locked = true
-  alert(`Guardado: Evaluación de ${card.contentSubtitle}`)
-}
+  card.locked = true;
+  alert(`Guardado: Evaluación de ${card.contentSubtitle}`);
+};
 
 // Elimina una card de evaluación
 const deleteCard = (card) => {
-  const index = evaluationCards.value.findIndex((c) => c.id === card.id)
+  const index = evaluationCards.value.findIndex((c) => c.id === card.id);
   if (index !== -1) {
-    evaluationCards.value.splice(index, 1)
-    alert("Evaluación eliminada")
+    evaluationCards.value.splice(index, 1);
+    alert('Evaluación eliminada');
   }
-}
+};
 </script>
 
 <style scoped>

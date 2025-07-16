@@ -537,24 +537,24 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch, nextTick} from "vue"
-import {format, parseISO} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAttendanceStore} from "../store/attendance"
-import {useAuthStore} from "../../../stores/auth"
-import {useTeachersStore} from "../../Teachers/store/teachers"
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAttendanceStore } from '../store/attendance';
+import { useAuthStore } from '../../../stores/auth';
+import { useTeachersStore } from '../../Teachers/store/teachers';
 import {
   XMarkIcon,
   CameraIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
   TrashIcon,
-} from "@heroicons/vue/24/outline" // Removed PhotoIcon, DocumentIcon as they are not used
-import ObservationsHistory from "./ObservationsHistory.vue"
-import StudentTagModal from "./StudentTagModal.vue"
-import FileUpload from "../../../components/FileUpload.vue"
-import Toast from "../../../components/Toast.vue" // Import Toast component
-import {useRichEditor} from "../../../composables/useRichEditor"
+} from '@heroicons/vue/24/outline'; // Removed PhotoIcon, DocumentIcon as they are not used
+import ObservationsHistory from './ObservationsHistory.vue';
+import StudentTagModal from './StudentTagModal.vue';
+import FileUpload from '../../../components/FileUpload.vue';
+import Toast from '../../../components/Toast.vue'; // Import Toast component
+import { useRichEditor } from '../../../composables/useRichEditor';
 
 // Definición de props con TypeScript
 const props = defineProps<{
@@ -573,79 +573,79 @@ const props = defineProps<{
     canViewObservations?: boolean
     canEditObservations?: boolean
   }
-}>()
+}>();
 
 // Definición de emits con TypeScript
 const emit = defineEmits<{
-  (e: "close"): void
-  (e: "observation-saved", observation: any): void
-  (e: "update:modelValue", value: boolean): void
-  (e: "observation", observation: any): void
-}>()
+  (e: 'close'): void
+  (e: 'observation-saved', observation: any): void
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'observation', observation: any): void
+}>();
 
 // Toast state
-const showToastMessage = ref(false)
-const toastMessage = ref("")
-const toastType = ref<"success" | "error" | "warning" | "info">("success")
+const showToastMessage = ref(false);
+const toastMessage = ref('');
+const toastType = ref<'success' | 'error' | 'warning' | 'info'>('success');
 
 // Function to display toast
-const showToast = (message: string, type: "success" | "error" | "warning" | "info" = "success") => {
-  toastMessage.value = message
-  toastType.value = type
-  showToastMessage.value = true
+const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+  toastMessage.value = message;
+  toastType.value = type;
+  showToastMessage.value = true;
   setTimeout(() => {
-    showToastMessage.value = false
-  }, 3000)
-}
+    showToastMessage.value = false;
+  }, 3000);
+};
 
-const attendanceStore = useAttendanceStore()
-const authStore = useAuthStore()
-const teachersStore = useTeachersStore()
+const attendanceStore = useAttendanceStore();
+const authStore = useAuthStore();
+const teachersStore = useTeachersStore();
 
 // Computed para manejar permisos de forma segura
 const teacherPermissions = computed(() => {
-  return props.teacherPermissions || null
-})
+  return props.teacherPermissions || null;
+});
 
 const canAddObservations = computed(() => {
-  return !teacherPermissions.value || teacherPermissions.value.canAddObservations !== false
-})
+  return !teacherPermissions.value || teacherPermissions.value.canAddObservations !== false;
+});
 
 const canViewObservations = computed(() => {
-  return !teacherPermissions.value || teacherPermissions.value.canViewObservations !== false
-})
+  return !teacherPermissions.value || teacherPermissions.value.canViewObservations !== false;
+});
 
 // Function to get teacher name by ID
 const getTeacherName = async (teacherId: string): Promise<string> => {
   try {
     // First check if teachers are already loaded
     if (teachersStore.teachers.length === 0) {
-      await teachersStore.fetchTeachers()
+      await teachersStore.fetchTeachers();
     }
 
     // Find teacher by ID (uid)
-    const teacher = teachersStore.teachers.find((t) => t.uid === teacherId)
+    const teacher = teachersStore.teachers.find((t) => t.uid === teacherId);
     if (teacher) {
-      return teacher.name
+      return teacher.name;
     }
 
     // If not found by uid, try by id
-    const teacherById = teachersStore.teachers.find((t) => t.id === teacherId)
+    const teacherById = teachersStore.teachers.find((t) => t.id === teacherId);
     if (teacherById) {
-      return teacherById.name
+      return teacherById.name;
     }
 
     // Fallback to email if teacher not found
-    return authStore.user?.email || "Usuario del Sistema"
+    return authStore.user?.email || 'Usuario del Sistema';
   } catch (error) {
-    console.error("Error getting teacher name:", error)
-    return authStore.user?.email || "Usuario del Sistema"
+    console.error('Error getting teacher name:', error);
+    return authStore.user?.email || 'Usuario del Sistema';
   }
-}
+};
 
-const activeTab = ref("new")
-const isLoading = ref(false)
-const historyComponent = ref(null)
+const activeTab = ref('new');
+const isLoading = ref(false);
+const historyComponent = ref(null);
 
 const {
   observationTextarea,
@@ -680,253 +680,253 @@ const {
   watchObservationText, // Method to call on text changes
   initializeEditor, // Method to call on mount
   prepareObservationForSave, // Method to prepare data for saving
-} = useRichEditor()
+} = useRichEditor();
 
 const formatDate = (dateString: string | Date): string => {
-  if (!dateString) return "Fecha no especificada"
+  if (!dateString) return 'Fecha no especificada';
   try {
-    const date = typeof dateString === "string" ? parseISO(dateString) : dateString
-    return format(date, "d 'de' MMMM yyyy", {locale: es})
+    const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
+    return format(date, 'd \'de\' MMMM yyyy', { locale: es });
   } catch (error) {
-    console.error("Error formatting date:", error)
-    return "Fecha inválida"
+    console.error('Error formatting date:', error);
+    return 'Fecha inválida';
   }
-}
+};
 
 // Props y emits ya declarados arriba
 
 // Debugging logs
-console.log("[AttendanceObservation] Componente inicializado con props:", {
+console.log('[AttendanceObservation] Componente inicializado con props:', {
   isVisible: props.isVisible,
-  studentId: props.studentId || "no definido",
-  studentName: props.studentName || "no definido",
+  studentId: props.studentId || 'no definido',
+  studentName: props.studentName || 'no definido',
   classId: props.classId,
   className: props.className,
   attendanceDate: props.attendanceDate,
   classObservationMode: props.classObservationMode,
-})
+});
 
 // Watch for modal visibility changes
 watch(
   () => props.modelValue || props.isVisible,
   (newValue, oldValue) => {
-    console.log("[AttendanceObservation] Modal visibility changed:", {
+    console.log('[AttendanceObservation] Modal visibility changed:', {
       anterior: oldValue,
       nuevo: newValue,
       modelValue: props.modelValue,
       isVisible: props.isVisible,
       timestamp: new Date().toISOString(),
-    })
+    });
 
     // Establecer tab por defecto basado en permisos
     if (newValue) {
       if (canAddObservations.value && !canViewObservations.value) {
-        activeTab.value = "new"
+        activeTab.value = 'new';
       } else if (!canAddObservations.value && canViewObservations.value) {
-        activeTab.value = "history"
+        activeTab.value = 'history';
       } else if (canAddObservations.value && canViewObservations.value) {
-        activeTab.value = "new" // Por defecto si tiene ambos permisos
+        activeTab.value = 'new'; // Por defecto si tiene ambos permisos
       } else {
         // Si no tiene ningún permiso, mostrar un mensaje o cerrar el modal
-        console.warn("Usuario sin permisos para observaciones")
+        console.warn('Usuario sin permisos para observaciones');
       }
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 // Watch for initial observation changes
 watch(
   () => props.initialObservation,
   (newValue) => {
     if (newValue) {
-      console.log("[AttendanceObservation] Initial observation received:", newValue)
+      console.log('[AttendanceObservation] Initial observation received:', newValue);
       // Handle initial observation if needed
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 const characterCount = computed(() => {
-  return typeof newObservation.value === "string" ? newObservation.value.length : 0
-})
+  return typeof newObservation.value === 'string' ? newObservation.value.length : 0;
+});
 
 const handleClose = () => {
-  emit("update:modelValue", false)
-  emit("close")
-  resetForm()
-  emit("close")
-}
+  emit('update:modelValue', false);
+  emit('close');
+  resetForm();
+  emit('close');
+};
 
 const resetForm = () => {
-  newObservation.value = "" // This will reset the ref from useRichEditor
-  imageUrls.value = [] // This will reset the ref from useRichEditor
+  newObservation.value = ''; // This will reset the ref from useRichEditor
+  imageUrls.value = []; // This will reset the ref from useRichEditor
   // taggedStudents.value = []; // This is also from useRichEditor, reset if needed or let useRichEditor handle
   if (Array.isArray(taggedStudents.value)) {
-    taggedStudents.value.length = 0 // Clear the array
+    taggedStudents.value.length = 0; // Clear the array
   }
-  isLoading.value = false
-  activeTab.value = "new"
-}
+  isLoading.value = false;
+  activeTab.value = 'new';
+};
 
 const handleEditRequestFromHistory = (observationToEdit: any) => {
-  console.log("Edit request received in AttendanceObservation:", observationToEdit)
+  console.log('Edit request received in AttendanceObservation:', observationToEdit);
   if (observationToEdit) {
     newObservation.value =
-      typeof observationToEdit.text === "string"
+      typeof observationToEdit.text === 'string'
         ? observationToEdit.text
         : (observationToEdit.text as any)?.formattedText ||
           (observationToEdit.text as any)?.text ||
-          ""
+          '';
 
     // Ensure imageUrls from useRichEditor is updated
     if (observationToEdit.imageUrls && Array.isArray(observationToEdit.imageUrls)) {
-      imageUrls.value = [...observationToEdit.imageUrls]
+      imageUrls.value = [...observationToEdit.imageUrls];
     } else {
-      imageUrls.value = []
+      imageUrls.value = [];
     }
 
     if (observationToEdit.taggedStudents && Array.isArray(observationToEdit.taggedStudents)) {
-      taggedStudents.value = [...observationToEdit.taggedStudents]
+      taggedStudents.value = [...observationToEdit.taggedStudents];
     } else {
-      taggedStudents.value = []
+      taggedStudents.value = [];
     }
 
-    activeTab.value = "new"
+    activeTab.value = 'new';
     nextTick(() => {
-      observationTextarea.value?.focus()
-    })
+      observationTextarea.value?.focus();
+    });
   }
-}
+};
 
 const saveObservation = async () => {
   // newObservation.value is from useRichEditor
-  if (!newObservation.value.trim() || characterCount.value > 1000) return
+  if (!newObservation.value.trim() || characterCount.value > 1000) return;
 
   // Validar permisos antes de guardar (con verificación segura)
   if (!canAddObservations.value) {
-    showToast("No tienes permisos para agregar observaciones en esta clase compartida", "error")
-    return
+    showToast('No tienes permisos para agregar observaciones en esta clase compartida', 'error');
+    return;
   }
 
-  isLoading.value = true
+  isLoading.value = true;
   try {
     // Get teacher name instead of email
-    const currentUserId = authStore.user?.uid
-    const teacherName = currentUserId ? await getTeacherName(currentUserId) : "Usuario del Sistema"
+    const currentUserId = authStore.user?.uid;
+    const teacherName = currentUserId ? await getTeacherName(currentUserId) : 'Usuario del Sistema';
 
     // Use prepareObservationForSave from useRichEditor
-    const observationPayload = prepareObservationForSave()
+    const observationPayload = prepareObservationForSave();
 
     // Preparar datos base de la observación compatible con la estructura de Firestore
     const baseObservationData = {
       classId: props.classId,
       date: props.attendanceDate, // Required field YYYY-MM-DD
       fecha: props.attendanceDate, // For compatibility
-      authorId: currentUserId || "", // Required field
-      author: currentUserId || "", // Using authorId as author (as per Firestore structure)
+      authorId: currentUserId || '', // Required field
+      author: currentUserId || '', // Using authorId as author (as per Firestore structure)
       text: observationPayload.text || newObservation.value.trim(), // Required field
       content: {
         text: observationPayload.text || newObservation.value.trim(),
         taggedStudents: observationPayload.taggedStudents || taggedStudents.value || [],
       },
       taggedStudents: observationPayload.taggedStudents || taggedStudents.value || [],
-      type: "general" as const, // Type must be one of the specific values
-      priority: "media" as const, // Priority must be one of the specific values
+      type: 'general' as const, // Type must be one of the specific values
+      priority: 'media' as const, // Priority must be one of the specific values
       requiresFollowUp: false, // Default, adjust as needed
-    }
+    };
 
-    console.log("Attempting to save observation:", baseObservationData)
+    console.log('Attempting to save observation:', baseObservationData);
 
     try {
       // Guardar la observación usando el store
-      await attendanceStore.addObservationToHistory(baseObservationData)
-      console.log("Observation saved successfully")
+      await attendanceStore.addObservationToHistory(baseObservationData);
+      console.log('Observation saved successfully');
 
       // Show success message to the user
-      showToast("Observación guardada correctamente", "success")
+      showToast('Observación guardada correctamente', 'success');
 
       // Reset form after successful save
-      resetForm()
+      resetForm();
 
       // After successful save, let's reload observations history if we're in history tab
-      if (activeTab.value === "history") {
+      if (activeTab.value === 'history') {
         // Add a small delay before refreshing to allow the database to update
         setTimeout(() => {
           if (historyComponent.value && historyComponent.value.fetchObservations) {
-            historyComponent.value.fetchObservations()
+            historyComponent.value.fetchObservations();
           }
-        }, 500)
+        }, 500);
       }
     } catch (error) {
-      console.error("Error saving observation:", error)
+      console.error('Error saving observation:', error);
       showToast(
-        "Error al guardar la observación: " +
-          (error instanceof Error ? error.message : "Error desconocido"),
-        "error"
-      )
-      throw error
+        'Error al guardar la observación: ' +
+          (error instanceof Error ? error.message : 'Error desconocido'),
+        'error',
+      );
+      throw error;
     }
 
     // Emit events for parent components
-    emit("observation-saved", baseObservationData)
-    emit("observation", baseObservationData.text)
-    console.log("Observation saved successfully. Events emitted: observation-saved, observation")
+    emit('observation-saved', baseObservationData);
+    emit('observation', baseObservationData.text);
+    console.log('Observation saved successfully. Events emitted: observation-saved, observation');
 
     // Close modal after successful save
-    handleClose()
+    handleClose();
   } catch (err) {
-    console.error("Error in saveObservation:", err)
+    console.error('Error in saveObservation:', err);
     showToast(
-      "Error al guardar: " + (err instanceof Error ? err.message : "Error desconocido"),
-      "error"
-    )
+      'Error al guardar: ' + (err instanceof Error ? err.message : 'Error desconocido'),
+      'error',
+    );
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 watch(
   () => props.existingObservation,
   (newVal) => {
-    if (newVal && newVal.id && activeTab.value === "new") {
+    if (newVal && newVal.id && activeTab.value === 'new') {
       // Check activeTab to avoid overwriting if user switched
-      console.log("Populating form with existingObservation:", newVal)
+      console.log('Populating form with existingObservation:', newVal);
       newObservation.value =
-        typeof newVal.text === "string"
+        typeof newVal.text === 'string'
           ? newVal.text
-          : (newVal.text as any)?.formattedText || (newVal.text as any)?.text || ""
-      imageUrls.value = newVal.imageUrls || []
-      taggedStudents.value = newVal.taggedStudents || []
+          : (newVal.text as any)?.formattedText || (newVal.text as any)?.text || '';
+      imageUrls.value = newVal.imageUrls || [];
+      taggedStudents.value = newVal.taggedStudents || [];
       nextTick(() => {
-        observationTextarea.value?.focus()
-      })
+        observationTextarea.value?.focus();
+      });
     }
   },
-  {deep: true, immediate: true}
-)
+  { deep: true, immediate: true },
+);
 
 watch(newObservation, (newValue, oldValue) => {
   if (newValue !== oldValue) {
-    watchObservationText() // Call the method from useRichEditor to update tags
+    watchObservationText(); // Call the method from useRichEditor to update tags
   }
-})
+});
 
 onMounted(() => {
-  initializeEditor() // Initialize the rich editor features
+  initializeEditor(); // Initialize the rich editor features
   if (props.existingObservation && props.existingObservation.id) {
-    console.log("Populating form with existingObservation on mount:", props.existingObservation)
-    handleEditRequestFromHistory(props.existingObservation)
-    activeTab.value = "new"
+    console.log('Populating form with existingObservation on mount:', props.existingObservation);
+    handleEditRequestFromHistory(props.existingObservation);
+    activeTab.value = 'new';
   }
-})
+});
 
 // Make sure the component is exported as default
-defineExpose({})
+defineExpose({});
 if (import.meta.env?.PROD === false) {
   // @ts-ignore - This ensures the component has a default export
   // which helps with certain bundlers and IDE tooling
-  const _default = {}
+  const _default = {};
 }
 </script>
 

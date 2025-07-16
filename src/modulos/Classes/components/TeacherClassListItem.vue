@@ -156,8 +156,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import type {TeacherClassView} from "../types/class"
+import { ref, computed } from 'vue';
+import type { TeacherClassView } from '../types/class';
 import {
   UserIcon,
   UsersIcon,
@@ -168,68 +168,68 @@ import {
   PencilIcon,
   BuildingOfficeIcon,
   EllipsisVerticalIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface Props {
   classData: TeacherClassView
-  teacherRole: "lead" | "assistant"
+  teacherRole: 'lead' | 'assistant'
 }
 
 interface Emits {
-  (e: "view-details", classData: TeacherClassView): void
-  (e: "take-attendance", classData: TeacherClassView): void
-  (e: "view-attendance", classData: TeacherClassView): void
-  (e: "add-observation", classData: TeacherClassView): void
-  (e: "edit-class", classData: TeacherClassView): void
+  (e: 'view-details', classData: TeacherClassView): void
+  (e: 'take-attendance', classData: TeacherClassView): void
+  (e: 'view-attendance', classData: TeacherClassView): void
+  (e: 'add-observation', classData: TeacherClassView): void
+  (e: 'edit-class', classData: TeacherClassView): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
 // Estado local
-const showDropdown = ref(false)
+const showDropdown = ref(false);
 
 // Computed properties
 const studentCount = computed(() => {
-  return props.classData.studentIds?.length || 0
-})
+  return props.classData.studentIds?.length || 0;
+});
 
 const scheduleText = computed(() => {
   if (!props.classData.schedule?.slots?.length) {
-    return null
+    return null;
   }
 
-  const slots = props.classData.schedule.slots
+  const slots = props.classData.schedule.slots;
   if (slots.length === 1) {
-    const slot = slots[0]
-    return `${slot.day} ${slot.startTime}-${slot.endTime}`
+    const slot = slots[0];
+    return `${slot.day} ${slot.startTime}-${slot.endTime}`;
   } else {
-    return `${slots.length} sesiones`
+    return `${slots.length} sesiones`;
   }
-})
+});
 
 const hasMoreActions = computed(() => {
   return (
     props.classData.myPermissions?.canAddObservations || props.classData.myPermissions?.canEditClass
-  )
-})
+  );
+});
 
 // Methods
 const handleAddObservation = () => {
-  showDropdown.value = false
-  emit("add-observation", props.classData)
-}
+  showDropdown.value = false;
+  emit('add-observation', props.classData);
+};
 
 const handleEditClass = () => {
-  showDropdown.value = false
-  emit("edit-class", props.classData)
-}
+  showDropdown.value = false;
+  emit('edit-class', props.classData);
+};
 
 // Close dropdown when clicking outside
-document.addEventListener("click", (event) => {
-  const dropdown = event.target?.closest(".relative")
+document.addEventListener('click', (event) => {
+  const dropdown = event.target?.closest('.relative');
   if (!dropdown) {
-    showDropdown.value = false
+    showDropdown.value = false;
   }
-})
+});
 </script>

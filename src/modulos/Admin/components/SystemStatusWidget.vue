@@ -169,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
+import { ref, computed } from 'vue';
 import {
   ServerIcon,
   CloudIcon,
@@ -178,12 +178,12 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
   CheckCircleIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface SystemStatus {
-  database: "online" | "offline" | "warning"
-  storage: "online" | "offline" | "warning"
-  auth: "online" | "offline" | "warning"
+  database: 'online' | 'offline' | 'warning'
+  storage: 'online' | 'offline' | 'warning'
+  auth: 'online' | 'offline' | 'warning'
   lastBackup: Date
   systemLoad: number
   activeConnections: number
@@ -191,7 +191,7 @@ interface SystemStatus {
 
 interface Alert {
   id: string
-  type: "error" | "warning" | "info" | "success"
+  type: 'error' | 'warning' | 'info' | 'success'
   title: string
   description: string
 }
@@ -203,76 +203,76 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
-})
+});
 
 const emit = defineEmits<{
   refresh: []
   viewDetails: []
-}>()
+}>();
 
 // State
-const refreshing = ref(false)
+const refreshing = ref(false);
 
 // Mock alerts - en producción esto vendría del store
-const alerts = ref<Alert[]>([])
+const alerts = ref<Alert[]>([]);
 
 // Computed
 const healthScore = computed(() => {
-  const statuses = [props.status.database, props.status.storage, props.status.auth]
-  const onlineCount = statuses.filter((status) => status === "online").length
-  const warningCount = statuses.filter((status) => status === "warning").length
+  const statuses = [props.status.database, props.status.storage, props.status.auth];
+  const onlineCount = statuses.filter((status) => status === 'online').length;
+  const warningCount = statuses.filter((status) => status === 'warning').length;
 
   // Calculate score: online = 100%, warning = 50%, offline = 0%
-  const score = ((onlineCount * 100 + warningCount * 50) / (statuses.length * 100)) * 100
-  return Math.round(score)
-})
+  const score = ((onlineCount * 100 + warningCount * 50) / (statuses.length * 100)) * 100;
+  return Math.round(score);
+});
 
 // Methods
 const getStatusColor = (status: string) => {
   const colorMap = {
-    online: "bg-green-400",
-    warning: "bg-yellow-400",
-    offline: "bg-red-400",
-  }
-  return colorMap[status as keyof typeof colorMap] || "bg-gray-400"
-}
+    online: 'bg-green-400',
+    warning: 'bg-yellow-400',
+    offline: 'bg-red-400',
+  };
+  return colorMap[status as keyof typeof colorMap] || 'bg-gray-400';
+};
 
 const getStatusText = (status: string) => {
   const textMap = {
-    online: "En línea",
-    warning: "Advertencia",
-    offline: "Fuera de línea",
-  }
-  return textMap[status as keyof typeof textMap] || "Desconocido"
-}
+    online: 'En línea',
+    warning: 'Advertencia',
+    offline: 'Fuera de línea',
+  };
+  return textMap[status as keyof typeof textMap] || 'Desconocido';
+};
 
 const getHealthScoreColor = (score: number) => {
-  if (score >= 90) return "text-green-600 dark:text-green-400"
-  if (score >= 70) return "text-yellow-600 dark:text-yellow-400"
-  return "text-red-600 dark:text-red-400"
-}
+  if (score >= 90) return 'text-green-600 dark:text-green-400';
+  if (score >= 70) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-red-600 dark:text-red-400';
+};
 
 const getHealthScoreBarColor = (score: number) => {
-  if (score >= 90) return "bg-green-500"
-  if (score >= 70) return "bg-yellow-500"
-  return "bg-red-500"
-}
+  if (score >= 90) return 'bg-green-500';
+  if (score >= 70) return 'bg-yellow-500';
+  return 'bg-red-500';
+};
 
 const getLoadBarColor = (load: number) => {
-  if (load >= 80) return "bg-red-500"
-  if (load >= 60) return "bg-yellow-500"
-  return "bg-green-500"
-}
+  if (load >= 80) return 'bg-red-500';
+  if (load >= 60) return 'bg-yellow-500';
+  return 'bg-green-500';
+};
 
 const getAlertClasses = (type: string) => {
   const classMap = {
-    error: "bg-red-50 dark:bg-red-900/20 border-red-400",
-    warning: "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400",
-    info: "bg-blue-50 dark:bg-blue-900/20 border-blue-400",
-    success: "bg-green-50 dark:bg-green-900/20 border-green-400",
-  }
-  return classMap[type as keyof typeof classMap] || "bg-gray-50 dark:bg-gray-700 border-gray-400"
-}
+    error: 'bg-red-50 dark:bg-red-900/20 border-red-400',
+    warning: 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-400',
+    info: 'bg-blue-50 dark:bg-blue-900/20 border-blue-400',
+    success: 'bg-green-50 dark:bg-green-900/20 border-green-400',
+  };
+  return classMap[type as keyof typeof classMap] || 'bg-gray-50 dark:bg-gray-700 border-gray-400';
+};
 
 const getAlertIcon = (type: string) => {
   const iconMap = {
@@ -280,66 +280,66 @@ const getAlertIcon = (type: string) => {
     warning: ExclamationTriangleIcon,
     info: InformationCircleIcon,
     success: CheckCircleIcon,
-  }
-  return iconMap[type as keyof typeof iconMap] || InformationCircleIcon
-}
+  };
+  return iconMap[type as keyof typeof iconMap] || InformationCircleIcon;
+};
 
 const getAlertIconColor = (type: string) => {
   const colorMap = {
-    error: "text-red-500",
-    warning: "text-yellow-500",
-    info: "text-blue-500",
-    success: "text-green-500",
-  }
-  return colorMap[type as keyof typeof colorMap] || "text-gray-500"
-}
+    error: 'text-red-500',
+    warning: 'text-yellow-500',
+    info: 'text-blue-500',
+    success: 'text-green-500',
+  };
+  return colorMap[type as keyof typeof colorMap] || 'text-gray-500';
+};
 
 const getAlertTextColor = (type: string) => {
   const colorMap = {
-    error: "text-red-800 dark:text-red-200",
-    warning: "text-yellow-800 dark:text-yellow-200",
-    info: "text-blue-800 dark:text-blue-200",
-    success: "text-green-800 dark:text-green-200",
-  }
-  return colorMap[type as keyof typeof colorMap] || "text-gray-800 dark:text-gray-200"
-}
+    error: 'text-red-800 dark:text-red-200',
+    warning: 'text-yellow-800 dark:text-yellow-200',
+    info: 'text-blue-800 dark:text-blue-200',
+    success: 'text-green-800 dark:text-green-200',
+  };
+  return colorMap[type as keyof typeof colorMap] || 'text-gray-800 dark:text-gray-200';
+};
 
 const getAlertDescriptionColor = (type: string) => {
   const colorMap = {
-    error: "text-red-600 dark:text-red-300",
-    warning: "text-yellow-600 dark:text-yellow-300",
-    info: "text-blue-600 dark:text-blue-300",
-    success: "text-green-600 dark:text-green-300",
-  }
-  return colorMap[type as keyof typeof colorMap] || "text-gray-600 dark:text-gray-300"
-}
+    error: 'text-red-600 dark:text-red-300',
+    warning: 'text-yellow-600 dark:text-yellow-300',
+    info: 'text-blue-600 dark:text-blue-300',
+    success: 'text-green-600 dark:text-green-300',
+  };
+  return colorMap[type as keyof typeof colorMap] || 'text-gray-600 dark:text-gray-300';
+};
 
 const formatLastBackup = (date: Date): string => {
-  const now = new Date()
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+  const now = new Date();
+  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
   if (diffInHours < 1) {
-    return "Hace menos de 1 hora"
+    return 'Hace menos de 1 hora';
   } else if (diffInHours < 24) {
-    return `Hace ${diffInHours} horas`
+    return `Hace ${diffInHours} horas`;
   } else {
-    const days = Math.floor(diffInHours / 24)
-    return `Hace ${days} días`
+    const days = Math.floor(diffInHours / 24);
+    return `Hace ${days} días`;
   }
-}
+};
 
 const refreshStatus = async () => {
-  refreshing.value = true
+  refreshing.value = true;
   try {
-    emit("refresh")
+    emit('refresh');
   } finally {
-    refreshing.value = false
+    refreshing.value = false;
   }
-}
+};
 
 const viewDetails = () => {
-  emit("viewDetails")
-}
+  emit('viewDetails');
+};
 </script>
 
 <style scoped>

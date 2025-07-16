@@ -9,7 +9,8 @@
       <div class="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-200"></div>
       
       <!-- Modal Container -->
-      <div :class="[
+      <div
+:class="[
         'flex min-h-full items-center justify-center',
         modalClasses.container
       ]">
@@ -41,12 +42,12 @@
             
             <button
               v-if="showClose"
-              @click="close"
               :class="[
                 'p-2 rounded-lg transition-colors',
                 themeClasses.hover,
                 themeClasses.text.secondary
               ]"
+              @click="close"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -79,9 +80,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useTheme } from '../composables/useTheme'
-import { useResponsive } from '../composables/useResponsive'
+import { computed } from 'vue';
+import { useTheme } from '../composables/useTheme';
+import { useResponsive } from '../composables/useResponsive';
 
 interface Props {
   modelValue: boolean
@@ -96,15 +97,15 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   showClose: true,
   closeOnBackdrop: true,
-  size: 'md'
-})
+  size: 'md',
+});
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-}>()
+}>();
 
-const { themeClasses } = useTheme()
-const { modalClasses, textClasses, formClasses } = useResponsive()
+const { themeClasses } = useTheme();
+const { modalClasses, textClasses, formClasses } = useResponsive();
 
 const maxWidth = computed(() => {
   const sizes = {
@@ -112,22 +113,22 @@ const maxWidth = computed(() => {
     md: 'max-w-2xl',
     lg: 'max-w-4xl',
     xl: 'max-w-6xl',
-    full: 'max-w-full mx-4'
-  }
-  return sizes[props.size]
-})
+    full: 'max-w-full mx-4',
+  };
+  return sizes[props.size];
+});
 
 const contentClasses = computed(() => {
-  return props.contentClasses || 'max-h-[60vh] overflow-y-auto'
-})
+  return props.contentClasses || 'max-h-[60vh] overflow-y-auto';
+});
 
 const close = () => {
-  emit('update:modelValue', false)
-}
+  emit('update:modelValue', false);
+};
 
 const handleBackdropClick = () => {
   if (props.closeOnBackdrop) {
-    close()
+    close();
   }
-}
+};
 </script>

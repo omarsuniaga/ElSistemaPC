@@ -328,7 +328,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
+import { ref, computed, onMounted, watch } from 'vue';
 import {
   format,
   parseISO,
@@ -338,12 +338,12 @@ import {
   endOfMonth,
   eachDayOfInterval,
   getDay,
-} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAnalyticsStore} from "../store/analytics"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {Line, Bar} from "vue-chartjs"
+} from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAnalyticsStore } from '../store/analytics';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { Line, Bar } from 'vue-chartjs';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -354,7 +354,7 @@ import {
   Title,
   Tooltip,
   Legend,
-} from "chart.js"
+} from 'chart.js';
 
 // Registrar componentes de Chart.js
 ChartJS.register(
@@ -365,30 +365,30 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
-)
+  Legend,
+);
 
-const analyticsStore = useAnalyticsStore()
-const classesStore = useClassesStore()
-const attendanceStore = useAttendanceStore()
+const analyticsStore = useAnalyticsStore();
+const classesStore = useClassesStore();
+const attendanceStore = useAttendanceStore();
 
 // Estado local
-const isLoading = ref(true)
-const error = ref("")
-const selectedPeriod = ref("day")
-const selectedView = ref("chart")
-const selectedSortOrder = ref("highest")
+const isLoading = ref(true);
+const error = ref('');
+const selectedPeriod = ref('day');
+const selectedView = ref('chart');
+const selectedSortOrder = ref('highest');
 const customDateRange = ref({
-  startDate: format(new Date(new Date().setMonth(new Date().getMonth() - 1)), "yyyy-MM-dd"),
-  endDate: format(new Date(), "yyyy-MM-dd"),
-})
+  startDate: format(new Date(new Date().setMonth(new Date().getMonth() - 1)), 'yyyy-MM-dd'),
+  endDate: format(new Date(), 'yyyy-MM-dd'),
+});
 
 // Opciones de visualización
 const viewOptions = [
-  {id: "chart", label: "Gráfica"},
-  {id: "table", label: "Tabla"},
-  {id: "calendar", label: "Calendario"},
-]
+  { id: 'chart', label: 'Gráfica' },
+  { id: 'table', label: 'Tabla' },
+  { id: 'calendar', label: 'Calendario' },
+];
 
 // Métricas de asistencia
 const metrics = ref({
@@ -402,156 +402,156 @@ const metrics = ref({
   monthlyAttendance: [],
   weekdayAttendance: [],
   classAttendance: [],
-})
+});
 
 // Etiqueta del periodo actual
 const periodLabel = computed(() => {
   switch (selectedPeriod.value) {
-    case "day":
-      return "Diario"
-    case "week":
-      return "Semanal"
-    case "month":
-      return "Mensual"
-    case "custom":
-      return `${customDateRange.value.startDate} a ${customDateRange.value.endDate}`
-    default:
-      return ""
+  case 'day':
+    return 'Diario';
+  case 'week':
+    return 'Semanal';
+  case 'month':
+    return 'Mensual';
+  case 'custom':
+    return `${customDateRange.value.startDate} a ${customDateRange.value.endDate}`;
+  default:
+    return '';
   }
-})
+});
 
 // Observar cambios en el periodo seleccionado
 watch(selectedPeriod, (newPeriod) => {
-  loadAttendanceMetrics()
-})
+  loadAttendanceMetrics();
+});
 
 // Cargar métricas de asistencia
 async function loadAttendanceMetrics() {
-  isLoading.value = true
-  error.value = ""
+  isLoading.value = true;
+  error.value = '';
 
   try {
     await Promise.all([
       analyticsStore.fetchAnalytics(),
       classesStore.fetchClasses(),
       attendanceStore.fetchAttendance(),
-    ])
+    ]);
 
     // Datos de asistencia del store
-    const attendanceMetrics = analyticsStore.attendanceMetrics
+    const attendanceMetrics = analyticsStore.attendanceMetrics;
 
     // Métricas generales
-    metrics.value.attendanceRate = attendanceMetrics.averageRate
+    metrics.value.attendanceRate = attendanceMetrics.averageRate;
 
     // Asignar datos según el periodo
-    if (selectedPeriod.value === "day") {
-      metrics.value.dailyAttendance = attendanceMetrics.dailyAttendance || []
+    if (selectedPeriod.value === 'day') {
+      metrics.value.dailyAttendance = attendanceMetrics.dailyAttendance || [];
 
       // Calcular totales
-      let totalRecords = 0
-      let totalPresent = 0
-      let totalAbsent = 0
-      const totalJustified = 0
+      let totalRecords = 0;
+      let totalPresent = 0;
+      let totalAbsent = 0;
+      const totalJustified = 0;
 
       metrics.value.dailyAttendance.forEach((day) => {
-        totalRecords += day.total
-        totalPresent += day.present
-        totalAbsent += day.absent
-      })
+        totalRecords += day.total;
+        totalPresent += day.present;
+        totalAbsent += day.absent;
+      });
 
-      metrics.value.totalRecords = totalRecords
-      metrics.value.justifiedAbsences = totalJustified
+      metrics.value.totalRecords = totalRecords;
+      metrics.value.justifiedAbsences = totalJustified;
       metrics.value.justificationRate =
-        totalAbsent > 0 ? Math.round((totalJustified / totalAbsent) * 100) : 0
-    } else if (selectedPeriod.value === "week") {
-      metrics.value.weeklyAttendance = attendanceMetrics.weeklyAttendance || []
+        totalAbsent > 0 ? Math.round((totalJustified / totalAbsent) * 100) : 0;
+    } else if (selectedPeriod.value === 'week') {
+      metrics.value.weeklyAttendance = attendanceMetrics.weeklyAttendance || [];
 
       // Calcular totales
-      let totalRecords = 0
-      let totalPresent = 0
-      let totalAbsent = 0
-      const totalJustified = 0
+      let totalRecords = 0;
+      let totalPresent = 0;
+      let totalAbsent = 0;
+      const totalJustified = 0;
 
       metrics.value.weeklyAttendance.forEach((week) => {
-        totalRecords += week.total
-        totalPresent += week.present
-        totalAbsent += week.absent
-      })
+        totalRecords += week.total;
+        totalPresent += week.present;
+        totalAbsent += week.absent;
+      });
 
-      metrics.value.totalRecords = totalRecords
-      metrics.value.justifiedAbsences = totalJustified
+      metrics.value.totalRecords = totalRecords;
+      metrics.value.justifiedAbsences = totalJustified;
       metrics.value.justificationRate =
-        totalAbsent > 0 ? Math.round((totalJustified / totalAbsent) * 100) : 0
+        totalAbsent > 0 ? Math.round((totalJustified / totalAbsent) * 100) : 0;
     } else {
-      metrics.value.monthlyAttendance = attendanceMetrics.monthlyAttendance || []
+      metrics.value.monthlyAttendance = attendanceMetrics.monthlyAttendance || [];
 
       // Calcular totales
-      let totalRecords = 0
-      let totalPresent = 0
-      let totalAbsent = 0
-      const totalJustified = 0
+      let totalRecords = 0;
+      let totalPresent = 0;
+      let totalAbsent = 0;
+      const totalJustified = 0;
 
       metrics.value.monthlyAttendance.forEach((month) => {
-        totalRecords += month.total
-        totalPresent += month.present
-        totalAbsent += month.absent
-      })
+        totalRecords += month.total;
+        totalPresent += month.present;
+        totalAbsent += month.absent;
+      });
 
-      metrics.value.totalRecords = totalRecords
-      metrics.value.justifiedAbsences = totalJustified
+      metrics.value.totalRecords = totalRecords;
+      metrics.value.justifiedAbsences = totalJustified;
       metrics.value.justificationRate =
-        totalAbsent > 0 ? Math.round((totalJustified / totalAbsent) * 100) : 0
+        totalAbsent > 0 ? Math.round((totalJustified / totalAbsent) * 100) : 0;
     }
 
     // Datos por día de la semana (simulados)
     metrics.value.weekdayAttendance = [
-      {day: "Lunes", total: 120, present: 108, absent: 12, rate: 90},
-      {day: "Martes", total: 115, present: 100, absent: 15, rate: 87},
-      {day: "Miércoles", total: 130, present: 117, absent: 13, rate: 90},
-      {day: "Jueves", total: 125, present: 113, absent: 12, rate: 90},
-      {day: "Viernes", total: 110, present: 95, absent: 15, rate: 86},
-      {day: "Sábado", total: 80, present: 72, absent: 8, rate: 90},
-      {day: "Domingo", total: 40, present: 35, absent: 5, rate: 88},
-    ]
+      { day: 'Lunes', total: 120, present: 108, absent: 12, rate: 90 },
+      { day: 'Martes', total: 115, present: 100, absent: 15, rate: 87 },
+      { day: 'Miércoles', total: 130, present: 117, absent: 13, rate: 90 },
+      { day: 'Jueves', total: 125, present: 113, absent: 12, rate: 90 },
+      { day: 'Viernes', total: 110, present: 95, absent: 15, rate: 86 },
+      { day: 'Sábado', total: 80, present: 72, absent: 8, rate: 90 },
+      { day: 'Domingo', total: 40, present: 35, absent: 5, rate: 88 },
+    ];
 
     // Datos por clase (simulados)
-    const classAttendance = []
+    const classAttendance = [];
     for (let i = 0; i < 10; i++) {
-      const attendanceRate = Math.floor(Math.random() * 20) + 75 // 75-95%
-      const total = Math.floor(Math.random() * 40) + 20 // 20-60 registros
-      const absent = Math.round(total * (1 - attendanceRate / 100))
-      const present = total - absent
+      const attendanceRate = Math.floor(Math.random() * 20) + 75; // 75-95%
+      const total = Math.floor(Math.random() * 40) + 20; // 20-60 registros
+      const absent = Math.round(total * (1 - attendanceRate / 100));
+      const present = total - absent;
 
       classAttendance.push({
         id: `class-${i}`,
         name:
-          ["Piano", "Guitarra", "Violín", "Flauta", "Teoría Musical", "Canto", "Batería"][i % 7] +
-          " - " +
-          ["Nivel 1", "Nivel 2", "Nivel 3"][Math.floor(i / 3) % 3],
-        teacher: ["Profesor A", "Profesor B", "Profesor C", "Profesor D"][i % 4],
+          ['Piano', 'Guitarra', 'Violín', 'Flauta', 'Teoría Musical', 'Canto', 'Batería'][i % 7] +
+          ' - ' +
+          ['Nivel 1', 'Nivel 2', 'Nivel 3'][Math.floor(i / 3) % 3],
+        teacher: ['Profesor A', 'Profesor B', 'Profesor C', 'Profesor D'][i % 4],
         attendanceRate,
         total,
         present,
         absent,
-      })
+      });
     }
-    metrics.value.classAttendance = classAttendance
-    metrics.value.affectedClasses = classAttendance.filter((c) => c.absent > 0).length
+    metrics.value.classAttendance = classAttendance;
+    metrics.value.affectedClasses = classAttendance.filter((c) => c.absent > 0).length;
 
     // Generar datos de calendario (simulados)
-    generateCalendarData()
+    generateCalendarData();
   } catch (err) {
-    console.error("Error cargando métricas de asistencia:", err)
-    error.value = "Error al cargar los datos de asistencia. Por favor, intente de nuevo."
+    console.error('Error cargando métricas de asistencia:', err);
+    error.value = 'Error al cargar los datos de asistencia. Por favor, intente de nuevo.';
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 // Aplicar filtro de fechas personalizado
 function applyCustomDateFilter() {
   if (customDateRange.value.startDate && customDateRange.value.endDate) {
-    loadAttendanceMetrics()
+    loadAttendanceMetrics();
   }
 }
 
@@ -559,50 +559,50 @@ function applyCustomDateFilter() {
 function generateCalendarData() {
   // En una implementación real, estos datos vendrían de la base de datos
   // Por ahora usamos datos simulados para el mes actual
-  const today = new Date()
-  const monthStart = startOfMonth(today)
-  const monthEnd = endOfMonth(today)
+  const today = new Date();
+  const monthStart = startOfMonth(today);
+  const monthEnd = endOfMonth(today);
 
   // Generar días del mes
-  const days = eachDayOfInterval({start: monthStart, end: monthEnd})
+  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   // Ajustar para empezar en domingo (agregar días del mes anterior)
-  const firstDayOfWeek = getDay(monthStart)
+  const firstDayOfWeek = getDay(monthStart);
   for (let i = 0; i < firstDayOfWeek; i++) {
-    const prevDate = new Date(monthStart)
-    prevDate.setDate(prevDate.getDate() - (firstDayOfWeek - i))
-    days.unshift(prevDate)
+    const prevDate = new Date(monthStart);
+    prevDate.setDate(prevDate.getDate() - (firstDayOfWeek - i));
+    days.unshift(prevDate);
   }
 
   // Ajustar para terminar en sábado (agregar días del mes siguiente)
-  const lastDayOfWeek = getDay(monthEnd)
+  const lastDayOfWeek = getDay(monthEnd);
   if (lastDayOfWeek < 6) {
     for (let i = 1; i <= 6 - lastDayOfWeek; i++) {
-      const nextDate = new Date(monthEnd)
-      nextDate.setDate(nextDate.getDate() + i)
-      days.push(nextDate)
+      const nextDate = new Date(monthEnd);
+      nextDate.setDate(nextDate.getDate() + i);
+      days.push(nextDate);
     }
   }
 
   // Generar datos para cada día
   return days.map((date) => {
-    const day = date.getDate()
-    const isCurrentMonth = isSameMonth(date, today)
+    const day = date.getDate();
+    const isCurrentMonth = isSameMonth(date, today);
 
     // Generar datos aleatorios para días del mes actual
-    let data = null
+    let data = null;
     if (isCurrentMonth && date <= today) {
-      const attendanceRate = Math.floor(Math.random() * 20) + 75 // 75-95%
-      const total = Math.floor(Math.random() * 15) + 5 // 5-20 registros
-      const absent = Math.round(total * (1 - attendanceRate / 100))
-      const present = total - absent
+      const attendanceRate = Math.floor(Math.random() * 20) + 75; // 75-95%
+      const total = Math.floor(Math.random() * 15) + 5; // 5-20 registros
+      const absent = Math.round(total * (1 - attendanceRate / 100));
+      const present = total - absent;
 
       data = {
         total,
         present,
         absent,
         rate: attendanceRate,
-      }
+      };
     }
 
     return {
@@ -611,109 +611,109 @@ function generateCalendarData() {
       isCurrentMonth,
       isToday: isToday(date),
       data,
-    }
-  })
+    };
+  });
 }
 
 // Datos para gráfico de asistencia diaria
 const dailyAttendanceChartData = computed(() => {
-  const dailyData = metrics.value.dailyAttendance || []
+  const dailyData = metrics.value.dailyAttendance || [];
 
   return {
-    labels: dailyData.map((day) => format(parseISO(day.date), "dd/MM")),
+    labels: dailyData.map((day) => format(parseISO(day.date), 'dd/MM')),
     datasets: [
       {
-        label: "Tasa de Asistencia (%)",
+        label: 'Tasa de Asistencia (%)',
         data: dailyData.map((day) => day.rate),
-        borderColor: "rgb(59, 130, 246)",
-        backgroundColor: "rgba(59, 130, 246, 0.1)",
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
         borderWidth: 2,
         tension: 0.4,
         fill: true,
       },
     ],
-  }
-})
+  };
+});
 
 // Datos para gráfico de asistencia semanal
 // Usar sólo datos reales de metrics
 const weeklyAttendanceChartData = computed(() => {
-  const weeklyData = metrics.value.weeklyAttendance || []
+  const weeklyData = metrics.value.weeklyAttendance || [];
 
   return {
     labels: weeklyData.map((week) => week.week),
     datasets: [
       {
-        label: "Presentes",
+        label: 'Presentes',
         data: weeklyData.map((week) => week.present),
-        backgroundColor: "rgba(16, 185, 129, 0.7)",
+        backgroundColor: 'rgba(16, 185, 129, 0.7)',
       },
       {
-        label: "Ausentes",
+        label: 'Ausentes',
         data: weeklyData.map((week) => week.absent),
-        backgroundColor: "rgba(239, 68, 68, 0.7)",
+        backgroundColor: 'rgba(239, 68, 68, 0.7)',
       },
     ],
-  }
-})
+  };
+});
 
 // Datos para gráfico de asistencia mensual
 // Usar sólo datos reales de metrics
 const monthlyAttendanceChartData = computed(() => {
-  const monthlyData = metrics.value.monthlyAttendance || []
+  const monthlyData = metrics.value.monthlyAttendance || [];
 
   return {
     labels: monthlyData.map((month) => month.month),
     datasets: [
       {
-        label: "Presentes",
+        label: 'Presentes',
         data: monthlyData.map((month) => month.present),
-        backgroundColor: "rgba(16, 185, 129, 0.7)",
+        backgroundColor: 'rgba(16, 185, 129, 0.7)',
       },
       {
-        label: "Ausentes",
+        label: 'Ausentes',
         data: monthlyData.map((month) => month.absent),
-        backgroundColor: "rgba(239, 68, 68, 0.7)",
+        backgroundColor: 'rgba(239, 68, 68, 0.7)',
       },
     ],
-  }
-})
+  };
+});
 
 // Datos para gráfico por día de la semana
 // Usar sólo datos reales de metrics
 const weekdayAttendanceChartData = computed(() => {
-  const weekdayData = metrics.value.weekdayAttendance || []
+  const weekdayData = metrics.value.weekdayAttendance || [];
 
   return {
     labels: weekdayData.map((day) => day.day),
     datasets: [
       {
-        label: "Tasa de Asistencia (%)",
+        label: 'Tasa de Asistencia (%)',
         data: weekdayData.map((day) => day.rate),
         backgroundColor: weekdayData.map((day) => getRateColor(day.rate)),
       },
     ],
-  }
-})
+  };
+});
 
 // Datos para la tabla de asistencia
 const attendanceTableData = computed(() => {
-  if (selectedPeriod.value === "day") {
+  if (selectedPeriod.value === 'day') {
     return metrics.value.dailyAttendance.map((day) => ({
-      period: format(parseISO(day.date), "dd/MM/yyyy"),
+      period: format(parseISO(day.date), 'dd/MM/yyyy'),
       total: day.total,
       present: day.present,
       absent: day.absent,
       rate: day.rate,
-    }))
-  } else if (selectedPeriod.value === "week") {
+    }));
+  } else if (selectedPeriod.value === 'week') {
     return metrics.value.weeklyAttendance.map((week) => ({
       period: week.week,
       total: week.total,
       present: week.present,
       absent: week.absent,
       rate: week.rate,
-    }))
+    }));
   } else {
     return metrics.value.monthlyAttendance.map((month) => ({
       period: month.month,
@@ -721,39 +721,39 @@ const attendanceTableData = computed(() => {
       present: month.present,
       absent: month.absent,
       rate: month.rate,
-    }))
+    }));
   }
-})
+});
 
 // Datos de asistencia por día de la semana
 const weekdayAttendanceData = computed(() => {
-  return metrics.value.weekdayAttendance || []
-})
+  return metrics.value.weekdayAttendance || [];
+});
 
 // Datos de calendario
 const calendarData = computed(() => {
-  return generateCalendarData()
-})
+  return generateCalendarData();
+});
 
 // Datos de asistencia por clase ordenados
 const sortedClassAttendanceData = computed(() => {
-  const classData = [...(metrics.value.classAttendance || [])]
+  const classData = [...(metrics.value.classAttendance || [])];
 
-  if (selectedSortOrder.value === "highest") {
-    return classData.sort((a, b) => b.absent - a.absent)
-  } else if (selectedSortOrder.value === "lowest") {
-    return classData.sort((a, b) => a.absent - b.absent)
+  if (selectedSortOrder.value === 'highest') {
+    return classData.sort((a, b) => b.absent - a.absent);
+  } else if (selectedSortOrder.value === 'lowest') {
+    return classData.sort((a, b) => a.absent - b.absent);
   } else {
-    return classData.sort((a, b) => a.name.localeCompare(b.name))
+    return classData.sort((a, b) => a.name.localeCompare(b.name));
   }
-})
+});
 
 // Obtener color según la tasa de asistencia
 function getRateColor(rate) {
-  if (rate >= 90) return "#10B981" // verde
-  if (rate >= 80) return "#60A5FA" // azul
-  if (rate >= 70) return "#FBBF24" // amarillo
-  return "#EF4444" // rojo
+  if (rate >= 90) return '#10B981'; // verde
+  if (rate >= 80) return '#60A5FA'; // azul
+  if (rate >= 70) return '#FBBF24'; // amarillo
+  return '#EF4444'; // rojo
 }
 
 // Opciones para los gráficos
@@ -762,10 +762,10 @@ const chartOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: "top" as const,
+      position: 'top' as const,
     },
     tooltip: {
-      mode: "index" as const,
+      mode: 'index' as const,
       intersect: false,
     },
   },
@@ -774,10 +774,10 @@ const chartOptions = {
       beginAtZero: true,
     },
   },
-}
+};
 
 // Cargar datos iniciales
 onMounted(() => {
-  loadAttendanceMetrics()
-})
+  loadAttendanceMetrics();
+});
 </script>

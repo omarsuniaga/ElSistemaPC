@@ -26,15 +26,15 @@
 </template>
 
 <script setup lang="ts">
-import {PropType} from "vue"
-import type {ClassData} from "../../types/class" // Adjust path as necessary
+import { PropType } from 'vue';
+import type { ClassData } from '../../types/class'; // Adjust path as necessary
 
 const props = defineProps({
   classData: {
     type: Object as PropType<ClassData | null>,
     default: null,
   },
-})
+});
 </script>
 
 <style scoped>

@@ -108,78 +108,78 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useAttendanceStore} from "../stores/attendance"
-import {useStudentsStore} from "../../Students/store/students"
-import {format, parseISO} from "date-fns"
-import {es} from "date-fns/locale"
-import {CheckCircleIcon, XCircleIcon, ClockIcon, DocumentCheckIcon} from "@heroicons/vue/24/outline"
-import type {AttendanceRecord, AttendanceStatus, Student} from "../types"
+import { ref, computed, onMounted } from 'vue';
+import { useAttendanceStore } from '../stores/attendance';
+import { useStudentsStore } from '../../Students/store/students';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { CheckCircleIcon, XCircleIcon, ClockIcon, DocumentCheckIcon } from '@heroicons/vue/24/outline';
+import type { AttendanceRecord, AttendanceStatus, Student } from '../types';
 
 const props = defineProps<{
   studentId: string
   date: string
   classId: string
-}>()
+}>();
 
 const emit = defineEmits<{
-  (e: "close"): void
-  (e: "saved"): void
-}>()
+  (e: 'close'): void
+  (e: 'saved'): void
+}>();
 
-const attendanceStore = useAttendanceStore()
-const studentsStore = useStudentsStore()
-const isSaving = ref(false)
+const attendanceStore = useAttendanceStore();
+const studentsStore = useStudentsStore();
+const isSaving = ref(false);
 const justification = ref({
-  reason: "",
-  documentUrl: "",
-})
+  reason: '',
+  documentUrl: '',
+});
 
 // Obtener el estudiante y registro de asistencia
 const student = computed<Student | undefined>(() => {
-  return studentsStore.students.find((s) => s.id === props.studentId)
-})
+  return studentsStore.students.find((s) => s.id === props.studentId);
+});
 
 // Estado inicial de la asistencia
 const attendance = ref<AttendanceRecord>({
   studentId: props.studentId,
   Fecha: props.date,
   classId: props.classId,
-  status: "Ausente",
-})
+  status: 'Ausente',
+});
 
 // Historial de cambios de estado
 const changeHistory = computed(() => {
-  return attendanceStore.getStatusChanges(props.studentId, props.date, props.classId)
-})
+  return attendanceStore.getStatusChanges(props.studentId, props.date, props.classId);
+});
 
 // Cargar datos existentes
 onMounted(async () => {
   // Buscar si ya existe un registro para este estudiante, fecha y clase
-  const existingRecords = attendanceStore.getRecordsByDateAndClass(props.date, props.classId)
-  const existingRecord = existingRecords.find((r) => r.studentId === props.studentId)
+  const existingRecords = attendanceStore.getRecordsByDateAndClass(props.date, props.classId);
+  const existingRecord = existingRecords.find((r) => r.studentId === props.studentId);
 
   if (existingRecord) {
-    attendance.value = {...existingRecord}
+    attendance.value = { ...existingRecord };
     if (existingRecord.justification) {
       justification.value = {
-        reason: existingRecord.justification.reason || "",
-        documentUrl: existingRecord.justification.documentUrl || "",
-      }
+        reason: existingRecord.justification.reason || '',
+        documentUrl: existingRecord.justification.documentUrl || '',
+      };
     }
   }
-})
+});
 
 // Guardar cambios
 const saveChanges = async () => {
-  isSaving.value = true
+  isSaving.value = true;
   try {
     // Actualizar la justificación si el estado es 'Justificado'
-    if (attendance.value.status === "Justificado") {
+    if (attendance.value.status === 'Justificado') {
       attendance.value.justification = {
         ...justification.value,
         timestamp: new Date(),
-      }
+      };
     }
 
     // Guardar el registro de asistencia
@@ -191,98 +191,98 @@ const saveChanges = async () => {
       status: attendance.value.status,
       justification: attendance.value.justification,
       createdAt: attendance.value.createdAt || new Date().toISOString(),
-    })
+    });
 
-    emit("saved")
-    emit("close")
+    emit('saved');
+    emit('close');
   } catch (error) {
-    console.error("Error al guardar la asistencia:", error)
-    alert("Hubo un error al guardar los cambios. Por favor intente nuevamente.")
+    console.error('Error al guardar la asistencia:', error);
+    alert('Hubo un error al guardar los cambios. Por favor intente nuevamente.');
   } finally {
-    isSaving.value = false
+    isSaving.value = false;
   }
-}
+};
 
 // Manejar carga de archivo
 const handleFileUpload = (event: Event) => {
-  const input = event.target as HTMLInputElement
+  const input = event.target as HTMLInputElement;
   if (input.files && input.files.length > 0) {
-    const file = input.files[0]
+    const file = input.files[0];
     // Aquí implementaría la carga del archivo a Firebase Storage
     // y almacenaría la URL en justification.documentUrl
     // Por ahora, solo mostramos el nombre del archivo
-    justification.value.documentUrl = `documento-${file.name}`
+    justification.value.documentUrl = `documento-${file.name}`;
   }
-}
+};
 
 // Utilidades para el UI
-const formatDate = (date: string | Date, formatStr: string = "PPP") => {
-  const dateObj = typeof date === "string" ? parseISO(date) : date
-  return format(dateObj, formatStr, {locale: es})
-}
+const formatDate = (date: string | Date, formatStr: string = 'PPP') => {
+  const dateObj = typeof date === 'string' ? parseISO(date) : date;
+  return format(dateObj, formatStr, { locale: es });
+};
 
 // Función para generar las iniciales del alumno para usar como avatar
 const getStudentInitials = (student: Student | undefined): string => {
-  if (!student) return "??"
+  if (!student) return '??';
 
-  const nombre = student.nombre || ""
-  const apellido = student.apellido || ""
+  const nombre = student.nombre || '';
+  const apellido = student.apellido || '';
 
-  const firstInitial = nombre.charAt(0).toUpperCase()
-  const lastInitial = apellido.charAt(0).toUpperCase()
+  const firstInitial = nombre.charAt(0).toUpperCase();
+  const lastInitial = apellido.charAt(0).toUpperCase();
 
-  return `${firstInitial}${lastInitial}`
-}
+  return `${firstInitial}${lastInitial}`;
+};
 
 // Función para obtener el color de fondo para el avatar basado en el nombre
 const getAvatarBgColor = (student: Student | undefined): string => {
-  if (!student) return "bg-gray-300"
+  if (!student) return 'bg-gray-300';
 
   // Genera un número único basado en el nombre y apellido
   const stringToHash = (str: string): number => {
-    let hash = 0
+    let hash = 0;
     for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash)
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
-    return hash
-  }
+    return hash;
+  };
 
-  const hash = stringToHash(student.nombre + student.apellido)
+  const hash = stringToHash(student.nombre + student.apellido);
 
   // Lista de colores de fondo para los avatares
   const colors = [
-    "bg-blue-500",
-    "bg-red-500",
-    "bg-green-500",
-    "bg-yellow-500",
-    "bg-indigo-500",
-    "bg-purple-500",
-    "bg-pink-500",
-    "bg-teal-500",
-    "bg-orange-500",
-  ]
+    'bg-blue-500',
+    'bg-red-500',
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-indigo-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-teal-500',
+    'bg-orange-500',
+  ];
 
   // Selecciona un color basado en el hash
-  return colors[Math.abs(hash) % colors.length]
-}
+  return colors[Math.abs(hash) % colors.length];
+};
 
 const getButtonActiveClass = (status: AttendanceStatus, currentStatus: AttendanceStatus) => {
   if (status !== currentStatus) {
     const baseColors: Record<AttendanceStatus, string> = {
-      Presente: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
-      Ausente: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400",
-      Tardanza: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400",
-      Justificado: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
-    }
-    return baseColors[status]
+      Presente: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+      Ausente: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+      Tardanza: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
+      Justificado: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+    };
+    return baseColors[status];
   }
 
   const activeColors: Record<AttendanceStatus, string> = {
-    Presente: "bg-green-600 text-white",
-    Ausente: "bg-red-600 text-white",
-    Tardanza: "bg-yellow-600 text-white",
-    Justificado: "bg-blue-600 text-white",
-  }
-  return activeColors[status]
-}
+    Presente: 'bg-green-600 text-white',
+    Ausente: 'bg-red-600 text-white',
+    Tardanza: 'bg-yellow-600 text-white',
+    Justificado: 'bg-blue-600 text-white',
+  };
+  return activeColors[status];
+};
 </script>

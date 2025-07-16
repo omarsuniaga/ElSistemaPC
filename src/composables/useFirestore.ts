@@ -1,4 +1,4 @@
-import {ref} from "vue"
+import { ref } from 'vue';
 import {
   collection,
   doc,
@@ -9,8 +9,8 @@ import {
   DocumentData,
   CollectionReference,
   DocumentReference,
-} from "firebase/firestore"
-import {db} from "../firebase"
+} from 'firebase/firestore';
+import { db } from '../firebase';
 
 export interface FirestoreComposable {
   getCollection: (
@@ -27,8 +27,8 @@ export interface FirestoreComposable {
  * Proporciona funciones para obtener colecciones y documentos
  */
 export function useFirestore(): FirestoreComposable {
-  const loading = ref(false)
-  const error = ref<string | null>(null)
+  const loading = ref(false);
+  const error = ref<string | null>(null);
 
   /**
    * Obtiene todos los documentos de una colección
@@ -38,32 +38,32 @@ export function useFirestore(): FirestoreComposable {
    */
   const getCollection = async (
     collectionName: string,
-    constraints: QueryConstraint[] = []
+    constraints: QueryConstraint[] = [],
   ): Promise<DocumentData[]> => {
     try {
-      loading.value = true
-      error.value = null
+      loading.value = true;
+      error.value = null;
 
-      const collectionRef: CollectionReference = collection(db, collectionName)
-      const queryRef = constraints.length > 0 ? query(collectionRef, ...constraints) : collectionRef
+      const collectionRef: CollectionReference = collection(db, collectionName);
+      const queryRef = constraints.length > 0 ? query(collectionRef, ...constraints) : collectionRef;
 
-      const querySnapshot = await getDocs(queryRef)
+      const querySnapshot = await getDocs(queryRef);
 
       const documents = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-      }))
+      }));
 
-      return documents
+      return documents;
     } catch (err: any) {
-      const errorMessage = `Error getting collection ${collectionName}: ${err.message}`
-      console.error(errorMessage, err)
-      error.value = errorMessage
-      throw err
+      const errorMessage = `Error getting collection ${collectionName}: ${err.message}`;
+      console.error(errorMessage, err);
+      error.value = errorMessage;
+      throw err;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
-  }
+  };
 
   /**
    * Obtiene un documento específico por ID
@@ -73,38 +73,38 @@ export function useFirestore(): FirestoreComposable {
    */
   const getDocument = async (
     collectionName: string,
-    documentId: string
+    documentId: string,
   ): Promise<DocumentData | null> => {
     try {
-      loading.value = true
-      error.value = null
+      loading.value = true;
+      error.value = null;
 
-      const docRef: DocumentReference = doc(db, collectionName, documentId)
-      const docSnap = await getDoc(docRef)
+      const docRef: DocumentReference = doc(db, collectionName, documentId);
+      const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
         return {
           id: docSnap.id,
           ...docSnap.data(),
-        }
+        };
       } else {
-        console.warn(`Document ${documentId} not found in collection ${collectionName}`)
-        return null
+        console.warn(`Document ${documentId} not found in collection ${collectionName}`);
+        return null;
       }
     } catch (err: any) {
-      const errorMessage = `Error getting document ${documentId} from ${collectionName}: ${err.message}`
-      console.error(errorMessage, err)
-      error.value = errorMessage
-      throw err
+      const errorMessage = `Error getting document ${documentId} from ${collectionName}: ${err.message}`;
+      console.error(errorMessage, err);
+      error.value = errorMessage;
+      throw err;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
-  }
+  };
 
   return {
     getCollection,
     getDocument,
     loading,
     error,
-  }
+  };
 }

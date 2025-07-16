@@ -264,8 +264,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRoute, useRouter} from "vue-router"
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import {
   ArrowLeftIcon,
   ChartBarIcon,
@@ -277,172 +277,172 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ClockIcon,
-} from "@heroicons/vue/24/outline"
-import {ArrowTrendingUpIcon} from "@heroicons/vue/24/solid"
-import {useStudentsStore} from "../../Students/store/students"
-import {useStudentPerformance} from "../composables/useStudentPerformance"
-import StudentAvatar from "../../Students/components/StudentAvatar.vue"
-import AttendanceAnalysis from "../components/AttendanceAnalysis.vue"
-import RepertoireAnalysis from "../components/RepertoireAnalysis.vue"
-import WorkAnalysis from "../components/WorkAnalysis.vue"
-import FeedbackAnalysis from "../components/FeedbackAnalysis.vue"
-import PerformanceTrends from "../components/PerformanceTrends.vue"
+} from '@heroicons/vue/24/outline';
+import { ArrowTrendingUpIcon } from '@heroicons/vue/24/solid';
+import { useStudentsStore } from '../../Students/store/students';
+import { useStudentPerformance } from '../composables/useStudentPerformance';
+import StudentAvatar from '../../Students/components/StudentAvatar.vue';
+import AttendanceAnalysis from '../components/AttendanceAnalysis.vue';
+import RepertoireAnalysis from '../components/RepertoireAnalysis.vue';
+import WorkAnalysis from '../components/WorkAnalysis.vue';
+import FeedbackAnalysis from '../components/FeedbackAnalysis.vue';
+import PerformanceTrends from '../components/PerformanceTrends.vue';
 
-const route = useRoute()
-const router = useRouter()
-const studentsStore = useStudentsStore()
+const route = useRoute();
+const router = useRouter();
+const studentsStore = useStudentsStore();
 
-const studentId = route.params.id as string
-const student = computed(() => studentsStore.students.find((s) => s.id === studentId))
+const studentId = route.params.id as string;
+const student = computed(() => studentsStore.students.find((s) => s.id === studentId));
 
 const {
   performance, // Use 'performance' as returned by the composable
   loading,
   error,
   refresh,
-} = useStudentPerformance(studentId)
+} = useStudentPerformance(studentId);
 
-const activeTab = ref("attendance")
+const activeTab = ref('attendance');
 
 const tabs = [
-  {id: "attendance", label: "Asistencia", icon: CalendarIcon},
-  {id: "repertoire", label: "Repertorio", icon: MusicalNoteIcon},
-  {id: "work", label: "Trabajo", icon: UserGroupIcon},
-  {id: "feedback", label: "Retroalimentación", icon: StarIcon},
-  {id: "trends", label: "Tendencias", icon: ArrowTrendingUpIcon},
-]
+  { id: 'attendance', label: 'Asistencia', icon: CalendarIcon },
+  { id: 'repertoire', label: 'Repertorio', icon: MusicalNoteIcon },
+  { id: 'work', label: 'Trabajo', icon: UserGroupIcon },
+  { id: 'feedback', label: 'Retroalimentación', icon: StarIcon },
+  { id: 'trends', label: 'Tendencias', icon: ArrowTrendingUpIcon },
+];
 
 const getScoreColor = (score: number): string => {
-  if (score >= 85) return "#10b981" // green-500
-  if (score >= 70) return "#f59e0b" // amber-500
-  if (score >= 50) return "#f97316" // orange-500
-  return "#ef4444" // red-500
-}
+  if (score >= 85) return '#10b981'; // green-500
+  if (score >= 70) return '#f59e0b'; // amber-500
+  if (score >= 50) return '#f97316'; // orange-500
+  return '#ef4444'; // red-500
+};
 
 const getPerformanceLevel = (score: number): string => {
-  if (score >= 85) return "Excelente"
-  if (score >= 70) return "Bueno"
-  if (score >= 50) return "Regular"
-  return "Necesita Mejora"
-}
+  if (score >= 85) return 'Excelente';
+  if (score >= 70) return 'Bueno';
+  if (score >= 50) return 'Regular';
+  return 'Necesita Mejora';
+};
 
 const generatedRecommendations = computed(() => {
-  if (!performance.value) return []
+  if (!performance.value) return [];
 
-  const recommendations = []
-  const scores = performance.value.scores
-  const attendance = performance.value.attendance
-  const repertoire = performance.value.repertoire
+  const recommendations = [];
+  const scores = performance.value.scores;
+  const attendance = performance.value.attendance;
+  const repertoire = performance.value.repertoire;
 
   // Attendance recommendations
   if (attendance.attendanceRate < 80) {
     recommendations.push({
-      type: "attendance",
-      title: "Mejorar Asistencia",
+      type: 'attendance',
+      title: 'Mejorar Asistencia',
       description:
-        "Se recomienda mejorar la asistencia a clases para obtener mejor aprovechamiento.",
+        'Se recomienda mejorar la asistencia a clases para obtener mejor aprovechamiento.',
       actions: [
-        {id: "schedule-meeting", label: "Programar Reunión"},
-        {id: "reminder-setup", label: "Configurar Recordatorios"},
+        { id: 'schedule-meeting', label: 'Programar Reunión' },
+        { id: 'reminder-setup', label: 'Configurar Recordatorios' },
       ],
-    })
+    });
   }
 
   // Practice recommendations
   if (scores.repertoireScore < 70) {
     recommendations.push({
-      type: "practice",
-      title: "Incrementar Práctica",
+      type: 'practice',
+      title: 'Incrementar Práctica',
       description:
-        "Se sugiere aumentar las horas de práctica individual para mejorar el rendimiento en repertorio.",
+        'Se sugiere aumentar las horas de práctica individual para mejorar el rendimiento en repertorio.',
       actions: [
-        {id: "practice-plan", label: "Plan de Práctica"},
-        {id: "technique-exercises", label: "Ejercicios Técnicos"},
+        { id: 'practice-plan', label: 'Plan de Práctica' },
+        { id: 'technique-exercises', label: 'Ejercicios Técnicos' },
       ],
-    })
+    });
   }
 
   // Participation recommendations
   if (scores.workScore < 70) {
     recommendations.push({
-      type: "participation",
-      title: "Mejorar Participación",
-      description: "Se recomienda una mayor participación en actividades grupales y colaborativas.",
+      type: 'participation',
+      title: 'Mejorar Participación',
+      description: 'Se recomienda una mayor participación en actividades grupales y colaborativas.',
       actions: [
-        {id: "group-activities", label: "Actividades Grupales"},
-        {id: "leadership-roles", label: "Roles de Liderazgo"},
+        { id: 'group-activities', label: 'Actividades Grupales' },
+        { id: 'leadership-roles', label: 'Roles de Liderazgo' },
       ],
-    })
+    });
   }
 
-  return recommendations
-})
+  return recommendations;
+});
 
 // Data adapters for analysis components
 const attendanceData = computed(() => {
-  if (!performance.value) return undefined
-  const attendance = performance.value.attendance
+  if (!performance.value) return undefined;
+  const attendance = performance.value.attendance;
   return {
     attendanceRate: attendance.attendanceRate,
     punctualityRate: attendance.punctuality,
     absences: attendance.totalClasses - attendance.attendedClasses,
     trend:
-      performance.value.trends.direction === "mejorando"
-        ? "improving"
-        : performance.value.trends.direction === "decayendo"
-          ? "declining"
-          : "stable",
-  }
-})
+      performance.value.trends.direction === 'mejorando'
+        ? 'improving'
+        : performance.value.trends.direction === 'decayendo'
+          ? 'declining'
+          : 'stable',
+  };
+});
 
 const repertoireData = computed(() => {
-  if (!performance.value) return undefined
-  const repertoire = performance.value.repertoire
+  if (!performance.value) return undefined;
+  const repertoire = performance.value.repertoire;
   const difficultyScore = Math.round(
-    (repertoire.technicalProficiency + repertoire.musicalExpression) / 2
-  )
+    (repertoire.technicalProficiency + repertoire.musicalExpression) / 2,
+  );
 
-  let difficultyLevel = "Básico"
-  if (difficultyScore >= 80) difficultyLevel = "Avanzado"
-  else if (difficultyScore >= 60) difficultyLevel = "Intermedio"
+  let difficultyLevel = 'Básico';
+  if (difficultyScore >= 80) difficultyLevel = 'Avanzado';
+  else if (difficultyScore >= 60) difficultyLevel = 'Intermedio';
 
   return {
     piecesLearned: repertoire.completedMontajes,
     progressRate: repertoire.averageScore,
     difficulty: difficultyLevel,
-  }
-})
+  };
+});
 
 const getRecommendationIcon = (type: string) => {
   switch (type) {
-    case "attendance":
-      return CalendarIcon
-    case "practice":
-      return MusicalNoteIcon
-    case "participation":
-      return UserGroupIcon
-    case "feedback":
-      return StarIcon
-    default:
-      return LightBulbIcon
+  case 'attendance':
+    return CalendarIcon;
+  case 'practice':
+    return MusicalNoteIcon;
+  case 'participation':
+    return UserGroupIcon;
+  case 'feedback':
+    return StarIcon;
+  default:
+    return LightBulbIcon;
   }
-}
+};
 
 const executeAction = (action: any) => {
   // Handle recommendation actions
-  console.log("Executing action:", action)
+  console.log('Executing action:', action);
   // TODO: Implement action handlers
-}
+};
 
 onMounted(() => {
   if (!student.value) {
-    studentsStore.fetchStudents()
+    studentsStore.fetchStudents();
   }
   // Ensure performance data is fetched when component mounts or studentId changes
   if (studentId) {
-    refresh()
+    refresh();
   }
-})
+});
 
 // Watch for changes in studentId if the component can be reused for different students
 // watch(() => studentId, (newId) => {

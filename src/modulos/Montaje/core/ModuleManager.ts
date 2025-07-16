@@ -1,8 +1,8 @@
-import { ref, reactive, computed, markRaw } from 'vue'
-import type { Component } from 'vue'
+import { ref, reactive, computed, markRaw } from 'vue';
+import type { Component } from 'vue';
 
 // Importar Firebase del proyecto principal - AJUSTADO para tu estructura
-import { db, auth, storage } from '../../../firebase/config'
+import { db, auth, storage } from '../../../firebase/config';
 
 export interface ModuleDefinition {
   id: string
@@ -59,10 +59,10 @@ export interface User {
 }
 
 class ModuleManager {
-  private modules = reactive<Map<string, ModuleDefinition>>(new Map())
-  private activeModule = ref<string | null>(null)
-  private currentUser = ref<User | null>(null)
-  private globalConfig = reactive<Record<string, any>>({})
+  private modules = reactive<Map<string, ModuleDefinition>>(new Map());
+  private activeModule = ref<string | null>(null);
+  private currentUser = ref<User | null>(null);
+  private globalConfig = reactive<Record<string, any>>({});
 
   // Registrar un módulo
   registerModule(module: ModuleDefinition) {
@@ -70,7 +70,7 @@ class ModuleManager {
     if (module.dependencies) {
       for (const dep of module.dependencies) {
         if (!this.modules.has(dep)) {
-          throw new Error(`Módulo ${module.id} requiere dependencia ${dep} que no está registrada`)
+          throw new Error(`Módulo ${module.id} requiere dependencia ${dep} que no está registrada`);
         }
       }
     }
@@ -78,127 +78,127 @@ class ModuleManager {
     // Marcar el componente como no reactivo para evitar problemas de performance
     const moduleWithRawComponent = {
       ...module,
-      component: markRaw(module.component)
-    }
+      component: markRaw(module.component),
+    };
 
-    this.modules.set(module.id, moduleWithRawComponent)
+    this.modules.set(module.id, moduleWithRawComponent);
     
     // Ejecutar hook de inicialización
     if (module.hooks?.onInit) {
-      module.hooks.onInit()
+      module.hooks.onInit();
     }
 
-    console.log(`Módulo ${module.id} registrado exitosamente`)
+    console.log(`Módulo ${module.id} registrado exitosamente`);
   }
 
   // Desregistrar un módulo
   unregisterModule(moduleId: string) {
-    const module = this.modules.get(moduleId)
+    const module = this.modules.get(moduleId);
     if (module?.hooks?.onDestroy) {
-      module.hooks.onDestroy()
+      module.hooks.onDestroy();
     }
-    this.modules.delete(moduleId)
+    this.modules.delete(moduleId);
   }
 
   // Activar un módulo
   activateModule(moduleId: string) {
-    const module = this.modules.get(moduleId)
+    const module = this.modules.get(moduleId);
     if (!module) {
-      throw new Error(`Módulo ${moduleId} no encontrado`)
+      throw new Error(`Módulo ${moduleId} no encontrado`);
     }
 
     // Verificar permisos
     if (module.permissions && !this.hasPermissions(module.permissions)) {
-      throw new Error(`Sin permisos para acceder al módulo ${moduleId}`)
+      throw new Error(`Sin permisos para acceder al módulo ${moduleId}`);
     }
 
-    this.activeModule.value = moduleId
+    this.activeModule.value = moduleId;
   }
 
   // Verificar permisos
   hasPermissions(requiredPermissions: string[]): boolean {
-    if (!this.currentUser.value) return false
+    if (!this.currentUser.value) return false;
     
-    const userPermissions = this.currentUser.value.permissions
+    const userPermissions = this.currentUser.value.permissions;
     return requiredPermissions.every(permission => 
       userPermissions.includes(permission) ||
       userPermissions.includes('*:*') ||
-      userPermissions.some(p => p.endsWith(':*') && permission.startsWith(p.split(':')[0]))
-    )
+      userPermissions.some(p => p.endsWith(':*') && permission.startsWith(p.split(':')[0])),
+    );
   }
 
   // Establecer usuario actual
   setUser(user: User) {
-    const previousUser = this.currentUser.value
-    this.currentUser.value = user
+    const previousUser = this.currentUser.value;
+    this.currentUser.value = user;
 
     // Notificar a todos los módulos del cambio de usuario
     this.modules.forEach(module => {
       if (module.hooks?.onUserChange) {
-        module.hooks.onUserChange(user)
+        module.hooks.onUserChange(user);
       }
-    })
+    });
   }
 
   // Obtener módulos disponibles para el usuario actual
   getAvailableModules() {
     return computed(() => {
       return Array.from(this.modules.values()).filter(module => {
-        if (!module.permissions) return true
-        return this.hasPermissions(module.permissions)
-      })
-    })
+        if (!module.permissions) return true;
+        return this.hasPermissions(module.permissions);
+      });
+    });
   }
 
   // Obtener módulo activo
   getActiveModule() {
     return computed(() => {
-      if (!this.activeModule.value) return null
-      return this.modules.get(this.activeModule.value) || null
-    })
+      if (!this.activeModule.value) return null;
+      return this.modules.get(this.activeModule.value) || null;
+    });
   }
 
   // Obtener widgets de dashboard
   getDashboardWidgets() {
     return computed(() => {
-      const widgets: Widget[] = []
+      const widgets: Widget[] = [];
       this.modules.forEach(module => {
         if (module.widgets) {
           const availableWidgets = module.widgets.filter(widget => {
-            if (!widget.permissions) return true
-            return this.hasPermissions(widget.permissions)
-          })
-          widgets.push(...availableWidgets)
+            if (!widget.permissions) return true;
+            return this.hasPermissions(widget.permissions);
+          });
+          widgets.push(...availableWidgets);
         }
-      })
-      return widgets
-    })
+      });
+      return widgets;
+    });
   }
 
   // Obtener usuario actual
   getCurrentUser() {
-    return this.currentUser.value
+    return this.currentUser.value;
   }
 
   // Comunicación entre módulos
   emitEvent(eventName: string, data: any) {
     // Sistema de eventos para comunicación entre módulos
-    window.dispatchEvent(new CustomEvent(`module:${eventName}`, { detail: data }))
+    window.dispatchEvent(new CustomEvent(`module:${eventName}`, { detail: data }));
   }
 
   listenToEvent(eventName: string, callback: (data: any) => void) {
     window.addEventListener(`module:${eventName}`, (event: any) => {
-      callback(event.detail)
-    })
+      callback(event.detail);
+    });
   }
 
   // Configuración global
   setGlobalConfig(config: Record<string, any>) {
-    Object.assign(this.globalConfig, config)
+    Object.assign(this.globalConfig, config);
   }
 
   getGlobalConfig() {
-    return this.globalConfig
+    return this.globalConfig;
   }
 
   // Estado del manager
@@ -207,11 +207,11 @@ class ModuleManager {
       modules: this.modules,
       activeModule: this.activeModule.value,
       currentUser: this.currentUser.value,
-      config: this.globalConfig
-    }
+      config: this.globalConfig,
+    };
   }
 }
 
 // Singleton del manager
-export const moduleManager = new ModuleManager()
-export default moduleManager
+export const moduleManager = new ModuleManager();
+export default moduleManager;

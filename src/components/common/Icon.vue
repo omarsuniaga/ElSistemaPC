@@ -4,7 +4,7 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, computed} from "vue"
+import { defineComponent, computed } from 'vue';
 import {
   InformationCircleIcon,
   ExclamationTriangleIcon,
@@ -25,10 +25,10 @@ import {
   ArrowsRightLeftIcon,
   PlayIcon,
   StopIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 export default defineComponent({
-  name: "Icon",
+  name: 'Icon',
   props: {
     name: {
       type: String,
@@ -36,26 +36,26 @@ export default defineComponent({
     },
     class: {
       type: String,
-      default: "",
+      default: '',
     },
   },
   setup(props) {
     const iconMap: Record<string, any> = {
       // Info and alerts
       info: InformationCircleIcon,
-      "alert-triangle": ExclamationTriangleIcon,
-      "alert-octagon": ExclamationCircleIcon,
+      'alert-triangle': ExclamationTriangleIcon,
+      'alert-octagon': ExclamationCircleIcon,
       phone: PhoneIcon,
 
       // Actions
       plus: PlusIcon,
-      "plus-circle": PlusCircleIcon,
+      'plus-circle': PlusCircleIcon,
       send: PaperAirplaneIcon,
-      "paper-airplane": PaperAirplaneIcon,
+      'paper-airplane': PaperAirplaneIcon,
       x: XMarkIcon,
       check: CheckIcon,
-      "check-circle": CheckCircleIcon,
-      "trash-2": TrashIcon,
+      'check-circle': CheckCircleIcon,
+      'trash-2': TrashIcon,
       trash: TrashIcon,
 
       // Status and time
@@ -63,9 +63,9 @@ export default defineComponent({
       zap: BoltIcon,
       bolt: BoltIcon,
       refresh: ArrowPathIcon,
-      "rotate-ccw": ArrowPathIcon,
-      "arrow-path": ArrowPathIcon,
-      "x-circle": XCircleIcon,
+      'rotate-ccw': ArrowPathIcon,
+      'arrow-path': ArrowPathIcon,
+      'x-circle': XCircleIcon,
       cog: CogIcon,
       settings: CogIcon,
 
@@ -74,30 +74,30 @@ export default defineComponent({
       stop: StopIcon,
 
       // Spinner (using a div for now)
-      spinner: "div",
-    }
+      spinner: 'div',
+    };
 
     const iconComponent = computed(() => {
-      return iconMap[props.name] || null
-    })
+      return iconMap[props.name] || null;
+    });
 
     const iconClass = computed(() => {
-      const baseClasses = "w-5 h-5"
-      const customClasses = props.class
+      const baseClasses = 'w-5 h-5';
+      const customClasses = props.class;
       const spinnerClass =
-        props.name === "spinner"
-          ? "animate-spin rounded-full border-2 border-current border-t-transparent"
-          : ""
+        props.name === 'spinner'
+          ? 'animate-spin rounded-full border-2 border-current border-t-transparent'
+          : '';
 
-      return [baseClasses, customClasses, spinnerClass].filter(Boolean).join(" ")
-    })
+      return [baseClasses, customClasses, spinnerClass].filter(Boolean).join(' ');
+    });
 
     return {
       iconComponent,
       iconClass,
-    }
+    };
   },
-})
+});
 </script>
 
 <style scoped>

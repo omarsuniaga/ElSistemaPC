@@ -5,18 +5,18 @@ export interface KeyInsight {
   id: string
   title: string
   description: string
-  category: "attendance" | "performance" | "engagement" | "efficiency"
+  category: 'attendance' | 'performance' | 'engagement' | 'efficiency'
   metric: number
-  trend: "up" | "down" | "stable"
+  trend: 'up' | 'down' | 'stable'
   actionable: boolean
 }
 
 export interface SmartRecommendation {
   id: string
-  type: "optimization" | "alert" | "opportunity"
+  type: 'optimization' | 'alert' | 'opportunity'
   title: string
   description: string
-  impact: "high" | "medium" | "low"
+  impact: 'high' | 'medium' | 'low'
   priority: number
   automated: boolean
   estimatedImprovement: number
@@ -25,7 +25,7 @@ export interface SmartRecommendation {
 export interface RiskStudent {
   id: string
   name: string
-  riskLevel: "high" | "medium" | "low"
+  riskLevel: 'high' | 'medium' | 'low'
   lastAttendance: Date
   attendanceRate: number
   subjects: string[]
@@ -35,7 +35,7 @@ export interface RiskStudent {
 
 export interface Alert {
   id: string
-  type: "critical" | "warning" | "info"
+  type: 'critical' | 'warning' | 'info'
   title: string
   message: string
   timestamp: Date
@@ -50,7 +50,7 @@ export interface AttendancePrediction {
   predicted: number
   confidence: number
   factors: string[]
-  riskLevel: "low" | "medium" | "high"
+  riskLevel: 'low' | 'medium' | 'high'
 }
 
 export interface AnalyticsMetrics {
@@ -109,7 +109,7 @@ export interface AnalyticsFilters {
   instruments?: string[]
   teachers?: string[]
   classes?: string[]
-  riskLevels?: ("high" | "medium" | "low")[]
+  riskLevels?: ('high' | 'medium' | 'low')[]
 }
 
 export interface AnalyticsOptions {

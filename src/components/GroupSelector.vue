@@ -16,28 +16,28 @@ export default {
     return {
       groups: [],
       loading: true,
-    }
+    };
   },
   async created() {
-    await this.fetchGroups()
+    await this.fetchGroups();
   },
   methods: {
     async fetchGroups() {
       try {
-        const querySnapshot = await firestore.collection("groups").get()
-        this.groups = querySnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}))
+        const querySnapshot = await firestore.collection('groups').get();
+        this.groups = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       } catch (error) {
-        console.error("Error fetching groups:", error)
+        console.error('Error fetching groups:', error);
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     selectGroup(group) {
-      this.$store.commit("setSelectedGroup", group)
-      this.$emit("group-selected", group)
+      this.$store.commit('setSelectedGroup', group);
+      this.$emit('group-selected', group);
     },
   },
-}
+};
 </script>
 
 <style scoped>

@@ -1,17 +1,3 @@
-<script setup lang="ts">
-import {BookOpenIcon, Squares2X2Icon, BellIcon, ChartBarIcon} from "@heroicons/vue/24/outline"
-
-defineProps<{activeTab: string}>()
-const emit = defineEmits(["set-active-tab"])
-
-const tabs = [
-  {id: "classes", name: "Mis Clases", shortName: "Clases", icon: BookOpenIcon},
-  {id: "notificaciones", name: "Notificaciones", shortName: "Notif.", icon: BellIcon},
-  {id: "analitica", name: "Analítica", shortName: "Analít.", icon: ChartBarIcon},
-  {id: "dashboard", name: "Dashboard", shortName: "Dashboard", icon: Squares2X2Icon},
-]
-</script>
-
 <template>
   <header
     class="dashboard-header bg-white dark:bg-gray-800 p-2 sm:p-4 rounded-lg shadow mb-4 mt-14 md:mt-0"
@@ -46,3 +32,17 @@ const tabs = [
     </div>
   </header>
 </template>
+
+<script setup lang="ts">
+import { BookOpenIcon, Squares2X2Icon, BellIcon, ChartBarIcon } from '@heroicons/vue/24/outline';
+
+defineProps<{activeTab: string}>();
+const emit = defineEmits(['set-active-tab']);
+
+const tabs = [
+  { id: 'classes', name: 'Mis Clases', shortName: 'Clases', icon: BookOpenIcon },
+  { id: 'notificaciones', name: 'Notificaciones', shortName: 'Notif.', icon: BellIcon },
+  { id: 'analitica', name: 'Analítica', shortName: 'Analít.', icon: ChartBarIcon },
+  { id: 'dashboard', name: 'Dashboard', shortName: 'Dashboard', icon: Squares2X2Icon },
+];
+</script>

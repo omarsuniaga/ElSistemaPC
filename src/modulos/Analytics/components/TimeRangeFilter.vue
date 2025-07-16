@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 import {
   format,
   subDays,
@@ -79,120 +79,120 @@ import {
   endOfMonth,
   subMonths,
   subWeeks,
-} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAnalyticsStore} from "../store/analytics"
+} from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAnalyticsStore } from '../store/analytics';
 
-const analyticsStore = useAnalyticsStore()
+const analyticsStore = useAnalyticsStore();
 
 // Estado local
-const activePeriod = ref("last7days")
-const customStartDate = ref(format(subDays(new Date(), 30), "yyyy-MM-dd"))
-const customEndDate = ref(format(new Date(), "yyyy-MM-dd"))
-const compareWithPrevious = ref(false)
+const activePeriod = ref('last7days');
+const customStartDate = ref(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
+const customEndDate = ref(format(new Date(), 'yyyy-MM-dd'));
+const compareWithPrevious = ref(false);
 
 // Definición de períodos rápidos
 const quickPeriods = [
-  {id: "today", label: "Hoy"},
-  {id: "last7days", label: "Últimos 7 días"},
-  {id: "thisWeek", label: "Esta semana"},
-  {id: "thisMonth", label: "Este mes"},
-  {id: "last30days", label: "Últimos 30 días"},
-  {id: "last3Months", label: "Últimos 3 meses"},
-  {id: "custom", label: "Personalizado"},
-]
+  { id: 'today', label: 'Hoy' },
+  { id: 'last7days', label: 'Últimos 7 días' },
+  { id: 'thisWeek', label: 'Esta semana' },
+  { id: 'thisMonth', label: 'Este mes' },
+  { id: 'last30days', label: 'Últimos 30 días' },
+  { id: 'last3Months', label: 'Últimos 3 meses' },
+  { id: 'custom', label: 'Personalizado' },
+];
 
 // Fechas calculadas según el período seleccionado
 const dateRange = computed(() => {
-  const now = new Date()
+  const now = new Date();
 
   switch (activePeriod.value) {
-    case "today":
-      return {
-        start: new Date(now.setHours(0, 0, 0, 0)),
-        end: new Date(),
-      }
+  case 'today':
+    return {
+      start: new Date(now.setHours(0, 0, 0, 0)),
+      end: new Date(),
+    };
 
-    case "last7days":
-      return {
-        start: subDays(now, 7),
-        end: now,
-      }
+  case 'last7days':
+    return {
+      start: subDays(now, 7),
+      end: now,
+    };
 
-    case "thisWeek":
-      return {
-        start: startOfWeek(now, {locale: es}),
-        end: endOfWeek(now, {locale: es}),
-      }
+  case 'thisWeek':
+    return {
+      start: startOfWeek(now, { locale: es }),
+      end: endOfWeek(now, { locale: es }),
+    };
 
-    case "thisMonth":
-      return {
-        start: startOfMonth(now),
-        end: endOfMonth(now),
-      }
+  case 'thisMonth':
+    return {
+      start: startOfMonth(now),
+      end: endOfMonth(now),
+    };
 
-    case "last30days":
-      return {
-        start: subDays(now, 30),
-        end: now,
-      }
+  case 'last30days':
+    return {
+      start: subDays(now, 30),
+      end: now,
+    };
 
-    case "last3Months":
-      return {
-        start: subMonths(now, 3),
-        end: now,
-      }
+  case 'last3Months':
+    return {
+      start: subMonths(now, 3),
+      end: now,
+    };
 
-    case "custom":
-      return {
-        start: new Date(customStartDate.value),
-        end: new Date(customEndDate.value),
-      }
+  case 'custom':
+    return {
+      start: new Date(customStartDate.value),
+      end: new Date(customEndDate.value),
+    };
 
-    default:
-      return {
-        start: subDays(now, 7),
-        end: now,
-      }
+  default:
+    return {
+      start: subDays(now, 7),
+      end: now,
+    };
   }
-})
+});
 
 // Seleccionar un período rápido
 function selectQuickPeriod(periodId: string) {
-  activePeriod.value = periodId
+  activePeriod.value = periodId;
 }
 
 // Aplicar los filtros
 async function applyFilters() {
   try {
-    const {start, end} = dateRange.value
+    const { start, end } = dateRange.value;
 
     // Calcular el período anterior para comparación si está habilitado
-    let previousStart, previousEnd
+    let previousStart, previousEnd;
 
     if (compareWithPrevious.value) {
-      const duration = end.getTime() - start.getTime()
-      previousEnd = new Date(start)
-      previousStart = new Date(start.getTime() - duration)
+      const duration = end.getTime() - start.getTime();
+      previousEnd = new Date(start);
+      previousStart = new Date(start.getTime() - duration);
     }
 
     // Emitir evento con los datos del filtro
-    emit("filter-changed", {
+    emit('filter-changed', {
       startDate: start,
       endDate: end,
       compareWithPrevious: compareWithPrevious.value,
       previousStartDate: previousStart,
       previousEndDate: previousEnd,
       periodType: activePeriod.value,
-    })
+    });
 
     // También actualizar en el store
     await analyticsStore.updateTimeRanges({
-      currentRange: {start, end},
-      previousRange: compareWithPrevious.value ? {start: previousStart, end: previousEnd} : null,
-    })
+      currentRange: { start, end },
+      previousRange: compareWithPrevious.value ? { start: previousStart, end: previousEnd } : null,
+    });
   } catch (error) {
-    console.error("Error al aplicar filtros temporales:", error)
+    console.error('Error al aplicar filtros temporales:', error);
   }
 }
 
@@ -200,16 +200,16 @@ async function applyFilters() {
 const props = defineProps({
   initialPeriod: {
     type: String,
-    default: "last7days",
+    default: 'last7days',
   },
-})
+});
 
-const emit = defineEmits(["filter-changed"])
+const emit = defineEmits(['filter-changed']);
 
 // Inicialización
 onMounted(() => {
-  activePeriod.value = props.initialPeriod
+  activePeriod.value = props.initialPeriod;
   // Aplicar filtros iniciales automáticamente
-  applyFilters()
-})
+  applyFilters();
+});
 </script>

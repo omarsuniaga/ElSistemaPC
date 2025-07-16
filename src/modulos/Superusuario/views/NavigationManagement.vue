@@ -198,98 +198,98 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRBACManagement} from "@/composables/useRBACManagement"
-import {NavigationService} from "@/services/navigation/navigationService"
-import type {NavigationItem} from "@/services/rbac/rbacPersistenceService"
-import {useAuthStore} from "@/stores/auth"
+import { ref, computed, onMounted } from 'vue';
+import { useRBACManagement } from '@/composables/useRBACManagement';
+import { NavigationService } from '@/services/navigation/navigationService';
+import type { NavigationItem } from '@/services/rbac/rbacPersistenceService';
+import { useAuthStore } from '@/stores/auth';
 
-const rbacManagement = useRBACManagement()
-const navigationService = NavigationService.getInstance()
-const authStore = useAuthStore()
+const rbacManagement = useRBACManagement();
+const navigationService = NavigationService.getInstance();
+const authStore = useAuthStore();
 
 // State
-const loading = ref(false)
-const error = ref<string | null>(null)
-const selectedRole = ref("Maestro")
-const hasChanges = ref(false)
+const loading = ref(false);
+const error = ref<string | null>(null);
+const selectedRole = ref('Maestro');
+const hasChanges = ref(false);
 
 // Available roles
-const availableRoles = ["Maestro", "Maestro Avanzado", "Director", "Admin", "Superusuario"]
+const availableRoles = ['Maestro', 'Maestro Avanzado', 'Director', 'Admin', 'Superusuario'];
 
 // Navigation configuration
-const navigationConfig = computed(() => rbacManagement.navigationConfig.value)
+const navigationConfig = computed(() => rbacManagement.navigationConfig.value);
 
 // Available routes
-const availableRoutes = navigationService.getAllAvailableRoutes()
+const availableRoutes = navigationService.getAllAvailableRoutes();
 
 // New item form
 const newItem = ref({
-  name: "",
-  path: "",
-  icon: "🔧",
+  name: '',
+  path: '',
+  icon: '🔧',
   order: 1,
-})
+});
 
 // Methods
 const loadData = async () => {
   try {
-    loading.value = true
-    error.value = null
-    await rbacManagement.initialize()
-    await rbacManagement.loadNavigationConfig()
+    loading.value = true;
+    error.value = null;
+    await rbacManagement.initialize();
+    await rbacManagement.loadNavigationConfig();
   } catch (err) {
-    error.value = "Error cargando configuración de navegación"
-    console.error("Error loading navigation config:", err)
+    error.value = 'Error cargando configuración de navegación';
+    console.error('Error loading navigation config:', err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const getNavigationForRole = (role: string): NavigationItem[] => {
   return navigationConfig.value
     .filter((item) => item.roles.includes(role))
-    .sort((a, b) => a.order - b.order)
-}
+    .sort((a, b) => a.order - b.order);
+};
 
 const getRoleIcon = (role: string): string => {
   const icons: Record<string, string> = {
-    Maestro: "👨‍🏫",
-    "Maestro Avanzado": "🎓",
-    Director: "👨‍💼",
-    Admin: "⚙️",
-    Superusuario: "🚀",
-  }
-  return icons[role] || "👤"
-}
+    Maestro: '👨‍🏫',
+    'Maestro Avanzado': '🎓',
+    Director: '👨‍💼',
+    Admin: '⚙️',
+    Superusuario: '🚀',
+  };
+  return icons[role] || '👤';
+};
 
 const toggleRoleForItem = (item: NavigationItem, role: string, event: Event) => {
-  const isChecked = (event.target as HTMLInputElement).checked
+  const isChecked = (event.target as HTMLInputElement).checked;
 
   if (isChecked) {
     if (!item.roles.includes(role)) {
-      item.roles.push(role)
+      item.roles.push(role);
     }
   } else {
-    const index = item.roles.indexOf(role)
+    const index = item.roles.indexOf(role);
     if (index > -1) {
-      item.roles.splice(index, 1)
+      item.roles.splice(index, 1);
     }
   }
 
-  markAsChanged()
-}
+  markAsChanged();
+};
 
 const markAsChanged = () => {
-  hasChanges.value = true
-}
+  hasChanges.value = true;
+};
 
 const canAddNewItem = computed(() => {
-  return newItem.value.name && newItem.value.path && newItem.value.icon
-})
+  return newItem.value.name && newItem.value.path && newItem.value.icon;
+});
 
 const addNewItem = () => {
-  if (!canAddNewItem.value) return
+  if (!canAddNewItem.value) return;
 
   const newNavItem: NavigationItem = {
     id: `custom-${Date.now()}`,
@@ -299,46 +299,46 @@ const addNewItem = () => {
     roles: [selectedRole.value],
     isActive: true,
     order: newItem.value.order,
-  }
+  };
 
-  navigationConfig.value.push(newNavItem)
+  navigationConfig.value.push(newNavItem);
 
   // Reset form
   newItem.value = {
-    name: "",
-    path: "",
-    icon: "🔧",
+    name: '',
+    path: '',
+    icon: '🔧',
     order: 1,
-  }
+  };
 
-  markAsChanged()
-}
+  markAsChanged();
+};
 
 const saveChanges = async () => {
   try {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
 
-    const currentUser = authStore.user
+    const currentUser = authStore.user;
     if (!currentUser) {
-      throw new Error("No hay usuario autenticado")
+      throw new Error('No hay usuario autenticado');
     }
 
-    await rbacManagement.saveNavigationConfig(currentUser.uid)
-    hasChanges.value = false
+    await rbacManagement.saveNavigationConfig(currentUser.uid);
+    hasChanges.value = false;
 
-    console.log("✅ Configuración de navegación guardada")
+    console.log('✅ Configuración de navegación guardada');
   } catch (err) {
-    error.value = "Error guardando configuración de navegación"
-    console.error("Error saving navigation config:", err)
+    error.value = 'Error guardando configuración de navegación';
+    console.error('Error saving navigation config:', err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 onMounted(async () => {
-  await loadData()
-})
+  await loadData();
+});
 </script>
 
 <style scoped>

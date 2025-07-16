@@ -80,12 +80,12 @@
 
 <script setup lang="ts">
 interface SystemStatus {
-  status: "excellent" | "warning" | "critical"
+  status: 'excellent' | 'warning' | 'critical'
   color: string
   message: string
   health: number
   services: {
-    [key: string]: "online" | "offline"
+    [key: string]: 'online' | 'offline'
   }
   uptime: string
   lastBackup: Date
@@ -95,28 +95,28 @@ interface Props {
   status: SystemStatus
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 const statusColors = {
-  excellent: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  warning: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  critical: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-}
+  excellent: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+  critical: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+};
 
 const formatDate = (date: Date) => {
-  if (!date) return "N/A"
+  if (!date) return 'N/A';
 
-  const now = new Date()
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 
   if (diffInMinutes < 60) {
-    return `Hace ${diffInMinutes} min`
+    return `Hace ${diffInMinutes} min`;
   } else if (diffInMinutes < 1440) {
-    const hours = Math.floor(diffInMinutes / 60)
-    return `Hace ${hours} hr${hours > 1 ? "s" : ""}`
+    const hours = Math.floor(diffInMinutes / 60);
+    return `Hace ${hours} hr${hours > 1 ? 's' : ''}`;
   } else {
-    const days = Math.floor(diffInMinutes / 1440)
-    return `Hace ${days} día${days > 1 ? "s" : ""}`
+    const days = Math.floor(diffInMinutes / 1440);
+    return `Hace ${days} día${days > 1 ? 's' : ''}`;
   }
-}
+};
 </script>

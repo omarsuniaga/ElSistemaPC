@@ -193,8 +193,8 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {useRouter} from "vue-router"
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   CalendarIcon,
   MapPinIcon,
@@ -208,80 +208,80 @@ import {
   DocumentTextIcon,
   UserIcon,
   UserPlusIcon,
-} from "@heroicons/vue/24/outline"
-import {Menu, MenuButton, MenuItem, MenuItems} from "@headlessui/vue"
+} from '@heroicons/vue/24/outline';
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
 
 const props = defineProps({
   classData: {
     type: Object,
     required: true,
   },
-})
+});
 
-const emit = defineEmits(["view", "take-attendance", "view-history"])
+const emit = defineEmits(['view', 'take-attendance', 'view-history']);
 
-const router = useRouter()
+const router = useRouter();
 
 // Computadas
 const studentCount = computed(() => {
-  return Array.isArray(props.classData.studentIds) ? props.classData.studentIds.length : 0
-})
+  return Array.isArray(props.classData.studentIds) ? props.classData.studentIds.length : 0;
+});
 
 const formatInstrumentLevel = computed(() => {
-  const parts = []
-  if (props.classData.instrument) parts.push(props.classData.instrument)
-  if (props.classData.level) parts.push(props.classData.level)
-  return parts.join(" - ")
-})
+  const parts = [];
+  if (props.classData.instrument) parts.push(props.classData.instrument);
+  if (props.classData.level) parts.push(props.classData.level);
+  return parts.join(' - ');
+});
 
 const scheduleInfo = computed(() => {
-  if (!props.classData.schedule?.slots?.[0]) return null
-  const slot = props.classData.schedule.slots[0]
-  return `${slot.day} ${slot.startTime} - ${slot.endTime}`
-})
+  if (!props.classData.schedule?.slots?.[0]) return null;
+  const slot = props.classData.schedule.slots[0];
+  return `${slot.day} ${slot.startTime} - ${slot.endTime}`;
+});
 
 const permissions = computed(() => {
   // Buscar los permisos del maestro actual en la lista de teachers
-  const currentTeacher = props.classData.teachers?.find((t: any) => t.role === "assistant")
-  return currentTeacher?.permissions || {}
-})
+  const currentTeacher = props.classData.teachers?.find((t: any) => t.role === 'assistant');
+  return currentTeacher?.permissions || {};
+});
 
 // Función para obtener el color del día
 const getDayColor = computed(() => {
   if (!props.classData.schedule?.slots?.[0]?.day) {
     return {
-      border: "border-t-purple-500", // Purple para clases compartidas
-      bg: "bg-purple-50 dark:bg-purple-900/20",
-      text: "text-purple-700 dark:text-purple-300",
-      accent: "accent-purple-500",
-      shadow: "shadow-purple-200",
-    }
+      border: 'border-t-purple-500', // Purple para clases compartidas
+      bg: 'bg-purple-50 dark:bg-purple-900/20',
+      text: 'text-purple-700 dark:text-purple-300',
+      accent: 'accent-purple-500',
+      shadow: 'shadow-purple-200',
+    };
   }
 
   // Siempre usar purple para clases compartidas
   return {
-    border: "border-t-purple-500",
-    bg: "bg-purple-50 dark:bg-purple-900/20",
-    text: "text-purple-700 dark:text-purple-300",
-    accent: "accent-purple-500",
-    shadow: "shadow-purple-200",
-  }
-})
+    border: 'border-t-purple-500',
+    bg: 'bg-purple-50 dark:bg-purple-900/20',
+    text: 'text-purple-700 dark:text-purple-300',
+    accent: 'accent-purple-500',
+    shadow: 'shadow-purple-200',
+  };
+});
 
 // Métodos
 const viewClass = () => {
-  router.push(`/teacher/classes/${props.classData.id}/shared`)
-}
+  router.push(`/teacher/classes/${props.classData.id}/shared`);
+};
 
 const takeAttendance = () => {
   if (permissions.value?.canTakeAttendance) {
-    router.push(`/teacher/classes/${props.classData.id}/attendance`)
+    router.push(`/teacher/classes/${props.classData.id}/attendance`);
   }
-}
+};
 
 const viewHistory = () => {
-  router.push(`/teacher/classes/${props.classData.id}/history`)
-}
+  router.push(`/teacher/classes/${props.classData.id}/history`);
+};
 </script>
 
 <style scoped>

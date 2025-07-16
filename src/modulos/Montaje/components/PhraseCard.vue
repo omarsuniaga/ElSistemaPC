@@ -173,9 +173,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import type {FraseMusical, EstadoFrase} from "../types"
-import {formatDate} from "../utils"
+import { computed } from 'vue';
+import type { FraseMusical, EstadoFrase } from '../types';
+import { formatDate } from '../utils';
 
 interface Props {
   phrase: FraseMusical
@@ -183,119 +183,119 @@ interface Props {
 }
 
 interface Emits {
-  (e: "edit", phrase: FraseMusical): void
-  (e: "evaluate", phrase: FraseMusical): void
+  (e: 'edit', phrase: FraseMusical): void
+  (e: 'evaluate', phrase: FraseMusical): void
 }
 
-const props = defineProps<Props>()
-defineEmits<Emits>()
+const props = defineProps<Props>();
+defineEmits<Emits>();
 
 const priorityText = computed(() => {
   switch (props.phrase.prioridad) {
-    case "baja":
-      return "Baja"
-    case "media":
-      return "Media"
-    case "alta":
-      return "Alta"
-    case "critica":
-      return "Crítica"
-    default:
-      return "Media"
+  case 'baja':
+    return 'Baja';
+  case 'media':
+    return 'Media';
+  case 'alta':
+    return 'Alta';
+  case 'critica':
+    return 'Crítica';
+  default:
+    return 'Media';
   }
-})
+});
 
 const priorityClasses = computed(() => {
   switch (props.phrase.prioridad) {
-    case "baja":
-      return "bg-gray-100 text-gray-800"
-    case "media":
-      return "bg-yellow-100 text-yellow-800"
-    case "alta":
-      return "bg-orange-100 text-orange-800"
-    case "critica":
-      return "bg-red-100 text-red-800"
-    default:
-      return "bg-gray-100 text-gray-800"
+  case 'baja':
+    return 'bg-gray-100 text-gray-800';
+  case 'media':
+    return 'bg-yellow-100 text-yellow-800';
+  case 'alta':
+    return 'bg-orange-100 text-orange-800';
+  case 'critica':
+    return 'bg-red-100 text-red-800';
+  default:
+    return 'bg-gray-100 text-gray-800';
   }
-})
+});
 
 const difficultyText = computed(() => {
   switch (props.phrase.dificultad) {
-    case "facil":
-      return "Fácil"
-    case "intermedio":
-      return "Intermedio"
-    case "avanzado":
-      return "Avanzado"
-    case "experto":
-      return "Experto"
-    default:
-      return "Intermedio"
+  case 'facil':
+    return 'Fácil';
+  case 'intermedio':
+    return 'Intermedio';
+  case 'avanzado':
+    return 'Avanzado';
+  case 'experto':
+    return 'Experto';
+  default:
+    return 'Intermedio';
   }
-})
+});
 
 const difficultyClasses = computed(() => {
   switch (props.phrase.dificultad) {
-    case "facil":
-      return "bg-green-100 text-green-800"
-    case "intermedio":
-      return "bg-blue-100 text-blue-800"
-    case "avanzado":
-      return "bg-purple-100 text-purple-800"
-    case "experto":
-      return "bg-red-100 text-red-800"
-    default:
-      return "bg-blue-100 text-blue-800"
+  case 'facil':
+    return 'bg-green-100 text-green-800';
+  case 'intermedio':
+    return 'bg-blue-100 text-blue-800';
+  case 'avanzado':
+    return 'bg-purple-100 text-purple-800';
+  case 'experto':
+    return 'bg-red-100 text-red-800';
+  default:
+    return 'bg-blue-100 text-blue-800';
   }
-})
+});
 
 const getAspectoLabel = (aspecto: string) => {
   const aspectos: Record<string, string> = {
-    afinacion: "Afinación",
-    ritmo: "Ritmo",
-    dinamica: "Dinámica",
-    articulacion: "Articulación",
-    fraseo: "Fraseo",
-    tecnica: "Técnica",
-    expresion: "Expresión",
-    balance: "Balance",
-    precision: "Precisión",
-  }
-  return aspectos[aspecto] || aspecto
-}
+    afinacion: 'Afinación',
+    ritmo: 'Ritmo',
+    dinamica: 'Dinámica',
+    articulacion: 'Articulación',
+    fraseo: 'Fraseo',
+    tecnica: 'Técnica',
+    expresion: 'Expresión',
+    balance: 'Balance',
+    precision: 'Precisión',
+  };
+  return aspectos[aspecto] || aspecto;
+};
 
 const getStateLabel = (estado: string) => {
   switch (estado) {
-    case "no_iniciado":
-      return "No Iniciado"
-    case "en_proceso":
-      return "En Proceso"
-    case "en_revision":
-      return "En Revisión"
-    case "completado":
-      return "Completado"
-    case "necesita_trabajo":
-      return "Necesita Trabajo"
-    default:
-      return estado
+  case 'no_iniciado':
+    return 'No Iniciado';
+  case 'en_proceso':
+    return 'En Proceso';
+  case 'en_revision':
+    return 'En Revisión';
+  case 'completado':
+    return 'Completado';
+  case 'necesita_trabajo':
+    return 'Necesita Trabajo';
+  default:
+    return estado;
   }
-}
+};
 
 const getStateClasses = (estado: string) => {
   switch (estado) {
-    case "no_iniciado":
-      return "bg-gray-100 text-gray-800"
-    case "en_proceso":
-      return "bg-blue-100 text-blue-800"
-    case "en_revision":
-      return "bg-yellow-100 text-yellow-800"
-    case "completado":
-      return "bg-green-100 text-green-800"
-    case "necesita_trabajo":
-      return "bg-red-100 text-red-800"
-    default:
-      return "bg-gray-100 text-gray-800"
+  case 'no_iniciado':
+    return 'bg-gray-100 text-gray-800';
+  case 'en_proceso':
+    return 'bg-blue-100 text-blue-800';
+  case 'en_revision':
+    return 'bg-yellow-100 text-yellow-800';
+  case 'completado':
+    return 'bg-green-100 text-green-800';
+  case 'necesita_trabajo':
+    return 'bg-red-100 text-red-800';
+  default:
+    return 'bg-gray-100 text-gray-800';
   }
-}
+};
 </script>

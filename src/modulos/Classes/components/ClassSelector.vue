@@ -1,60 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useClassesStore} from "../../../stores/classes"
-
-const props = defineProps({
-  modelValue: String,
-  label: {
-    type: String,
-    default: "Clase",
-  },
-  required: {
-    type: Boolean,
-    default: false,
-  },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
-})
-
-const emit = defineEmits(["update:modelValue", "change", "student-ids-selected"])
-
-// Inicializar el store de clases
-const classesStore = useClassesStore()
-
-// Computed property para obtener las clases disponibles
-const availableClasses = computed(() => {
-  return classesStore.classes || []
-})
-
-// Función para obtener el conteo de estudiantes por nombre de clase
-const getStudentCount = (className: string): number => {
-  const selectedClass = classesStore.classes.find((cls) => cls.name === className)
-  return selectedClass && selectedClass.studentIds ? selectedClass.studentIds.length : 0
-}
-
-const handleClassChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement
-  const selectedClassName = target.value
-  emit("update:modelValue", selectedClassName)
-
-  // Obtener los IDs de estudiantes y emitirlos al padre
-  const selectedClass = classesStore.classes.find((cls) => cls.name === selectedClassName)
-  const studentIds = selectedClass && selectedClass.studentIds ? selectedClass.studentIds : []
-  emit("student-ids-selected", studentIds)
-
-  emit("change", selectedClassName)
-}
-
-// Cargar las clases si aún no están cargadas
-onMounted(async () => {
-  if (classesStore.classes.length === 0) {
-    await classesStore.fetchClasses()
-  }
-})
-</script>
-
 <template>
   <div class="form-control">
     <label
@@ -96,3 +39,60 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useClassesStore } from '../../../stores/classes';
+
+const props = defineProps({
+  modelValue: String,
+  label: {
+    type: String,
+    default: 'Clase',
+  },
+  required: {
+    type: Boolean,
+    default: false,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const emit = defineEmits(['update:modelValue', 'change', 'student-ids-selected']);
+
+// Inicializar el store de clases
+const classesStore = useClassesStore();
+
+// Computed property para obtener las clases disponibles
+const availableClasses = computed(() => {
+  return classesStore.classes || [];
+});
+
+// Función para obtener el conteo de estudiantes por nombre de clase
+const getStudentCount = (className: string): number => {
+  const selectedClass = classesStore.classes.find((cls) => cls.name === className);
+  return selectedClass && selectedClass.studentIds ? selectedClass.studentIds.length : 0;
+};
+
+const handleClassChange = (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  const selectedClassName = target.value;
+  emit('update:modelValue', selectedClassName);
+
+  // Obtener los IDs de estudiantes y emitirlos al padre
+  const selectedClass = classesStore.classes.find((cls) => cls.name === selectedClassName);
+  const studentIds = selectedClass && selectedClass.studentIds ? selectedClass.studentIds : [];
+  emit('student-ids-selected', studentIds);
+
+  emit('change', selectedClassName);
+};
+
+// Cargar las clases si aún no están cargadas
+onMounted(async () => {
+  if (classesStore.classes.length === 0) {
+    await classesStore.fetchClasses();
+  }
+});
+</script>

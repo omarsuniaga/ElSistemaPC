@@ -40,28 +40,28 @@
 </template>
 
 <script setup lang="ts">
-import {PropType} from "vue"
-import type {ClassData, ScheduleSlot} from "../../types/class" // Adjust path as necessary
+import { PropType } from 'vue';
+import type { ClassData, ScheduleSlot } from '../../types/class'; // Adjust path as necessary
 
 const props = defineProps({
   classData: {
     type: Object as PropType<ClassData | null>,
     default: null,
   },
-})
+});
 
 const formatDateTime = (dateTime: string | Date): string => {
-  if (!dateTime) return "Fecha no especificada"
-  const date = new Date(dateTime)
-  return date.toLocaleString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+  if (!dateTime) return 'Fecha no especificada';
+  const date = new Date(dateTime);
+  return date.toLocaleString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 </script>
 
 <style scoped>

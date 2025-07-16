@@ -1,5 +1,6 @@
 <template>
-  <div :class="[
+  <div
+:class="[
     'rounded-lg shadow-sm border transition-colors duration-200',
     cardClasses.padding,
     themeClasses.surface,
@@ -48,8 +49,8 @@
 </template>
 
 <script setup lang="ts">
-import { useTheme } from '../composables/useTheme'
-import { useResponsive } from '../composables/useResponsive'
+import { useTheme } from '../composables/useTheme';
+import { useResponsive } from '../composables/useResponsive';
 
 interface Props {
   title?: string
@@ -61,13 +62,13 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   hover: false,
-  clickable: false
-})
+  clickable: false,
+});
 
 defineEmits<{
   click: []
-}>()
+}>();
 
-const { themeClasses } = useTheme()
-const { cardClasses, textClasses } = useResponsive()
+const { themeClasses } = useTheme();
+const { cardClasses, textClasses } = useResponsive();
 </script>

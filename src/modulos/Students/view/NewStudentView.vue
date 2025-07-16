@@ -1,502 +1,3 @@
-<script setup lang="ts">
-import {ref, onMounted, watch, computed} from "vue"
-import {useRouter} from "vue-router"
-import {useStudentsStore} from "../store/students"
-import type {Student} from "../types/student"
-
-const router = useRouter()
-const studentsStore = useStudentsStore()
-
-// Create toast notification system
-const notification = ref({
-  show: false,
-  message: "",
-  type: "success", // 'success' or 'error'
-})
-
-const showNotification = (message: string, type = "success") => {
-  notification.value = {show: true, message, type}
-
-  // Hide notification after 3 seconds
-  setTimeout(() => {
-    notification.value.show = false
-  }, 7000)
-}
-
-const newStudent = ref<Omit<Student, "id"> & {id?: string}>({
-  nombre: "",
-  apellido: "",
-  instrumento: "",
-  edad: "",
-  tlf: "",
-  email: "",
-  direccion: "",
-  observaciones: "",
-  grupo: [], // Especificar el tipo
-  activo: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-})
-
-// Reference to track if we're editing an existing student
-const isEditingExistingStudent = ref(false)
-const matchedStudent = ref<Student | null>(null)
-
-// Helper function to normalize text for accent-insensitive comparison
-const normalizeText = (text: string = "") => {
-  if (!text) return ""
-  return text
-    .toLowerCase()
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-}
-
-// Función para limpiar y normalizar valores de grupo
-const cleanGroupValue = (group: string): string => {
-  if (!group || typeof group !== "string") return ""
-
-  // Limpiar el valor: eliminar caracteres especiales y capitalizar primera letra
-  let cleanValue = group
-    .trim()
-    .replace(/[[\]"',]+/g, "") // Eliminar [], comillas y comas
-    .trim()
-
-  // Capitalizar primera letra de cada palabra
-  cleanValue = cleanValue
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ")
-
-  return cleanValue
-}
-
-// Computed property para obtener todos los valores de grupo disponibles en los estudiantes
-const availableGrupo = computed(() => {
-  // Crear un Set para manejar valores únicos
-  const grupoSet = new Set<string>()
-
-  // Recorrer todos los estudiantes
-  studentsStore.students.forEach((student) => {
-    // Si el estudiante tiene grupos asignados
-    if (student.grupo) {
-      try {
-        // Si grupo es un array, agregar cada elemento
-        if (Array.isArray(student.grupo)) {
-          student.grupo.forEach((group) => {
-            const cleanValue = cleanGroupValue(group)
-            if (cleanValue) {
-              grupoSet.add(cleanValue)
-            }
-          })
-        }
-        // Si grupo es un string pero parece ser un array serializado
-        else if (typeof student.grupo === "string") {
-          const grupoStr = student.grupo as string
-          if (grupoStr.startsWith("[") && grupoStr.endsWith("]")) {
-            try {
-              const parsedGroup = JSON.parse(grupoStr)
-              if (Array.isArray(parsedGroup)) {
-                parsedGroup.forEach((group) => {
-                  const cleanValue = cleanGroupValue(group)
-                  if (cleanValue) {
-                    grupoSet.add(cleanValue)
-                  }
-                })
-              } else {
-                // Si el parsing no resulta en un array, tratar como string
-                const cleanValue = cleanGroupValue(grupoStr)
-                if (cleanValue) {
-                  grupoSet.add(cleanValue)
-                }
-              }
-            } catch (e) {
-              // Si hay error al parsear, tratar como string
-              const cleanValue = cleanGroupValue(grupoStr)
-              if (cleanValue) {
-                grupoSet.add(cleanValue)
-              }
-            }
-          } else {
-            // Si grupo es un string simple, tratarlo como un solo valor
-            const cleanValue = cleanGroupValue(grupoStr)
-            if (cleanValue) {
-              grupoSet.add(cleanValue)
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error procesando grupo:", error, student.grupo)
-      }
-    }
-  })
-
-  // Agregar algunos valores predeterminados si no hay suficientes opciones
-  const defaultGroups = ["Coro", "Orquesta", "Solfeo", "Teoría", "Ensamble"]
-  if (grupoSet.size < 3) {
-    defaultGroups.forEach((group) => grupoSet.add(group))
-  }
-
-  // Convertir el Set a un Array y ordenarlo alfabéticamente
-  return Array.from(grupoSet).sort()
-})
-
-// Keep original computed properties but add verification after setting
-const capitalizedNombre = computed({
-  get: () => newStudent.value.nombre,
-  set: (val: string) => {
-    newStudent.value.nombre = val.charAt(0).toUpperCase() + val.slice(1)
-    // Trigger verification on every change if both fields are filled
-    if (newStudent.value.nombre && newStudent.value.apellido) {
-      verifyStudentExists()
-    }
-  },
-})
-
-const capitalizedApellido = computed({
-  get: () => newStudent.value.apellido,
-  set: (val: string) => {
-    newStudent.value.apellido = val.charAt(0).toUpperCase() + val.slice(1)
-    // Trigger verification on every change if both fields are filled
-    if (newStudent.value.nombre && newStudent.value.apellido) {
-      verifyStudentExists()
-    }
-  },
-})
-
-const capitalizedInstrumento = computed({
-  get: () => newStudent.value.instrumento,
-  set: (val: string) => {
-    newStudent.value.instrumento = val.charAt(0).toUpperCase() + val.slice(1)
-  },
-})
-
-const capitalizedDireccion = computed({
-  get: () => newStudent.value.direccion,
-  set: (val: string) => {
-    newStudent.value.direccion = val.charAt(0).toUpperCase() + val.slice(1)
-  },
-})
-
-const capitalizedObservaciones = computed({
-  get: () => newStudent.value.observaciones,
-  set: (val: string) => {
-    newStudent.value.observaciones = val.charAt(0).toUpperCase() + val.slice(1)
-  },
-})
-
-const localStorageKey = "newStudentData"
-
-onMounted(() => {
-  const storedData = localStorage.getItem(localStorageKey)
-  if (storedData) {
-    newStudent.value = JSON.parse(storedData)
-  }
-})
-
-watch(
-  newStudent,
-  (newValue) => {
-    localStorage.setItem(localStorageKey, JSON.stringify(newValue))
-  },
-  {deep: true}
-)
-
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-
-const clearForm = () => {
-  newStudent.value = {
-    nombre: "",
-    apellido: "",
-    instrumento: "",
-    edad: "",
-    tlf: "",
-    email: "",
-    direccion: "",
-    observaciones: "",
-    grupo: [], // Asegurar que grupo sea un array vacío al limpiar el formulario
-    activo: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-
-  // Clear localStorage as well to prevent auto-filling cleared form
-  localStorage.removeItem(localStorageKey)
-}
-
-const handleSubmit = async () => {
-  try {
-    console.log("[NewStudentView] handleSubmit: Starting form submission")
-    console.log(
-      "[NewStudentView] handleSubmit: Form data:",
-      JSON.stringify(newStudent.value, null, 2)
-    )
-
-    // Check if fields are correctly filled
-    if (!newStudent.value.nombre || !newStudent.value.apellido) {
-      error.value = "Nombre y apellido son obligatorios"
-      showNotification(error.value || "Error desconocido", "error")
-      console.log("[NewStudentView] handleSubmit: Validation failed - missing name or surname")
-      return
-    }
-
-    isLoading.value = true
-    error.value = null
-
-    console.log("[NewStudentView] handleSubmit: Validation passed, proceeding...")
-
-    // Check if we're updating an existing student
-    if (isEditingExistingStudent.value && matchedStudent.value) {
-      console.log("[NewStudentView] handleSubmit: Updating existing student")
-      // Preserve the ID for updating
-      newStudent.value.id = matchedStudent.value.id
-
-      // Ensure grupo is always an array before updating
-      if (!Array.isArray(newStudent.value.grupo)) {
-        newStudent.value.grupo = newStudent.value.grupo ? [newStudent.value.grupo] : []
-      }
-      // Update the student with proper ID handling
-      // Primero extraemos el ID y luego actualizamos el resto de campos
-      const {id: _id, ...studentData} = newStudent.value
-      await studentsStore.updateStudent(matchedStudent.value.id, studentData)
-      showNotification(
-        `Alumno ${newStudent.value.nombre} ${newStudent.value.apellido} actualizado con éxito`
-      )
-      clearForm()
-      isEditingExistingStudent.value = false
-      matchedStudent.value = null
-      console.log("[NewStudentView] handleSubmit: Student updated successfully")
-      return
-    }
-    // Otherwise proceed with duplicate check as before
-    // Use the students array directly from the store state
-    let students: Student[] = []
-    try {
-      // Make sure students are loaded in the store before checking
-      if (studentsStore.students.length === 0) {
-        await studentsStore.fetchStudents()
-      }
-
-      // Use the students array from the store state
-      students = studentsStore.students
-
-      // Make sure students is an array
-      if (!Array.isArray(students)) {
-        console.error("Students data is not an array:", students)
-        students = []
-      }
-    } catch (err) {
-      console.error("Error getting students:", err)
-      students = []
-    }
-
-    // Normalize values for comparison
-    const normalizedNombre = newStudent.value.nombre.toLowerCase().trim()
-    const normalizedApellido = newStudent.value.apellido.toLowerCase().trim()
-    const normalizedEdad = newStudent.value.edad.toString().trim()
-    const normalizedInstrumento = newStudent.value.instrumento.toLowerCase().trim()
-
-    // Improved duplicate check with better handling of edge cases
-    const existingStudent = students.find((student) => {
-      const studentNombre = (student.nombre || "").toLowerCase().trim()
-      const studentApellido = (student.apellido || "").toLowerCase().trim()
-      const studentEdad = (student.edad || "").toString().trim()
-      const studentInstrumento = (student.instrumento || "").toLowerCase().trim()
-
-      const nameMatches =
-        studentNombre === normalizedNombre && studentApellido === normalizedApellido
-
-      const edadMatches = !normalizedEdad || !studentEdad || normalizedEdad === studentEdad
-
-      const instrumentoMatches =
-        !normalizedInstrumento ||
-        !studentInstrumento ||
-        normalizedInstrumento === studentInstrumento
-
-      return nameMatches && edadMatches && instrumentoMatches
-    })
-    if (existingStudent) {
-      error.value = `Ya existe un alumno con el nombre ${existingStudent.nombre} ${existingStudent.apellido}`
-      showNotification(error.value || "Error desconocido", "error")
-      isLoading.value = false
-      console.log("[NewStudentView] handleSubmit: Duplicate student found, aborting")
-      return
-    }
-
-    console.log("[NewStudentView] handleSubmit: No duplicates found, proceeding with creation")
-
-    // If no duplicates found, proceed with adding student
-    // Ensure grupo is always stored as an array
-    if (!Array.isArray(newStudent.value.grupo)) {
-      newStudent.value.grupo = newStudent.value.grupo ? [newStudent.value.grupo] : []
-    }
-
-    console.log(
-      "[NewStudentView] handleSubmit: Final data before store call:",
-      JSON.stringify(newStudent.value, null, 2)
-    )
-
-    await studentsStore.addStudent(newStudent.value)
-
-    console.log("[NewStudentView] handleSubmit: Student added successfully to store")
-
-    showNotification(
-      `Alumno ${newStudent.value.nombre} ${newStudent.value.apellido} guardado con éxito`
-    )
-    clearForm()
-    isEditingExistingStudent.value = false
-    matchedStudent.value = null
-  } catch (err: any) {
-    console.error("[NewStudentView] handleSubmit: Error occurred:", err)
-    console.error("[NewStudentView] handleSubmit: Error details:", err.message, err.code, err.stack)
-    error.value = err.message || "Error al crear el alumno"
-    showNotification(error.value || "Error desconocido", "error")
-  } finally {
-    isLoading.value = false
-    console.log("[NewStudentView] handleSubmit: Process completed, loading set to false")
-  }
-}
-
-// Add watchers to trigger verification when both fields are filled
-watch(
-  [() => newStudent.value.nombre, () => newStudent.value.apellido],
-  async ([newNombre, newApellido], [oldNombre, oldApellido]) => {
-    // Only run verification if both fields are populated and one of them changed
-    if (newNombre && newApellido && (newNombre !== oldNombre || newApellido !== oldApellido)) {
-      await verifyStudentExists()
-    }
-
-    // If name or surname was cleared, reset editing state
-    if ((!newNombre || !newApellido) && isEditingExistingStudent.value) {
-      isEditingExistingStudent.value = false
-      matchedStudent.value = null
-    }
-  }
-)
-
-// Function to verify if student exists
-const verifyStudentExists = async () => {
-  if (!newStudent.value.nombre || !newStudent.value.apellido) return
-  try {
-    // Use the students array directly from the store state
-    let students: Student[] = []
-
-    // Make sure students are loaded in the store before checking
-    if (studentsStore.students.length === 0) {
-      await studentsStore.fetchStudents()
-    }
-
-    // Use the students array from the store state
-    students = studentsStore.students
-
-    if (!Array.isArray(students)) {
-      console.error("Students is not an array:", students)
-      students = []
-    }
-
-    const normalizedNombre = normalizeText(newStudent.value.nombre)
-    const normalizedApellido = normalizeText(newStudent.value.apellido)
-
-    const matchingStudents = students.filter((student) => {
-      if (!student.nombre || !student.apellido) return false
-      const studentNombreNorm = normalizeText(student.nombre)
-      const studentApellidoNorm = normalizeText(student.apellido)
-      return studentNombreNorm === normalizedNombre && studentApellidoNorm === normalizedApellido
-    })
-
-    if (matchingStudents.length > 0) {
-      matchedStudent.value = matchingStudents[0]
-      showNotification(
-        `¡ATENCIÓN! Alumno ya registrado: ${matchedStudent.value!.nombre} ${matchedStudent.value!.apellido}`,
-        "warning"
-      )
-      populateFormWithStudentData(matchedStudent.value)
-      isEditingExistingStudent.value = true
-    } else {
-      if (isEditingExistingStudent.value) {
-        clearFormExceptNameAndSurname()
-        isEditingExistingStudent.value = false
-        matchedStudent.value = null
-      }
-    }
-  } catch (err) {
-    console.error("Error verifying student:", err)
-  }
-}
-
-// Function to populate form with existing student data
-const populateFormWithStudentData = (student: Student) => {
-  // Keep the current name and surname but populate other fields
-  const currentNombre = newStudent.value.nombre
-  const currentApellido = newStudent.value.apellido
-
-  // Normalize the grupo data before populating
-  let normalizedGrupo = []
-
-  // Handle different formats of grupo data
-  if (student.grupo) {
-    if (Array.isArray(student.grupo)) {
-      normalizedGrupo = [...student.grupo]
-    } else if (typeof student.grupo === "string") {
-      // Parse string format if it looks like an array "[item1,item2]"
-      if (student.grupo.startsWith("[") && student.grupo.endsWith("]")) {
-        try {
-          const parsed = JSON.parse(student.grupo)
-          normalizedGrupo = Array.isArray(parsed) ? parsed : [student.grupo]
-        } catch (e) {
-          normalizedGrupo = [student.grupo] // If parsing fails, treat as single item
-        }
-      } else {
-        normalizedGrupo = [student.grupo] // Single string item
-      }
-    }
-  }
-
-  // Populate with student data
-  newStudent.value = {
-    ...student,
-    // Update dates to be Date objects
-    createdAt: new Date(student.createdAt),
-    updatedAt: new Date(),
-    // Ensure grupo is always an array
-    grupo: normalizedGrupo,
-  }
-
-  // Restore current name and surname if they differ
-  // This allows for small corrections while still identifying the student
-  if (student.nombre !== currentNombre) {
-    newStudent.value.nombre = currentNombre
-  }
-
-  if (student.apellido !== currentApellido) {
-    newStudent.value.apellido = currentApellido
-  }
-}
-
-// Function to clear form except name and surname
-const clearFormExceptNameAndSurname = () => {
-  const nombre = newStudent.value.nombre
-  const apellido = newStudent.value.apellido
-
-  // Clear form
-  newStudent.value = {
-    nombre,
-    apellido,
-    instrumento: "",
-    edad: "",
-    tlf: "",
-    email: "",
-    direccion: "",
-    observaciones: "",
-    grupo: [], // Aseguramos que grupo sea un array vacío
-    activo: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-}
-</script>
-
 <template>
   <div class="max-w-4xl mx-auto p-6">
     <h1 class="text-3xl font-bold mb-8 text-gray-800 dark:text-gray-200">Nuevo Alumno</h1>
@@ -705,3 +206,502 @@ const clearFormExceptNameAndSurname = () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted, watch, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useStudentsStore } from '../store/students';
+import type { Student } from '../types/student';
+
+const router = useRouter();
+const studentsStore = useStudentsStore();
+
+// Create toast notification system
+const notification = ref({
+  show: false,
+  message: '',
+  type: 'success', // 'success' or 'error'
+});
+
+const showNotification = (message: string, type = 'success') => {
+  notification.value = { show: true, message, type };
+
+  // Hide notification after 3 seconds
+  setTimeout(() => {
+    notification.value.show = false;
+  }, 7000);
+};
+
+const newStudent = ref<Omit<Student, 'id'> & {id?: string}>({
+  nombre: '',
+  apellido: '',
+  instrumento: '',
+  edad: '',
+  tlf: '',
+  email: '',
+  direccion: '',
+  observaciones: '',
+  grupo: [], // Especificar el tipo
+  activo: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
+
+// Reference to track if we're editing an existing student
+const isEditingExistingStudent = ref(false);
+const matchedStudent = ref<Student | null>(null);
+
+// Helper function to normalize text for accent-insensitive comparison
+const normalizeText = (text: string = '') => {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+};
+
+// Función para limpiar y normalizar valores de grupo
+const cleanGroupValue = (group: string): string => {
+  if (!group || typeof group !== 'string') return '';
+
+  // Limpiar el valor: eliminar caracteres especiales y capitalizar primera letra
+  let cleanValue = group
+    .trim()
+    .replace(/[[\]"',]+/g, '') // Eliminar [], comillas y comas
+    .trim();
+
+  // Capitalizar primera letra de cada palabra
+  cleanValue = cleanValue
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+
+  return cleanValue;
+};
+
+// Computed property para obtener todos los valores de grupo disponibles en los estudiantes
+const availableGrupo = computed(() => {
+  // Crear un Set para manejar valores únicos
+  const grupoSet = new Set<string>();
+
+  // Recorrer todos los estudiantes
+  studentsStore.students.forEach((student) => {
+    // Si el estudiante tiene grupos asignados
+    if (student.grupo) {
+      try {
+        // Si grupo es un array, agregar cada elemento
+        if (Array.isArray(student.grupo)) {
+          student.grupo.forEach((group) => {
+            const cleanValue = cleanGroupValue(group);
+            if (cleanValue) {
+              grupoSet.add(cleanValue);
+            }
+          });
+        }
+        // Si grupo es un string pero parece ser un array serializado
+        else if (typeof student.grupo === 'string') {
+          const grupoStr = student.grupo as string;
+          if (grupoStr.startsWith('[') && grupoStr.endsWith(']')) {
+            try {
+              const parsedGroup = JSON.parse(grupoStr);
+              if (Array.isArray(parsedGroup)) {
+                parsedGroup.forEach((group) => {
+                  const cleanValue = cleanGroupValue(group);
+                  if (cleanValue) {
+                    grupoSet.add(cleanValue);
+                  }
+                });
+              } else {
+                // Si el parsing no resulta en un array, tratar como string
+                const cleanValue = cleanGroupValue(grupoStr);
+                if (cleanValue) {
+                  grupoSet.add(cleanValue);
+                }
+              }
+            } catch (e) {
+              // Si hay error al parsear, tratar como string
+              const cleanValue = cleanGroupValue(grupoStr);
+              if (cleanValue) {
+                grupoSet.add(cleanValue);
+              }
+            }
+          } else {
+            // Si grupo es un string simple, tratarlo como un solo valor
+            const cleanValue = cleanGroupValue(grupoStr);
+            if (cleanValue) {
+              grupoSet.add(cleanValue);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error procesando grupo:', error, student.grupo);
+      }
+    }
+  });
+
+  // Agregar algunos valores predeterminados si no hay suficientes opciones
+  const defaultGroups = ['Coro', 'Orquesta', 'Solfeo', 'Teoría', 'Ensamble'];
+  if (grupoSet.size < 3) {
+    defaultGroups.forEach((group) => grupoSet.add(group));
+  }
+
+  // Convertir el Set a un Array y ordenarlo alfabéticamente
+  return Array.from(grupoSet).sort();
+});
+
+// Keep original computed properties but add verification after setting
+const capitalizedNombre = computed({
+  get: () => newStudent.value.nombre,
+  set: (val: string) => {
+    newStudent.value.nombre = val.charAt(0).toUpperCase() + val.slice(1);
+    // Trigger verification on every change if both fields are filled
+    if (newStudent.value.nombre && newStudent.value.apellido) {
+      verifyStudentExists();
+    }
+  },
+});
+
+const capitalizedApellido = computed({
+  get: () => newStudent.value.apellido,
+  set: (val: string) => {
+    newStudent.value.apellido = val.charAt(0).toUpperCase() + val.slice(1);
+    // Trigger verification on every change if both fields are filled
+    if (newStudent.value.nombre && newStudent.value.apellido) {
+      verifyStudentExists();
+    }
+  },
+});
+
+const capitalizedInstrumento = computed({
+  get: () => newStudent.value.instrumento,
+  set: (val: string) => {
+    newStudent.value.instrumento = val.charAt(0).toUpperCase() + val.slice(1);
+  },
+});
+
+const capitalizedDireccion = computed({
+  get: () => newStudent.value.direccion,
+  set: (val: string) => {
+    newStudent.value.direccion = val.charAt(0).toUpperCase() + val.slice(1);
+  },
+});
+
+const capitalizedObservaciones = computed({
+  get: () => newStudent.value.observaciones,
+  set: (val: string) => {
+    newStudent.value.observaciones = val.charAt(0).toUpperCase() + val.slice(1);
+  },
+});
+
+const localStorageKey = 'newStudentData';
+
+onMounted(() => {
+  const storedData = localStorage.getItem(localStorageKey);
+  if (storedData) {
+    newStudent.value = JSON.parse(storedData);
+  }
+});
+
+watch(
+  newStudent,
+  (newValue) => {
+    localStorage.setItem(localStorageKey, JSON.stringify(newValue));
+  },
+  { deep: true },
+);
+
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+
+const clearForm = () => {
+  newStudent.value = {
+    nombre: '',
+    apellido: '',
+    instrumento: '',
+    edad: '',
+    tlf: '',
+    email: '',
+    direccion: '',
+    observaciones: '',
+    grupo: [], // Asegurar que grupo sea un array vacío al limpiar el formulario
+    activo: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  // Clear localStorage as well to prevent auto-filling cleared form
+  localStorage.removeItem(localStorageKey);
+};
+
+const handleSubmit = async () => {
+  try {
+    console.log('[NewStudentView] handleSubmit: Starting form submission');
+    console.log(
+      '[NewStudentView] handleSubmit: Form data:',
+      JSON.stringify(newStudent.value, null, 2),
+    );
+
+    // Check if fields are correctly filled
+    if (!newStudent.value.nombre || !newStudent.value.apellido) {
+      error.value = 'Nombre y apellido son obligatorios';
+      showNotification(error.value || 'Error desconocido', 'error');
+      console.log('[NewStudentView] handleSubmit: Validation failed - missing name or surname');
+      return;
+    }
+
+    isLoading.value = true;
+    error.value = null;
+
+    console.log('[NewStudentView] handleSubmit: Validation passed, proceeding...');
+
+    // Check if we're updating an existing student
+    if (isEditingExistingStudent.value && matchedStudent.value) {
+      console.log('[NewStudentView] handleSubmit: Updating existing student');
+      // Preserve the ID for updating
+      newStudent.value.id = matchedStudent.value.id;
+
+      // Ensure grupo is always an array before updating
+      if (!Array.isArray(newStudent.value.grupo)) {
+        newStudent.value.grupo = newStudent.value.grupo ? [newStudent.value.grupo] : [];
+      }
+      // Update the student with proper ID handling
+      // Primero extraemos el ID y luego actualizamos el resto de campos
+      const { id: _id, ...studentData } = newStudent.value;
+      await studentsStore.updateStudent(matchedStudent.value.id, studentData);
+      showNotification(
+        `Alumno ${newStudent.value.nombre} ${newStudent.value.apellido} actualizado con éxito`,
+      );
+      clearForm();
+      isEditingExistingStudent.value = false;
+      matchedStudent.value = null;
+      console.log('[NewStudentView] handleSubmit: Student updated successfully');
+      return;
+    }
+    // Otherwise proceed with duplicate check as before
+    // Use the students array directly from the store state
+    let students: Student[] = [];
+    try {
+      // Make sure students are loaded in the store before checking
+      if (studentsStore.students.length === 0) {
+        await studentsStore.fetchStudents();
+      }
+
+      // Use the students array from the store state
+      students = studentsStore.students;
+
+      // Make sure students is an array
+      if (!Array.isArray(students)) {
+        console.error('Students data is not an array:', students);
+        students = [];
+      }
+    } catch (err) {
+      console.error('Error getting students:', err);
+      students = [];
+    }
+
+    // Normalize values for comparison
+    const normalizedNombre = newStudent.value.nombre.toLowerCase().trim();
+    const normalizedApellido = newStudent.value.apellido.toLowerCase().trim();
+    const normalizedEdad = newStudent.value.edad.toString().trim();
+    const normalizedInstrumento = newStudent.value.instrumento.toLowerCase().trim();
+
+    // Improved duplicate check with better handling of edge cases
+    const existingStudent = students.find((student) => {
+      const studentNombre = (student.nombre || '').toLowerCase().trim();
+      const studentApellido = (student.apellido || '').toLowerCase().trim();
+      const studentEdad = (student.edad || '').toString().trim();
+      const studentInstrumento = (student.instrumento || '').toLowerCase().trim();
+
+      const nameMatches =
+        studentNombre === normalizedNombre && studentApellido === normalizedApellido;
+
+      const edadMatches = !normalizedEdad || !studentEdad || normalizedEdad === studentEdad;
+
+      const instrumentoMatches =
+        !normalizedInstrumento ||
+        !studentInstrumento ||
+        normalizedInstrumento === studentInstrumento;
+
+      return nameMatches && edadMatches && instrumentoMatches;
+    });
+    if (existingStudent) {
+      error.value = `Ya existe un alumno con el nombre ${existingStudent.nombre} ${existingStudent.apellido}`;
+      showNotification(error.value || 'Error desconocido', 'error');
+      isLoading.value = false;
+      console.log('[NewStudentView] handleSubmit: Duplicate student found, aborting');
+      return;
+    }
+
+    console.log('[NewStudentView] handleSubmit: No duplicates found, proceeding with creation');
+
+    // If no duplicates found, proceed with adding student
+    // Ensure grupo is always stored as an array
+    if (!Array.isArray(newStudent.value.grupo)) {
+      newStudent.value.grupo = newStudent.value.grupo ? [newStudent.value.grupo] : [];
+    }
+
+    console.log(
+      '[NewStudentView] handleSubmit: Final data before store call:',
+      JSON.stringify(newStudent.value, null, 2),
+    );
+
+    await studentsStore.addStudent(newStudent.value);
+
+    console.log('[NewStudentView] handleSubmit: Student added successfully to store');
+
+    showNotification(
+      `Alumno ${newStudent.value.nombre} ${newStudent.value.apellido} guardado con éxito`,
+    );
+    clearForm();
+    isEditingExistingStudent.value = false;
+    matchedStudent.value = null;
+  } catch (err: any) {
+    console.error('[NewStudentView] handleSubmit: Error occurred:', err);
+    console.error('[NewStudentView] handleSubmit: Error details:', err.message, err.code, err.stack);
+    error.value = err.message || 'Error al crear el alumno';
+    showNotification(error.value || 'Error desconocido', 'error');
+  } finally {
+    isLoading.value = false;
+    console.log('[NewStudentView] handleSubmit: Process completed, loading set to false');
+  }
+};
+
+// Add watchers to trigger verification when both fields are filled
+watch(
+  [() => newStudent.value.nombre, () => newStudent.value.apellido],
+  async ([newNombre, newApellido], [oldNombre, oldApellido]) => {
+    // Only run verification if both fields are populated and one of them changed
+    if (newNombre && newApellido && (newNombre !== oldNombre || newApellido !== oldApellido)) {
+      await verifyStudentExists();
+    }
+
+    // If name or surname was cleared, reset editing state
+    if ((!newNombre || !newApellido) && isEditingExistingStudent.value) {
+      isEditingExistingStudent.value = false;
+      matchedStudent.value = null;
+    }
+  },
+);
+
+// Function to verify if student exists
+const verifyStudentExists = async () => {
+  if (!newStudent.value.nombre || !newStudent.value.apellido) return;
+  try {
+    // Use the students array directly from the store state
+    let students: Student[] = [];
+
+    // Make sure students are loaded in the store before checking
+    if (studentsStore.students.length === 0) {
+      await studentsStore.fetchStudents();
+    }
+
+    // Use the students array from the store state
+    students = studentsStore.students;
+
+    if (!Array.isArray(students)) {
+      console.error('Students is not an array:', students);
+      students = [];
+    }
+
+    const normalizedNombre = normalizeText(newStudent.value.nombre);
+    const normalizedApellido = normalizeText(newStudent.value.apellido);
+
+    const matchingStudents = students.filter((student) => {
+      if (!student.nombre || !student.apellido) return false;
+      const studentNombreNorm = normalizeText(student.nombre);
+      const studentApellidoNorm = normalizeText(student.apellido);
+      return studentNombreNorm === normalizedNombre && studentApellidoNorm === normalizedApellido;
+    });
+
+    if (matchingStudents.length > 0) {
+      matchedStudent.value = matchingStudents[0];
+      showNotification(
+        `¡ATENCIÓN! Alumno ya registrado: ${matchedStudent.value!.nombre} ${matchedStudent.value!.apellido}`,
+        'warning',
+      );
+      populateFormWithStudentData(matchedStudent.value);
+      isEditingExistingStudent.value = true;
+    } else {
+      if (isEditingExistingStudent.value) {
+        clearFormExceptNameAndSurname();
+        isEditingExistingStudent.value = false;
+        matchedStudent.value = null;
+      }
+    }
+  } catch (err) {
+    console.error('Error verifying student:', err);
+  }
+};
+
+// Function to populate form with existing student data
+const populateFormWithStudentData = (student: Student) => {
+  // Keep the current name and surname but populate other fields
+  const currentNombre = newStudent.value.nombre;
+  const currentApellido = newStudent.value.apellido;
+
+  // Normalize the grupo data before populating
+  let normalizedGrupo = [];
+
+  // Handle different formats of grupo data
+  if (student.grupo) {
+    if (Array.isArray(student.grupo)) {
+      normalizedGrupo = [...student.grupo];
+    } else if (typeof student.grupo === 'string') {
+      // Parse string format if it looks like an array "[item1,item2]"
+      if (student.grupo.startsWith('[') && student.grupo.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(student.grupo);
+          normalizedGrupo = Array.isArray(parsed) ? parsed : [student.grupo];
+        } catch (e) {
+          normalizedGrupo = [student.grupo]; // If parsing fails, treat as single item
+        }
+      } else {
+        normalizedGrupo = [student.grupo]; // Single string item
+      }
+    }
+  }
+
+  // Populate with student data
+  newStudent.value = {
+    ...student,
+    // Update dates to be Date objects
+    createdAt: new Date(student.createdAt),
+    updatedAt: new Date(),
+    // Ensure grupo is always an array
+    grupo: normalizedGrupo,
+  };
+
+  // Restore current name and surname if they differ
+  // This allows for small corrections while still identifying the student
+  if (student.nombre !== currentNombre) {
+    newStudent.value.nombre = currentNombre;
+  }
+
+  if (student.apellido !== currentApellido) {
+    newStudent.value.apellido = currentApellido;
+  }
+};
+
+// Function to clear form except name and surname
+const clearFormExceptNameAndSurname = () => {
+  const nombre = newStudent.value.nombre;
+  const apellido = newStudent.value.apellido;
+
+  // Clear form
+  newStudent.value = {
+    nombre,
+    apellido,
+    instrumento: '',
+    edad: '',
+    tlf: '',
+    email: '',
+    direccion: '',
+    observaciones: '',
+    grupo: [], // Aseguramos que grupo sea un array vacío
+    activo: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+};
+</script>

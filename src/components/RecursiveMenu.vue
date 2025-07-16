@@ -47,8 +47,8 @@
 </template>
 
 <script setup>
-import {ref} from "vue"
-import {ChevronDownIcon, PlusIcon} from "@heroicons/vue/20/solid"
+import { ref } from 'vue';
+import { ChevronDownIcon, PlusIcon } from '@heroicons/vue/20/solid';
 
 const props = defineProps({
   items: {
@@ -59,25 +59,25 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
-})
+});
 
-const emit = defineEmits(["item-selected"])
+const emit = defineEmits(['item-selected']);
 
-const openFolders = ref({})
+const openFolders = ref({});
 
 const toggleFolder = (index) => {
-  openFolders.value[index] = !openFolders.value[index]
-}
+  openFolders.value[index] = !openFolders.value[index];
+};
 
 const selectItem = (item, chain) => {
-  if (item.type === "indicator") {
-    emit("item-selected", item, chain)
+  if (item.type === 'indicator') {
+    emit('item-selected', item, chain);
   }
-}
+};
 
 const getParentChain = (item) => {
-  return [...props.parentChain, item.title]
-}
+  return [...props.parentChain, item.title];
+};
 </script>
 
 <style scoped>

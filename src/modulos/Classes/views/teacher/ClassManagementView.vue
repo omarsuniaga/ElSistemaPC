@@ -4,142 +4,6 @@ Vista de gestión de clases para maestros
 Implementa sistema de pestañas con widgets de funcionalidades
 -->
 
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useClassesStore } from '../../store/classes'
-import { useStudentsStore } from '../../../Students/store/students'
-import { useAuthStore } from '../../../../stores/auth'
-
-// TODO: Importar componentes de widgets cuando se implementen
-// import ClassListWidget from '../../components/widgets/ClassListWidget.vue'
-// import AbsenteeismAnalysisWidget from '../../components/widgets/AbsenteeismAnalysisWidget.vue'
-// import ScheduleOverviewWidget from '../../components/widgets/ScheduleOverviewWidget.vue'
-// import StudentProgressWidget from '../../components/widgets/StudentProgressWidget.vue'
-
-// Stores
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-const authStore = useAuthStore()
-
-// Estado del componente
-const isLoading = ref(true)
-const activeTab = ref('classes')
-const teacherClasses = ref<any[]>([])
-const classStats = ref({
-  totalClasses: 0,
-  totalStudents: 0,
-  averageAttendance: 0,
-  activeInstruments: 0
-})
-
-// Definición de pestañas
-const tabs = [
-  {
-    id: 'classes',
-    label: 'Mis Clases',
-    icon: 'academic-cap',
-    description: 'Lista y gestión de clases asignadas'
-  },
-  {
-    id: 'students',
-    label: 'Estudiantes',
-    icon: 'users',
-    description: 'Gestión de estudiantes por clase'
-  },
-  {
-    id: 'analysis',
-    label: 'Análisis',
-    icon: 'chart-bar',
-    description: 'Análisis de ausentismo y rendimiento'
-  },
-  {
-    id: 'schedule',
-    label: 'Horarios',
-    icon: 'calendar',
-    description: 'Vista general de horarios y calendario'
-  }
-]
-
-// Computed properties
-const currentTeacher = computed(() => ({
-  name: authStore.user?.email || 'Maestro',
-  id: authStore.user?.uid,
-}))
-
-const activeTabData = computed(() => {
-  return tabs.find(tab => tab.id === activeTab.value)
-})
-
-// Métodos principales
-const loadTeacherClasses = async () => {
-  if (!currentTeacher.value.id) return
-
-  isLoading.value = true
-
-  try {
-    console.log('📚 [ClassManagement] Loading teacher classes for:', currentTeacher.value.id)
-
-    // Cargar clases del maestro desde el store
-    await classesStore.fetchTeacherClasses(currentTeacher.value.id)
-    teacherClasses.value = classesStore.getTeacherClasses(currentTeacher.value.id)
-
-    // Calcular estadísticas
-    calculateClassStats()
-
-    console.log('✅ [ClassManagement] Classes loaded successfully:', {
-      totalClasses: teacherClasses.value.length,
-      classes: teacherClasses.value
-    })
-
-  } catch (err) {
-    console.error('❌ [ClassManagement] Error loading teacher classes:', err)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const calculateClassStats = () => {
-  const classes = teacherClasses.value
-
-  // Calcular estadísticas básicas
-  const totalStudents = classes.reduce((sum, cls) => {
-    return sum + (cls.studentIds?.length || 0)
-  }, 0)
-
-  const instruments = new Set(classes.map(cls => cls.instrument).filter(Boolean))
-
-  classStats.value = {
-    totalClasses: classes.length,
-    totalStudents,
-    averageAttendance: 85, // TODO: Calcular desde datos reales de asistencia
-    activeInstruments: instruments.size
-  }
-
-  console.log('📊 [ClassManagement] Stats calculated:', classStats.value)
-}
-
-const changeTab = (tabId: string) => {
-  activeTab.value = tabId
-  console.log('🔄 [ClassManagement] Tab changed to:', tabId)
-}
-
-const getTabIcon = (iconName: string) => {
-  const icons = {
-    'academic-cap': `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />`,
-    'users': `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />`,
-    'chart-bar': `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />`,
-    'calendar': `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />`
-  }
-  return icons[iconName as keyof typeof icons] || icons['academic-cap']
-}
-
-// Lifecycle
-onMounted(() => {
-  console.log('🚀 [ClassManagement] Component mounted')
-  loadTeacherClasses()
-})
-</script>
-
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- 🎯 HEADER -->
@@ -196,13 +60,13 @@ onMounted(() => {
             <button
               v-for="tab in tabs"
               :key="tab.id"
-              @click="changeTab(tab.id)"
               :class="[
                 'group relative py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200',
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
               ]"
+              @click="changeTab(tab.id)"
             >
               <div class="flex items-center space-x-2">
                 <!-- Ícono de la pestaña -->
@@ -408,8 +272,8 @@ onMounted(() => {
             </p>
             <div class="mt-6">
               <button
-                @click="changeTab('classes')"
                 class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                @click="changeTab('classes')"
               >
                 Volver a Mis Clases
               </button>
@@ -420,6 +284,142 @@ onMounted(() => {
     </main>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useClassesStore } from '../../store/classes';
+import { useStudentsStore } from '../../../Students/store/students';
+import { useAuthStore } from '../../../../stores/auth';
+
+// TODO: Importar componentes de widgets cuando se implementen
+// import ClassListWidget from '../../components/widgets/ClassListWidget.vue'
+// import AbsenteeismAnalysisWidget from '../../components/widgets/AbsenteeismAnalysisWidget.vue'
+// import ScheduleOverviewWidget from '../../components/widgets/ScheduleOverviewWidget.vue'
+// import StudentProgressWidget from '../../components/widgets/StudentProgressWidget.vue'
+
+// Stores
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+const authStore = useAuthStore();
+
+// Estado del componente
+const isLoading = ref(true);
+const activeTab = ref('classes');
+const teacherClasses = ref<any[]>([]);
+const classStats = ref({
+  totalClasses: 0,
+  totalStudents: 0,
+  averageAttendance: 0,
+  activeInstruments: 0,
+});
+
+// Definición de pestañas
+const tabs = [
+  {
+    id: 'classes',
+    label: 'Mis Clases',
+    icon: 'academic-cap',
+    description: 'Lista y gestión de clases asignadas',
+  },
+  {
+    id: 'students',
+    label: 'Estudiantes',
+    icon: 'users',
+    description: 'Gestión de estudiantes por clase',
+  },
+  {
+    id: 'analysis',
+    label: 'Análisis',
+    icon: 'chart-bar',
+    description: 'Análisis de ausentismo y rendimiento',
+  },
+  {
+    id: 'schedule',
+    label: 'Horarios',
+    icon: 'calendar',
+    description: 'Vista general de horarios y calendario',
+  },
+];
+
+// Computed properties
+const currentTeacher = computed(() => ({
+  name: authStore.user?.email || 'Maestro',
+  id: authStore.user?.uid,
+}));
+
+const activeTabData = computed(() => {
+  return tabs.find(tab => tab.id === activeTab.value);
+});
+
+// Métodos principales
+const loadTeacherClasses = async () => {
+  if (!currentTeacher.value.id) return;
+
+  isLoading.value = true;
+
+  try {
+    console.log('📚 [ClassManagement] Loading teacher classes for:', currentTeacher.value.id);
+
+    // Cargar clases del maestro desde el store
+    await classesStore.fetchTeacherClasses(currentTeacher.value.id);
+    teacherClasses.value = classesStore.getTeacherClasses(currentTeacher.value.id);
+
+    // Calcular estadísticas
+    calculateClassStats();
+
+    console.log('✅ [ClassManagement] Classes loaded successfully:', {
+      totalClasses: teacherClasses.value.length,
+      classes: teacherClasses.value,
+    });
+
+  } catch (err) {
+    console.error('❌ [ClassManagement] Error loading teacher classes:', err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const calculateClassStats = () => {
+  const classes = teacherClasses.value;
+
+  // Calcular estadísticas básicas
+  const totalStudents = classes.reduce((sum, cls) => {
+    return sum + (cls.studentIds?.length || 0);
+  }, 0);
+
+  const instruments = new Set(classes.map(cls => cls.instrument).filter(Boolean));
+
+  classStats.value = {
+    totalClasses: classes.length,
+    totalStudents,
+    averageAttendance: 85, // TODO: Calcular desde datos reales de asistencia
+    activeInstruments: instruments.size,
+  };
+
+  console.log('📊 [ClassManagement] Stats calculated:', classStats.value);
+};
+
+const changeTab = (tabId: string) => {
+  activeTab.value = tabId;
+  console.log('🔄 [ClassManagement] Tab changed to:', tabId);
+};
+
+const getTabIcon = (iconName: string) => {
+  const icons = {
+    'academic-cap': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />',
+    'users': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />',
+    'chart-bar': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />',
+    'calendar': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />',
+  };
+  return icons[iconName as keyof typeof icons] || icons['academic-cap'];
+};
+
+// Lifecycle
+onMounted(() => {
+  console.log('🚀 [ClassManagement] Component mounted');
+  loadTeacherClasses();
+});
+</script>
 
 <style scoped>
 /* Animaciones suaves para las pestañas */

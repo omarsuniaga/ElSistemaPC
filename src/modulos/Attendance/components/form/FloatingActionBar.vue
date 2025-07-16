@@ -3,154 +3,6 @@
 Barra de acciones flotante para gestión rápida de asistencias
 -->
 
-<script setup lang="ts">
-import {ref, computed} from "vue"
-import {
-  CheckIcon,
-  XMarkIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  ArrowUpTrayIcon,
-  PrinterIcon,
-  ShareIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
-} from "@heroicons/vue/24/outline"
-
-// Props
-const props = defineProps<{
-  hasUnsavedChanges?: boolean
-  totalStudents?: number
-  presentCount?: number
-  absentCount?: number
-  lateCount?: number
-  justifiedCount?: number
-  canSave?: boolean
-  canExport?: boolean
-  canPrint?: boolean
-  canShare?: boolean
-  isLoading?: boolean
-  position?: "bottom" | "top"
-  expanded?: boolean
-}>()
-
-// Emits
-const emit = defineEmits<{
-  save: []
-  "mark-all-present": []
-  "mark-all-absent": []
-  "mark-all-late": []
-  "mark-all-justified": []
-  export: []
-  print: []
-  share: []
-  "toggle-expand": []
-  cancel: []
-}>()
-
-// Estado local
-const isExpanded = ref(props.expanded || false)
-const showQuickActions = ref(false)
-
-// Computed properties
-const pendingCount = computed(() => {
-  if (props.totalStudents === undefined) return 0
-  return (
-    props.totalStudents -
-    (props.presentCount || 0) -
-    (props.absentCount || 0) -
-    (props.lateCount || 0) -
-    (props.justifiedCount || 0)
-  )
-})
-
-const completionPercentage = computed(() => {
-  if (!props.totalStudents || props.totalStudents === 0) return 0
-  const completed =
-    (props.presentCount || 0) +
-    (props.absentCount || 0) +
-    (props.lateCount || 0) +
-    (props.justifiedCount || 0)
-  return Math.round((completed / props.totalStudents) * 100)
-})
-
-const isComplete = computed(() => completionPercentage.value === 100)
-
-const statusColor = computed(() => {
-  if (isComplete.value) return "text-green-600"
-  if (completionPercentage.value > 50) return "text-yellow-600"
-  return "text-red-600"
-})
-
-const quickActions = computed(() => [
-  {
-    key: "present",
-    label: "Todos presentes",
-    icon: CheckIcon,
-    color: "bg-green-500 hover:bg-green-600",
-    action: () => emit("mark-all-present"),
-  },
-  {
-    key: "absent",
-    label: "Todos ausentes",
-    icon: XMarkIcon,
-    color: "bg-red-500 hover:bg-red-600",
-    action: () => emit("mark-all-absent"),
-  },
-  {
-    key: "late",
-    label: "Todos tarde",
-    icon: ClockIcon,
-    color: "bg-yellow-500 hover:bg-yellow-600",
-    action: () => emit("mark-all-late"),
-  },
-  {
-    key: "justified",
-    label: "Todos justificados",
-    icon: ExclamationTriangleIcon,
-    color: "bg-blue-500 hover:bg-blue-600",
-    action: () => emit("mark-all-justified"),
-  },
-])
-
-// Métodos
-const toggleExpand = () => {
-  isExpanded.value = !isExpanded.value
-  emit("toggle-expand")
-}
-
-const handleSave = () => {
-  if (props.canSave && !props.isLoading) {
-    emit("save")
-  }
-}
-
-const handleExport = () => {
-  if (props.canExport && !props.isLoading) {
-    emit("export")
-  }
-}
-
-const handlePrint = () => {
-  if (props.canPrint && !props.isLoading) {
-    emit("print")
-  }
-}
-
-const handleShare = () => {
-  if (props.canShare && !props.isLoading) {
-    emit("share")
-  }
-}
-
-const executeQuickAction = (action: () => void) => {
-  if (!props.isLoading) {
-    action()
-    showQuickActions.value = false
-  }
-}
-</script>
-
 <template>
   <div
     class="floating-action-bar fixed left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300"
@@ -379,6 +231,154 @@ const executeQuickAction = (action: () => void) => {
     </transition>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import {
+  CheckIcon,
+  XMarkIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+  ArrowUpTrayIcon,
+  PrinterIcon,
+  ShareIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+} from '@heroicons/vue/24/outline';
+
+// Props
+const props = defineProps<{
+  hasUnsavedChanges?: boolean
+  totalStudents?: number
+  presentCount?: number
+  absentCount?: number
+  lateCount?: number
+  justifiedCount?: number
+  canSave?: boolean
+  canExport?: boolean
+  canPrint?: boolean
+  canShare?: boolean
+  isLoading?: boolean
+  position?: 'bottom' | 'top'
+  expanded?: boolean
+}>();
+
+// Emits
+const emit = defineEmits<{
+  save: []
+  'mark-all-present': []
+  'mark-all-absent': []
+  'mark-all-late': []
+  'mark-all-justified': []
+  export: []
+  print: []
+  share: []
+  'toggle-expand': []
+  cancel: []
+}>();
+
+// Estado local
+const isExpanded = ref(props.expanded || false);
+const showQuickActions = ref(false);
+
+// Computed properties
+const pendingCount = computed(() => {
+  if (props.totalStudents === undefined) return 0;
+  return (
+    props.totalStudents -
+    (props.presentCount || 0) -
+    (props.absentCount || 0) -
+    (props.lateCount || 0) -
+    (props.justifiedCount || 0)
+  );
+});
+
+const completionPercentage = computed(() => {
+  if (!props.totalStudents || props.totalStudents === 0) return 0;
+  const completed =
+    (props.presentCount || 0) +
+    (props.absentCount || 0) +
+    (props.lateCount || 0) +
+    (props.justifiedCount || 0);
+  return Math.round((completed / props.totalStudents) * 100);
+});
+
+const isComplete = computed(() => completionPercentage.value === 100);
+
+const statusColor = computed(() => {
+  if (isComplete.value) return 'text-green-600';
+  if (completionPercentage.value > 50) return 'text-yellow-600';
+  return 'text-red-600';
+});
+
+const quickActions = computed(() => [
+  {
+    key: 'present',
+    label: 'Todos presentes',
+    icon: CheckIcon,
+    color: 'bg-green-500 hover:bg-green-600',
+    action: () => emit('mark-all-present'),
+  },
+  {
+    key: 'absent',
+    label: 'Todos ausentes',
+    icon: XMarkIcon,
+    color: 'bg-red-500 hover:bg-red-600',
+    action: () => emit('mark-all-absent'),
+  },
+  {
+    key: 'late',
+    label: 'Todos tarde',
+    icon: ClockIcon,
+    color: 'bg-yellow-500 hover:bg-yellow-600',
+    action: () => emit('mark-all-late'),
+  },
+  {
+    key: 'justified',
+    label: 'Todos justificados',
+    icon: ExclamationTriangleIcon,
+    color: 'bg-blue-500 hover:bg-blue-600',
+    action: () => emit('mark-all-justified'),
+  },
+]);
+
+// Métodos
+const toggleExpand = () => {
+  isExpanded.value = !isExpanded.value;
+  emit('toggle-expand');
+};
+
+const handleSave = () => {
+  if (props.canSave && !props.isLoading) {
+    emit('save');
+  }
+};
+
+const handleExport = () => {
+  if (props.canExport && !props.isLoading) {
+    emit('export');
+  }
+};
+
+const handlePrint = () => {
+  if (props.canPrint && !props.isLoading) {
+    emit('print');
+  }
+};
+
+const handleShare = () => {
+  if (props.canShare && !props.isLoading) {
+    emit('share');
+  }
+};
+
+const executeQuickAction = (action: () => void) => {
+  if (!props.isLoading) {
+    action();
+    showQuickActions.value = false;
+  }
+};
+</script>
 
 <style scoped>
 .floating-action-bar {

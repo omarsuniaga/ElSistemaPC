@@ -4,79 +4,6 @@ Vista placeholder para funcionalidades de montaje del maestro
 Componente placeholder con mensaje de "Próximamente"
 -->
 
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useAuthStore } from '../../../../stores/auth'
-
-// Stores
-const authStore = useAuthStore()
-
-// Estado del componente
-const isLoading = ref(true)
-const features = ref([
-  {
-    id: 'config',
-    title: 'Configuración de Aula',
-    description: 'Personaliza la configuración de tu espacio de enseñanza',
-    icon: 'cog',
-    status: 'planned'
-  },
-  {
-    id: 'instruments',
-    title: 'Gestión de Instrumentos',
-    description: 'Administra los instrumentos disponibles para tus clases',
-    icon: 'music-note',
-    status: 'planned'
-  },
-  {
-    id: 'resources',
-    title: 'Recursos Didácticos',
-    description: 'Organiza y comparte materiales de estudio',
-    icon: 'book-open',
-    status: 'planned'
-  },
-  {
-    id: 'backup',
-    title: 'Respaldo y Sincronización',
-    description: 'Configura copias de seguridad automáticas',
-    icon: 'cloud',
-    status: 'planned'
-  }
-])
-
-// Computed properties
-const currentTeacher = computed(() => ({
-  name: authStore.user?.email || 'Maestro',
-  id: authStore.user?.uid,
-}))
-
-// Métodos
-const getFeatureIcon = (iconName: string) => {
-  const icons = {
-    cog: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />`,
-    'music-note': `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />`,
-    'book-open': `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />`,
-    cloud: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />`
-  }
-  return icons[iconName as keyof typeof icons] || icons.cog
-}
-
-const handleFeatureClick = (featureId: string) => {
-  console.log('🔧 [MontajeDashboard] Feature clicked:', featureId)
-  // TODO: Implementar navegación a funcionalidades específicas cuando estén listas
-}
-
-// Lifecycle
-onMounted(() => {
-  console.log('🚀 [MontajeDashboard] Component mounted')
-  
-  // Simular carga
-  setTimeout(() => {
-    isLoading.value = false
-  }, 1000)
-})
-</script>
-
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- 🎯 HEADER -->
@@ -279,6 +206,79 @@ onMounted(() => {
     </main>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '../../../../stores/auth';
+
+// Stores
+const authStore = useAuthStore();
+
+// Estado del componente
+const isLoading = ref(true);
+const features = ref([
+  {
+    id: 'config',
+    title: 'Configuración de Aula',
+    description: 'Personaliza la configuración de tu espacio de enseñanza',
+    icon: 'cog',
+    status: 'planned',
+  },
+  {
+    id: 'instruments',
+    title: 'Gestión de Instrumentos',
+    description: 'Administra los instrumentos disponibles para tus clases',
+    icon: 'music-note',
+    status: 'planned',
+  },
+  {
+    id: 'resources',
+    title: 'Recursos Didácticos',
+    description: 'Organiza y comparte materiales de estudio',
+    icon: 'book-open',
+    status: 'planned',
+  },
+  {
+    id: 'backup',
+    title: 'Respaldo y Sincronización',
+    description: 'Configura copias de seguridad automáticas',
+    icon: 'cloud',
+    status: 'planned',
+  },
+]);
+
+// Computed properties
+const currentTeacher = computed(() => ({
+  name: authStore.user?.email || 'Maestro',
+  id: authStore.user?.uid,
+}));
+
+// Métodos
+const getFeatureIcon = (iconName: string) => {
+  const icons = {
+    cog: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />',
+    'music-note': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />',
+    'book-open': '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />',
+    cloud: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />',
+  };
+  return icons[iconName as keyof typeof icons] || icons.cog;
+};
+
+const handleFeatureClick = (featureId: string) => {
+  console.log('🔧 [MontajeDashboard] Feature clicked:', featureId);
+  // TODO: Implementar navegación a funcionalidades específicas cuando estén listas
+};
+
+// Lifecycle
+onMounted(() => {
+  console.log('🚀 [MontajeDashboard] Component mounted');
+  
+  // Simular carga
+  setTimeout(() => {
+    isLoading.value = false;
+  }, 1000);
+});
+</script>
 
 <style scoped>
 /* Animaciones personalizadas */

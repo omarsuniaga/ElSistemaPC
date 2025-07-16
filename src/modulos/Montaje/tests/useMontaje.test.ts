@@ -1,11 +1,11 @@
 // src/modulos/Montaje/tests/useMontaje.test.ts
 
-import {describe, it, expect, beforeEach, vi} from "vitest"
-import {ref} from "vue"
-import {setActivePinia, createPinia} from "pinia"
-import {useMontaje} from "../composables/useMontaje"
-import type {Obra, PlanAccion} from "../types"
-import {EstadoObra, EstadoCompass} from "../types"
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ref } from 'vue';
+import { setActivePinia, createPinia } from 'pinia';
+import { useMontaje } from '../composables/useMontaje';
+import type { Obra, PlanAccion } from '../types';
+import { EstadoObra, EstadoCompass } from '../types';
 
 // Mock Pinia store
 const mockStore = {
@@ -40,20 +40,20 @@ const mockStore = {
   cambiarEstadoCompass: vi.fn(),
   marcarNotificacionComoLeida: vi.fn(),
   marcarTodasNotificacionesComoLeidas: vi.fn(),
-}
+};
 
-vi.mock("../store/montaje", () => ({
+vi.mock('../store/montaje', () => ({
   useMontajeStore: () => mockStore,
-}))
+}));
 
-describe("useMontaje Composable", () => {
+describe('useMontaje Composable', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    vi.clearAllMocks()
-  })
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+  });
 
-  describe("Inicialización", () => {
-    it("debe inicializar correctamente", () => {
+  describe('Inicialización', () => {
+    it('debe inicializar correctamente', () => {
       const {
         // Estado
         obras,
@@ -74,207 +74,207 @@ describe("useMontaje Composable", () => {
         crearObra,
         actualizarObra,
         eliminarObra,
-      } = useMontaje()
+      } = useMontaje();
 
       // Verificar que todas las propiedades están definidas
-      expect(obras).toBeDefined()
-      expect(obraActual).toBeDefined()
-      expect(planAccion).toBeDefined()
-      expect(frases).toBeDefined()
-      expect(isLoading).toBeDefined()
-      expect(error).toBeDefined()
+      expect(obras).toBeDefined();
+      expect(obraActual).toBeDefined();
+      expect(planAccion).toBeDefined();
+      expect(frases).toBeDefined();
+      expect(isLoading).toBeDefined();
+      expect(error).toBeDefined();
 
-      expect(obrasActivas).toBeDefined()
-      expect(frasesActuales).toBeDefined()
-      expect(frasesCompletadas).toBeDefined()
-      expect(progresoPorcentaje).toBeDefined()
+      expect(obrasActivas).toBeDefined();
+      expect(frasesActuales).toBeDefined();
+      expect(frasesCompletadas).toBeDefined();
+      expect(progresoPorcentaje).toBeDefined();
 
-      expect(cargarObras).toBeTypeOf("function")
-      expect(crearObra).toBeTypeOf("function")
-      expect(actualizarObra).toBeTypeOf("function")
-      expect(eliminarObra).toBeTypeOf("function")
-    })
-  })
+      expect(cargarObras).toBeTypeOf('function');
+      expect(crearObra).toBeTypeOf('function');
+      expect(actualizarObra).toBeTypeOf('function');
+      expect(eliminarObra).toBeTypeOf('function');
+    });
+  });
 
-  describe("Funciones de obras", () => {
-    it("debe cargar obras correctamente", async () => {
-      const {cargarObras} = useMontaje()
+  describe('Funciones de obras', () => {
+    it('debe cargar obras correctamente', async () => {
+      const { cargarObras } = useMontaje();
 
-      await cargarObras()
+      await cargarObras();
 
-      expect(mockStore.cargarObras).toHaveBeenCalledOnce()
-    })
+      expect(mockStore.cargarObras).toHaveBeenCalledOnce();
+    });
 
-    it("debe crear obra con validación", async () => {
-      const {crearObra} = useMontaje()
+    it('debe crear obra con validación', async () => {
+      const { crearObra } = useMontaje();
 
       const obraData = {
-        titulo: "Nueva Obra",
-        descripcion: "Descripción de la obra",
-        repertorioId: "repertorio-1",
+        titulo: 'Nueva Obra',
+        descripcion: 'Descripción de la obra',
+        repertorioId: 'repertorio-1',
         estado: EstadoObra.BORRADOR,
-      }
+      };
 
-      await crearObra(obraData)
+      await crearObra(obraData);
 
-      expect(mockStore.crearObra).toHaveBeenCalledWith(obraData)
-    })
+      expect(mockStore.crearObra).toHaveBeenCalledWith(obraData);
+    });
 
-    it("debe actualizar obra existente", async () => {
-      const {actualizarObra} = useMontaje()
+    it('debe actualizar obra existente', async () => {
+      const { actualizarObra } = useMontaje();
 
-      const obraId = "obra-1"
+      const obraId = 'obra-1';
       const updates = {
-        titulo: "Título actualizado",
-        descripcion: "Nueva descripción",
-      }
+        titulo: 'Título actualizado',
+        descripcion: 'Nueva descripción',
+      };
 
-      await actualizarObra(obraId, updates)
+      await actualizarObra(obraId, updates);
 
-      expect(mockStore.actualizarObra).toHaveBeenCalledWith(obraId, updates)
-    })
+      expect(mockStore.actualizarObra).toHaveBeenCalledWith(obraId, updates);
+    });
 
-    it("debe eliminar obra con confirmación", async () => {
-      const {eliminarObra} = useMontaje()
+    it('debe eliminar obra con confirmación', async () => {
+      const { eliminarObra } = useMontaje();
 
-      const obraId = "obra-1"
-      await eliminarObra(obraId)
+      const obraId = 'obra-1';
+      await eliminarObra(obraId);
 
-      expect(mockStore.eliminarObra).toHaveBeenCalledWith(obraId)
-    })
-  })
+      expect(mockStore.eliminarObra).toHaveBeenCalledWith(obraId);
+    });
+  });
 
-  describe("Funciones de planes", () => {
-    it("debe crear plan de acción", async () => {
-      const {crearPlan} = useMontaje()
+  describe('Funciones de planes', () => {
+    it('debe crear plan de acción', async () => {
+      const { crearPlan } = useMontaje();
 
       const planData = {
-        obraId: "obra-1",
-        titulo: "Nuevo Plan",
-        descripcion: "Descripción del plan",
+        obraId: 'obra-1',
+        titulo: 'Nuevo Plan',
+        descripcion: 'Descripción del plan',
         fechaInicio: new Date(),
         fechaFin: new Date(),
         fases: [],
-      }
+      };
 
-      await crearPlan(planData)
+      await crearPlan(planData);
 
-      expect(mockStore.crearPlanAccion).toHaveBeenCalledWith(planData)
-    })
+      expect(mockStore.crearPlanAccion).toHaveBeenCalledWith(planData);
+    });
 
-    it("debe actualizar plan existente", async () => {
-      const {actualizarPlan} = useMontaje()
+    it('debe actualizar plan existente', async () => {
+      const { actualizarPlan } = useMontaje();
 
-      const planId = "plan-1"
+      const planId = 'plan-1';
       const updates = {
-        titulo: "Plan actualizado",
-        descripcion: "Nueva descripción del plan",
-      }
+        titulo: 'Plan actualizado',
+        descripcion: 'Nueva descripción del plan',
+      };
 
-      await actualizarPlan(planId, updates)
+      await actualizarPlan(planId, updates);
 
-      expect(mockStore.actualizarPlanAccion).toHaveBeenCalledWith(planId, updates)
-    })
-  })
+      expect(mockStore.actualizarPlanAccion).toHaveBeenCalledWith(planId, updates);
+    });
+  });
 
-  describe("Funciones de frases", () => {
-    it("debe crear frase con validación de rangos", async () => {
-      const {crearFrase} = useMontaje()
+  describe('Funciones de frases', () => {
+    it('debe crear frase con validación de rangos', async () => {
+      const { crearFrase } = useMontaje();
 
       const fraseData = {
-        planAccionId: "plan-1",
-        titulo: "Nueva Frase",
-        descripcion: "Descripción de la frase",
+        planAccionId: 'plan-1',
+        titulo: 'Nueva Frase',
+        descripcion: 'Descripción de la frase',
         compasInicio: 1,
         compasFinalizacion: 16,
-        instrumento: "violin",
-        dificultad: "media" as any,
-      }
+        instrumento: 'violin',
+        dificultad: 'media' as any,
+      };
 
-      await crearFrase(fraseData)
+      await crearFrase(fraseData);
 
-      expect(mockStore.crearFrase).toHaveBeenCalledWith(fraseData)
-    })
-  })
+      expect(mockStore.crearFrase).toHaveBeenCalledWith(fraseData);
+    });
+  });
 
-  describe("Funciones de evaluaciones", () => {
-    it("debe crear evaluación continua", async () => {
-      const {crearEvaluacion} = useMontaje()
+  describe('Funciones de evaluaciones', () => {
+    it('debe crear evaluación continua', async () => {
+      const { crearEvaluacion } = useMontaje();
 
       const evaluacionData = {
-        obraId: "obra-1",
-        fraseId: "frase-1",
-        estudianteId: "estudiante-1",
+        obraId: 'obra-1',
+        fraseId: 'frase-1',
+        estudianteId: 'estudiante-1',
         calificacion: 8.5,
-        observaciones: "Buen progreso en la técnica",
+        observaciones: 'Buen progreso en la técnica',
         fecha: new Date(),
-      }
+      };
 
-      await crearEvaluacion(evaluacionData)
+      await crearEvaluacion(evaluacionData);
 
-      expect(mockStore.crearEvaluacionContinua).toHaveBeenCalledWith(evaluacionData)
-    })
-  })
+      expect(mockStore.crearEvaluacionContinua).toHaveBeenCalledWith(evaluacionData);
+    });
+  });
 
-  describe("Gestión de estado de compases", () => {
-    it("debe cambiar estado de compás", async () => {
-      const {cambiarEstadoCompass} = useMontaje()
+  describe('Gestión de estado de compases', () => {
+    it('debe cambiar estado de compás', async () => {
+      const { cambiarEstadoCompass } = useMontaje();
 
-      await cambiarEstadoCompass(5, EstadoCompass.DOMINADO, "frase-1", "Técnica mejorada")
+      await cambiarEstadoCompass(5, EstadoCompass.DOMINADO, 'frase-1', 'Técnica mejorada');
 
       expect(mockStore.cambiarEstadoCompass).toHaveBeenCalledWith(
         5,
         EstadoCompass.DOMINADO,
-        "frase-1",
-        "Técnica mejorada"
-      )
-    })
-  })
+        'frase-1',
+        'Técnica mejorada',
+      );
+    });
+  });
 
-  describe("Utilidades", () => {
-    it("debe calcular progreso correctamente", () => {
-      const {progresoPorcentaje} = useMontaje()
+  describe('Utilidades', () => {
+    it('debe calcular progreso correctamente', () => {
+      const { progresoPorcentaje } = useMontaje();
 
       // Mock data para calcular progreso
       mockStore.frasesActuales.value = [
-        {metadatos: {progresoPorcentaje: 100}},
-        {metadatos: {progresoPorcentaje: 50}},
-        {metadatos: {progresoPorcentaje: 75}},
-      ] as any
+        { metadatos: { progresoPorcentaje: 100 } },
+        { metadatos: { progresoPorcentaje: 50 } },
+        { metadatos: { progresoPorcentaje: 75 } },
+      ] as any;
 
       // El progreso promedio debería ser (100 + 50 + 75) / 3 = 75
-      expect(progresoPorcentaje.value).toBe(75)
-    })
+      expect(progresoPorcentaje.value).toBe(75);
+    });
 
-    it("debe manejar caso sin frases para progreso", () => {
-      const {progresoPorcentaje} = useMontaje()
+    it('debe manejar caso sin frases para progreso', () => {
+      const { progresoPorcentaje } = useMontaje();
 
-      mockStore.frasesActuales.value = []
+      mockStore.frasesActuales.value = [];
 
-      expect(progresoPorcentaje.value).toBe(0)
-    })
-  })
+      expect(progresoPorcentaje.value).toBe(0);
+    });
+  });
 
-  describe("Manejo de errores", () => {
-    it("debe propagar errores de las acciones del store", async () => {
-      const {cargarObras} = useMontaje()
+  describe('Manejo de errores', () => {
+    it('debe propagar errores de las acciones del store', async () => {
+      const { cargarObras } = useMontaje();
 
-      const errorMock = new Error("Error de prueba")
-      mockStore.cargarObras.mockRejectedValue(errorMock)
+      const errorMock = new Error('Error de prueba');
+      mockStore.cargarObras.mockRejectedValue(errorMock);
 
-      await expect(cargarObras()).rejects.toThrow("Error de prueba")
-    })
+      await expect(cargarObras()).rejects.toThrow('Error de prueba');
+    });
 
-    it("debe limpiar errores al iniciar nuevas operaciones", async () => {
-      const {cargarObras, error} = useMontaje()
+    it('debe limpiar errores al iniciar nuevas operaciones', async () => {
+      const { cargarObras, error } = useMontaje();
 
       // Simular error anterior
-      mockStore.error.value = "Error anterior"
+      mockStore.error.value = 'Error anterior';
 
-      await cargarObras()
+      await cargarObras();
 
       // El error debería limpiarse al iniciar nueva operación
-      expect(mockStore.cargarObras).toHaveBeenCalled()
-    })
-  })
-})
+      expect(mockStore.cargarObras).toHaveBeenCalled();
+    });
+  });
+});

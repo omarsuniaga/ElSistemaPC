@@ -1,18 +1,3 @@
-<script setup lang="ts">
-import {PlusIcon} from "@heroicons/vue/24/outline"
-import TeacherClassesCard from "./TeacherClassesCard.vue"
-import type {ClassData} from "../types/teacherTypes" // Assuming types are moved
-
-defineProps<{sortedClasses: ClassData[]}>()
-const emit = defineEmits([
-  "add-class",
-  "view-class",
-  "edit-class",
-  "delete-class",
-  "manage-students",
-])
-</script>
-
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4">
     <h2
@@ -53,3 +38,18 @@ const emit = defineEmits([
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { PlusIcon } from '@heroicons/vue/24/outline';
+import TeacherClassesCard from './TeacherClassesCard.vue';
+import type { ClassData } from '../types/teacherTypes'; // Assuming types are moved
+
+defineProps<{sortedClasses: ClassData[]}>();
+const emit = defineEmits([
+  'add-class',
+  'view-class',
+  'edit-class',
+  'delete-class',
+  'manage-students',
+]);
+</script>

@@ -9,13 +9,13 @@ import {
   query,
   DocumentData,
   QueryConstraint,
-} from "firebase/firestore"
-import {Firestore} from "firebase/firestore"
-import {db as firestoreDb} from "../../firebase"
-import {useOffline} from "../../composables/useOffline"
+} from 'firebase/firestore';
+import { Firestore } from 'firebase/firestore';
+import { db as firestoreDb } from '../../firebase';
+import { useOffline } from '../../composables/useOffline';
 
-const db: Firestore = firestoreDb
-const {queueChange, isOffline} = useOffline()
+const db: Firestore = firestoreDb;
+const { queueChange, isOffline } = useOffline();
 
 /**
  * Clase para manejar errores de Firestore con un formato consistente.
@@ -23,10 +23,10 @@ const {queueChange, isOffline} = useOffline()
 export class FirestoreError extends Error {
   constructor(
     message: string,
-    public code?: string
+    public code?: string,
   ) {
-    super(message)
-    this.name = "FirestoreError"
+    super(message);
+    this.name = 'FirestoreError';
   }
 }
 
@@ -38,10 +38,10 @@ export class FirestoreError extends Error {
  */
 async function withFirestoreError<T>(operation: () => Promise<T>, errorMsg: string): Promise<T> {
   try {
-    return await operation()
+    return await operation();
   } catch (error: any) {
-    console.error(errorMsg, error)
-    throw new FirestoreError(errorMsg, error.code)
+    console.error(errorMsg, error);
+    throw new FirestoreError(errorMsg, error.code);
   }
 }
 
@@ -53,13 +53,13 @@ async function withFirestoreError<T>(operation: () => Promise<T>, errorMsg: stri
  */
 export async function getCollection<T = DocumentData>(
   collectionName: string,
-  constraints: QueryConstraint[] = []
+  constraints: QueryConstraint[] = [],
 ): Promise<T[]> {
   return withFirestoreError(async () => {
-    const q = query(collection(db, collectionName), ...constraints)
-    const querySnapshot = await getDocs(q)
-    return querySnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()})) as T[]
-  }, `Error al obtener la colección ${collectionName}`)
+    const q = query(collection(db, collectionName), ...constraints);
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as T[];
+  }, `Error al obtener la colección ${collectionName}`);
 }
 
 /**
@@ -70,14 +70,14 @@ export async function getCollection<T = DocumentData>(
  */
 export async function getDocument<T = DocumentData>(
   collectionName: string,
-  docId: string
+  docId: string,
 ): Promise<T | null> {
   return withFirestoreError(async () => {
-    const docRef = doc(db, collectionName, docId)
-    const docSnap = await getDoc(docRef)
-    if (!docSnap.exists()) return null
-    return {id: docSnap.id, ...docSnap.data()} as T
-  }, `Error al obtener el documento ${docId}`)
+    const docRef = doc(db, collectionName, docId);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return null;
+    return { id: docSnap.id, ...docSnap.data() } as T;
+  }, `Error al obtener el documento ${docId}`);
 }
 
 /**
@@ -88,19 +88,19 @@ export async function getDocument<T = DocumentData>(
  */
 export async function createDocument<T = DocumentData>(
   collectionName: string,
-  data: T
+  data: T,
 ): Promise<void> {
   const operation = async () => {
-    const docRef = doc(collection(db, collectionName))
-    await setDoc(docRef, data as DocumentData)
-  }
+    const docRef = doc(collection(db, collectionName));
+    await setDoc(docRef, data as DocumentData);
+  };
 
   if (isOffline.value) {
     // Encolar operación para cuando se recupere la conexión
-    queueChange(() => operation())
-    console.log(`⏳ Operación de creación en ${collectionName} encolada por modo offline`)
+    queueChange(() => operation());
+    console.log(`⏳ Operación de creación en ${collectionName} encolada por modo offline`);
   } else {
-    await withFirestoreError(operation, `Error al crear el documento en ${collectionName}`)
+    await withFirestoreError(operation, `Error al crear el documento en ${collectionName}`);
   }
 }
 
@@ -114,20 +114,20 @@ export async function createDocument<T = DocumentData>(
 export async function updateDocument<T = DocumentData>(
   collectionName: string,
   docId: string,
-  data: Partial<T>
+  data: Partial<T>,
 ): Promise<void> {
   const operation = async () => {
-    const docRef = doc(db, collectionName, docId)
-    await updateDoc(docRef, data)
-  }
+    const docRef = doc(db, collectionName, docId);
+    await updateDoc(docRef, data);
+  };
 
   if (isOffline.value) {
-    queueChange(() => operation())
+    queueChange(() => operation());
     console.log(
-      `⏳ Operación de actualización en ${collectionName}/${docId} encolada por modo offline`
-    )
+      `⏳ Operación de actualización en ${collectionName}/${docId} encolada por modo offline`,
+    );
   } else {
-    await withFirestoreError(operation, `Error al actualizar el documento ${docId}`)
+    await withFirestoreError(operation, `Error al actualizar el documento ${docId}`);
   }
 }
 
@@ -139,16 +139,16 @@ export async function updateDocument<T = DocumentData>(
  */
 export async function deleteDocument(collectionName: string, docId: string): Promise<void> {
   const operation = async () => {
-    const docRef = doc(db, collectionName, docId)
-    await deleteDoc(docRef)
-  }
+    const docRef = doc(db, collectionName, docId);
+    await deleteDoc(docRef);
+  };
 
   if (isOffline.value) {
-    queueChange(() => operation())
+    queueChange(() => operation());
     console.log(
-      `⏳ Operación de eliminación en ${collectionName}/${docId} encolada por modo offline`
-    )
+      `⏳ Operación de eliminación en ${collectionName}/${docId} encolada por modo offline`,
+    );
   } else {
-    await withFirestoreError(operation, `Error al eliminar el documento ${docId}`)
+    await withFirestoreError(operation, `Error al eliminar el documento ${docId}`);
   }
 }

@@ -56,8 +56,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import AppImage from "@/components/ui/AppImage.vue"
+import { ref, computed, onMounted } from 'vue';
+import AppImage from '@/components/ui/AppImage.vue';
 
 interface TeacherCardData {
   id?: string
@@ -72,7 +72,7 @@ interface TeacherCardData {
 
 defineProps<{
   teacher: TeacherCardData | null
-}>()
+}>();
 </script>
 
 <style scoped>

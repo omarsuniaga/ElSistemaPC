@@ -164,36 +164,36 @@
 </template>
 
 <script setup lang="ts">
-import { inject, computed } from "vue"
+import { inject, computed } from 'vue';
 import {
   UserGroupIcon,
   CalendarDaysIcon,
   CheckCircleIcon,
   BellAlertIcon,
   QuestionMarkCircleIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
-defineOptions({ name: "DashboardKPIs" })
+defineOptions({ name: 'DashboardKPIs' });
 
 // ==================== INJECTED DATA ====================
-const dashboardData = inject("dashboardData")
-const isLoading = inject("isLoading")
+const dashboardData = inject('dashboardData');
+const isLoading = inject('isLoading');
 
 // ==================== COMPUTED PROPERTIES ====================
 const attendanceTrend = computed(() => {
-  const thisWeek = dashboardData?.value?.attendance?.thisWeek || 0
-  const lastWeek = dashboardData?.value?.attendance?.lastWeek || 0
+  const thisWeek = dashboardData?.value?.attendance?.thisWeek || 0;
+  const lastWeek = dashboardData?.value?.attendance?.lastWeek || 0;
   
   if (lastWeek === 0) {
-    return { value: 0, isPositive: true }
+    return { value: 0, isPositive: true };
   }
   
-  const difference = thisWeek - lastWeek
-  const percentage = Math.round((difference / lastWeek) * 100)
+  const difference = thisWeek - lastWeek;
+  const percentage = Math.round((difference / lastWeek) * 100);
   
   return {
     value: Math.abs(percentage),
-    isPositive: percentage >= 0
-  }
-})
+    isPositive: percentage >= 0,
+  };
+});
 </script>

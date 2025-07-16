@@ -23,10 +23,10 @@ interface Props {
 
 // Define default props
 withDefaults(defineProps<Props>(), {
-  size: "5",
-  className: "",
+  size: '5',
+  className: '',
   style: () => ({}),
-})
+});
 </script>
 
 <style scoped>

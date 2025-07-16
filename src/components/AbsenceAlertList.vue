@@ -1,325 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import {useAttendanceStore} from "../modulos/Attendance/store/attendance"
-import {useClassesStore} from "../modulos/Classes/store/classes"
-import {useToast} from "../components/ui/toast/use-toast" // Descomentar si se usa toast
-import type {Student} from "../modulos/Students/types/student"
-import type {AttendanceDocument} from "../modulos/Attendance/types/attendance" // Importar tipo
-import {formatISO, isValid, parseISO} from "date-fns" // Asegúrate de importar isValid y formatISO
-
-// Stores
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
-const classesStore = useClassesStore()
-const {toast, triggerNotification} = useToast() // Descomentar si se usa toast
-
-// Estado del componente
-const startDate = ref("")
-const endDate = ref("")
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const results = ref<AbsenceResult[]>([])
-const searchPerformed = ref(false) // Para saber si se realizó una búsqueda
-const weeklyAbsences = ref<any[]>([])
-const monthlyAbsences = ref<any[]>([])
-
-// Interfaces para manejar los datos
-interface AbsenceResult {
-  student: Student
-  absenceCount: number
-  absenceDates: string[]
-  missedClassIds: Set<string>
-  missedClassNames: string[]
-}
-
-// Normalizar formato de fecha para comparaciones
-const normalizeDate = (dateStr: string | Date): Date => {
-  if (!dateStr) return new Date(0) // Fecha inválida si no hay string/Date
-
-  if (dateStr instanceof Date) {
-    // Si ya es Date, asegurarse que es válido
-    return isValid(dateStr) ? dateStr : new Date(0)
-  }
-
-  if (typeof dateStr === "string") {
-    // 1. Intentar parsear con parseISO (para YYYY-MM-DD, ISO 8601)
-    const isoDate = parseISO(dateStr)
-    if (isValid(isoDate)) {
-      return isoDate
-    }
-
-    // 2. Intentar parsear formato DD/MM/YYYY
-    const ddmmyyyyPattern = /^(\\d{1,2})[/.-](\\d{1,2})[/.-](\\d{4})$/
-    const ddmmyyyyMatch = dateStr.match(ddmmyyyyPattern)
-
-    if (ddmmyyyyMatch) {
-      const [_, day, month, year] = ddmmyyyyMatch
-      const constructedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-      if (isValid(constructedDate)) {
-        return constructedDate
-      }
-    }
-
-    // 3. Como último recurso, intentar crear una fecha directamente
-    // Esto puede ser menos fiable dependiendo del navegador/entorno
-    const directDate = new Date(dateStr)
-    if (isValid(directDate)) {
-      return directDate
-    }
-  }
-
-  console.warn("Formato de fecha no reconocido o inválido:", dateStr)
-  return new Date(0) // Devolver fecha inválida si todo falla
-}
-
-// --- Función Principal de Búsqueda ---
-async function searchAbsences() {
-  // Validación básica de fechas
-  if (!startDate.value || !endDate.value) {
-    error.value = "Por favor, seleccione fecha de inicio y fin."
-    return
-  }
-
-  // Normalizar las fechas del rango ANTES de usarlas
-  const rangeStartDate = normalizeDate(startDate.value)
-  const rangeEndDate = normalizeDate(endDate.value)
-
-  // Validar las fechas normalizadas
-  if (
-    !isValid(rangeStartDate) ||
-    rangeStartDate.getTime() === 0 ||
-    !isValid(rangeEndDate) ||
-    rangeEndDate.getTime() === 0 ||
-    rangeEndDate < rangeStartDate
-  ) {
-    error.value = "Rango de fechas inválido. Verifique las fechas seleccionadas."
-    console.error("Fechas normalizadas inválidas:", {
-      startInput: startDate.value,
-      startNormalized: rangeStartDate,
-      endInput: endDate.value,
-      endNormalized: rangeEndDate,
-    })
-    return
-  }
-
-  // **MODIFICACIÓN:** Obtener solo la parte de la fecha (YYYY-MM-DD) para comparación
-  const rangeStartYYYYMMDD = formatISO(rangeStartDate, {representation: "date"})
-  const rangeEndYYYYMMDD = formatISO(rangeEndDate, {representation: "date"})
-
-  console.log(`Buscando ausencias desde: ${rangeStartYYYYMMDD} hasta: ${rangeEndYYYYMMDD}`) // Log con formato YYYY-MM-DD
-
-  isLoading.value = true
-  error.value = null
-  results.value = []
-  searchPerformed.value = true // Marcar que se intentó una búsqueda
-
-  try {
-    // 1. Asegurar que estudiantes y clases estén cargados
-    if (studentsStore.students.length === 0) await studentsStore.fetchStudents()
-    if (classesStore.classes.length === 0) await classesStore.fetchClasses()
-
-    // 2. Obtener documentos de asistencia optimizados por rango de fechas
-    const {start, end} = actualDateRange.value
-    console.log(`Fetching attendance documents for range: ${start} to ${end}`)
-
-    // Usar consulta optimizada por rango de fechas
-    const documentsInRange = await attendanceStore.fetchAttendanceDocuments(start, end)
-    console.log(`Total documentos en rango: ${documentsInRange.length}`)
-
-    // 3. Procesar los documentos para agregar ausencias
-    const absencesMap = new Map<string, {count: number; classIds: Set<string>; dates: string[]}>()
-
-    documentsInRange.forEach((doc) => {
-      if (!doc.fecha || !doc.data?.ausentes || !Array.isArray(doc.data.ausentes)) {
-        return // Omitir documentos sin fecha o sin array de ausentes
-      }
-
-      // Los documentos ya están filtrados por rango, procesamos directamente
-      doc.data.ausentes.forEach((studentId: string) => {
-        if (!studentId) return // Ignorar IDs vacíos
-
-        const currentData = absencesMap.get(studentId) || {
-          count: 0,
-          classIds: new Set<string>(),
-          dates: [],
-        }
-        currentData.count += 1
-        if (doc.classId) {
-          currentData.classIds.add(doc.classId)
-        }
-        currentData.dates.push(doc.fecha) // Guardar la fecha original del registro
-        absencesMap.set(studentId, currentData)
-      })
-    })
-
-    console.log(`Estudiantes con ausencias encontradas en el rango: ${absencesMap.size}`)
-
-    // 4. Enriquecer con datos de estudiante y clase
-    const finalResults: AbsenceResult[] = []
-    for (const [studentId, data] of absencesMap.entries()) {
-      const student = studentsStore.getStudentById(studentId) // Usar getter del store
-
-      if (student) {
-        // Solo incluir si encontramos al estudiante
-        const missedClassNames = Array.from(data.classIds)
-          .map((classId) => classesStore.getClassById(classId)?.name) // Usar getter del store
-          .filter((name): name is string => !!name) // Filtrar clases no encontradas y asegurar tipo string
-
-        finalResults.push({
-          student, // Guardar el objeto estudiante completo
-          absenceCount: data.count,
-          missedClassNames:
-            missedClassNames.length > 0 ? missedClassNames : ["Clase no especificada"],
-          // Añadir las fechas específicas de ausencia al resultado
-          absenceDates: data.dates,
-          missedClassIds: data.classIds,
-        })
-      } else {
-        console.warn(`Estudiante con ID ${studentId} ausente pero no encontrado en el store.`)
-      }
-    }
-
-    // Ordenar resultados (opcional, por ejemplo por número de ausencias)
-    results.value = finalResults.sort((a, b) => b.absenceCount - a.absenceCount)
-
-    if (results.value.length === 0) {
-      console.log("No se encontraron resultados de ausencias para el rango especificado.")
-    } else {
-      console.log("Resultados encontrados:", results.value)
-      triggerNotification("Análisis completado: " + results.value.length + " inasistencias")
-    }
-  } catch (err: any) {
-    console.error("Error durante la búsqueda de ausencias:", err)
-    error.value = "Ocurrió un error al buscar las ausencias. Intente de nuevo."
-    toast({title: "Error", description: error.value, variant: "destructive"}) // Descomentar si se usa toast
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// --- Funciones Helper ---
-const getInitials = (name: string, surname: string) => {
-  if (!name || !surname) return ""
-  return `${name.charAt(0)}${surname.charAt(0)}`.toUpperCase()
-}
-
-const contactStudent = (student: Student) => {
-  console.log("Contactar estudiante:", student)
-  // Implementar lógica de contacto
-}
-
-const viewAttendance = (student: Student) => {
-  console.log("Ver asistencia de:", student)
-  // Implementar navegación a detalle de asistencia
-}
-
-// These methods are required by TeachersHomeView.vue
-const analyzeWeeklyAbsences = async () => {
-  console.log("AbsenceAlertList: Analizando ausencias semanales...")
-
-  // Obtener rango de la semana actual
-  const now = new Date()
-  const weekStart = new Date(now)
-  weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)) // Iniciar semana en lunes
-  weekStart.setHours(0, 0, 0, 0)
-
-  const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekStart.getDate() + 6)
-  weekEnd.setHours(23, 59, 59, 999)
-
-  // Establecer fechas para la búsqueda
-  startDate.value = formatISO(weekStart, {representation: "date"})
-  endDate.value = formatISO(weekEnd, {representation: "date"})
-
-  // Buscar ausencias
-  await searchAbsences()
-
-  // Convertir resultados al formato esperado por TeachersHomeView
-  weeklyAbsences.value = results.value.map((result) => ({
-    student: result.student,
-    absences: result.absenceCount,
-    absenceDates: result.absenceDates,
-    classNames: result.missedClassNames,
-  }))
-
-  return weeklyAbsences.value
-}
-
-const analyzeMonthlyAbsences = async () => {
-  console.log("AbsenceAlertList: Analizando ausencias mensuales...")
-
-  // Obtener rango del mes actual
-  const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  monthEnd.setHours(23, 59, 59, 999)
-
-  // Establecer fechas para la búsqueda
-  startDate.value = formatISO(monthStart, {representation: "date"})
-  endDate.value = formatISO(monthEnd, {representation: "date"})
-
-  // Buscar ausencias
-  await searchAbsences()
-
-  // Convertir resultados al formato esperado
-  monthlyAbsences.value = results.value.map((result) => ({
-    student: result.student,
-    absences: result.absenceCount,
-    absenceDates: result.absenceDates,
-    classNames: result.missedClassNames,
-  }))
-
-  return monthlyAbsences.value
-}
-
-const getWeeklyAbsences = () => {
-  return weeklyAbsences.value
-}
-
-const getMonthlyAbsences = () => {
-  return monthlyAbsences.value
-}
-
-// Create a computed property for date ranges debug information
-const dateRanges = computed(() => ({
-  startDate: startDate.value,
-  endDate: endDate.value,
-  normalized: {
-    start: startDate.value ? normalizeDate(startDate.value) : null,
-    end: endDate.value ? normalizeDate(endDate.value) : null,
-  },
-}))
-
-// Expose methods required by TeachersHomeView
-defineExpose({
-  analyzeWeeklyAbsences,
-  analyzeMonthlyAbsences,
-  getWeeklyAbsences,
-  getMonthlyAbsences,
-  debugDateInfo: dateRanges,
-})
-
-// Inicializar búsqueda al montar el componente
-onMounted(async () => {
-  if (!startDate.value || !endDate.value) {
-    // Si no hay fechas seleccionadas, usar por defecto la semana actual
-    const now = new Date()
-    const weekStart = new Date(now)
-    weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)) // Iniciar semana en lunes
-    weekStart.setHours(0, 0, 0, 0)
-
-    const weekEnd = new Date(weekStart)
-    weekEnd.setDate(weekStart.getDate() + 6)
-    weekEnd.setHours(23, 59, 59, 999)
-
-    startDate.value = formatISO(weekStart, {representation: "date"})
-    endDate.value = formatISO(weekEnd, {representation: "date"})
-  }
-  await attendanceStore.fetchAttendanceDocuments()
-})
-</script>
-
 <template>
   <div class="absence-alert-list p-4">
     <h2 class="text-xl font-bold mb-4">Alertas de Inasistencias</h2>
@@ -444,6 +122,328 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
+import { useClassesStore } from '../modulos/Classes/store/classes';
+import { useToast } from '../components/ui/toast/use-toast'; // Descomentar si se usa toast
+import type { Student } from '../modulos/Students/types/student';
+import type { AttendanceDocument } from '../modulos/Attendance/types/attendance'; // Importar tipo
+import { formatISO, isValid, parseISO } from 'date-fns'; // Asegúrate de importar isValid y formatISO
+
+// Stores
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
+const classesStore = useClassesStore();
+const { toast, triggerNotification } = useToast(); // Descomentar si se usa toast
+
+// Estado del componente
+const startDate = ref('');
+const endDate = ref('');
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const results = ref<AbsenceResult[]>([]);
+const searchPerformed = ref(false); // Para saber si se realizó una búsqueda
+const weeklyAbsences = ref<any[]>([]);
+const monthlyAbsences = ref<any[]>([]);
+
+// Interfaces para manejar los datos
+interface AbsenceResult {
+  student: Student
+  absenceCount: number
+  absenceDates: string[]
+  missedClassIds: Set<string>
+  missedClassNames: string[]
+}
+
+// Normalizar formato de fecha para comparaciones
+const normalizeDate = (dateStr: string | Date): Date => {
+  if (!dateStr) return new Date(0); // Fecha inválida si no hay string/Date
+
+  if (dateStr instanceof Date) {
+    // Si ya es Date, asegurarse que es válido
+    return isValid(dateStr) ? dateStr : new Date(0);
+  }
+
+  if (typeof dateStr === 'string') {
+    // 1. Intentar parsear con parseISO (para YYYY-MM-DD, ISO 8601)
+    const isoDate = parseISO(dateStr);
+    if (isValid(isoDate)) {
+      return isoDate;
+    }
+
+    // 2. Intentar parsear formato DD/MM/YYYY
+    const ddmmyyyyPattern = /^(\\d{1,2})[/.-](\\d{1,2})[/.-](\\d{4})$/;
+    const ddmmyyyyMatch = dateStr.match(ddmmyyyyPattern);
+
+    if (ddmmyyyyMatch) {
+      const [_, day, month, year] = ddmmyyyyMatch;
+      const constructedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (isValid(constructedDate)) {
+        return constructedDate;
+      }
+    }
+
+    // 3. Como último recurso, intentar crear una fecha directamente
+    // Esto puede ser menos fiable dependiendo del navegador/entorno
+    const directDate = new Date(dateStr);
+    if (isValid(directDate)) {
+      return directDate;
+    }
+  }
+
+  console.warn('Formato de fecha no reconocido o inválido:', dateStr);
+  return new Date(0); // Devolver fecha inválida si todo falla
+};
+
+// --- Función Principal de Búsqueda ---
+async function searchAbsences() {
+  // Validación básica de fechas
+  if (!startDate.value || !endDate.value) {
+    error.value = 'Por favor, seleccione fecha de inicio y fin.';
+    return;
+  }
+
+  // Normalizar las fechas del rango ANTES de usarlas
+  const rangeStartDate = normalizeDate(startDate.value);
+  const rangeEndDate = normalizeDate(endDate.value);
+
+  // Validar las fechas normalizadas
+  if (
+    !isValid(rangeStartDate) ||
+    rangeStartDate.getTime() === 0 ||
+    !isValid(rangeEndDate) ||
+    rangeEndDate.getTime() === 0 ||
+    rangeEndDate < rangeStartDate
+  ) {
+    error.value = 'Rango de fechas inválido. Verifique las fechas seleccionadas.';
+    console.error('Fechas normalizadas inválidas:', {
+      startInput: startDate.value,
+      startNormalized: rangeStartDate,
+      endInput: endDate.value,
+      endNormalized: rangeEndDate,
+    });
+    return;
+  }
+
+  // **MODIFICACIÓN:** Obtener solo la parte de la fecha (YYYY-MM-DD) para comparación
+  const rangeStartYYYYMMDD = formatISO(rangeStartDate, { representation: 'date' });
+  const rangeEndYYYYMMDD = formatISO(rangeEndDate, { representation: 'date' });
+
+  console.log(`Buscando ausencias desde: ${rangeStartYYYYMMDD} hasta: ${rangeEndYYYYMMDD}`); // Log con formato YYYY-MM-DD
+
+  isLoading.value = true;
+  error.value = null;
+  results.value = [];
+  searchPerformed.value = true; // Marcar que se intentó una búsqueda
+
+  try {
+    // 1. Asegurar que estudiantes y clases estén cargados
+    if (studentsStore.students.length === 0) await studentsStore.fetchStudents();
+    if (classesStore.classes.length === 0) await classesStore.fetchClasses();
+
+    // 2. Obtener documentos de asistencia optimizados por rango de fechas
+    const { start, end } = actualDateRange.value;
+    console.log(`Fetching attendance documents for range: ${start} to ${end}`);
+
+    // Usar consulta optimizada por rango de fechas
+    const documentsInRange = await attendanceStore.fetchAttendanceDocuments(start, end);
+    console.log(`Total documentos en rango: ${documentsInRange.length}`);
+
+    // 3. Procesar los documentos para agregar ausencias
+    const absencesMap = new Map<string, {count: number; classIds: Set<string>; dates: string[]}>();
+
+    documentsInRange.forEach((doc) => {
+      if (!doc.fecha || !doc.data?.ausentes || !Array.isArray(doc.data.ausentes)) {
+        return; // Omitir documentos sin fecha o sin array de ausentes
+      }
+
+      // Los documentos ya están filtrados por rango, procesamos directamente
+      doc.data.ausentes.forEach((studentId: string) => {
+        if (!studentId) return; // Ignorar IDs vacíos
+
+        const currentData = absencesMap.get(studentId) || {
+          count: 0,
+          classIds: new Set<string>(),
+          dates: [],
+        };
+        currentData.count += 1;
+        if (doc.classId) {
+          currentData.classIds.add(doc.classId);
+        }
+        currentData.dates.push(doc.fecha); // Guardar la fecha original del registro
+        absencesMap.set(studentId, currentData);
+      });
+    });
+
+    console.log(`Estudiantes con ausencias encontradas en el rango: ${absencesMap.size}`);
+
+    // 4. Enriquecer con datos de estudiante y clase
+    const finalResults: AbsenceResult[] = [];
+    for (const [studentId, data] of absencesMap.entries()) {
+      const student = studentsStore.getStudentById(studentId); // Usar getter del store
+
+      if (student) {
+        // Solo incluir si encontramos al estudiante
+        const missedClassNames = Array.from(data.classIds)
+          .map((classId) => classesStore.getClassById(classId)?.name) // Usar getter del store
+          .filter((name): name is string => !!name); // Filtrar clases no encontradas y asegurar tipo string
+
+        finalResults.push({
+          student, // Guardar el objeto estudiante completo
+          absenceCount: data.count,
+          missedClassNames:
+            missedClassNames.length > 0 ? missedClassNames : ['Clase no especificada'],
+          // Añadir las fechas específicas de ausencia al resultado
+          absenceDates: data.dates,
+          missedClassIds: data.classIds,
+        });
+      } else {
+        console.warn(`Estudiante con ID ${studentId} ausente pero no encontrado en el store.`);
+      }
+    }
+
+    // Ordenar resultados (opcional, por ejemplo por número de ausencias)
+    results.value = finalResults.sort((a, b) => b.absenceCount - a.absenceCount);
+
+    if (results.value.length === 0) {
+      console.log('No se encontraron resultados de ausencias para el rango especificado.');
+    } else {
+      console.log('Resultados encontrados:', results.value);
+      triggerNotification('Análisis completado: ' + results.value.length + ' inasistencias');
+    }
+  } catch (err: any) {
+    console.error('Error durante la búsqueda de ausencias:', err);
+    error.value = 'Ocurrió un error al buscar las ausencias. Intente de nuevo.';
+    toast({ title: 'Error', description: error.value, variant: 'destructive' }); // Descomentar si se usa toast
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// --- Funciones Helper ---
+const getInitials = (name: string, surname: string) => {
+  if (!name || !surname) return '';
+  return `${name.charAt(0)}${surname.charAt(0)}`.toUpperCase();
+};
+
+const contactStudent = (student: Student) => {
+  console.log('Contactar estudiante:', student);
+  // Implementar lógica de contacto
+};
+
+const viewAttendance = (student: Student) => {
+  console.log('Ver asistencia de:', student);
+  // Implementar navegación a detalle de asistencia
+};
+
+// These methods are required by TeachersHomeView.vue
+const analyzeWeeklyAbsences = async () => {
+  console.log('AbsenceAlertList: Analizando ausencias semanales...');
+
+  // Obtener rango de la semana actual
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); // Iniciar semana en lunes
+  weekStart.setHours(0, 0, 0, 0);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  // Establecer fechas para la búsqueda
+  startDate.value = formatISO(weekStart, { representation: 'date' });
+  endDate.value = formatISO(weekEnd, { representation: 'date' });
+
+  // Buscar ausencias
+  await searchAbsences();
+
+  // Convertir resultados al formato esperado por TeachersHomeView
+  weeklyAbsences.value = results.value.map((result) => ({
+    student: result.student,
+    absences: result.absenceCount,
+    absenceDates: result.absenceDates,
+    classNames: result.missedClassNames,
+  }));
+
+  return weeklyAbsences.value;
+};
+
+const analyzeMonthlyAbsences = async () => {
+  console.log('AbsenceAlertList: Analizando ausencias mensuales...');
+
+  // Obtener rango del mes actual
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  monthEnd.setHours(23, 59, 59, 999);
+
+  // Establecer fechas para la búsqueda
+  startDate.value = formatISO(monthStart, { representation: 'date' });
+  endDate.value = formatISO(monthEnd, { representation: 'date' });
+
+  // Buscar ausencias
+  await searchAbsences();
+
+  // Convertir resultados al formato esperado
+  monthlyAbsences.value = results.value.map((result) => ({
+    student: result.student,
+    absences: result.absenceCount,
+    absenceDates: result.absenceDates,
+    classNames: result.missedClassNames,
+  }));
+
+  return monthlyAbsences.value;
+};
+
+const getWeeklyAbsences = () => {
+  return weeklyAbsences.value;
+};
+
+const getMonthlyAbsences = () => {
+  return monthlyAbsences.value;
+};
+
+// Create a computed property for date ranges debug information
+const dateRanges = computed(() => ({
+  startDate: startDate.value,
+  endDate: endDate.value,
+  normalized: {
+    start: startDate.value ? normalizeDate(startDate.value) : null,
+    end: endDate.value ? normalizeDate(endDate.value) : null,
+  },
+}));
+
+// Expose methods required by TeachersHomeView
+defineExpose({
+  analyzeWeeklyAbsences,
+  analyzeMonthlyAbsences,
+  getWeeklyAbsences,
+  getMonthlyAbsences,
+  debugDateInfo: dateRanges,
+});
+
+// Inicializar búsqueda al montar el componente
+onMounted(async () => {
+  if (!startDate.value || !endDate.value) {
+    // Si no hay fechas seleccionadas, usar por defecto la semana actual
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)); // Iniciar semana en lunes
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    startDate.value = formatISO(weekStart, { representation: 'date' });
+    endDate.value = formatISO(weekEnd, { representation: 'date' });
+  }
+  await attendanceStore.fetchAttendanceDocuments();
+});
+</script>
 
 <style scoped>
 .results-list {

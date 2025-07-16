@@ -94,13 +94,13 @@
 </template>
 
 <script setup lang="ts">
-import RBACTestComponent from "@/components/RBACTestComponent.vue"
+import RBACTestComponent from '@/components/RBACTestComponent.vue';
 
 // Agregar funciones globales para testing desde consola
-if (typeof window !== "undefined") {
+if (typeof window !== 'undefined') {
   // Las funciones se cargarán desde el archivo de test
-  const script = document.createElement("script")
-  script.src = "/test-rbac-firestore.js"
-  document.head.appendChild(script)
+  const script = document.createElement('script');
+  script.src = '/test-rbac-firestore.js';
+  document.head.appendChild(script);
 }
 </script>

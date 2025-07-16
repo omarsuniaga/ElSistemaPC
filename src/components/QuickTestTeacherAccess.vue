@@ -125,206 +125,206 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useAuthStore} from "../stores/auth"
-import {useRBACManagement} from "../composables/useRBACManagement"
-import {NavigationService} from "../services/navigation/navigationService"
-import {checkRBACCollections} from "../scripts/initialize-rbac-firestore"
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '../stores/auth';
+import { useRBACManagement } from '../composables/useRBACManagement';
+import { NavigationService } from '../services/navigation/navigationService';
+import { checkRBACCollections } from '../scripts/initialize-rbac-firestore';
 
-const authStore = useAuthStore()
-const rbacManagement = useRBACManagement()
-const navigationService = NavigationService.getInstance()
+const authStore = useAuthStore();
+const rbacManagement = useRBACManagement();
+const navigationService = NavigationService.getInstance();
 
 // State
-const loading = ref(false)
-const detailedResults = ref([])
-const correctiveActions = ref([])
+const loading = ref(false);
+const detailedResults = ref([]);
+const correctiveActions = ref([]);
 
 // Test statuses
-const rbacConnectionStatus = ref({class: "text-gray-500", text: "No probado"})
-const teacherPermissionsStatus = ref({class: "text-gray-500", text: "No probado"})
-const navigationStatus = ref({class: "text-gray-500", text: "No probado"})
-const routeAccessStatus = ref({class: "text-gray-500", text: "No probado"})
+const rbacConnectionStatus = ref({ class: 'text-gray-500', text: 'No probado' });
+const teacherPermissionsStatus = ref({ class: 'text-gray-500', text: 'No probado' });
+const navigationStatus = ref({ class: 'text-gray-500', text: 'No probado' });
+const routeAccessStatus = ref({ class: 'text-gray-500', text: 'No probado' });
 
 // User info
-const currentUser = computed(() => authStore.user)
-const userRole = computed(() => authStore.user?.role)
+const currentUser = computed(() => authStore.user);
+const userRole = computed(() => authStore.user?.role);
 
-const showCorrectiveActions = computed(() => correctiveActions.value.length > 0)
+const showCorrectiveActions = computed(() => correctiveActions.value.length > 0);
 
 // Helper function to update status
 const updateStatus = (statusRef, success: boolean, message: string) => {
   statusRef.value = {
-    class: success ? "text-green-600" : "text-red-600",
-    text: success ? "✅ OK" : "❌ Error",
-  }
-}
+    class: success ? 'text-green-600' : 'text-red-600',
+    text: success ? '✅ OK' : '❌ Error',
+  };
+};
 
 // Test functions
 const testRBACConnection = async () => {
   try {
-    const status = await checkRBACCollections()
+    const status = await checkRBACCollections();
     const allConnected =
-      status.roles.exists && status.permissions.exists && status.navigation.exists
+      status.roles.exists && status.permissions.exists && status.navigation.exists;
 
-    updateStatus(rbacConnectionStatus, allConnected, allConnected ? "Conectado" : "Desconectado")
+    updateStatus(rbacConnectionStatus, allConnected, allConnected ? 'Conectado' : 'Desconectado');
 
     detailedResults.value.push({
-      test: "Conexión RBAC",
+      test: 'Conexión RBAC',
       success: allConnected,
-      message: allConnected ? "Todas las colecciones están disponibles" : "Faltan colecciones RBAC",
+      message: allConnected ? 'Todas las colecciones están disponibles' : 'Faltan colecciones RBAC',
       data: status,
-    })
+    });
 
     if (!allConnected) {
       correctiveActions.value.push(
-        'Ejecutar "Inicializar Colecciones" desde el Panel de Administración RBAC'
-      )
+        'Ejecutar "Inicializar Colecciones" desde el Panel de Administración RBAC',
+      );
     }
   } catch (error) {
-    updateStatus(rbacConnectionStatus, false, "Error de conexión")
+    updateStatus(rbacConnectionStatus, false, 'Error de conexión');
     detailedResults.value.push({
-      test: "Conexión RBAC",
+      test: 'Conexión RBAC',
       success: false,
       message: `Error: ${error.message}`,
       data: null,
-    })
+    });
   }
-}
+};
 
 const testTeacherPermissions = async () => {
   try {
-    await rbacManagement.initialize()
-    const roles = rbacManagement.roles.value
-    const teacherRole = roles.find((role) => role.name === "Maestro")
+    await rbacManagement.initialize();
+    const roles = rbacManagement.roles.value;
+    const teacherRole = roles.find((role) => role.name === 'Maestro');
 
     const hasStudentPermission =
-      teacherRole?.permissions.includes("Ver Estudiantes") ||
-      teacherRole?.permissions.includes("Ver Todos los Estudiantes")
+      teacherRole?.permissions.includes('Ver Estudiantes') ||
+      teacherRole?.permissions.includes('Ver Todos los Estudiantes');
 
     updateStatus(
       teacherPermissionsStatus,
       hasStudentPermission,
-      hasStudentPermission ? "Configurado" : "Sin permisos"
-    )
+      hasStudentPermission ? 'Configurado' : 'Sin permisos',
+    );
 
     detailedResults.value.push({
-      test: "Permisos de Maestro",
+      test: 'Permisos de Maestro',
       success: hasStudentPermission,
       message: hasStudentPermission
-        ? "Maestros tienen permisos para estudiantes"
-        : "Maestros no tienen permisos para estudiantes",
+        ? 'Maestros tienen permisos para estudiantes'
+        : 'Maestros no tienen permisos para estudiantes',
       data: teacherRole?.permissions,
-    })
+    });
 
     if (!hasStudentPermission) {
       correctiveActions.value.push(
-        "Habilitar permisos de estudiantes para maestros desde el Panel RBAC"
-      )
+        'Habilitar permisos de estudiantes para maestros desde el Panel RBAC',
+      );
     }
   } catch (error) {
-    updateStatus(teacherPermissionsStatus, false, "Error al verificar")
+    updateStatus(teacherPermissionsStatus, false, 'Error al verificar');
     detailedResults.value.push({
-      test: "Permisos de Maestro",
+      test: 'Permisos de Maestro',
       success: false,
       message: `Error: ${error.message}`,
       data: null,
-    })
+    });
   }
-}
+};
 
 const testNavigation = async () => {
   try {
-    await rbacManagement.loadNavigationConfig()
-    const navigation = rbacManagement.navigationConfig.value
+    await rbacManagement.loadNavigationConfig();
+    const navigation = rbacManagement.navigationConfig.value;
     const studentMenuItem = navigation.find(
-      (item) => item.path === "/students" && item.roles.includes("Maestro") && item.isActive
-    )
+      (item) => item.path === '/students' && item.roles.includes('Maestro') && item.isActive,
+    );
 
-    const hasStudentMenu = !!studentMenuItem
+    const hasStudentMenu = !!studentMenuItem;
 
     updateStatus(
       navigationStatus,
       hasStudentMenu,
-      hasStudentMenu ? "Menú disponible" : "Menú no disponible"
-    )
+      hasStudentMenu ? 'Menú disponible' : 'Menú no disponible',
+    );
 
     detailedResults.value.push({
-      test: "Navegación de Maestro",
+      test: 'Navegación de Maestro',
       success: hasStudentMenu,
       message: hasStudentMenu
         ? 'Menú "Estudiantes" disponible para maestros'
         : 'Menú "Estudiantes" no disponible para maestros',
       data: studentMenuItem,
-    })
+    });
 
     if (!hasStudentMenu) {
       correctiveActions.value.push(
-        'Activar menú "Estudiantes" para maestros desde Gestión de Navegación'
-      )
+        'Activar menú "Estudiantes" para maestros desde Gestión de Navegación',
+      );
     }
   } catch (error) {
-    updateStatus(navigationStatus, false, "Error al verificar")
+    updateStatus(navigationStatus, false, 'Error al verificar');
     detailedResults.value.push({
-      test: "Navegación de Maestro",
+      test: 'Navegación de Maestro',
       success: false,
       message: `Error: ${error.message}`,
       data: null,
-    })
+    });
   }
-}
+};
 
 const testRouteAccess = async () => {
   try {
     // Simulate route access test
-    const canAccess = rbacManagement.canAccessRoute("Maestro", "/students")
+    const canAccess = rbacManagement.canAccessRoute('Maestro', '/students');
 
-    updateStatus(routeAccessStatus, canAccess, canAccess ? "Acceso permitido" : "Acceso denegado")
+    updateStatus(routeAccessStatus, canAccess, canAccess ? 'Acceso permitido' : 'Acceso denegado');
 
     detailedResults.value.push({
-      test: "Acceso a Ruta /students",
+      test: 'Acceso a Ruta /students',
       success: canAccess,
       message: canAccess
-        ? "Maestros pueden acceder a /students"
-        : "Maestros no pueden acceder a /students",
-      data: {route: "/students", role: "Maestro", access: canAccess},
-    })
+        ? 'Maestros pueden acceder a /students'
+        : 'Maestros no pueden acceder a /students',
+      data: { route: '/students', role: 'Maestro', access: canAccess },
+    });
 
     if (!canAccess) {
-      correctiveActions.value.push("Verificar guards de navegación y configuración de rutas")
+      correctiveActions.value.push('Verificar guards de navegación y configuración de rutas');
     }
   } catch (error) {
-    updateStatus(routeAccessStatus, false, "Error al verificar")
+    updateStatus(routeAccessStatus, false, 'Error al verificar');
     detailedResults.value.push({
-      test: "Acceso a Ruta /students",
+      test: 'Acceso a Ruta /students',
       success: false,
       message: `Error: ${error.message}`,
       data: null,
-    })
+    });
   }
-}
+};
 
 const runCompleteTest = async () => {
-  loading.value = true
-  detailedResults.value = []
-  correctiveActions.value = []
+  loading.value = true;
+  detailedResults.value = [];
+  correctiveActions.value = [];
 
   try {
-    await testRBACConnection()
-    await testTeacherPermissions()
-    await testNavigation()
-    await testRouteAccess()
+    await testRBACConnection();
+    await testTeacherPermissions();
+    await testNavigation();
+    await testRouteAccess();
   } catch (error) {
-    console.error("Error in complete test:", error)
+    console.error('Error in complete test:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Initialize component
 onMounted(() => {
-  console.log("Componente de prueba rápida cargado")
-})
+  console.log('Componente de prueba rápida cargado');
+});
 </script>
 
 <style scoped>

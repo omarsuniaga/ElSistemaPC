@@ -6,10 +6,10 @@
  * automáticamente con todos los stores del sistema y mantiene la consistencia.
  */
 
-import {ref, computed, watch, onUnmounted} from "vue"
-import {useAttendanceStore} from "../modulos/Attendance/store/attendance"
-import {useClassesStore} from "../modulos/Classes/store/classes"
-import {useStudentsStore} from "../modulos/Students/store/students"
+import { ref, computed, watch, onUnmounted } from 'vue';
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
+import { useClassesStore } from '../modulos/Classes/store/classes';
+import { useStudentsStore } from '../modulos/Students/store/students';
 
 /**
  * Configuración del estado global
@@ -47,7 +47,7 @@ class GlobalStateManager {
     syncInterval: 30, // 30 segundos
     enableDeepWatch: true,
     debugMode: false,
-  }
+  };
 
   private metrics = ref<GlobalStateMetrics>({
     syncCount: 0,
@@ -55,31 +55,31 @@ class GlobalStateManager {
     inconsistenciesDetected: 0,
     autoSyncEnabled: true,
     watchers: 0,
-  })
+  });
 
   private syncStatus = ref<SyncStatus>({
     isLoading: false,
     lastError: null,
     pendingOperations: 0,
-  })
+  });
 
-  private intervals: NodeJS.Timeout[] = []
-  private watchers: Array<() => void> = []
+  private intervals: NodeJS.Timeout[] = [];
+  private watchers: Array<() => void> = [];
 
   /**
    * Inicializa el estado global
    */
   init() {
     if (this.config.enableAutoSync) {
-      this.startAutoSync()
+      this.startAutoSync();
     }
 
     if (this.config.enableDeepWatch) {
-      this.setupWatchers()
+      this.setupWatchers();
     }
 
     if (this.config.debugMode) {
-      console.log("🚀 Estado Global inicializado")
+      console.log('🚀 Estado Global inicializado');
     }
   }
 
@@ -88,62 +88,62 @@ class GlobalStateManager {
    */
   private startAutoSync() {
     const interval = setInterval(() => {
-      this.syncAllStores()
-    }, this.config.syncInterval * 1000)
+      this.syncAllStores();
+    }, this.config.syncInterval * 1000);
 
-    this.intervals.push(interval)
-    this.metrics.value.autoSyncEnabled = true
+    this.intervals.push(interval);
+    this.metrics.value.autoSyncEnabled = true;
   }
 
   /**
    * Configura watchers reactivos
    */
   private setupWatchers() {
-    const attendanceStore = useAttendanceStore()
-    const classesStore = useClassesStore()
-    const studentsStore = useStudentsStore()
+    const attendanceStore = useAttendanceStore();
+    const classesStore = useClassesStore();
+    const studentsStore = useStudentsStore();
 
     // Watcher para cambios en asistencia
     const attendanceWatcher = watch(
       () => attendanceStore.attendanceRecords,
       (newRecords, oldRecords) => {
         if (this.config.debugMode) {
-          console.log("📝 Cambio detectado en asistencia:", {
+          console.log('📝 Cambio detectado en asistencia:', {
             before: Object.keys(oldRecords || {}).length,
             after: Object.keys(newRecords || {}).length,
-          })
+          });
         }
-        this.handleStateChange("attendance")
+        this.handleStateChange('attendance');
       },
-      {deep: true}
-    )
+      { deep: true },
+    );
 
     // Watcher para cambios en clases
     const classesWatcher = watch(
       () => classesStore.classes,
       (newClasses) => {
         if (this.config.debugMode) {
-          console.log("🏫 Cambio detectado en clases:", newClasses.length)
+          console.log('🏫 Cambio detectado en clases:', newClasses.length);
         }
-        this.handleStateChange("classes")
+        this.handleStateChange('classes');
       },
-      {deep: true}
-    )
+      { deep: true },
+    );
 
     // Watcher para cambios en estudiantes
     const studentsWatcher = watch(
       () => studentsStore.students,
       (newStudents) => {
         if (this.config.debugMode) {
-          console.log("👥 Cambio detectado en estudiantes:", newStudents.length)
+          console.log('👥 Cambio detectado en estudiantes:', newStudents.length);
         }
-        this.handleStateChange("students")
+        this.handleStateChange('students');
       },
-      {deep: true}
-    )
+      { deep: true },
+    );
 
-    this.watchers.push(attendanceWatcher, classesWatcher, studentsWatcher)
-    this.metrics.value.watchers = this.watchers.length
+    this.watchers.push(attendanceWatcher, classesWatcher, studentsWatcher);
+    this.metrics.value.watchers = this.watchers.length;
   }
 
   /**
@@ -151,17 +151,17 @@ class GlobalStateManager {
    */
   private handleStateChange(source: string) {
     if (this.config.debugMode) {
-      console.log(`🔄 Estado cambiado desde: ${source}`)
+      console.log(`🔄 Estado cambiado desde: ${source}`);
     }
 
     // Incrementar operaciones pendientes
-    this.syncStatus.value.pendingOperations++
+    this.syncStatus.value.pendingOperations++;
 
     // Programar sincronización si no está ya en progreso
     if (!this.syncStatus.value.isLoading) {
       setTimeout(() => {
-        this.syncAllStores()
-      }, 1000) // Debounce de 1 segundo
+        this.syncAllStores();
+      }, 1000); // Debounce de 1 segundo
     }
   }
 
@@ -169,41 +169,41 @@ class GlobalStateManager {
    * Sincroniza todos los stores
    */
   async syncAllStores() {
-    if (this.syncStatus.value.isLoading) return
+    if (this.syncStatus.value.isLoading) return;
 
-    this.syncStatus.value.isLoading = true
-    this.syncStatus.value.lastError = null
+    this.syncStatus.value.isLoading = true;
+    this.syncStatus.value.lastError = null;
 
     try {
-      const attendanceStore = useAttendanceStore()
-      const classesStore = useClassesStore()
-      const studentsStore = useStudentsStore()
+      const attendanceStore = useAttendanceStore();
+      const classesStore = useClassesStore();
+      const studentsStore = useStudentsStore();
 
       // Sincronizar stores en paralelo cuando sea posible
-      const syncPromises = []
+      const syncPromises = [];
 
       // Validar consistencia de datos
-      await this.validateDataConsistency()
+      await this.validateDataConsistency();
 
       // Esperar a que todas las sincronizaciones terminen
-      await Promise.all(syncPromises)
+      await Promise.all(syncPromises);
 
       // Actualizar métricas
-      this.metrics.value.syncCount++
-      this.metrics.value.lastSync = new Date()
-      this.syncStatus.value.pendingOperations = 0
+      this.metrics.value.syncCount++;
+      this.metrics.value.lastSync = new Date();
+      this.syncStatus.value.pendingOperations = 0;
 
       if (this.config.debugMode) {
-        console.log("✅ Sincronización completa")
+        console.log('✅ Sincronización completa');
       }
     } catch (error) {
-      this.syncStatus.value.lastError = error instanceof Error ? error.message : "Error desconocido"
+      this.syncStatus.value.lastError = error instanceof Error ? error.message : 'Error desconocido';
 
       if (this.config.debugMode) {
-        console.error("❌ Error en sincronización:", error)
+        console.error('❌ Error en sincronización:', error);
       }
     } finally {
-      this.syncStatus.value.isLoading = false
+      this.syncStatus.value.isLoading = false;
     }
   }
 
@@ -211,20 +211,20 @@ class GlobalStateManager {
    * Valida la consistencia de datos entre stores
    */
   private async validateDataConsistency() {
-    const attendanceStore = useAttendanceStore()
-    const classesStore = useClassesStore()
-    const studentsStore = useStudentsStore()
+    const attendanceStore = useAttendanceStore();
+    const classesStore = useClassesStore();
+    const studentsStore = useStudentsStore();
 
-    let inconsistencies = 0
+    let inconsistencies = 0;
 
     // Validar que todas las clases en asistencia existen en el store de clases
-    const attendanceDocs = attendanceStore.attendanceDocuments || []
+    const attendanceDocs = attendanceStore.attendanceDocuments || [];
     for (const doc of attendanceDocs) {
-      const classExists = classesStore.classes.some((cls) => cls.id === doc.classId)
+      const classExists = classesStore.classes.some((cls) => cls.id === doc.classId);
       if (!classExists) {
-        inconsistencies++
+        inconsistencies++;
         if (this.config.debugMode) {
-          console.warn(`⚠️ Clase ${doc.classId} en asistencia pero no en store de clases`)
+          console.warn(`⚠️ Clase ${doc.classId} en asistencia pero no en store de clases`);
         }
       }
     }
@@ -233,23 +233,23 @@ class GlobalStateManager {
     for (const doc of attendanceDocs) {
       if (doc.data?.presentes) {
         for (const studentId of doc.data.presentes) {
-          const studentExists = studentsStore.students.some((s) => s.id === studentId)
+          const studentExists = studentsStore.students.some((s) => s.id === studentId);
           if (!studentExists) {
-            inconsistencies++
+            inconsistencies++;
             if (this.config.debugMode) {
               console.warn(
-                `⚠️ Estudiante ${studentId} en asistencia pero no en store de estudiantes`
-              )
+                `⚠️ Estudiante ${studentId} en asistencia pero no en store de estudiantes`,
+              );
             }
           }
         }
       }
     }
 
-    this.metrics.value.inconsistenciesDetected += inconsistencies
+    this.metrics.value.inconsistenciesDetected += inconsistencies;
 
     if (inconsistencies > 0 && this.config.debugMode) {
-      console.warn(`⚠️ Se detectaron ${inconsistencies} inconsistencias`)
+      console.warn(`⚠️ Se detectaron ${inconsistencies} inconsistencias`);
     }
   }
 
@@ -257,9 +257,9 @@ class GlobalStateManager {
    * Obtiene el estado consolidado
    */
   getConsolidatedState() {
-    const attendanceStore = useAttendanceStore()
-    const classesStore = useClassesStore()
-    const studentsStore = useStudentsStore()
+    const attendanceStore = useAttendanceStore();
+    const classesStore = useClassesStore();
+    const studentsStore = useStudentsStore();
 
     return {
       attendance: {
@@ -282,36 +282,36 @@ class GlobalStateManager {
         syncStatus: this.syncStatus.value,
         config: this.config,
       },
-    }
+    };
   }
 
   /**
    * Actualiza la configuración
    */
   updateConfig(newConfig: Partial<GlobalStateConfig>) {
-    const oldConfig = {...this.config}
-    this.config = {...this.config, ...newConfig}
+    const oldConfig = { ...this.config };
+    this.config = { ...this.config, ...newConfig };
 
     // Reiniciar auto-sync si cambió
     if (oldConfig.enableAutoSync !== newConfig.enableAutoSync) {
       if (newConfig.enableAutoSync) {
-        this.startAutoSync()
+        this.startAutoSync();
       } else {
-        this.stopAutoSync()
+        this.stopAutoSync();
       }
     }
 
     // Reiniciar watchers si cambió
     if (oldConfig.enableDeepWatch !== newConfig.enableDeepWatch) {
       if (newConfig.enableDeepWatch) {
-        this.setupWatchers()
+        this.setupWatchers();
       } else {
-        this.stopWatchers()
+        this.stopWatchers();
       }
     }
 
     if (this.config.debugMode) {
-      console.log("🔧 Configuración actualizada:", this.config)
+      console.log('🔧 Configuración actualizada:', this.config);
     }
   }
 
@@ -319,29 +319,29 @@ class GlobalStateManager {
    * Detiene la sincronización automática
    */
   private stopAutoSync() {
-    this.intervals.forEach((interval) => clearInterval(interval))
-    this.intervals = []
-    this.metrics.value.autoSyncEnabled = false
+    this.intervals.forEach((interval) => clearInterval(interval));
+    this.intervals = [];
+    this.metrics.value.autoSyncEnabled = false;
   }
 
   /**
    * Detiene los watchers
    */
   private stopWatchers() {
-    this.watchers.forEach((unwatch) => unwatch())
-    this.watchers = []
-    this.metrics.value.watchers = 0
+    this.watchers.forEach((unwatch) => unwatch());
+    this.watchers = [];
+    this.metrics.value.watchers = 0;
   }
 
   /**
    * Limpia recursos
    */
   cleanup() {
-    this.stopAutoSync()
-    this.stopWatchers()
+    this.stopAutoSync();
+    this.stopWatchers();
 
     if (this.config.debugMode) {
-      console.log("🧹 Estado Global limpiado")
+      console.log('🧹 Estado Global limpiado');
     }
   }
 
@@ -353,14 +353,14 @@ class GlobalStateManager {
       ...this.metrics.value,
       uptime: this.metrics.value.lastSync ? Date.now() - this.metrics.value.lastSync.getTime() : 0,
       config: this.config,
-    }
+    };
   }
 
   /**
    * Fuerza una sincronización inmediata
    */
   async forceSync() {
-    await this.syncAllStores()
+    await this.syncAllStores();
   }
 
   /**
@@ -373,12 +373,12 @@ class GlobalStateManager {
       inconsistenciesDetected: 0,
       autoSyncEnabled: this.config.enableAutoSync,
       watchers: this.watchers.length,
-    }
+    };
   }
 }
 
 // Instancia singleton del gestor de estado global
-const globalStateManager = new GlobalStateManager()
+const globalStateManager = new GlobalStateManager();
 
 /**
  * Composable para el estado global reactivo
@@ -386,23 +386,23 @@ const globalStateManager = new GlobalStateManager()
 export function useGlobalState() {
   // Inicializar automáticamente si no se ha hecho
   if (!globalStateManager.getMetrics().lastSync) {
-    globalStateManager.init()
+    globalStateManager.init();
   }
 
   // Estado consolidado reactivo
-  const consolidatedState = computed(() => globalStateManager.getConsolidatedState())
+  const consolidatedState = computed(() => globalStateManager.getConsolidatedState());
 
   // Métricas reactivas
-  const metrics = computed(() => globalStateManager.getMetrics())
+  const metrics = computed(() => globalStateManager.getMetrics());
 
   // Estado de sincronización reactivo
-  const syncStatus = computed(() => globalStateManager.getConsolidatedState().global.syncStatus)
+  const syncStatus = computed(() => globalStateManager.getConsolidatedState().global.syncStatus);
 
   // Limpieza automática al desmontar
   onUnmounted(() => {
     // Nota: No limpiar completamente porque otros componentes pueden estar usando el estado
     // globalStateManager.cleanup()
-  })
+  });
 
   return {
     // Estado consolidado
@@ -425,17 +425,17 @@ export function useGlobalState() {
       ...globalStateManager.getMetrics(),
       consolidatedState: globalStateManager.getConsolidatedState(),
     }),
-  }
+  };
 }
 
 // Función para configuración global
 export function configureGlobalState(config: Partial<GlobalStateConfig>) {
-  globalStateManager.updateConfig(config)
+  globalStateManager.updateConfig(config);
 }
 
 // Función para limpieza manual (usar con cuidado)
 export function cleanupGlobalState() {
-  globalStateManager.cleanup()
+  globalStateManager.cleanup();
 }
 
-export type {GlobalStateConfig, GlobalStateMetrics, SyncStatus}
+export type { GlobalStateConfig, GlobalStateMetrics, SyncStatus };

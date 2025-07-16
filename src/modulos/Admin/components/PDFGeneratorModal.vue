@@ -460,7 +460,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
+import { ref } from 'vue';
 import {
   DocumentTextIcon,
   XMarkIcon,
@@ -476,14 +476,14 @@ import {
   CalendarDaysIcon,
   UsersIcon,
   TableCellsIcon,
-} from "@heroicons/vue/24/outline"
-import {usePDFGenerator} from "../composables/usePDFGenerator"
+} from '@heroicons/vue/24/outline';
+import { usePDFGenerator } from '../composables/usePDFGenerator';
 
 // Emits
 defineEmits<{
   close: []
   generate: [options: any]
-}>()
+}>();
 
 const {
   // State
@@ -516,28 +516,28 @@ const {
   getIconColor,
   showToast,
   getReportTypes,
-} = usePDFGenerator()
+} = usePDFGenerator();
 
-const reportTypes = getReportTypes()
+const reportTypes = getReportTypes();
 
 // Available Fields for PDF
 const availableFields = ref([
-  {id: "contador", label: "N°"},
-  {id: "nombre", label: "Nombre"},
-  {id: "apellido", label: "Apellido"},
-  {id: "edad", label: "Edad"},
-  {id: "fechaNacimiento", label: "Fecha de Nacimiento"},
-  {id: "telefono", label: "Teléfono"},
-  {id: "email", label: "Email"},
-  {id: "direccion", label: "Dirección"},
-  {id: "madre", label: "Madre"},
-  {id: "padre", label: "Padre"},
-  {id: "clase", label: "Clase"},
-  {id: "instrumento", label: "Instrumento"},
-  {id: "maestro", label: "Maestro"},
-  {id: "horario", label: "Horario"},
-  {id: "fechaInscripcion", label: "Fecha de Inscripción"},
-])
+  { id: 'contador', label: 'N°' },
+  { id: 'nombre', label: 'Nombre' },
+  { id: 'apellido', label: 'Apellido' },
+  { id: 'edad', label: 'Edad' },
+  { id: 'fechaNacimiento', label: 'Fecha de Nacimiento' },
+  { id: 'telefono', label: 'Teléfono' },
+  { id: 'email', label: 'Email' },
+  { id: 'direccion', label: 'Dirección' },
+  { id: 'madre', label: 'Madre' },
+  { id: 'padre', label: 'Padre' },
+  { id: 'clase', label: 'Clase' },
+  { id: 'instrumento', label: 'Instrumento' },
+  { id: 'maestro', label: 'Maestro' },
+  { id: 'horario', label: 'Horario' },
+  { id: 'fechaInscripcion', label: 'Fecha de Inscripción' },
+]);
 </script>
 
 <style scoped>

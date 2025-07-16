@@ -1,7 +1,7 @@
 <!-- src/components/common/DynamicHeader.vue -->
 <template>
-  <ion-header class="dynamic-header">
-    <ion-toolbar :style="headerStyles">
+  <IonHeader class="dynamic-header">
+    <IonToolbar :style="headerStyles">
       <!-- Logo y título -->
       <div slot="start" class="header-brand">
         <img
@@ -12,9 +12,9 @@
           @error="onLogoError"
         />
         <div class="header-title-section">
-          <ion-title class="header-title">
+          <IonTitle class="header-title">
             {{ displayTitle }}
-          </ion-title>
+          </IonTitle>
           <p v-if="showTagline && appTagline" class="header-tagline">
             {{ appTagline }}
           </p>
@@ -28,7 +28,7 @@
 
       <!-- Acciones del header -->
       <template #end>
-        <ion-buttons class="header-actions">
+        <IonButtons class="header-actions">
           <!-- Notificaciones -->
           <slot name="notifications" />
 
@@ -37,19 +37,19 @@
 
           <!-- Acciones adicionales -->
           <slot name="actions" />
-        </ion-buttons>
+        </IonButtons>
       </template>
-    </ion-toolbar>
+    </IonToolbar>
 
     <!-- Barra de progreso opcional -->
-    <ion-progress-bar v-if="showProgress" :value="progressValue" :color="progressColor" />
-  </ion-header>
+    <IonProgressBar v-if="showProgress" :value="progressValue" :color="progressColor" />
+  </IonHeader>
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from "vue"
-import {IonHeader, IonToolbar, IonTitle, IonButtons, IonProgressBar} from "@ionic/vue"
-import {useBranding} from "@/composables/useBranding"
+import { computed, ref } from 'vue';
+import { IonHeader, IonToolbar, IonTitle, IonButtons, IonProgressBar } from '@ionic/vue';
+import { useBranding } from '@/composables/useBranding';
 
 interface Props {
   title?: string
@@ -62,64 +62,64 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: "",
+  title: '',
   showLogo: true,
   showTagline: false,
   showProgress: false,
   progressValue: 0,
-  progressColor: "primary",
+  progressColor: 'primary',
   customStyles: () => ({}),
-})
+});
 
 // Branding composable
-const {appTitle, appTagline, appLogo, brandColors, getCSSVariables} = useBranding()
+const { appTitle, appTagline, appLogo, brandColors, getCSSVariables } = useBranding();
 
 // Estado local
-const logoError = ref(false)
+const logoError = ref(false);
 
 // Título a mostrar
-const displayTitle = computed(() => props.title || appTitle.value)
+const displayTitle = computed(() => props.title || appTitle.value);
 
 // Estilos dinámicos del header
 const headerStyles = computed(() => {
   const baseStyles = {
-    "--background": brandColors.value.primary,
-    "--color": getContrastColor(brandColors.value.primary),
-    "--border-color": brandColors.value.primary,
+    '--background': brandColors.value.primary,
+    '--color': getContrastColor(brandColors.value.primary),
+    '--border-color': brandColors.value.primary,
     ...getCSSVariables(),
-  }
+  };
 
   return {
     ...baseStyles,
     ...props.customStyles,
-  }
-})
+  };
+});
 
 // Manejar error de carga del logo
 function onLogoError() {
-  logoError.value = true
+  logoError.value = true;
 }
 
 // Calcular color de contraste para texto
 function getContrastColor(hexColor: string): string {
   // Convertir hex a RGB
-  const hex = hexColor.replace("#", "")
-  const r = parseInt(hex.substr(0, 2), 16)
-  const g = parseInt(hex.substr(2, 2), 16)
-  const b = parseInt(hex.substr(4, 2), 16)
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
 
   // Calcular luminancia
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
   // Retornar blanco o negro según la luminancia
-  return luminance > 0.5 ? "#000000" : "#ffffff"
+  return luminance > 0.5 ? '#000000' : '#ffffff';
 }
 
 // Exponer métodos si es necesario
 defineExpose({
   headerStyles,
   displayTitle,
-})
+});
 </script>
 
 <style scoped>

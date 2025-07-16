@@ -212,10 +212,10 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRBACManagement, type Role, type Permission} from "../../../composables/useRBACManagement"
-import RoleModal from "../components/RoleModal.vue"
-import PermissionModal from "../components/PermissionModal.vue"
+import { ref, computed, onMounted } from 'vue';
+import { useRBACManagement, type Role, type Permission } from '../../../composables/useRBACManagement';
+import RoleModal from '../components/RoleModal.vue';
+import PermissionModal from '../components/PermissionModal.vue';
 
 const {
   roles,
@@ -232,148 +232,148 @@ const {
   loadPermissions,
   loadNavigationConfig,
   debugPermissions,
-} = useRBACManagement()
+} = useRBACManagement();
 
-const activeTab = ref("roles")
-const selectedModule = ref("")
-const roleModalOpen = ref(false)
-const permissionModalOpen = ref(false)
-const selectedRole = ref<Role | null>(null)
-const selectedPermission = ref<Permission | null>(null)
+const activeTab = ref('roles');
+const selectedModule = ref('');
+const roleModalOpen = ref(false);
+const permissionModalOpen = ref(false);
+const selectedRole = ref<Role | null>(null);
+const selectedPermission = ref<Permission | null>(null);
 
 const tabs = [
-  {id: "roles", name: "Roles", icon: "��"},
-  {id: "permissions", name: "Permisos", icon: "🔑"},
-]
+  { id: 'roles', name: 'Roles', icon: '��' },
+  { id: 'permissions', name: 'Permisos', icon: '🔑' },
+];
 
 const availableModules = computed(() => {
-  const modules = new Set(permissions.value.map((p) => p.module))
-  return Array.from(modules).sort()
-})
+  const modules = new Set(permissions.value.map((p) => p.module));
+  return Array.from(modules).sort();
+});
 
 const filteredGroupedPermissions = computed(() => {
-  const grouped = getPermissionsByModule.value
+  const grouped = getPermissionsByModule.value;
   if (!selectedModule.value) {
-    return grouped
+    return grouped;
   }
 
   return {
     [selectedModule.value]: grouped[selectedModule.value] || [],
-  }
-})
+  };
+});
 
 // Funciones para roles
 const openRoleModal = (role?: Role) => {
-  selectedRole.value = role || null
-  roleModalOpen.value = true
-}
+  selectedRole.value = role || null;
+  roleModalOpen.value = true;
+};
 
 const closeRoleModal = () => {
-  roleModalOpen.value = false
-  selectedRole.value = null
-}
+  roleModalOpen.value = false;
+  selectedRole.value = null;
+};
 
 const onRoleSaved = () => {
   // El composable se encarga de recargar los datos
-  console.log("Rol guardado exitosamente")
-}
+  console.log('Rol guardado exitosamente');
+};
 
 const toggleRoleStatus = async (role: Role) => {
   try {
-    await updateRole(role.id, {isActive: !role.isActive})
+    await updateRole(role.id, { isActive: !role.isActive });
   } catch (error) {
-    console.error("Error al cambiar estado del rol:", error)
-    alert("Error al cambiar el estado del rol")
+    console.error('Error al cambiar estado del rol:', error);
+    alert('Error al cambiar el estado del rol');
   }
-}
+};
 
 const confirmDeleteRole = async (role: Role) => {
   if (confirm(`¿Estás seguro de que quieres eliminar el rol "${role.name}"?`)) {
     try {
-      await deleteRole(role.id)
+      await deleteRole(role.id);
     } catch (error) {
-      console.error("Error al eliminar rol:", error)
-      alert("Error al eliminar el rol")
+      console.error('Error al eliminar rol:', error);
+      alert('Error al eliminar el rol');
     }
   }
-}
+};
 
 // Funciones para permisos
 const openPermissionModal = (permission?: Permission) => {
-  selectedPermission.value = permission || null
-  permissionModalOpen.value = true
-}
+  selectedPermission.value = permission || null;
+  permissionModalOpen.value = true;
+};
 
 const closePermissionModal = () => {
-  permissionModalOpen.value = false
-  selectedPermission.value = null
-}
+  permissionModalOpen.value = false;
+  selectedPermission.value = null;
+};
 
 const onPermissionSaved = () => {
   // El composable se encarga de recargar los datos
-  console.log("Permiso guardado exitosamente")
-}
+  console.log('Permiso guardado exitosamente');
+};
 
 const confirmDeletePermission = async (permission: Permission) => {
   if (confirm(`¿Estás seguro de que quieres eliminar el permiso "${permission.name}"?`)) {
     try {
-      await deletePermission(permission.id)
+      await deletePermission(permission.id);
     } catch (error) {
-      console.error("Error al eliminar permiso:", error)
-      alert("Error al eliminar el permiso")
+      console.error('Error al eliminar permiso:', error);
+      alert('Error al eliminar el permiso');
     }
   }
-}
+};
 
 // Inicialización
 onMounted(async () => {
-  console.log("🔄 RBACManagement - Iniciando carga de datos...")
+  console.log('🔄 RBACManagement - Iniciando carga de datos...');
   try {
-    await initialize()
-    console.log("✅ RBACManagement - Datos cargados:", {
+    await initialize();
+    console.log('✅ RBACManagement - Datos cargados:', {
       roles: roles.value.length,
       permissions: permissions.value.length,
-    })
+    });
 
     // Si no hay datos después de initialize, mostrar advertencia
     if (roles.value.length === 0 || permissions.value.length === 0) {
-      console.warn("⚠️ RBACManagement - No se cargaron datos. Es necesario inicializar.")
+      console.warn('⚠️ RBACManagement - No se cargaron datos. Es necesario inicializar.');
     }
   } catch (error) {
-    console.error("❌ RBACManagement - Error en inicialización:", error)
+    console.error('❌ RBACManagement - Error en inicialización:', error);
   }
-})
+});
 
 // Función para forzar la carga de datos
 const forceLoadData = async () => {
   try {
-    console.log("🔄 Forzando carga de datos RBAC...")
-    await loadRoles()
-    await loadPermissions()
-    await loadNavigationConfig()
+    console.log('🔄 Forzando carga de datos RBAC...');
+    await loadRoles();
+    await loadPermissions();
+    await loadNavigationConfig();
 
-    console.log("✅ Datos cargados:", {
+    console.log('✅ Datos cargados:', {
       roles: roles.value.length,
       permissions: permissions.value.length,
-    })
+    });
 
     // Ejecutar diagnóstico para ver qué se cargó
-    debugPermissions()
+    debugPermissions();
 
     if (roles.value.length === 0 || permissions.value.length === 0) {
       alert(
-        '⚠️ No se encontraron datos en Firestore. Usa "Inicializar por Defecto" para crear los datos iniciales.'
-      )
+        '⚠️ No se encontraron datos en Firestore. Usa "Inicializar por Defecto" para crear los datos iniciales.',
+      );
     } else {
       alert(
-        `✅ Datos cargados correctamente: ${roles.value.length} roles, ${permissions.value.length} permisos`
-      )
+        `✅ Datos cargados correctamente: ${roles.value.length} roles, ${permissions.value.length} permisos`,
+      );
     }
   } catch (error) {
-    console.error("Error cargando datos:", error)
-    alert("❌ Error al cargar datos. Revisa la consola para más detalles.")
+    console.error('Error cargando datos:', error);
+    alert('❌ Error al cargar datos. Revisa la consola para más detalles.');
   }
-}
+};
 </script>
 
 <style scoped>

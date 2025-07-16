@@ -11,7 +11,7 @@ export interface Notification {
     name: string
     role?: string
   }
-  priority?: "high" | "normal" | "low"
+  priority?: 'high' | 'normal' | 'low'
   courseId?: string
   lessonId?: string
   eventId?: string
@@ -20,13 +20,13 @@ export interface Notification {
 
 export enum NotificationType {
   // <!-- general, announcement, reminder, message, lesson_scheduled, lesson_cancelled, payment_due, payment_received -->
-  General = "general",
-  Info = "info",
-  Warning = "warning",
-  Error = "error",
-  Success = "success",
-  Announcement = "announcement",
-  Reminder = "reminder",
-  Message = "message",
-  LessonScheduled = "lesson_scheduled",
+  General = 'general',
+  Info = 'info',
+  Warning = 'warning',
+  Error = 'error',
+  Success = 'success',
+  Announcement = 'announcement',
+  Reminder = 'reminder',
+  Message = 'message',
+  LessonScheduled = 'lesson_scheduled',
 }

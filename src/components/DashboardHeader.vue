@@ -29,13 +29,13 @@
 </template>
 
 <script setup lang="ts">
-import {ChartBarIcon, ArrowTopRightOnSquareIcon} from "@heroicons/vue/24/outline"
+import { ChartBarIcon, ArrowTopRightOnSquareIcon } from '@heroicons/vue/24/outline';
 
 defineProps<{
   showAnalytics: boolean
-}>()
+}>();
 
 defineEmits<{
-  (e: "toggle-analytics"): void
-}>()
+  (e: 'toggle-analytics'): void
+}>();
 </script>

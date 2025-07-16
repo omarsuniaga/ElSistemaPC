@@ -29,16 +29,16 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, watch} from "vue"
-import {useRoute} from "vue-router"
-import {useNavigation} from "@/services/navigation/navigationService"
-import {useAuthStore} from "@/stores/auth"
+import { computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useNavigation } from '@/services/navigation/navigationService';
+import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({
   orientation: {
     type: String,
-    default: "vertical", // 'vertical' | 'horizontal'
-    validator: (value: string) => ["vertical", "horizontal"].includes(value),
+    default: 'vertical', // 'vertical' | 'horizontal'
+    validator: (value: string) => ['vertical', 'horizontal'].includes(value),
   },
   showIcons: {
     type: Boolean,
@@ -48,22 +48,22 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-})
+});
 
-const emit = defineEmits(["nav-click"])
+const emit = defineEmits(['nav-click']);
 
-const route = useRoute()
-const authStore = useAuthStore()
-const {navigationItems, loading, loadNavigation} = useNavigation()
+const route = useRoute();
+const authStore = useAuthStore();
+const { navigationItems, loading, loadNavigation } = useNavigation();
 
 // Methods
 const isCurrentRoute = (path: string): boolean => {
-  return route.path === path || route.path.startsWith(path + "/")
-}
+  return route.path === path || route.path.startsWith(path + '/');
+};
 
 const handleNavClick = (item: any) => {
-  emit("nav-click", item)
-}
+  emit('nav-click', item);
+};
 
 // Watchers
 watch(
@@ -71,18 +71,18 @@ watch(
   async (newUser, oldUser) => {
     // Recargar navegación cuando cambie el usuario o su rol
     if (newUser && (!oldUser || newUser.role !== oldUser.role)) {
-      await loadNavigation()
+      await loadNavigation();
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 // Lifecycle
 onMounted(async () => {
   if (authStore.user) {
-    await loadNavigation()
+    await loadNavigation();
   }
-})
+});
 </script>
 
 <style scoped>

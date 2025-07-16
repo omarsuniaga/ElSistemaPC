@@ -112,10 +112,10 @@ interface Props {
   }
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
-  "update:pdfOptions": [value: any]
-}>()
+  'update:pdfOptions': [value: any]
+}>();
 </script>

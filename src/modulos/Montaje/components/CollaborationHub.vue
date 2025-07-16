@@ -169,9 +169,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useCollaboration} from "../composables/useCollaboration"
-import type {MensajeColaboracion, TipoMensaje, PrioridadMensaje} from "../types"
+import { ref, computed, onMounted } from 'vue';
+import { useCollaboration } from '../composables/useCollaboration';
+import type { MensajeColaboracion, TipoMensaje, PrioridadMensaje } from '../types';
 
 // Composables
 const {
@@ -180,75 +180,75 @@ const {
   createMessage,
   deleteMessage: removeMessage,
   markAsResolved: resolveMessage,
-} = useCollaboration()
+} = useCollaboration();
 
 // Estado local
-const showNewMessageModal = ref(false)
-const selectedPriority = ref<PrioridadMensaje | "">("")
-const selectedType = ref<TipoMensaje | "">("")
+const showNewMessageModal = ref(false);
+const selectedPriority = ref<PrioridadMensaje | ''>('');
+const selectedType = ref<TipoMensaje | ''>('');
 
 const newMessage = ref({
-  tipo: "comentario" as TipoMensaje,
-  prioridad: "media" as PrioridadMensaje,
-  contenido: "",
-})
+  tipo: 'comentario' as TipoMensaje,
+  prioridad: 'media' as PrioridadMensaje,
+  contenido: '',
+});
 
 // Computed
 const filteredMessages = computed(() => {
   return messages.value.filter((message) => {
-    const priorityMatch = !selectedPriority.value || message.prioridad === selectedPriority.value
-    const typeMatch = !selectedType.value || message.tipo === selectedType.value
-    return priorityMatch && typeMatch
-  })
-})
+    const priorityMatch = !selectedPriority.value || message.prioridad === selectedPriority.value;
+    const typeMatch = !selectedType.value || message.tipo === selectedType.value;
+    return priorityMatch && typeMatch;
+  });
+});
 
 // Métodos
 const submitMessage = async () => {
   try {
     await createMessage({
       ...newMessage.value,
-      obraId: "current-obra-id", // This should come from props or route
-      autor: "Current User", // This should come from auth
+      obraId: 'current-obra-id', // This should come from props or route
+      autor: 'Current User', // This should come from auth
       fechaCreacion: new Date(),
       resuelto: false,
       archivosAdjuntos: [],
-    })
+    });
 
     newMessage.value = {
-      tipo: "comentario",
-      prioridad: "media",
-      contenido: "",
-    }
-    showNewMessageModal.value = false
+      tipo: 'comentario',
+      prioridad: 'media',
+      contenido: '',
+    };
+    showNewMessageModal.value = false;
   } catch (error) {
-    console.error("Error al crear mensaje:", error)
+    console.error('Error al crear mensaje:', error);
   }
-}
+};
 
 const deleteMessage = async (id: string) => {
-  if (confirm("¿Estás seguro de que quieres eliminar este mensaje?")) {
-    await removeMessage(id)
+  if (confirm('¿Estás seguro de que quieres eliminar este mensaje?')) {
+    await removeMessage(id);
   }
-}
+};
 
 const markAsResolved = async (id: string) => {
-  await resolveMessage(id)
-}
+  await resolveMessage(id);
+};
 
 const formatDate = (date: Date | any) => {
-  if (date && typeof date.toDate === "function") {
-    return date.toDate().toLocaleString("es-ES")
+  if (date && typeof date.toDate === 'function') {
+    return date.toDate().toLocaleString('es-ES');
   }
   if (date instanceof Date) {
-    return date.toLocaleString("es-ES")
+    return date.toLocaleString('es-ES');
   }
-  return "Fecha no disponible"
-}
+  return 'Fecha no disponible';
+};
 
 // Lifecycle
 onMounted(() => {
   // Los mensajes se cargarán automáticamente a través del composable
-})
+});
 </script>
 
 <style scoped>

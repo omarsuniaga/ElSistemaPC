@@ -56,12 +56,12 @@
 </template>
 
 <script>
-import {computed} from "vue"
-import {format, parseISO} from "date-fns"
-import {es} from "date-fns/locale"
+import { computed } from 'vue';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default {
-  name: "DateRangeSelector",
+  name: 'DateRangeSelector',
   props: {
     selectedPeriod: {
       type: String,
@@ -80,63 +80,63 @@ export default {
       required: true,
     },
   },
-  emits: ["period-changed", "custom-range-updated"],
-  setup(props, {emit}) {
+  emits: ['period-changed', 'custom-range-updated'],
+  setup(props, { emit }) {
     const periodOptions = [
-      {value: "today", label: "Hoy", icon: "fas fa-clock"},
-      {value: "this_week", label: "Esta semana", icon: "fas fa-calendar-week"},
-      {value: "this_month", label: "Este mes", icon: "fas fa-calendar"},
-      {value: "last_week", label: "Semana pasada", icon: "fas fa-step-backward"},
-      {value: "last_month", label: "Mes pasado", icon: "fas fa-history"},
-      {value: "custom", label: "Personalizado", icon: "fas fa-cog"},
-    ]
+      { value: 'today', label: 'Hoy', icon: 'fas fa-clock' },
+      { value: 'this_week', label: 'Esta semana', icon: 'fas fa-calendar-week' },
+      { value: 'this_month', label: 'Este mes', icon: 'fas fa-calendar' },
+      { value: 'last_week', label: 'Semana pasada', icon: 'fas fa-step-backward' },
+      { value: 'last_month', label: 'Mes pasado', icon: 'fas fa-history' },
+      { value: 'custom', label: 'Personalizado', icon: 'fas fa-cog' },
+    ];
 
     const isCustomRangeValid = computed(() => {
       return (
         props.customDateRange.start &&
         props.customDateRange.end &&
         new Date(props.customDateRange.start) <= new Date(props.customDateRange.end)
-      )
-    })
+      );
+    });
 
     const dateRangeText = computed(() => {
-      const {start, end} = props.actualDateRange
-      if (!start || !end) return ""
+      const { start, end } = props.actualDateRange;
+      if (!start || !end) return '';
 
       try {
-        const startDate = parseISO(start)
-        const endDate = parseISO(end)
+        const startDate = parseISO(start);
+        const endDate = parseISO(end);
 
         if (start === end) {
-          return format(startDate, "dd 'de' MMMM, yyyy", {locale: es})
+          return format(startDate, 'dd \'de\' MMMM, yyyy', { locale: es });
         } else {
-          return `${format(startDate, "dd MMM", {locale: es})} - ${format(endDate, "dd MMM yyyy", {locale: es})}`
+          return `${format(startDate, 'dd MMM', { locale: es })} - ${format(endDate, 'dd MMM yyyy', { locale: es })}`;
         }
       } catch (error) {
-        console.error("Error formatting dates:", error)
-        return `${start} - ${end}`
+        console.error('Error formatting dates:', error);
+        return `${start} - ${end}`;
       }
-    })
+    });
 
     const updateStartDate = (value) => {
-      emit("custom-range-updated", {
+      emit('custom-range-updated', {
         ...props.customDateRange,
         start: value,
-      })
-    }
+      });
+    };
 
     const updateEndDate = (value) => {
-      emit("custom-range-updated", {
+      emit('custom-range-updated', {
         ...props.customDateRange,
         end: value,
-      })
-    }
+      });
+    };
 
     const applyCustomRange = () => {
       if (isCustomRangeValid.value) {
-        emit("period-changed", "custom")
+        emit('period-changed', 'custom');
       }
-    }
+    };
 
     return {
       periodOptions,
@@ -145,9 +145,9 @@ export default {
       updateStartDate,
       updateEndDate,
       applyCustomRange,
-    }
+    };
   },
-}
+};
 </script>
 
 <style scoped>

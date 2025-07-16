@@ -100,9 +100,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import {useAttendanceStore} from "@/modulos/Attendance/store/attendance"
-import {useStudentsStore} from "@/modulos/Students/store/students"
+import { ref, computed, watch, onMounted } from 'vue';
+import { useAttendanceStore } from '@/modulos/Attendance/store/attendance';
+import { useStudentsStore } from '@/modulos/Students/store/students';
 
 // Tipo para los alumnos
 interface Alumno {
@@ -121,19 +121,19 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: "Selección de Alumnos",
+    default: 'Selección de Alumnos',
   },
   filaId: {
     type: String,
-    default: "",
+    default: '',
   },
   instrumentoId: {
     type: String,
-    default: "",
+    default: '',
   },
   claseId: {
     type: String,
-    default: "",
+    default: '',
   },
   alumnosList: {
     type: Array as PropType<Alumno[]>,
@@ -145,71 +145,71 @@ const props = defineProps({
   },
   fechaSesion: {
     type: [Date, String],
-    default: () => new Date().toISOString().split("T")[0],
+    default: () => new Date().toISOString().split('T')[0],
   },
   hideCounter: {
     type: Boolean,
     default: false,
   },
-})
+});
 
-const emit = defineEmits(["update:modelValue", "selection-change"])
+const emit = defineEmits(['update:modelValue', 'selection-change']);
 
 // Estado
-const selectedAlumnos = ref<string[]>([...props.modelValue])
-const alumnos = ref<Alumno[]>(props.alumnosList || [])
-const search = ref("")
-const isLoading = ref(false)
-const isLoadingAttendance = ref(false)
+const selectedAlumnos = ref<string[]>([...props.modelValue]);
+const alumnos = ref<Alumno[]>(props.alumnosList || []);
+const search = ref('');
+const isLoading = ref(false);
+const isLoadingAttendance = ref(false);
 
 // Stores
-const studentStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
+const studentStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
 
 // Alumnos filtrados por búsqueda
 const filteredAlumnos = computed(() => {
   if (!search.value.trim()) {
-    return alumnos.value
+    return alumnos.value;
   }
 
-  const searchLower = search.value.toLowerCase()
+  const searchLower = search.value.toLowerCase();
   return alumnos.value.filter(
     (alumno) =>
       alumno.nombre.toLowerCase().includes(searchLower) ||
-      (alumno.instrumento && alumno.instrumento.toLowerCase().includes(searchLower))
-  )
-})
+      (alumno.instrumento && alumno.instrumento.toLowerCase().includes(searchLower)),
+  );
+});
 
 // Métodos
 const cargarAlumnos = async () => {
   if (props.alumnosList) {
-    alumnos.value = [...props.alumnosList]
-    return
+    alumnos.value = [...props.alumnosList];
+    return;
   }
 
   try {
-    isLoading.value = true
+    isLoading.value = true;
 
     // Primero cargar todos los estudiantes
-    await studentStore.fetchStudents()
+    await studentStore.fetchStudents();
 
     if (props.filaId) {
       // Para filas específicas, necesitaríamos integración con el módulo de clases
       // Por ahora, cargamos todos los estudiantes activos
-      const estudiantesActivos = studentStore.activeStudents
+      const estudiantesActivos = studentStore.activeStudents;
       alumnos.value = estudiantesActivos.map((a) => ({
         id: a.id,
         nombre: `${a.nombre} ${a.apellido}`,
         instrumento: a.instrumento,
         nivel: a.clase,
         filaId: props.filaId,
-      }))
+      }));
     } else if (props.claseId) {
       // Cargar alumnos de una clase específica usando el campo grupo
-      const estudiantesActivos = studentStore.activeStudents
+      const estudiantesActivos = studentStore.activeStudents;
       const alumnosClase = estudiantesActivos.filter(
-        (a) => a.grupo && Array.isArray(a.grupo) && a.grupo.includes(props.claseId)
-      )
+        (a) => a.grupo && Array.isArray(a.grupo) && a.grupo.includes(props.claseId),
+      );
 
       alumnos.value = alumnosClase.map((a) => ({
         id: a.id,
@@ -217,112 +217,112 @@ const cargarAlumnos = async () => {
         instrumento: a.instrumento,
         nivel: a.clase,
         filaId: a.classId,
-      }))
+      }));
 
       // Si hay un instrumentoId, filtrar por instrumento
       if (props.instrumentoId) {
-        alumnos.value = alumnos.value.filter((a) => a.instrumento === props.instrumentoId)
+        alumnos.value = alumnos.value.filter((a) => a.instrumento === props.instrumentoId);
       }
 
       // Si withAttendanceFilter está activado, cargar asistencia
       if (props.withAttendanceFilter) {
-        await actualizarAsistencia()
+        await actualizarAsistencia();
       }
     }
   } catch (error) {
-    console.error("Error al cargar alumnos:", error)
+    console.error('Error al cargar alumnos:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const toggleAlumno = (alumnoId: string) => {
-  const index = selectedAlumnos.value.indexOf(alumnoId)
+  const index = selectedAlumnos.value.indexOf(alumnoId);
   if (index === -1) {
-    selectedAlumnos.value.push(alumnoId)
+    selectedAlumnos.value.push(alumnoId);
   } else {
-    selectedAlumnos.value.splice(index, 1)
+    selectedAlumnos.value.splice(index, 1);
   }
-  emitChange()
-}
+  emitChange();
+};
 
 const selectAll = () => {
-  selectedAlumnos.value = filteredAlumnos.value.map((a) => a.id)
-  emitChange()
-}
+  selectedAlumnos.value = filteredAlumnos.value.map((a) => a.id);
+  emitChange();
+};
 
 const unselectAll = () => {
-  selectedAlumnos.value = []
-  emitChange()
-}
+  selectedAlumnos.value = [];
+  emitChange();
+};
 
 const filterByAttendance = async () => {
-  if (!props.claseId) return
+  if (!props.claseId) return;
 
   try {
-    isLoadingAttendance.value = true
-    await actualizarAsistencia()
+    isLoadingAttendance.value = true;
+    await actualizarAsistencia();
 
     // Seleccionar solo alumnos presentes
     selectedAlumnos.value = alumnos.value
       .filter((alumno) => !alumno.ausente)
-      .map((alumno) => alumno.id)
+      .map((alumno) => alumno.id);
 
-    emitChange()
+    emitChange();
   } catch (error) {
-    console.error("Error al filtrar por asistencia:", error)
+    console.error('Error al filtrar por asistencia:', error);
   } finally {
-    isLoadingAttendance.value = false
+    isLoadingAttendance.value = false;
   }
-}
+};
 
 const actualizarAsistencia = async () => {
-  if (!props.claseId) return
+  if (!props.claseId) return;
 
   try {
     // Cargar asistencia para la fecha especificada
-    await attendanceStore.fetchAttendanceForSession(props.claseId, props.fechaSesion)
+    await attendanceStore.fetchAttendanceForSession(props.claseId, props.fechaSesion);
 
     // Obtener IDs de alumnos ausentes
-    const ausentes = attendanceStore.getAbsentStudentIds(props.claseId, props.fechaSesion)
+    const ausentes = attendanceStore.getAbsentStudentIds(props.claseId, props.fechaSesion);
 
     // Actualizar propiedad ausente en los alumnos
     alumnos.value = alumnos.value.map((alumno) => ({
       ...alumno,
       ausente: ausentes.includes(alumno.id),
-    }))
+    }));
   } catch (error) {
-    console.error("Error al actualizar asistencia:", error)
+    console.error('Error al actualizar asistencia:', error);
   }
-}
+};
 
 const emitChange = () => {
-  emit("update:modelValue", selectedAlumnos.value)
-  emit("selection-change", {
+  emit('update:modelValue', selectedAlumnos.value);
+  emit('selection-change', {
     alumnos: selectedAlumnos.value,
     totalSeleccionados: selectedAlumnos.value.length,
-  })
-}
+  });
+};
 
 // Sincronizar con props
 watch(
   () => props.modelValue,
   (newValue) => {
-    selectedAlumnos.value = [...newValue]
+    selectedAlumnos.value = [...newValue];
   },
-  {deep: true}
-)
+  { deep: true },
+);
 
 // Cargar datos iniciales
 onMounted(async () => {
-  await cargarAlumnos()
+  await cargarAlumnos();
 
   // Si hay alumnos en la filaId, seleccionar a todos por defecto
   if (props.filaId && alumnos.value.length > 0 && selectedAlumnos.value.length === 0) {
-    selectedAlumnos.value = alumnos.value.map((a) => a.id)
-    emitChange()
+    selectedAlumnos.value = alumnos.value.map((a) => a.id);
+    emitChange();
   }
-})
+});
 </script>
 
 <style scoped>

@@ -400,112 +400,112 @@
 
 <script setup lang="ts">
 // Native Vue imports only
-import {ref, computed, reactive, watch, nextTick, onMounted} from "vue"
+import { ref, computed, reactive, watch, nextTick, onMounted } from 'vue';
 
-import {useBrandingStore} from "@/stores/brandingStore"
-import {logger} from "@/utils/logging/logger"
+import { useBrandingStore } from '@/stores/brandingStore';
+import { logger } from '@/utils/logging/logger';
 
 // Store
-const brandingStore = useBrandingStore()
+const brandingStore = useBrandingStore();
 
 // Estado local
-const tempConfig = ref({...brandingStore.config})
-const uploadingLogo = ref(false)
-const logoInput = ref<HTMLInputElement>()
-const lastSaved = ref<Date | null>(null)
+const tempConfig = ref({ ...brandingStore.config });
+const uploadingLogo = ref(false);
+const logoInput = ref<HTMLInputElement>();
+const lastSaved = ref<Date | null>(null);
 
 // Computed
 const hasChanges = computed(() => {
-  return JSON.stringify(tempConfig.value) !== JSON.stringify(brandingStore.config)
-})
+  return JSON.stringify(tempConfig.value) !== JSON.stringify(brandingStore.config);
+});
 
 // Watchers
 watch(
   () => brandingStore.config,
   (newConfig) => {
-    tempConfig.value = {...newConfig}
+    tempConfig.value = { ...newConfig };
   },
-  {deep: true}
-)
+  { deep: true },
+);
 
 // Methods
 const onConfigChange = () => {
-  logger.debug("🎨 Config changed:", tempConfig.value)
-  brandingStore.setConfig(tempConfig.value)
-}
+  logger.debug('🎨 Config changed:', tempConfig.value);
+  brandingStore.setConfig(tempConfig.value);
+};
 
 const saveChanges = async () => {
   try {
-    await brandingStore.saveConfig()
-    lastSaved.value = new Date()
-    logger.success("✅ Configuración guardada")
+    await brandingStore.saveConfig();
+    lastSaved.value = new Date();
+    logger.success('✅ Configuración guardada');
   } catch (error) {
-    logger.error("❌ Error al guardar:", error)
+    logger.error('❌ Error al guardar:', error);
   }
-}
+};
 
 const triggerLogoUpload = () => {
-  logoInput.value?.click()
-}
+  logoInput.value?.click();
+};
 
 const handleLogoUpload = async (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
 
-  if (!file) return
+  if (!file) return;
 
-  uploadingLogo.value = true
+  uploadingLogo.value = true;
 
   try {
-    const logoUrl = await brandingStore.uploadLogo(file)
+    const logoUrl = await brandingStore.uploadLogo(file);
     tempConfig.value.logo = {
       url: logoUrl,
-      alt: tempConfig.value.logo?.alt || "Logo de la academia",
-    }
-    onConfigChange()
-    logger.success("📷 Logo subido exitosamente")
+      alt: tempConfig.value.logo?.alt || 'Logo de la academia',
+    };
+    onConfigChange();
+    logger.success('📷 Logo subido exitosamente');
   } catch (error) {
-    logger.error("❌ Error subiendo logo:", error)
+    logger.error('❌ Error subiendo logo:', error);
   } finally {
-    uploadingLogo.value = false
+    uploadingLogo.value = false;
   }
-}
+};
 
 const resetToDefaults = async () => {
   if (
     confirm(
-      "¿Estás seguro de que quieres restaurar la configuración por defecto? Esto eliminará todos los cambios."
+      '¿Estás seguro de que quieres restaurar la configuración por defecto? Esto eliminará todos los cambios.',
     )
   ) {
-    await brandingStore.resetToDefaults()
-    tempConfig.value = {...brandingStore.config}
-    logger.info("🔄 Configuración restaurada por defecto")
+    await brandingStore.resetToDefaults();
+    tempConfig.value = { ...brandingStore.config };
+    logger.info('🔄 Configuración restaurada por defecto');
   }
-}
+};
 
 const generatePreview = () => {
-  logger.info("👁️ Generando vista previa completa...")
+  logger.info('👁️ Generando vista previa completa...');
   // Implementar lógica de vista previa
-}
+};
 
 const validateConfiguration = () => {
-  const validation = brandingStore.validateConfig()
+  const validation = brandingStore.validateConfig();
   if (validation.isValid) {
-    logger.success("✅ Configuración válida")
+    logger.success('✅ Configuración válida');
   } else {
-    logger.warning("⚠️ Problemas encontrados:", validation.errors)
+    logger.warning('⚠️ Problemas encontrados:', validation.errors);
   }
-}
+};
 
 const formatDate = (date: Date) => {
-  return date.toLocaleString()
-}
+  return date.toLocaleString();
+};
 
 // Lifecycle
 onMounted(async () => {
-  await brandingStore.loadConfig()
-  tempConfig.value = {...brandingStore.config}
-})
+  await brandingStore.loadConfig();
+  tempConfig.value = { ...brandingStore.config };
+});
 </script>
 
 <style scoped>

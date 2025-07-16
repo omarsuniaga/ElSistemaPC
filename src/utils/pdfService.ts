@@ -1,7 +1,7 @@
 // src/utils/pdfService.ts
-import jsPDF from "jspdf"
-import autoTable from "jspdf-autotable"
-import html2pdf from "html2pdf.js"
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import html2pdf from 'html2pdf.js';
 
 // Opciones comunes para la generación de PDF
 interface PdfCommonOptions {
@@ -9,9 +9,9 @@ interface PdfCommonOptions {
   logoUrl?: string // URL o ruta base64 de la imagen del logo
   institutionName?: string
   footerText?: string
-  orientation?: "p" | "portrait" | "l" | "landscape"
+  orientation?: 'p' | 'portrait' | 'l' | 'landscape'
   format?: string | number[] // ej. 'a4', [width, height]
-  unit?: "pt" | "mm" | "cm" | "in"
+  unit?: 'pt' | 'mm' | 'cm' | 'in'
 }
 
 // Opciones específicas para generar PDF desde HTML
@@ -39,9 +39,9 @@ interface TableToPdfOptions extends PdfCommonOptions {
   bodyStyles?: any
   alternateRowStyles?: any
   columnStyles?: any
-  theme?: "striped" | "grid" | "plain"
-  showHead?: "everyPage" | "firstPage" | "never"
-  tableWidth?: "auto" | "wrap" | number
+  theme?: 'striped' | 'grid' | 'plain'
+  showHead?: 'everyPage' | 'firstPage' | 'never'
+  tableWidth?: 'auto' | 'wrap' | number
   headerText?: string // Texto adicional para el encabezado
   teacherName?: string // Nombre del maestro
   className?: string // Nombre de la clase
@@ -64,24 +64,24 @@ interface TableToPdfOptions extends PdfCommonOptions {
 export const generarPdfDesdeHtml = async (options: HtmlToPdfOptions): Promise<void> => {
   const {
     elementId,
-    filename = "documento.pdf",
+    filename = 'documento.pdf',
     pagebreak,
     image,
     html2canvas: html2canvasOps,
     jsPDF: jsPdfOps,
     margin = 10,
-  } = options
+  } = options;
 
-  const element = document.getElementById(elementId)
+  const element = document.getElementById(elementId);
   if (!element) {
-    console.error(`Elemento con id '${elementId}' no encontrado.`)
-    throw new Error(`Elemento con id '${elementId}' no encontrado.`)
+    console.error(`Elemento con id '${elementId}' no encontrado.`);
+    throw new Error(`Elemento con id '${elementId}' no encontrado.`);
   }
 
   // Forzar tema claro para la exportación a PDF
-  const originalTheme = document.documentElement.classList.contains("dark")
+  const originalTheme = document.documentElement.classList.contains('dark');
   if (originalTheme) {
-    document.documentElement.classList.remove("dark")
+    document.documentElement.classList.remove('dark');
   }
 
   try {
@@ -91,34 +91,34 @@ export const generarPdfDesdeHtml = async (options: HtmlToPdfOptions): Promise<vo
         margin,
         filename,
         image: image
-          ? {type: image.type || "jpeg", quality: image.quality || 0.98}
-          : {type: "jpeg", quality: 0.98},
+          ? { type: image.type || 'jpeg', quality: image.quality || 0.98 }
+          : { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
           useCORS: true,
           letterRendering: true,
           scrollY: 0,
-          backgroundColor: "#ffffff",
+          backgroundColor: '#ffffff',
           ...html2canvasOps,
         },
-        jsPDF: {unit: "pt", format: "a4", orientation: "portrait", ...jsPdfOps},
-        pagebreak: {mode: ["css", "legacy"], avoid: ".no-break"},
-      })
+        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait', ...jsPdfOps },
+        pagebreak: { mode: ['css', 'legacy'], avoid: '.no-break' },
+      });
 
     // TODO: Añadir cabecera y pie de página si se proporcionan en options (logoUrl, institutionName, footerText)
     // Esto podría requerir manipular el objeto jsPDF directamente antes de guardar.
 
-    await worker.save()
+    await worker.save();
   } catch (error) {
-    console.error("Error generando PDF desde HTML:", error)
-    throw error
+    console.error('Error generando PDF desde HTML:', error);
+    throw error;
   } finally {
     // Restaurar tema original
     if (originalTheme) {
-      document.documentElement.classList.add("dark")
+      document.documentElement.classList.add('dark');
     }
   }
-}
+};
 
 /**
  * Genera un PDF tabular con diseño profesional mejorado.
@@ -126,145 +126,145 @@ export const generarPdfDesdeHtml = async (options: HtmlToPdfOptions): Promise<vo
  */
 export const generarPdfTabla = async (options: TableToPdfOptions): Promise<void> => {
   const {
-    title = "Reporte",
+    title = 'Reporte',
     columns,
     data,
-    filename = "reporte.pdf",
+    filename = 'reporte.pdf',
     startY = 80,
     logoUrl,
-    institutionName = "Academia de Música",
+    institutionName = 'Academia de Música',
     footerText = `Generado el ${new Date().toLocaleDateString()}`,
-    orientation = "p",
-    format = "a4",
-    unit = "pt",
-    headStyles = {fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold"},
+    orientation = 'p',
+    format = 'a4',
+    unit = 'pt',
+    headStyles = { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
     bodyStyles = {},
-    alternateRowStyles = {fillColor: [240, 240, 240]},
+    alternateRowStyles = { fillColor: [240, 240, 240] },
     columnStyles = {},
-    theme = "striped",
-    showHead = "everyPage",
-    tableWidth = "auto",
+    theme = 'striped',
+    showHead = 'everyPage',
+    tableWidth = 'auto',
     ...extraOptions
-  } = options
+  } = options;
 
   try {
-    const doc = new jsPDF({orientation, unit, format})
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const pageHeight = doc.internal.pageSize.getHeight()
+    const doc = new jsPDF({ orientation, unit, format });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
     // Función para dibujar el encabezado estilo Google Sheet
     const drawProfessionalHeader = async (doc: jsPDF, pageWidth: number) => {
-      const leftMargin = 20
-      const rightMargin = pageWidth - 20
-      const headerY = 20
+      const leftMargin = 20;
+      const rightMargin = pageWidth - 20;
+      const headerY = 20;
 
       // Intentar cargar y dibujar el logo (esquina superior izquierda)
       if (logoUrl) {
         try {
-          const logoImg = new Image()
-          logoImg.crossOrigin = "anonymous"
+          const logoImg = new Image();
+          logoImg.crossOrigin = 'anonymous';
 
           await new Promise((resolve, reject) => {
-            logoImg.onload = () => resolve(logoImg)
-            logoImg.onerror = () => reject(new Error("Error loading logo"))
-            logoImg.src = logoUrl
-          })
+            logoImg.onload = () => resolve(logoImg);
+            logoImg.onerror = () => reject(new Error('Error loading logo'));
+            logoImg.src = logoUrl;
+          });
 
           // Dibujar logo en esquina superior izquierda (tamaño reducido)
-          const logoSize = 25
-          doc.addImage(logoImg, "JPEG", leftMargin, headerY, logoSize, logoSize)
+          const logoSize = 25;
+          doc.addImage(logoImg, 'JPEG', leftMargin, headerY, logoSize, logoSize);
         } catch (error) {
-          console.warn("Error cargando logo:", error)
+          console.warn('Error cargando logo:', error);
         }
       }
 
       // Título principal centrado (FUNDACIÓN PARA LA EXPANSIÓN...)
-      doc.setFont("helvetica", "bold")
-      doc.setFontSize(12)
-      doc.setTextColor(0, 0, 0)
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
 
-      const titleLines = ["FUNDACIÓN PARA LA EXPANSIÓN", "CULTURAL Y ARTÍSTICA DE PUNTA", "CANA"]
+      const titleLines = ['FUNDACIÓN PARA LA EXPANSIÓN', 'CULTURAL Y ARTÍSTICA DE PUNTA', 'CANA'];
 
-      let yPosition = headerY + 10
+      let yPosition = headerY + 10;
       titleLines.forEach((line) => {
-        const textWidth = doc.getTextWidth(line)
-        const centerX = pageWidth / 2 - textWidth / 2
-        doc.text(line, centerX, yPosition)
-        yPosition += 5
-      })
+        const textWidth = doc.getTextWidth(line);
+        const centerX = pageWidth / 2 - textWidth / 2;
+        doc.text(line, centerX, yPosition);
+        yPosition += 5;
+      });
 
       // FUNEYCA PC con un poco más de espacio
-      yPosition += 3
-      doc.setFontSize(14)
-      const funeyca = "FUNEYCA PC"
-      const funeycaWidth = doc.getTextWidth(funeyca)
-      const funeycaCenterX = pageWidth / 2 - funeycaWidth / 2
-      doc.text(funeyca, funeycaCenterX, yPosition)
+      yPosition += 3;
+      doc.setFontSize(14);
+      const funeyca = 'FUNEYCA PC';
+      const funeycaWidth = doc.getTextWidth(funeyca);
+      const funeycaCenterX = pageWidth / 2 - funeycaWidth / 2;
+      doc.text(funeyca, funeycaCenterX, yPosition);
 
       // Campos de fecha y entrada (lado derecho)
-      doc.setFont("helvetica", "normal")
-      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
 
-      const dateFieldsX = rightMargin - 80
-      doc.text("FECHA:", dateFieldsX, headerY + 15)
-      doc.text("/", dateFieldsX + 35, headerY + 15)
-      doc.text("/", dateFieldsX + 50, headerY + 15)
+      const dateFieldsX = rightMargin - 80;
+      doc.text('FECHA:', dateFieldsX, headerY + 15);
+      doc.text('/', dateFieldsX + 35, headerY + 15);
+      doc.text('/', dateFieldsX + 50, headerY + 15);
 
-      doc.text("ENTRADA:", dateFieldsX, headerY + 30)
+      doc.text('ENTRADA:', dateFieldsX, headerY + 30);
 
       // Líneas para llenar
-      doc.setLineWidth(0.5)
-      doc.setDrawColor(0, 0, 0)
-      doc.line(dateFieldsX + 25, headerY + 17, dateFieldsX + 33, headerY + 17) // Día
-      doc.line(dateFieldsX + 37, headerY + 17, dateFieldsX + 48, headerY + 17) // Mes
-      doc.line(dateFieldsX + 52, headerY + 17, dateFieldsX + 75, headerY + 17) // Año
-      doc.line(dateFieldsX + 35, headerY + 32, dateFieldsX + 75, headerY + 32) // Entrada
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 0, 0);
+      doc.line(dateFieldsX + 25, headerY + 17, dateFieldsX + 33, headerY + 17); // Día
+      doc.line(dateFieldsX + 37, headerY + 17, dateFieldsX + 48, headerY + 17); // Mes
+      doc.line(dateFieldsX + 52, headerY + 17, dateFieldsX + 75, headerY + 17); // Año
+      doc.line(dateFieldsX + 35, headerY + 32, dateFieldsX + 75, headerY + 32); // Entrada
 
       // Título del reporte (centrado) si existe
       if (title) {
-        yPosition += 15
-        doc.setFontSize(16)
-        doc.setFont("helvetica", "bold")
-        doc.setTextColor(60, 60, 60)
-        doc.text(title, pageWidth / 2, yPosition, {align: "center"})
-        yPosition += 15
+        yPosition += 15;
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(60, 60, 60);
+        doc.text(title, pageWidth / 2, yPosition, { align: 'center' });
+        yPosition += 15;
       }
 
-      return yPosition + 10 // Retornar posición Y para continuar el contenido
-    }
+      return yPosition + 10; // Retornar posición Y para continuar el contenido
+    };
 
     // Dibujar encabezado profesional
-    let currentY = await drawProfessionalHeader(doc, pageWidth)
+    let currentY = await drawProfessionalHeader(doc, pageWidth);
 
     // Si hay información adicional del encabezado (sección azul + información)
     if (extraOptions.headerText) {
-      const headerLines = extraOptions.headerText.split("\n")
-      doc.setFontSize(10)
-      doc.setTextColor(60, 60, 60)
+      const headerLines = extraOptions.headerText.split('\n');
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
 
-      let lineIndex = 0
+      let lineIndex = 0;
       for (let i = 0; i < headerLines.length; i++) {
-        const line = headerLines[i].trim()
+        const line = headerLines[i].trim();
 
         // Si la línea comienza con "SALÓN:", crear la barra azul
-        if (line.startsWith("SALÓN:")) {
+        if (line.startsWith('SALÓN:')) {
           // Dibujar rectángulo azul de fondo
-          doc.setFillColor(41, 98, 255) // Azul como en el Google Sheet
-          doc.rect(25, currentY + lineIndex * 12 - 3, pageWidth - 50, 12, "F")
+          doc.setFillColor(41, 98, 255); // Azul como en el Google Sheet
+          doc.rect(25, currentY + lineIndex * 12 - 3, pageWidth - 50, 12, 'F');
 
           // Texto blanco sobre el fondo azul
-          doc.setTextColor(255, 255, 255)
-          doc.setFont("helvetica", "bold")
-          doc.text(line, 30, currentY + lineIndex * 12 + 5)
-          doc.setFont("helvetica", "normal")
-          doc.setTextColor(60, 60, 60)
+          doc.setTextColor(255, 255, 255);
+          doc.setFont('helvetica', 'bold');
+          doc.text(line, 30, currentY + lineIndex * 12 + 5);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(60, 60, 60);
         } else {
           // Texto normal
-          doc.text(line, 25, currentY + lineIndex * 12)
+          doc.text(line, 25, currentY + lineIndex * 12);
         }
-        lineIndex++
+        lineIndex++;
       }
-      currentY += headerLines.length * 12 + 15
+      currentY += headerLines.length * 12 + 15;
     }
 
     // Configurar la tabla con el estilo profesional
@@ -275,8 +275,8 @@ export const generarPdfTabla = async (options: TableToPdfOptions): Promise<void>
       headStyles: {
         fillColor: [41, 128, 185],
         textColor: 255,
-        fontStyle: "bold",
-        halign: "center",
+        fontStyle: 'bold',
+        halign: 'center',
         fontSize: 11,
         ...headStyles,
       },
@@ -298,41 +298,41 @@ export const generarPdfTabla = async (options: TableToPdfOptions): Promise<void>
       didDrawCell: (data: any) => {
         if (extraOptions.didDrawCell) {
           // Pasar los dos parámetros que espera la función
-          return extraOptions.didDrawCell(data, doc)
+          return extraOptions.didDrawCell(data, doc);
         }
       },
       didDrawPage: (data) => {
         // Pie de página profesional
-        const footerY = pageHeight - 30
+        const footerY = pageHeight - 30;
 
         // Línea superior del pie
-        doc.setDrawColor(200, 200, 200)
-        doc.setLineWidth(0.5)
-        doc.line(20, footerY - 10, pageWidth - 20, footerY - 10)
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.line(20, footerY - 10, pageWidth - 20, footerY - 10);
 
         // Texto del pie de página
         if (footerText) {
-          doc.setFontSize(9)
-          doc.setTextColor(100, 100, 100)
-          doc.text(footerText, 25, footerY)
+          doc.setFontSize(9);
+          doc.setTextColor(100, 100, 100);
+          doc.text(footerText, 25, footerY);
         }
 
         // Numeración de páginas
-        const totalPages = (doc as any).internal.getNumberOfPages()
-        doc.setFontSize(9)
-        doc.setTextColor(100, 100, 100)
+        const totalPages = (doc as any).internal.getNumberOfPages();
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
         doc.text(`Página ${data.pageNumber} de ${totalPages}`, pageWidth - 25, footerY, {
-          align: "right",
-        })
+          align: 'right',
+        });
       },
-    })
+    });
 
-    doc.save(filename)
+    doc.save(filename);
   } catch (error) {
-    console.error("Error generando PDF tabular:", error)
-    throw error
+    console.error('Error generando PDF tabular:', error);
+    throw error;
   }
-}
+};
 
 // Ejemplo de cómo se podrían definir las columnas para generarPdfTabla
 // const ejemploColumnas = [

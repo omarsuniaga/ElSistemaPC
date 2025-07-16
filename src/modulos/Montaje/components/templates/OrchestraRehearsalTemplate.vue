@@ -460,13 +460,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 const orchestraSections = [
   { id: 'strings', name: 'Cuerdas', count: 42 },
   { id: 'woodwinds', name: 'Viento-Madera', count: 12 },
   { id: 'brass', name: 'Viento-Metal', count: 10 },
   { id: 'percussion', name: 'Percusión', count: 6 },
-  { id: 'keyboard', name: 'Teclados', count: 2 }
-]
+  { id: 'keyboard', name: 'Teclados', count: 2 },
+];
 </script>

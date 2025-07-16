@@ -169,12 +169,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {useTeacherCollaboration} from "../composables/useTeacherCollaboration"
-import {useAuthStore} from "../../../stores/auth"
-import TeacherClassCard from "./TeacherClassCard.vue"
-import TeacherClassListItem from "./TeacherClassListItem.vue"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useTeacherCollaboration } from '../composables/useTeacherCollaboration';
+import { useAuthStore } from '../../../stores/auth';
+import TeacherClassCard from './TeacherClassCard.vue';
+import TeacherClassListItem from './TeacherClassListItem.vue';
 import {
   ViewColumnsIcon,
   Bars3Icon,
@@ -182,101 +182,101 @@ import {
   AcademicCapIcon,
   UserIcon,
   UsersIcon,
-} from "@heroicons/vue/24/outline"
-import type {TeacherClassView} from "../types/class"
+} from '@heroicons/vue/24/outline';
+import type { TeacherClassView } from '../types/class';
 
 // Router y stores
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
 // Composables
-const {isLoading, myClasses, error, fetchMyClasses} = useTeacherCollaboration()
+const { isLoading, myClasses, error, fetchMyClasses } = useTeacherCollaboration();
 
 // Estados locales
-const selectedFilter = ref<"all" | "lead" | "assistant">("all")
-const viewMode = ref<"cards" | "list">("cards")
+const selectedFilter = ref<'all' | 'lead' | 'assistant'>('all');
+const viewMode = ref<'cards' | 'list'>('cards');
 
 // Computed properties
 const filteredClasses = computed(() => {
   switch (selectedFilter.value) {
-    case "lead":
-      return myClasses.value.filter((c) => c.myRole === "lead")
-    case "assistant":
-      return myClasses.value.filter((c) => c.myRole === "assistant")
-    default:
-      return myClasses.value
+  case 'lead':
+    return myClasses.value.filter((c) => c.myRole === 'lead');
+  case 'assistant':
+    return myClasses.value.filter((c) => c.myRole === 'assistant');
+  default:
+    return myClasses.value;
   }
-})
+});
 
-const leadClassesCount = computed(() => myClasses.value.filter((c) => c.myRole === "lead").length)
+const leadClassesCount = computed(() => myClasses.value.filter((c) => c.myRole === 'lead').length);
 
 const assistantClassesCount = computed(
-  () => myClasses.value.filter((c) => c.myRole === "assistant").length
-)
+  () => myClasses.value.filter((c) => c.myRole === 'assistant').length,
+);
 
 const totalStudents = computed(() => {
-  const uniqueStudents = new Set()
+  const uniqueStudents = new Set();
   filteredClasses.value.forEach((classData) => {
-    classData.studentIds?.forEach((studentId) => uniqueStudents.add(studentId))
-  })
-  return uniqueStudents.size
-})
+    classData.studentIds?.forEach((studentId) => uniqueStudents.add(studentId));
+  });
+  return uniqueStudents.size;
+});
 
 // Methods
-const getTeacherRole = (classData: TeacherClassView): "lead" | "assistant" => {
-  return classData.myRole || "assistant"
-}
+const getTeacherRole = (classData: TeacherClassView): 'lead' | 'assistant' => {
+  return classData.myRole || 'assistant';
+};
 
 const loadTeacherClasses = async () => {
-  await fetchMyClasses()
-}
+  await fetchMyClasses();
+};
 
 const handleViewDetails = (classData: TeacherClassView) => {
-  router.push(`/classes/${classData.id}`)
-}
+  router.push(`/classes/${classData.id}`);
+};
 
 const handleTakeAttendance = (classData: TeacherClassView) => {
   // Verificar permisos
   if (classData.myPermissions?.canTakeAttendance) {
-    router.push(`/attendance/${classData.id}`)
+    router.push(`/attendance/${classData.id}`);
   } else {
     // Mostrar mensaje de permisos insuficientes
-    console.warn("No tienes permisos para tomar asistencia en esta clase")
+    console.warn('No tienes permisos para tomar asistencia en esta clase');
   }
-}
+};
 
 const handleViewAttendance = (classData: TeacherClassView) => {
   // Verificar permisos
   if (classData.myPermissions?.canViewAttendanceHistory) {
-    router.push(`/attendance/history/${classData.id}`)
+    router.push(`/attendance/history/${classData.id}`);
   } else {
     // Mostrar mensaje de permisos insuficientes
-    console.warn("No tienes permisos para ver el historial de asistencia en esta clase")
+    console.warn('No tienes permisos para ver el historial de asistencia en esta clase');
   }
-}
+};
 
 const handleAddObservation = (classData: TeacherClassView) => {
   // Verificar permisos
   if (classData.myPermissions?.canAddObservations) {
-    router.push(`/classes/${classData.id}/observations`)
+    router.push(`/classes/${classData.id}/observations`);
   } else {
-    console.warn("No tienes permisos para agregar observaciones en esta clase")
+    console.warn('No tienes permisos para agregar observaciones en esta clase');
   }
-}
+};
 
 const handleEditClass = (classData: TeacherClassView) => {
   // Verificar permisos
   if (classData.myPermissions?.canEditClass) {
-    router.push(`/classes/${classData.id}/edit`)
+    router.push(`/classes/${classData.id}/edit`);
   } else {
-    console.warn("No tienes permisos para editar esta clase")
+    console.warn('No tienes permisos para editar esta clase');
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadTeacherClasses()
-})
+  loadTeacherClasses();
+});
 </script>
 
 <style scoped>

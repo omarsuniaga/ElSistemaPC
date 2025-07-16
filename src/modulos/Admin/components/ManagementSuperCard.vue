@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 import {
   ArrowTrendingUpIcon,
   ArrowRightIcon,
@@ -71,7 +71,7 @@ import {
   MusicalNoteIcon,
   UserIcon,
   CalendarIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface Props {
   title: string
@@ -79,15 +79,15 @@ interface Props {
   icon: string
   count: number
   recent: number
-  color: "blue" | "green" | "purple" | "yellow" | "red" | "indigo" | "pink" | "gray"
+  color: 'blue' | 'green' | 'purple' | 'yellow' | 'red' | 'indigo' | 'pink' | 'gray'
   route: string
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   action: [action: string]
-}>()
+}>();
 
 // Icon mapping for commonly used icons
 const iconMap: Record<string, any> = {
@@ -100,41 +100,41 @@ const iconMap: Record<string, any> = {
   MusicalNoteIcon,
   UserIcon,
   CalendarIcon,
-}
+};
 
 const iconComponent = computed(() => {
-  return iconMap[props.icon] || CogIcon
-})
+  return iconMap[props.icon] || CogIcon;
+});
 
 const iconContainerClasses = computed(() => {
   const colorMap = {
-    blue: "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400",
-    green: "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400",
-    purple: "bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400",
-    yellow: "bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400",
-    red: "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400",
-    indigo: "bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400",
-    pink: "bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-400",
-    gray: "bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400",
-  }
-  return colorMap[props.color] || colorMap.blue
-})
+    blue: 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400',
+    green: 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400',
+    purple: 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400',
+    yellow: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400',
+    red: 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400',
+    indigo: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400',
+    pink: 'bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-400',
+    gray: 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400',
+  };
+  return colorMap[props.color] || colorMap.blue;
+});
 
 const createButtonClasses = computed(() => {
   const colorMap = {
-    blue: "bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400",
+    blue: 'bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400',
     green:
-      "bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-600 dark:text-green-400",
+      'bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-600 dark:text-green-400',
     purple:
-      "bg-purple-100 hover:bg-purple-200 dark:bg-purple-900 dark:hover:bg-purple-800 text-purple-600 dark:text-purple-400",
+      'bg-purple-100 hover:bg-purple-200 dark:bg-purple-900 dark:hover:bg-purple-800 text-purple-600 dark:text-purple-400',
     yellow:
-      "bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900 dark:hover:bg-yellow-800 text-yellow-600 dark:text-yellow-400",
-    red: "bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-800 text-red-600 dark:text-red-400",
+      'bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900 dark:hover:bg-yellow-800 text-yellow-600 dark:text-yellow-400',
+    red: 'bg-red-100 hover:bg-red-200 dark:bg-red-900 dark:hover:bg-red-800 text-red-600 dark:text-red-400',
     indigo:
-      "bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400",
-    pink: "bg-pink-100 hover:bg-pink-200 dark:bg-pink-900 dark:hover:bg-pink-800 text-pink-600 dark:text-pink-400",
-    gray: "bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400",
-  }
-  return colorMap[props.color] || colorMap.green
-})
+      'bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400',
+    pink: 'bg-pink-100 hover:bg-pink-200 dark:bg-pink-900 dark:hover:bg-pink-800 text-pink-600 dark:text-pink-400',
+    gray: 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-900 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400',
+  };
+  return colorMap[props.color] || colorMap.green;
+});
 </script>

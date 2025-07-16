@@ -169,8 +169,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import type {Work, CreateEvaluationInput} from "../types"
+import { ref, computed, onMounted } from 'vue';
+import type { Work, CreateEvaluationInput } from '../types';
 
 interface Props {
   work: Work
@@ -180,100 +180,100 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "submit", data: CreateEvaluationInput): void
-  (e: "save-draft", data: CreateEvaluationInput): void
+  (e: 'close'): void
+  (e: 'submit', data: CreateEvaluationInput): void
+  (e: 'save-draft', data: CreateEvaluationInput): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
   isEmbedded: false,
   existingEvaluation: undefined,
-})
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // Form state
 const form = ref<CreateEvaluationInput>({
   workId: props.work.id,
   score: 75,
-  comments: "",
-  recommendations: "",
+  comments: '',
+  recommendations: '',
   criteria: {},
   areasForImprovement: [],
-  privateNotes: "",
-})
+  privateNotes: '',
+});
 
-const error = ref("")
+const error = ref('');
 
 // Evaluation criteria
 const evaluationCriteria = [
   {
-    key: "technique",
-    name: "Técnica",
-    description: "Precisión técnica e interpretación",
+    key: 'technique',
+    name: 'Técnica',
+    description: 'Precisión técnica e interpretación',
   },
   {
-    key: "rhythm",
-    name: "Ritmo",
-    description: "Precisión rítmica y tempo",
+    key: 'rhythm',
+    name: 'Ritmo',
+    description: 'Precisión rítmica y tempo',
   },
   {
-    key: "intonation",
-    name: "Afinación",
-    description: "Precisión en la afinación",
+    key: 'intonation',
+    name: 'Afinación',
+    description: 'Precisión en la afinación',
   },
   {
-    key: "expression",
-    name: "Expresión",
-    description: "Musicalidad y expresión artística",
+    key: 'expression',
+    name: 'Expresión',
+    description: 'Musicalidad y expresión artística',
   },
   {
-    key: "ensemble",
-    name: "Conjunto",
-    description: "Coordinación con el grupo",
+    key: 'ensemble',
+    name: 'Conjunto',
+    description: 'Coordinación con el grupo',
   },
   {
-    key: "preparation",
-    name: "Preparación",
-    description: "Nivel de preparación de la obra",
+    key: 'preparation',
+    name: 'Preparación',
+    description: 'Nivel de preparación de la obra',
   },
-]
+];
 
 // Areas for improvement
 const improvementAreas = [
-  "Técnica instrumental",
-  "Lectura a primera vista",
-  "Interpretación musical",
-  "Dinámicas",
-  "Articulación",
-  "Fraseo",
-  "Tempo y ritmo",
-  "Afinación",
-  "Coordinación de conjunto",
-  "Preparación individual",
-]
+  'Técnica instrumental',
+  'Lectura a primera vista',
+  'Interpretación musical',
+  'Dinámicas',
+  'Articulación',
+  'Fraseo',
+  'Tempo y ritmo',
+  'Afinación',
+  'Coordinación de conjunto',
+  'Preparación individual',
+];
 
 // Computed properties
 const isFormValid = computed(() => {
-  return form.value.score >= 0 && form.value.score <= 100 && form.value.comments.trim() !== ""
-})
+  return form.value.score >= 0 && form.value.score <= 100 && form.value.comments.trim() !== '';
+});
 
 // Methods
 const handleSubmit = () => {
   if (!isFormValid.value) {
-    error.value = "Por favor, completa todos los campos obligatorios"
-    return
+    error.value = 'Por favor, completa todos los campos obligatorios';
+    return;
   }
 
-  error.value = ""
-  emit("submit", {...form.value})
-}
+  error.value = '';
+  emit('submit', { ...form.value });
+};
 
 const saveDraft = () => {
-  error.value = ""
-  emit("save-draft", {...form.value})
-}
+  error.value = '';
+  emit('save-draft', { ...form.value });
+};
 
 // Initialize form with existing evaluation if provided
 onMounted(() => {
@@ -281,14 +281,14 @@ onMounted(() => {
     form.value = {
       workId: props.work.id,
       score: props.existingEvaluation.score,
-      comments: props.existingEvaluation.comments || "",
-      recommendations: props.existingEvaluation.recommendations || "",
-      criteria: {...props.existingEvaluation.criteria},
+      comments: props.existingEvaluation.comments || '',
+      recommendations: props.existingEvaluation.recommendations || '',
+      criteria: { ...props.existingEvaluation.criteria },
       areasForImprovement: [...(props.existingEvaluation.areasForImprovement || [])],
-      privateNotes: props.existingEvaluation.privateNotes || "",
-    }
+      privateNotes: props.existingEvaluation.privateNotes || '',
+    };
   }
-})
+});
 </script>
 
 <style scoped>

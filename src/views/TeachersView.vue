@@ -108,37 +108,37 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, reactive} from "vue"
-import {useTeachersStore} from "../stores/teachers"
-import {useClassesStore} from "../stores/classes"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import TeacherDashboard from "../components/teachers/TeacherDashboard.vue"
-import TeacherSchedule from "../components/teachers/TeacherSchedule.vue"
-import TeacherClasses from "../components/teachers/TeacherClasses.vue"
-import TeacherUpcoming from "../components/teachers/TeacherUpcoming.vue"
+import { ref, onMounted, reactive } from 'vue';
+import { useTeachersStore } from '../stores/teachers';
+import { useClassesStore } from '../stores/classes';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import TeacherDashboard from '../components/teachers/TeacherDashboard.vue';
+import TeacherSchedule from '../components/teachers/TeacherSchedule.vue';
+import TeacherClasses from '../components/teachers/TeacherClasses.vue';
+import TeacherUpcoming from '../components/teachers/TeacherUpcoming.vue';
 import {
   UserIcon,
   ChartBarIcon,
   CalendarIcon,
   AcademicCapIcon,
   ClockIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Estado de la pestaña activa
-const activeTab = ref("dashboard")
+const activeTab = ref('dashboard');
 
 // Definición de pestañas
 const tabs = [
-  {id: "dashboard", name: "Panel General", icon: ChartBarIcon},
-  {id: "schedule", name: "Horario Semanal", icon: CalendarIcon},
-  {id: "classes", name: "Mis Clases", icon: AcademicCapIcon},
-  {id: "upcoming", name: "Próximas Clases", icon: ClockIcon},
-]
+  { id: 'dashboard', name: 'Panel General', icon: ChartBarIcon },
+  { id: 'schedule', name: 'Horario Semanal', icon: CalendarIcon },
+  { id: 'classes', name: 'Mis Clases', icon: AcademicCapIcon },
+  { id: 'upcoming', name: 'Próximas Clases', icon: ClockIcon },
+];
 
 // Stores
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
 
 // Definir la interfaz para el tipo Teacher
 interface Teacher {
@@ -149,8 +149,8 @@ interface Teacher {
 }
 
 // Datos del profesor (simulando que obtenemos el ID del profesor autenticado)
-const teacherId = ref("1") // En un caso real, se obtendría del usuario autenticado
-const teacher = ref<Teacher | null>(null)
+const teacherId = ref('1'); // En un caso real, se obtendría del usuario autenticado
+const teacher = ref<Teacher | null>(null);
 
 // Estadísticas del profesor
 const teacherStats = reactive({
@@ -158,71 +158,71 @@ const teacherStats = reactive({
   studentsCount: 0,
   attendanceRate: 0,
   nextClass: null,
-})
+});
 
 // Cargar datos del profesor
 onMounted(async () => {
   try {
     // Cargar datos del profesor
     if (teachersStore.teachers.length === 0) {
-      await teachersStore.fetchTeachers()
+      await teachersStore.fetchTeachers();
     }
-    teacher.value = teachersStore.teachers.find((t) => t.id === teacherId.value) || null
+    teacher.value = teachersStore.teachers.find((t) => t.id === teacherId.value) || null;
 
     // Cargar clases
     if (classesStore.classes.length === 0) {
-      await classesStore.fetchClasses()
+      await classesStore.fetchClasses();
     }
 
     // Calcular estadísticas
-    const teacherClasses = classesStore.classes.filter((c) => c.teacherId === teacherId.value)
-    teacherStats.classesCount = teacherClasses.length
+    const teacherClasses = classesStore.classes.filter((c) => c.teacherId === teacherId.value);
+    teacherStats.classesCount = teacherClasses.length;
 
     // Obtener alumnos únicos de todas las clases del profesor
-    const studentIds = new Set()
+    const studentIds = new Set();
     teacherClasses.forEach((c) => {
-      c.alumnos?.forEach((id) => studentIds.add(id))
-    })
-    teacherStats.studentsCount = studentIds.size
+      c.alumnos?.forEach((id) => studentIds.add(id));
+    });
+    teacherStats.studentsCount = studentIds.size;
 
     // Ordenar próximas clases
-    const now = new Date()
-    const dayMap = {domingo: 0, lunes: 1, martes: 2, miércoles: 3, jueves: 4, viernes: 5, sábado: 6}
+    const now = new Date();
+    const dayMap = { domingo: 0, lunes: 1, martes: 2, miércoles: 3, jueves: 4, viernes: 5, sábado: 6 };
 
     const upcomingClasses = teacherClasses
       .map((c) => {
         // Calcular próxima fecha de clase basado en el horario
-        const today = now.getDay() // 0 = domingo, 1 = lunes, ...
-        const classDay = dayMap[c.horario.dia.toLowerCase()] || 0
-        const [hours, minutes] = c.horario.horaInicio.split(":").map(Number)
+        const today = now.getDay(); // 0 = domingo, 1 = lunes, ...
+        const classDay = dayMap[c.horario.dia.toLowerCase()] || 0;
+        const [hours, minutes] = c.horario.horaInicio.split(':').map(Number);
 
         // Calcular días hasta la próxima clase
-        let daysUntilClass = (classDay - today + 7) % 7
+        let daysUntilClass = (classDay - today + 7) % 7;
         if (daysUntilClass === 0) {
           // Si es hoy, verificar si ya pasó
-          const currentTime = now.getHours() * 60 + now.getMinutes()
-          const classTime = hours * 60 + minutes
+          const currentTime = now.getHours() * 60 + now.getMinutes();
+          const classTime = hours * 60 + minutes;
           if (classTime <= currentTime) {
-            daysUntilClass = 7 // Mover a la próxima semana
+            daysUntilClass = 7; // Mover a la próxima semana
           }
         }
 
-        const nextDate = new Date()
-        nextDate.setDate(nextDate.getDate() + daysUntilClass)
-        nextDate.setHours(hours, minutes, 0, 0)
+        const nextDate = new Date();
+        nextDate.setDate(nextDate.getDate() + daysUntilClass);
+        nextDate.setHours(hours, minutes, 0, 0);
 
-        return {...c, computedNextDate: nextDate}
+        return { ...c, computedNextDate: nextDate };
       })
       .filter((c) => c.computedNextDate > now)
-      .sort((a, b) => a.computedNextDate.getTime() - b.computedNextDate.getTime())
+      .sort((a, b) => a.computedNextDate.getTime() - b.computedNextDate.getTime());
 
     if (upcomingClasses.length > 0) {
-      teacherStats.nextClass = upcomingClasses[0]
+      teacherStats.nextClass = upcomingClasses[0];
     }
   } catch (error) {
-    console.error("Error al cargar datos del profesor:", error)
+    console.error('Error al cargar datos del profesor:', error);
   }
-})
+});
 </script>
 
 <style scoped>

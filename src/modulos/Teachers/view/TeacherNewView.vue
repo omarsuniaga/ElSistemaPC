@@ -1,35 +1,3 @@
-<script setup lang="ts">
-// src/modulos/Teachers/view/TeacherNewView.vue
-import {ref} from "vue"
-import {useRouter} from "vue-router"
-import {useTeachersStore} from "../store/teachers"
-import TeacherForm from "../components/TeacherForm.vue"
-
-const router = useRouter()
-const teachersStore = useTeachersStore()
-
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-
-const handleSubmit = async (data: any) => {
-  isLoading.value = true
-  error.value = null
-
-  try {
-    const newTeacher = await teachersStore.addTeacher(data)
-    router.push(`/teachers/${newTeacher.id}`)
-  } catch (err: any) {
-    error.value = err.message
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleCancel = () => {
-  router.push("/teachers")
-}
-</script>
-
 <template>
   <div class="py-6">
     <div class="mb-6">
@@ -49,3 +17,35 @@ const handleCancel = () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+// src/modulos/Teachers/view/TeacherNewView.vue
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useTeachersStore } from '../store/teachers';
+import TeacherForm from '../components/TeacherForm.vue';
+
+const router = useRouter();
+const teachersStore = useTeachersStore();
+
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+
+const handleSubmit = async (data: any) => {
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    const newTeacher = await teachersStore.addTeacher(data);
+    router.push(`/teachers/${newTeacher.id}`);
+  } catch (err: any) {
+    error.value = err.message;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const handleCancel = () => {
+  router.push('/teachers');
+};
+</script>

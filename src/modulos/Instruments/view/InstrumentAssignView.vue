@@ -111,39 +111,39 @@
 </template>
 
 <script lang="ts" setup>
-import {ref, computed, onMounted, watch} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import {useInstrumentoStore} from "../store/instrumento"
-import {useStudentsStore} from "../../Students/store/students"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useInstrumentoStore } from '../store/instrumento';
+import { useStudentsStore } from '../../Students/store/students';
 
-const route = useRoute()
-const router = useRouter()
-const instrumentStore = useInstrumentoStore()
-const studentsStore = useStudentsStore()
+const route = useRoute();
+const router = useRouter();
+const instrumentStore = useInstrumentoStore();
+const studentsStore = useStudentsStore();
 
-const instrumentos = computed(() => instrumentStore.instruments)
-const alumnos = computed(() => studentsStore.students)
+const instrumentos = computed(() => instrumentStore.instruments);
+const alumnos = computed(() => studentsStore.students);
 
 // Obtener el instrumento a asignar desde la ruta o el store
-const selectedInstrumentId = ref("")
-const selectedInstrument = ref<any>(null)
+const selectedInstrumentId = ref('');
+const selectedInstrument = ref<any>(null);
 
-const selectedStudentId = ref("")
-const contratoFile = ref<File | null>(null)
-const error = ref<string | null>(null)
-const success = ref(false)
-const searchStudent = ref("")
-const studentResults = ref<any[]>([])
-const selectedStudent = computed(() => alumnos.value.find((a) => a.id === selectedStudentId.value))
+const selectedStudentId = ref('');
+const contratoFile = ref<File | null>(null);
+const error = ref<string | null>(null);
+const success = ref(false);
+const searchStudent = ref('');
+const studentResults = ref<any[]>([]);
+const selectedStudent = computed(() => alumnos.value.find((a) => a.id === selectedStudentId.value));
 
 onMounted(async () => {
-  if (!instrumentStore.instruments.length) await instrumentStore.fetchInstruments()
-  if (!studentsStore.students.length) await studentsStore.fetchStudents()
+  if (!instrumentStore.instruments.length) await instrumentStore.fetchInstruments();
+  if (!studentsStore.students.length) await studentsStore.fetchStudents();
   // Extraer el id del instrumento desde la ruta (params)
-  const idParam = route.params.id as string
+  const idParam = route.params.id as string;
   if (idParam) {
-    selectedInstrumentId.value = idParam
-    selectedInstrument.value = instrumentStore.instruments.find((i) => i.id === idParam) || null
+    selectedInstrumentId.value = idParam;
+    selectedInstrument.value = instrumentStore.instruments.find((i) => i.id === idParam) || null;
     // Si el instrumento ya está asignado, redirigir al perfil del alumno asignado
     if (
       selectedInstrument.value &&
@@ -151,71 +151,71 @@ onMounted(async () => {
       selectedInstrument.value.asignacion?.studentId
     ) {
       router.replace({
-        name: "StudentInstrumentProfile",
+        name: 'StudentInstrumentProfile',
         params: {
           studentId: selectedInstrument.value.asignacion.studentId,
           instrumentId: selectedInstrument.value.id,
         },
-      })
+      });
     }
   }
-})
+});
 
 watch(searchStudent, (val) => {
   if (val.length >= 3) {
-    const query = val.toLowerCase()
+    const query = val.toLowerCase();
     studentResults.value = alumnos.value.filter(
-      (a) => a.nombre.toLowerCase().includes(query) || a.apellido.toLowerCase().includes(query)
-    )
+      (a) => a.nombre.toLowerCase().includes(query) || a.apellido.toLowerCase().includes(query),
+    );
   } else {
-    studentResults.value = []
+    studentResults.value = [];
   }
-})
+});
 
 function onFileChange(event: Event) {
-  const files = (event.target as HTMLInputElement).files
-  if (!files) return
-  contratoFile.value = files[0]
+  const files = (event.target as HTMLInputElement).files;
+  if (!files) return;
+  contratoFile.value = files[0];
 }
 
 async function onSubmit() {
-  error.value = null
-  success.value = false
+  error.value = null;
+  success.value = false;
   if (!selectedInstrument.value || !selectedStudentId.value) {
-    error.value = "Debe seleccionar alumno."
-    return
+    error.value = 'Debe seleccionar alumno.';
+    return;
   }
   // Simulación de subida de contrato (opcional)
-  let contratoUrl = ""
+  let contratoUrl = '';
   if (contratoFile.value) {
     // Aquí iría la lógica real de subida y obtención de URL
-    contratoUrl = "url-fake-contrato.pdf"
+    contratoUrl = 'url-fake-contrato.pdf';
   }
   // Actualizar instrumento en el store (cambiar isAssign a true y guardar asignación)
   await instrumentStore.updateInstrument(selectedInstrument.value.id, {
     isAssign: true,
     asignacion: {
       studentId: selectedStudentId.value,
-      nombreAlumno: selectedStudent.value?.nombre + " " + selectedStudent.value?.apellido,
+      nombreAlumno: selectedStudent.value?.nombre + ' ' + selectedStudent.value?.apellido,
       fechaAsignacion: new Date().toISOString().slice(0, 10),
-      ...(contratoUrl ? {contrato: contratoUrl} : {}),
+      ...(contratoUrl ? { contrato: contratoUrl } : {}),
     },
-  })
-  success.value = true
+  });
+  success.value = true;
   // Notificación y redirección
-  alert("Instrumento asignado correctamente")
+  alert('Instrumento asignado correctamente');
   setTimeout(() => {
-    router.push({name: "InstrumentList"})
-  }, 1000)
+    router.push({ name: 'InstrumentList' });
+  }, 1000);
 }
 
 function onCancel() {
-  router.push({name: "InstrumentList"})
+  router.push({ name: 'InstrumentList' });
 }
 
 function goToInstrumentHistory() {
   if (selectedInstrument.value && selectedInstrument.value.id) {
-    router.push({name: "InstrumentDetail", params: {id: selectedInstrument.value.id}})
+    router.push({ name: 'InstrumentDetail', params: { id: selectedInstrument.value.id } });
   }
 }
 </script>

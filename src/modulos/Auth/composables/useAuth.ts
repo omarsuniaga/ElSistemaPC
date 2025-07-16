@@ -1,14 +1,14 @@
 // src/modulos/Auth/composables/useAuth.ts
 
-import {computed} from "vue"
-import {useAuthStore} from "@/stores/auth"
+import { computed } from 'vue';
+import { useAuthStore } from '@/stores/auth';
 
 /**
  * Composable para gestión de autenticación
  * Proporciona una interfaz reactiva sobre el store de autenticación
  */
 export function useAuth() {
-  const authStore = useAuthStore()
+  const authStore = useAuthStore();
 
   return {
     // Usuario actual
@@ -38,5 +38,5 @@ export function useAuth() {
     notifications: computed(() => authStore.notifications),
     addNotification: authStore.addNotification,
     removeNotification: authStore.removeNotification,
-  }
+  };
 }

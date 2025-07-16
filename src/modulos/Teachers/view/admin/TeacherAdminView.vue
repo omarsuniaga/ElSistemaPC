@@ -473,24 +473,24 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useRouter} from "vue-router"
-import {useTeachersStore} from "@/stores/teachersUnified"
-import {useClassesStore} from "../../../Classes/store/classes"
-import {useStudentsStore} from "../../../Students/store/students" // Added missing import
-import {useInstrumentsStore} from "@/stores/instruments"
-import {Dialog, DialogPanel} from "@headlessui/vue"
-import TeacherForm from "../../components/TeacherForm.vue"
-import TeacherClassesManager from "../../components/TeacherClassesManager.vue"
-import ConfirmModal from "../../../../components/ConfirmModal.vue"
-import {useToast} from "../../../../components/ui/toast/use-toast"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useTeachersStore } from '@/stores/teachersUnified';
+import { useClassesStore } from '../../../Classes/store/classes';
+import { useStudentsStore } from '../../../Students/store/students'; // Added missing import
+import { useInstrumentsStore } from '@/stores/instruments';
+import { Dialog, DialogPanel } from '@headlessui/vue';
+import TeacherForm from '../../components/TeacherForm.vue';
+import TeacherClassesManager from '../../components/TeacherClassesManager.vue';
+import ConfirmModal from '../../../../components/ConfirmModal.vue';
+import { useToast } from '../../../../components/ui/toast/use-toast';
 import {
   safeArrayLength,
   safeGet,
   safeStoreAccess,
   safeMath,
   isValidArray,
-} from "../../../../utils/safeAccess"
+} from '../../../../utils/safeAccess';
 import {
   UserIcon,
   AcademicCapIcon,
@@ -510,273 +510,273 @@ import {
   ArrowPathIcon,
   FolderOpenIcon,
   MusicalNoteIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Stores
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore() // Initialize students store
-const instrumentsStore = useInstrumentsStore()
-const router = useRouter()
-const {toast} = useToast()
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore(); // Initialize students store
+const instrumentsStore = useInstrumentsStore();
+const router = useRouter();
+const { toast } = useToast();
 
 // State
-const isLoading = ref(true)
-const searchQuery = ref("")
-const filterInstrument = ref("")
-const filterStatus = ref("all")
-const showTeacherForm = ref(false)
-const currentTeacher = ref<any>(null)
-const showDeleteConfirm = ref(false)
-const teacherToDelete = ref<any>(null)
-const showClassesManager = ref(false)
-const selectedTeacher = ref<any>(null)
-const currentPage = ref(1)
-const pageSize = ref(6)
-const activeActionMenu = ref<string | null>(null)
-const clickOutsideListener = ref<EventListener | null>(null)
+const isLoading = ref(true);
+const searchQuery = ref('');
+const filterInstrument = ref('');
+const filterStatus = ref('all');
+const showTeacherForm = ref(false);
+const currentTeacher = ref<any>(null);
+const showDeleteConfirm = ref(false);
+const teacherToDelete = ref<any>(null);
+const showClassesManager = ref(false);
+const selectedTeacher = ref<any>(null);
+const currentPage = ref(1);
+const pageSize = ref(6);
+const activeActionMenu = ref<string | null>(null);
+const clickOutsideListener = ref<EventListener | null>(null);
 
 // Computed properties
-const teachers = computed(() => teachersStore.teachers)
+const teachers = computed(() => teachersStore.teachers);
 
 const filteredTeachers = computed(() => {
-  let result = [...teachers.value]
+  let result = [...teachers.value];
 
   // Filter by search
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     result = result.filter(
       (teacher) =>
         (teacher.name && teacher.name.toLowerCase().includes(query)) ||
-        (teacher.email && teacher.email.toLowerCase().includes(query))
-    )
+        (teacher.email && teacher.email.toLowerCase().includes(query)),
+    );
   }
 
   // Filter by instrument
   if (filterInstrument.value) {
-    result = result.filter((teacher) => teacher.specialties.includes(filterInstrument.value))
+    result = result.filter((teacher) => teacher.specialties.includes(filterInstrument.value));
   }
 
   // Filter by status
-  if (filterStatus.value !== "all") {
+  if (filterStatus.value !== 'all') {
     result = result.filter((teacher) => {
-      if (filterStatus.value === "active") {
-        return teacher.status === "activo" || teacher.status === undefined
+      if (filterStatus.value === 'active') {
+        return teacher.status === 'activo' || teacher.status === undefined;
       } else {
-        return teacher.status === "inactivo"
+        return teacher.status === 'inactivo';
       }
-    })
+    });
   }
 
-  return result
-})
+  return result;
+});
 
 // obtener la especialidad de teacher usando getTeachersBySpecialty
 const instruments = computed(() => {
-  const allInstruments = instrumentsStore.instruments
-  if (!allInstruments || !Array.isArray(allInstruments)) return []
+  const allInstruments = instrumentsStore.instruments;
+  if (!allInstruments || !Array.isArray(allInstruments)) return [];
 
   // Ensure we have unique instruments
-  const uniqueInstruments = new Map()
+  const uniqueInstruments = new Map();
   allInstruments.forEach((instrument) => {
     if (instrument && instrument.id && instrument.name) {
-      uniqueInstruments.set(instrument.id, instrument)
+      uniqueInstruments.set(instrument.id, instrument);
     }
-  })
+  });
 
-  return Array.from(uniqueInstruments.values())
-})
+  return Array.from(uniqueInstruments.values());
+});
 
-const totalPages = computed(() => Math.ceil(filteredTeachers.value.length / pageSize.value))
+const totalPages = computed(() => Math.ceil(filteredTeachers.value.length / pageSize.value));
 
 const paginatedTeachers = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = Math.min(start + pageSize.value, filteredTeachers.value.length)
-  return filteredTeachers.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = Math.min(start + pageSize.value, filteredTeachers.value.length);
+  return filteredTeachers.value.slice(start, end);
+});
 
-const startIndex = computed(() => (currentPage.value - 1) * pageSize.value)
+const startIndex = computed(() => (currentPage.value - 1) * pageSize.value);
 const endIndex = computed(() =>
-  Math.min(startIndex.value + pageSize.value, filteredTeachers.value.length)
-)
+  Math.min(startIndex.value + pageSize.value, filteredTeachers.value.length),
+);
 
 const displayedPages = computed(() => {
-  const pages = []
+  const pages = [];
 
   if (totalPages.value <= 7) {
     // Show all pages if 7 or fewer
     for (let i = 1; i <= totalPages.value; i++) {
-      pages.push(i)
+      pages.push(i);
     }
   } else {
     // Always include first and last page
-    pages.push(1)
+    pages.push(1);
 
     // For current pages near the beginning
     if (currentPage.value <= 3) {
-      pages.push(2, 3, 4, "...", totalPages.value - 1)
+      pages.push(2, 3, 4, '...', totalPages.value - 1);
     }
     // For current pages near the end
     else if (currentPage.value >= totalPages.value - 2) {
-      pages.push("...", totalPages.value - 3, totalPages.value - 2, totalPages.value - 1)
+      pages.push('...', totalPages.value - 3, totalPages.value - 2, totalPages.value - 1);
     }
     // For current pages in the middle
     else {
-      pages.push("...", currentPage.value - 1, currentPage.value, currentPage.value + 1, "...")
+      pages.push('...', currentPage.value - 1, currentPage.value, currentPage.value + 1, '...');
     }
 
-    pages.push(totalPages.value)
+    pages.push(totalPages.value);
   }
 
-  return pages
-})
+  return pages;
+});
 
 // Watch for filter changes to reset page
 watch([searchQuery, filterInstrument, filterStatus], () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
 
 // Methods
 function resetFilters() {
-  searchQuery.value = ""
-  filterInstrument.value = ""
-  filterStatus.value = "all"
-  currentPage.value = 1
+  searchQuery.value = '';
+  filterInstrument.value = '';
+  filterStatus.value = 'all';
+  currentPage.value = 1;
 }
 
 // Safe function to get total classes
 function getTotalClassesSafe() {
   return safeMath(() => {
-    const teachersArray = safeStoreAccess(teachers, "value", [])
-    let totalClasses = 0
+    const teachersArray = safeStoreAccess(teachers, 'value', []);
+    let totalClasses = 0;
 
     teachersArray.forEach((teacher: any) => {
-      const teacherId = safeGet(teacher, "id")
+      const teacherId = safeGet(teacher, 'id');
       if (teacherId) {
-        totalClasses += getTeacherClassCount(teacherId)
+        totalClasses += getTeacherClassCount(teacherId);
       }
-    })
+    });
 
-    return totalClasses
-  }, 0)
+    return totalClasses;
+  }, 0);
 }
 
 // Legacy function for compatibility
 function _getTotalClasses() {
-  return getTotalClassesSafe()
+  return getTotalClassesSafe();
 }
 
 function toggleActionMenu(teacherId: string) {
   // Close any open menu first
   if (activeActionMenu.value && activeActionMenu.value !== teacherId) {
-    activeActionMenu.value = null
+    activeActionMenu.value = null;
   }
 
   // Toggle the clicked menu
-  activeActionMenu.value = activeActionMenu.value === teacherId ? null : teacherId
+  activeActionMenu.value = activeActionMenu.value === teacherId ? null : teacherId;
 
   // Add click outside listener
   if (activeActionMenu.value) {
     setTimeout(() => {
       clickOutsideListener.value = (event: Event) => {
-        const target = event.target as HTMLElement
-        if (!target.closest(".action-menu-container")) {
-          activeActionMenu.value = null
+        const target = event.target as HTMLElement;
+        if (!target.closest('.action-menu-container')) {
+          activeActionMenu.value = null;
           if (clickOutsideListener.value) {
-            document.removeEventListener("click", clickOutsideListener.value)
-            clickOutsideListener.value = null
+            document.removeEventListener('click', clickOutsideListener.value);
+            clickOutsideListener.value = null;
           }
         }
-      }
+      };
       if (clickOutsideListener.value) {
-        document.addEventListener("click", clickOutsideListener.value)
+        document.addEventListener('click', clickOutsideListener.value);
       }
-    }, 10)
+    }, 10);
   }
 }
 
 function getInstrumentName(instrumentId: string): string {
-  const instrument = instruments.value.find((i: {id: string}) => i.id === instrumentId)
-  return instrument ? instrument.name : "No asignado"
+  const instrument = instruments.value.find((i: {id: string}) => i.id === instrumentId);
+  return instrument ? instrument.name : 'No asignado';
 }
 
 function getTeacherClassCount(teacherId: string): number {
-  return classesStore.classes.filter((c) => c.teacherId && c.teacherId === teacherId).length
+  return classesStore.classes.filter((c) => c.teacherId && c.teacherId === teacherId).length;
 }
 
 function getTeacherStudentsCount(teacherId: string): number {
   try {
-    if (!teacherId || !studentsStore.students || !classesStore.classes) return 0
+    if (!teacherId || !studentsStore.students || !classesStore.classes) return 0;
 
     // Get all class IDs for this teacher
-    const teacherClassIds = classesStore.classes.filter((cls) => cls.teacherId === teacherId)
+    const teacherClassIds = classesStore.classes.filter((cls) => cls.teacherId === teacherId);
 
-    if (teacherClassIds.length === 0) return 0
+    if (teacherClassIds.length === 0) return 0;
 
-    const uniqueStudentIds = new Set<string>()
+    const uniqueStudentIds = new Set<string>();
     // iterar teacherClassIds y obtener el length de la propiedad studentsIds
     teacherClassIds.forEach((cls) => {
       if (!cls.studentIds || !Array.isArray(cls.studentIds)) {
-        cls.studentIds = [] // Ensure studentIds is an array
+        cls.studentIds = []; // Ensure studentIds is an array
       }
       // console.log('Teacher Class IDs:', cls.studentIds);
       cls.studentIds.forEach((studentId) => {
         if (studentId) {
-          uniqueStudentIds.add(studentId)
+          uniqueStudentIds.add(studentId);
         }
-      })
-      return uniqueStudentIds.size
-    })
+      });
+      return uniqueStudentIds.size;
+    });
 
-    return uniqueStudentIds.size
+    return uniqueStudentIds.size;
   } catch (error) {
-    console.error("Error counting teacher students:", error)
-    return 0
+    console.error('Error counting teacher students:', error);
+    return 0;
   }
 }
 
 function getStatusText(status: any): string {
   switch (status) {
-    case "activo":
-      return "Activo"
-    case "inactivo":
-      return "Inactivo"
-    case "pendiente":
-      return "Pendiente"
-    default:
-      return status ? status : "Activo"
+  case 'activo':
+    return 'Activo';
+  case 'inactivo':
+    return 'Inactivo';
+  case 'pendiente':
+    return 'Pendiente';
+  default:
+    return status ? status : 'Activo';
   }
 }
 
 // Safe function to get specialties array
 function getSpecialtiesArraySafe(specialties: any): string[] {
-  if (!specialties) return []
-  if (isValidArray(specialties)) return specialties
-  if (typeof specialties === "string") return [specialties]
-  return []
+  if (!specialties) return [];
+  if (isValidArray(specialties)) return specialties;
+  if (typeof specialties === 'string') return [specialties];
+  return [];
 }
 
 // Legacy function for compatibility
 function _getSpecialtiesArray(specialties: any) {
-  return getSpecialtiesArraySafe(specialties)
+  return getSpecialtiesArraySafe(specialties);
 }
 
 function prevPage() {
   if (currentPage.value > 1) {
-    currentPage.value--
+    currentPage.value--;
   }
 }
 
 function nextPage() {
   if (currentPage.value < totalPages.value) {
-    currentPage.value++
+    currentPage.value++;
   }
 }
 
 function openTeacherForm(teacher: any = null) {
-  currentTeacher.value = teacher
-  showTeacherForm.value = true
-  activeActionMenu.value = null
+  currentTeacher.value = teacher;
+  showTeacherForm.value = true;
+  activeActionMenu.value = null;
 }
 
 function saveTeacher(teacherData: any) {
@@ -785,141 +785,141 @@ function saveTeacher(teacherData: any) {
       // Update existing teacher
       teachersStore.updateTeacher(currentTeacher.value.id, {
         ...teacherData,
-      })
+      });
       toast({
-        title: "Éxito",
-        description: "Maestro actualizado correctamente",
-        variant: "default",
-      })
+        title: 'Éxito',
+        description: 'Maestro actualizado correctamente',
+        variant: 'default',
+      });
     } else {
       // Create new teacher
-      teachersStore.createTeacher(teacherData)
+      teachersStore.createTeacher(teacherData);
       toast({
-        title: "Éxito",
-        description: "Maestro creado correctamente",
-        variant: "default",
-      })
+        title: 'Éxito',
+        description: 'Maestro creado correctamente',
+        variant: 'default',
+      });
     }
-    showTeacherForm.value = false
+    showTeacherForm.value = false;
   } catch (error) {
-    console.error("Error saving teacher:", error)
+    console.error('Error saving teacher:', error);
     toast({
-      title: "Error",
-      description: "No se pudo guardar el maestro. Por favor, intenta de nuevo.",
-      variant: "destructive",
-    })
+      title: 'Error',
+      description: 'No se pudo guardar el maestro. Por favor, intenta de nuevo.',
+      variant: 'destructive',
+    });
   }
 }
 
 function confirmDeleteTeacher(teacher: any) {
-  teacherToDelete.value = teacher
-  showDeleteConfirm.value = true
-  activeActionMenu.value = null
+  teacherToDelete.value = teacher;
+  showDeleteConfirm.value = true;
+  activeActionMenu.value = null;
 }
 
 function deleteTeacher() {
-  if (!teacherToDelete.value) return
+  if (!teacherToDelete.value) return;
 
   try {
-    teachersStore.deleteTeacher(teacherToDelete.value.id)
+    teachersStore.deleteTeacher(teacherToDelete.value.id);
     toast({
-      title: "Éxito",
-      description: "Maestro eliminado correctamente",
-      variant: "default",
-    })
+      title: 'Éxito',
+      description: 'Maestro eliminado correctamente',
+      variant: 'default',
+    });
   } catch (error) {
-    console.error("Error deleting teacher:", error)
+    console.error('Error deleting teacher:', error);
     toast({
-      title: "Error",
-      description: "No se pudo eliminar el maestro. Por favor, intenta de nuevo.",
-      variant: "destructive",
-    })
+      title: 'Error',
+      description: 'No se pudo eliminar el maestro. Por favor, intenta de nuevo.',
+      variant: 'destructive',
+    });
   } finally {
-    showDeleteConfirm.value = false
-    teacherToDelete.value = null
+    showDeleteConfirm.value = false;
+    teacherToDelete.value = null;
   }
 }
 
 function viewTeacherSchedule(teacherId: string) {
-  router.push(`/teachers/${teacherId}/schedule`)
-  activeActionMenu.value = null
+  router.push(`/teachers/${teacherId}/schedule`);
+  activeActionMenu.value = null;
 }
 
 function viewTeacherAttendance(teacherId: string) {
   // Redirigir al componente TeacherInformeAttendance con el teacherId
   router.push({
-    path: "/attendance/informe",
-    query: {teacherId},
-  })
-  activeActionMenu.value = null
+    path: '/attendance/informe',
+    query: { teacherId },
+  });
+  activeActionMenu.value = null;
 }
 
 function manageTeacherClasses(teacher: any) {
-  selectedTeacher.value = teacher
-  showClassesManager.value = true
-  activeActionMenu.value = null
+  selectedTeacher.value = teacher;
+  showClassesManager.value = true;
+  activeActionMenu.value = null;
 
   // Ensure classes are loaded
   if (classesStore.classes.length === 0) {
     classesStore.fetchClasses().catch((error) => {
-      console.error("Error loading classes:", error)
+      console.error('Error loading classes:', error);
       toast({
-        title: "Error",
-        description: "No se pudieron cargar las clases. Por favor, intenta de nuevo.",
-        variant: "destructive",
-      })
-    })
+        title: 'Error',
+        description: 'No se pudieron cargar las clases. Por favor, intenta de nuevo.',
+        variant: 'destructive',
+      });
+    });
   }
 }
 
 function toggleTeacherStatus(teacher: any) {
-  const newStatus = teacher.status === "activo" ? "inactivo" : "activo"
+  const newStatus = teacher.status === 'activo' ? 'inactivo' : 'activo';
 
   try {
     teachersStore.updateTeacher(teacher.id, {
       ...teacher,
       status: newStatus,
-    })
+    });
 
     toast({
-      title: "Estado actualizado",
-      description: `Maestro ${newStatus === "activo" ? "activado" : "desactivado"} correctamente`,
-      variant: "default",
-    })
+      title: 'Estado actualizado',
+      description: `Maestro ${newStatus === 'activo' ? 'activado' : 'desactivado'} correctamente`,
+      variant: 'default',
+    });
   } catch (error) {
-    console.error("Error toggling teacher status:", error)
+    console.error('Error toggling teacher status:', error);
     toast({
-      title: "Error",
-      description: "No se pudo actualizar el estado del maestro",
-      variant: "destructive",
-    })
+      title: 'Error',
+      description: 'No se pudo actualizar el estado del maestro',
+      variant: 'destructive',
+    });
   }
-  activeActionMenu.value = null
+  activeActionMenu.value = null;
 }
 
 // Load data
 onMounted(async () => {
   try {
-    await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()])
+    await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()]);
   } catch (error) {
-    console.error("Error loading data:", error)
+    console.error('Error loading data:', error);
     toast({
-      title: "Error",
-      description: "No se pudieron cargar los datos. Por favor, intenta de nuevo.",
-      variant: "destructive",
-    })
+      title: 'Error',
+      description: 'No se pudieron cargar los datos. Por favor, intenta de nuevo.',
+      variant: 'destructive',
+    });
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 
   // Close action menu when clicking outside
-  document.addEventListener("click", (event: Event) => {
-    const target = event.target as HTMLElement
-    if (activeActionMenu.value && !target?.closest?.(".action-menu-container")) {
-      activeActionMenu.value = null
+  document.addEventListener('click', (event: Event) => {
+    const target = event.target as HTMLElement;
+    if (activeActionMenu.value && !target?.closest?.('.action-menu-container')) {
+      activeActionMenu.value = null;
     }
-  })
-})
+  });
+});
 </script>
 
 <style scoped>

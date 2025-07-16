@@ -1,121 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useScheduleStore} from "../modulos/Schedules/store/schedule"
-import {useClassesStore} from "../modulos/Classes/store/classes"
-import {useTeachersStore} from "../modulos/Teachers/store/teachers"
-
-// Stores
-const scheduleStore = useScheduleStore()
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore()
-
-// Estado
-const isLoading = ref(false)
-const error = ref(null)
-const selectedTeacherId = ref("")
-const selectedDay = ref("")
-const loadingMessage = ref("")
-const weekDays = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-
-// Función para cargar datos necesarios
-const loadData = async () => {
-  try {
-    isLoading.value = true
-    loadingMessage.value = "Cargando datos de horarios..."
-
-    // Cargar datos de los stores en paralelo
-    await Promise.all([
-      scheduleStore.fetchAllSchedules(),
-      classesStore.fetchClasses(),
-      teachersStore.fetchTeachers(),
-    ])
-
-    return true
-  } catch (err: any) {
-    error.value = `Error al cargar datos: ${err.message}`
-    console.error("Error cargando datos:", err)
-    return false
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Ordenar las clases por día y hora
-const schedulesGroupedByDay = computed(() => {
-  // Crear un objeto para almacenar las clases por día
-  const groupedSchedules = {}
-
-  // Inicializar todos los días de la semana
-  weekDays.forEach((day) => {
-    groupedSchedules[day] = []
-  })
-
-  // Si hay un profesor seleccionado, filtrar por ese profesor
-  const filteredSchedules = selectedTeacherId.value
-    ? scheduleStore.getSchedulesByTeacher(selectedTeacherId.value)
-    : scheduleStore.getAllSchedules
-
-  // Agrupar por día
-  filteredSchedules.forEach((schedule) => {
-    const dayOfWeek = schedule.scheduleDay?.dayOfWeek || "Lunes" // Valor por defecto
-
-    if (groupedSchedules[dayOfWeek]) {
-      // Obtener los datos de la clase asociada al horario
-      const classData = classesStore.getClassById(schedule.scheduleDay?.classId)
-
-      // Crear un objeto para mostrar los datos relevantes
-      const scheduleItem = {
-        id: schedule.id,
-        className: classData?.name || "Clase sin nombre",
-        teacherName: teacherData(schedule.scheduleDay?.teacherId),
-        startTime: schedule.scheduleDay?.timeSlot?.startTime || "",
-        endTime: schedule.scheduleDay?.timeSlot?.endTime || "",
-        room: schedule.scheduleDay?.roomId || "Sin aula asignada",
-        studentCount: schedule.scheduleDay?.studentIds?.length || 0,
-      }
-
-      groupedSchedules[dayOfWeek].push(scheduleItem)
-    }
-  })
-
-  // Ordenar cada día por hora de inicio
-  Object.keys(groupedSchedules).forEach((day) => {
-    groupedSchedules[day].sort((a, b) => {
-      return convertTimeToMinutes(a.startTime) - convertTimeToMinutes(b.startTime)
-    })
-  })
-
-  return groupedSchedules
-})
-
-// Función para convertir hora (HH:MM) a minutos para ordenar
-const convertTimeToMinutes = (time) => {
-  if (!time) return 0
-  const [hours, minutes] = time.split(":").map(Number)
-  return hours * 60 + minutes
-}
-
-// Obtener nombre del profesor
-const teacherData = (teacherId) => {
-  if (!teacherId) return "Sin profesor asignado"
-  const teacher = teachersStore.teachers.find((t) => t.id === teacherId)
-  return teacher?.name || "Profesor desconocido"
-}
-
-// Filtrados y selectores
-const availableTeachers = computed(() => {
-  return teachersStore.teachers.map((teacher) => ({
-    id: teacher.id,
-    name: teacher.name,
-  }))
-})
-
-// Cargar los datos al montar el componente
-onMounted(async () => {
-  await loadData()
-})
-</script>
-
 <template>
   <div class="schedule-view p-4 md:p-6 max-w-7xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">Vista de Horarios</h1>
@@ -235,6 +117,124 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useScheduleStore } from '../modulos/Schedules/store/schedule';
+import { useClassesStore } from '../modulos/Classes/store/classes';
+import { useTeachersStore } from '../modulos/Teachers/store/teachers';
+
+// Stores
+const scheduleStore = useScheduleStore();
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore();
+
+// Estado
+const isLoading = ref(false);
+const error = ref(null);
+const selectedTeacherId = ref('');
+const selectedDay = ref('');
+const loadingMessage = ref('');
+const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+// Función para cargar datos necesarios
+const loadData = async () => {
+  try {
+    isLoading.value = true;
+    loadingMessage.value = 'Cargando datos de horarios...';
+
+    // Cargar datos de los stores en paralelo
+    await Promise.all([
+      scheduleStore.fetchAllSchedules(),
+      classesStore.fetchClasses(),
+      teachersStore.fetchTeachers(),
+    ]);
+
+    return true;
+  } catch (err: any) {
+    error.value = `Error al cargar datos: ${err.message}`;
+    console.error('Error cargando datos:', err);
+    return false;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Ordenar las clases por día y hora
+const schedulesGroupedByDay = computed(() => {
+  // Crear un objeto para almacenar las clases por día
+  const groupedSchedules = {};
+
+  // Inicializar todos los días de la semana
+  weekDays.forEach((day) => {
+    groupedSchedules[day] = [];
+  });
+
+  // Si hay un profesor seleccionado, filtrar por ese profesor
+  const filteredSchedules = selectedTeacherId.value
+    ? scheduleStore.getSchedulesByTeacher(selectedTeacherId.value)
+    : scheduleStore.getAllSchedules;
+
+  // Agrupar por día
+  filteredSchedules.forEach((schedule) => {
+    const dayOfWeek = schedule.scheduleDay?.dayOfWeek || 'Lunes'; // Valor por defecto
+
+    if (groupedSchedules[dayOfWeek]) {
+      // Obtener los datos de la clase asociada al horario
+      const classData = classesStore.getClassById(schedule.scheduleDay?.classId);
+
+      // Crear un objeto para mostrar los datos relevantes
+      const scheduleItem = {
+        id: schedule.id,
+        className: classData?.name || 'Clase sin nombre',
+        teacherName: teacherData(schedule.scheduleDay?.teacherId),
+        startTime: schedule.scheduleDay?.timeSlot?.startTime || '',
+        endTime: schedule.scheduleDay?.timeSlot?.endTime || '',
+        room: schedule.scheduleDay?.roomId || 'Sin aula asignada',
+        studentCount: schedule.scheduleDay?.studentIds?.length || 0,
+      };
+
+      groupedSchedules[dayOfWeek].push(scheduleItem);
+    }
+  });
+
+  // Ordenar cada día por hora de inicio
+  Object.keys(groupedSchedules).forEach((day) => {
+    groupedSchedules[day].sort((a, b) => {
+      return convertTimeToMinutes(a.startTime) - convertTimeToMinutes(b.startTime);
+    });
+  });
+
+  return groupedSchedules;
+});
+
+// Función para convertir hora (HH:MM) a minutos para ordenar
+const convertTimeToMinutes = (time) => {
+  if (!time) return 0;
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+// Obtener nombre del profesor
+const teacherData = (teacherId) => {
+  if (!teacherId) return 'Sin profesor asignado';
+  const teacher = teachersStore.teachers.find((t) => t.id === teacherId);
+  return teacher?.name || 'Profesor desconocido';
+};
+
+// Filtrados y selectores
+const availableTeachers = computed(() => {
+  return teachersStore.teachers.map((teacher) => ({
+    id: teacher.id,
+    name: teacher.name,
+  }));
+});
+
+// Cargar los datos al montar el componente
+onMounted(async () => {
+  await loadData();
+});
+</script>
 
 <style scoped>
 .schedule-view {

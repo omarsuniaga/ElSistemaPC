@@ -417,8 +417,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, reactive} from "vue"
-import {useRouter} from "vue-router"
+import { ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   HomeIcon,
   ChevronRightIcon,
@@ -429,131 +429,131 @@ import {
   StarIcon,
   PlusIcon,
   TrashIcon,
-} from "@heroicons/vue/24/outline"
-import {useTeachersStore} from "../../../stores/teachers"
+} from '@heroicons/vue/24/outline';
+import { useTeachersStore } from '../../../stores/teachers';
 import {
   TeacherStatus,
   type Teacher,
   type Qualification,
-} from "../../../modulos/Teachers/types/teachers"
+} from '../../../modulos/Teachers/types/teachers';
 
 // Router and stores
-const router = useRouter()
-const teachersStore = useTeachersStore()
+const router = useRouter();
+const teachersStore = useTeachersStore();
 
 // State
-const isSubmitting = ref(false)
+const isSubmitting = ref(false);
 
 // Form data
 const form = reactive({
-  name: "",
-  email: "",
-  phone: "",
-  hireDate: "",
-  address: "",
+  name: '',
+  email: '',
+  phone: '',
+  hireDate: '',
+  address: '',
   specialties: [] as string[],
-  experience: "",
+  experience: '',
   hourlyRate: null as number | null,
-  status: "" as "active" | "on_leave" | "inactive" | "",
-  biography: "",
+  status: '' as 'active' | 'on_leave' | 'inactive' | '',
+  biography: '',
   qualifications: [] as Qualification[],
-})
+});
 
 // Form errors
 const errors = reactive({
-  name: "",
-  email: "",
-  phone: "",
-  hireDate: "",
-  specialties: "",
-  status: "",
-})
+  name: '',
+  email: '',
+  phone: '',
+  hireDate: '',
+  specialties: '',
+  status: '',
+});
 
 // Available specialties
 const availableSpecialties = [
-  {value: "piano", label: "Piano"},
-  {value: "guitar", label: "Guitarra"},
-  {value: "violin", label: "Violín"},
-  {value: "drums", label: "Batería"},
-  {value: "voice", label: "Canto"},
-  {value: "bass", label: "Bajo"},
-  {value: "flute", label: "Flauta"},
-  {value: "saxophone", label: "Saxofón"},
-  {value: "trumpet", label: "Trompeta"},
-  {value: "cello", label: "Violonchelo"},
-  {value: "theory", label: "Teoría Musical"},
-  {value: "composition", label: "Composición"},
-]
+  { value: 'piano', label: 'Piano' },
+  { value: 'guitar', label: 'Guitarra' },
+  { value: 'violin', label: 'Violín' },
+  { value: 'drums', label: 'Batería' },
+  { value: 'voice', label: 'Canto' },
+  { value: 'bass', label: 'Bajo' },
+  { value: 'flute', label: 'Flauta' },
+  { value: 'saxophone', label: 'Saxofón' },
+  { value: 'trumpet', label: 'Trompeta' },
+  { value: 'cello', label: 'Violonchelo' },
+  { value: 'theory', label: 'Teoría Musical' },
+  { value: 'composition', label: 'Composición' },
+];
 
 // Methods
 const validateForm = (): boolean => {
   // Clear previous errors
   Object.keys(errors).forEach((key) => {
-    errors[key as keyof typeof errors] = ""
-  })
+    errors[key as keyof typeof errors] = '';
+  });
 
-  let isValid = true
+  let isValid = true;
 
   // Required fields validation
   if (!form.name.trim()) {
-    errors.name = "El nombre es requerido"
-    isValid = false
+    errors.name = 'El nombre es requerido';
+    isValid = false;
   }
 
   if (!form.email.trim()) {
-    errors.email = "El correo electrónico es requerido"
-    isValid = false
+    errors.email = 'El correo electrónico es requerido';
+    isValid = false;
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    errors.email = "El correo electrónico no es válido"
-    isValid = false
+    errors.email = 'El correo electrónico no es válido';
+    isValid = false;
   }
 
   if (!form.phone.trim()) {
-    errors.phone = "El teléfono es requerido"
-    isValid = false
+    errors.phone = 'El teléfono es requerido';
+    isValid = false;
   }
 
   if (!form.hireDate) {
-    errors.hireDate = "La fecha de contratación es requerida"
-    isValid = false
+    errors.hireDate = 'La fecha de contratación es requerida';
+    isValid = false;
   }
 
   if (form.specialties.length === 0) {
-    errors.specialties = "Debe seleccionar al menos una especialidad"
-    isValid = false
+    errors.specialties = 'Debe seleccionar al menos una especialidad';
+    isValid = false;
   }
 
   if (!form.status) {
-    errors.status = "El estado es requerido"
-    isValid = false
+    errors.status = 'El estado es requerido';
+    isValid = false;
   }
 
-  return isValid
-}
+  return isValid;
+};
 
 const addQualification = () => {
   form.qualifications.push({
-    title: "",
-    institution: "",
+    title: '',
+    institution: '',
     year: new Date().getFullYear(),
-  })
-}
+  });
+};
 
 const removeQualification = (index: number) => {
-  form.qualifications.splice(index, 1)
-}
+  form.qualifications.splice(index, 1);
+};
 
 const handleSubmit = async () => {
   if (!validateForm()) {
-    return
+    return;
   }
 
   try {
-    isSubmitting.value = true
+    isSubmitting.value = true;
 
     const teacherData = {
-      uid: "", // Will be set by the backend
-      id: "", // Will be set by the backend
+      uid: '', // Will be set by the backend
+      id: '', // Will be set by the backend
       name: form.name,
       email: form.email,
       phone: form.phone,
@@ -564,24 +564,24 @@ const handleSubmit = async () => {
       hourlyRate: form.hourlyRate,
       status: form.status as TeacherStatus,
       biography: form.biography,
-      qualifications: form.qualifications.filter((q) => q.title.trim() !== ""),
+      qualifications: form.qualifications.filter((q) => q.title.trim() !== ''),
       createdAt: new Date(),
       updatedAt: new Date(),
-    }
+    };
 
     // Note: This would need to be implemented in the teachers store
     // For now, we'll just navigate back
-    console.log("Creating teacher:", teacherData)
+    console.log('Creating teacher:', teacherData);
 
     // Navigate back to teachers list
-    router.push("/admin/teachers")
+    router.push('/admin/teachers');
   } catch (error) {
-    console.error("Error creating teacher:", error)
+    console.error('Error creating teacher:', error);
     // Handle error (show notification, etc.)
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 </script>
 
 <style scoped>

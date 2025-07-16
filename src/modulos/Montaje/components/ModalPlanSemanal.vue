@@ -26,16 +26,16 @@
 </template>
 
 <script setup lang="ts">
-import type {PlanAccion} from "../types"
+import type { PlanAccion } from '../types';
 
 interface Props {
   plan?: PlanAccion | null
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 defineEmits<{
-  (e: "close"): void
-  (e: "guardar", data: PlanAccion): void
-}>()
+  (e: 'close'): void
+  (e: 'guardar', data: PlanAccion): void
+}>();
 </script>

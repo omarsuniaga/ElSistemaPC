@@ -346,9 +346,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, reactive, onMounted} from "vue"
-import {QrCodeIcon, CogIcon, ClockIcon, PaperAirplaneIcon} from "@heroicons/vue/24/outline"
-import {useWhatsApp} from "@/composables/useWhatsApp"
+import { ref, reactive, onMounted } from 'vue';
+import { QrCodeIcon, CogIcon, ClockIcon, PaperAirplaneIcon } from '@heroicons/vue/24/outline';
+import { useWhatsApp } from '@/composables/useWhatsApp';
 
 // Usar el composable de WhatsApp
 const {
@@ -365,95 +365,95 @@ const {
   sendMessage,
   clearError,
   formatTime,
-} = useWhatsApp()
+} = useWhatsApp();
 
 // Estado de las tabs
-const activeTab = ref("qr")
+const activeTab = ref('qr');
 
 const tabs = [
-  {id: "qr", name: "Conexión QR", icon: QrCodeIcon},
-  {id: "config", name: "Configuración", icon: CogIcon},
-  {id: "history", name: "Historial", icon: ClockIcon},
-  {id: "test", name: "Prueba", icon: PaperAirplaneIcon},
-]
+  { id: 'qr', name: 'Conexión QR', icon: QrCodeIcon },
+  { id: 'config', name: 'Configuración', icon: CogIcon },
+  { id: 'history', name: 'Historial', icon: ClockIcon },
+  { id: 'test', name: 'Prueba', icon: PaperAirplaneIcon },
+];
 
 // Estado de configuración
 const notifications = reactive({
   newStudent: true,
   classReminder: true,
   payment: true,
-})
+});
 
 const schedules = reactive({
-  classReminder: "09:00",
-  paymentReminder: "18:00",
-})
+  classReminder: '09:00',
+  paymentReminder: '18:00',
+});
 
-const saving = ref(false)
+const saving = ref(false);
 
 // Estado de historial de mensajes
 const messages = ref([
   {
     id: 1,
-    recipient: "18091234567",
-    content: "Recordatorio: Tienes clase de piano mañana a las 3:00 PM",
-    status: "sent",
+    recipient: '18091234567',
+    content: 'Recordatorio: Tienes clase de piano mañana a las 3:00 PM',
+    status: 'sent',
     timestamp: new Date(Date.now() - 86400000), // Ayer
   },
   {
     id: 2,
-    recipient: "18099876543",
-    content: "Bienvenido a la Academia Musical! Tu primera clase será el lunes.",
-    status: "sent",
+    recipient: '18099876543',
+    content: 'Bienvenido a la Academia Musical! Tu primera clase será el lunes.',
+    status: 'sent',
     timestamp: new Date(Date.now() - 172800000), // Hace 2 días
   },
-])
+]);
 
 // Estado de mensaje de prueba
 const testMessage = reactive({
-  phone: "",
+  phone: '',
   content:
-    "🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.",
-})
+    '🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.',
+});
 
-const sendingTest = ref(false)
-const sendResult = ref<{success: boolean; message?: string} | null>(null)
+const sendingTest = ref(false);
+const sendResult = ref<{success: boolean; message?: string} | null>(null);
 
 // Métodos
 const saveConfig = async () => {
-  saving.value = true
+  saving.value = true;
 
   try {
     // Simular guardado de configuración
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Aquí guardarías la configuración en Firestore o tu backend
-    console.log("Configuración guardada:", {notifications, schedules})
+    console.log('Configuración guardada:', { notifications, schedules });
 
-    alert("✅ Configuración guardada correctamente")
+    alert('✅ Configuración guardada correctamente');
   } catch (error) {
-    console.error("Error guardando configuración:", error)
-    alert("❌ Error al guardar la configuración")
+    console.error('Error guardando configuración:', error);
+    alert('❌ Error al guardar la configuración');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const sendTestMessage = async () => {
-  if (!testMessage.phone || !testMessage.content || !isConnected.value) return
+  if (!testMessage.phone || !testMessage.content || !isConnected.value) return;
 
-  sendingTest.value = true
+  sendingTest.value = true;
 
   try {
     const success = await sendMessage({
       number: testMessage.phone,
       message: testMessage.content,
-    })
+    });
 
     sendResult.value = {
       success,
-      message: success ? "Mensaje enviado correctamente" : "Error al enviar mensaje",
-    }
+      message: success ? 'Mensaje enviado correctamente' : 'Error al enviar mensaje',
+    };
 
     if (success) {
       // Agregar al historial
@@ -461,48 +461,48 @@ const sendTestMessage = async () => {
         id: Date.now(),
         recipient: testMessage.phone,
         content: testMessage.content,
-        status: "sent",
+        status: 'sent',
         timestamp: new Date(),
-      })
+      });
 
       // Limpiar formulario
-      testMessage.phone = ""
+      testMessage.phone = '';
       testMessage.content =
-        "🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente."
+        '🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.';
     }
 
     // Limpiar resultado después de 5 segundos
     setTimeout(() => {
-      sendResult.value = null
-    }, 5000)
+      sendResult.value = null;
+    }, 5000);
   } catch (error) {
     sendResult.value = {
       success: false,
-      message: error instanceof Error ? error.message : "Error desconocido",
-    }
+      message: error instanceof Error ? error.message : 'Error desconocido',
+    };
 
     setTimeout(() => {
-      sendResult.value = null
-    }, 5000)
+      sendResult.value = null;
+    }, 5000);
   } finally {
-    sendingTest.value = false
+    sendingTest.value = false;
   }
-}
+};
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("es-ES", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
 
 // Inicialización
 onMounted(() => {
-  checkStatus()
-})
+  checkStatus();
+});
 </script>
 
 <style scoped>

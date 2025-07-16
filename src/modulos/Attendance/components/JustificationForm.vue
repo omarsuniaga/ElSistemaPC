@@ -1,75 +1,3 @@
-<script setup lang="ts">
-import {ref, computed} from "vue"
-import type {JustificationData} from "../types/attendance"
-import {useAttendanceStore} from "../store/attendance"
-import {useAuthStore} from "../../../stores/auth"
-import {useRBACStore} from "../../../stores/rbacStore"
-
-const props = defineProps<{
-  studentId: string
-  classId: string
-  date: string
-}>()
-
-const emit = defineEmits(["saved", "cancel"])
-
-const attendanceStore = useAttendanceStore()
-const authStore = useAuthStore()
-const rbacStore = useRBACStore()
-
-// RBAC permissions
-const canJustify = computed(() => rbacStore.hasPermission("attendance_justify"))
-
-// Estado del formulario
-const reason = ref("")
-const documentUrl = ref("")
-const uploading = ref(false)
-const error = ref<string | null>(null)
-
-// Computed para validación
-const isValid = computed(() => {
-  return reason.value.trim().length > 0
-})
-
-// Método para subir documento
-const uploadDocument = async (file: File) => {
-  try {
-    uploading.value = true
-    error.value = null
-    // Aquí iría la lógica para subir el archivo a Firebase Storage
-    // Por ahora solo simulamos la URL
-    documentUrl.value = "https://example.com/document.pdf"
-  } catch (err) {
-    error.value = "Error al subir el documento"
-    console.error(err)
-  } finally {
-    uploading.value = false
-  }
-}
-
-// Método para guardar la justificación
-const saveJustification = async () => {
-  if (!isValid.value || !canJustify.value) return
-  const justification: Omit<JustificationData, "id" | "createdAt" | "updatedAt"> = {
-    studentId: props.studentId,
-    classId: props.classId,
-    fecha: props.date,
-    reason: reason.value,
-    documentUrl: documentUrl.value,
-    approvalStatus: "pending",
-    timeLimit: new Date(new Date(props.date).getTime() + 48 * 60 * 60 * 1000),
-  }
-
-  try {
-    await attendanceStore.addJustification(justification)
-    emit("saved")
-  } catch (err) {
-    error.value = "Error al guardar la justificación"
-    console.error(err)
-  }
-}
-</script>
-
 <template>
   <div class="p-4 space-y-4">
     <!-- Mensaje de error -->
@@ -179,3 +107,75 @@ const saveJustification = async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import type { JustificationData } from '../types/attendance';
+import { useAttendanceStore } from '../store/attendance';
+import { useAuthStore } from '../../../stores/auth';
+import { useRBACStore } from '../../../stores/rbacStore';
+
+const props = defineProps<{
+  studentId: string
+  classId: string
+  date: string
+}>();
+
+const emit = defineEmits(['saved', 'cancel']);
+
+const attendanceStore = useAttendanceStore();
+const authStore = useAuthStore();
+const rbacStore = useRBACStore();
+
+// RBAC permissions
+const canJustify = computed(() => rbacStore.hasPermission('attendance_justify'));
+
+// Estado del formulario
+const reason = ref('');
+const documentUrl = ref('');
+const uploading = ref(false);
+const error = ref<string | null>(null);
+
+// Computed para validación
+const isValid = computed(() => {
+  return reason.value.trim().length > 0;
+});
+
+// Método para subir documento
+const uploadDocument = async (file: File) => {
+  try {
+    uploading.value = true;
+    error.value = null;
+    // Aquí iría la lógica para subir el archivo a Firebase Storage
+    // Por ahora solo simulamos la URL
+    documentUrl.value = 'https://example.com/document.pdf';
+  } catch (err) {
+    error.value = 'Error al subir el documento';
+    console.error(err);
+  } finally {
+    uploading.value = false;
+  }
+};
+
+// Método para guardar la justificación
+const saveJustification = async () => {
+  if (!isValid.value || !canJustify.value) return;
+  const justification: Omit<JustificationData, 'id' | 'createdAt' | 'updatedAt'> = {
+    studentId: props.studentId,
+    classId: props.classId,
+    fecha: props.date,
+    reason: reason.value,
+    documentUrl: documentUrl.value,
+    approvalStatus: 'pending',
+    timeLimit: new Date(new Date(props.date).getTime() + 48 * 60 * 60 * 1000),
+  };
+
+  try {
+    await attendanceStore.addJustification(justification);
+    emit('saved');
+  } catch (err) {
+    error.value = 'Error al guardar la justificación';
+    console.error(err);
+  }
+};
+</script>

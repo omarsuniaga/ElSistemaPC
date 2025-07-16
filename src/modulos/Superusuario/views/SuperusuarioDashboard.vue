@@ -597,14 +597,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {useSuperusuario} from "../composables/useSuperusuario"
-import {UserRole} from "../types"
-import PermissionGuard from "@/modulos/Auth/components/PermissionGuard.vue"
-import QuickTestTeacherAccess from "@/components/QuickTestTeacherAccess.vue"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useSuperusuario } from '../composables/useSuperusuario';
+import { UserRole } from '../types';
+import PermissionGuard from '@/modulos/Auth/components/PermissionGuard.vue';
+import QuickTestTeacherAccess from '@/components/QuickTestTeacherAccess.vue';
 
-const router = useRouter()
+const router = useRouter();
 
 // Composable principal
 const {
@@ -624,147 +624,147 @@ const {
   runSystemMaintenance,
   exportSystemData,
   createSystemBackup,
-} = useSuperusuario()
+} = useSuperusuario();
 
 // Estado local del componente
-const userSearchQuery = ref("")
-const showCreateUserModal = ref(false)
-const showRoleChangeModal = ref(false)
-const showBackupModal = ref(false)
-const selectedUser = ref<any>(null)
-const newRole = ref<UserRole | null>(null)
-const roleChangeReason = ref("")
+const userSearchQuery = ref('');
+const showCreateUserModal = ref(false);
+const showRoleChangeModal = ref(false);
+const showBackupModal = ref(false);
+const selectedUser = ref<any>(null);
+const newRole = ref<UserRole | null>(null);
+const roleChangeReason = ref('');
 const newUserForm = ref({
-  email: "",
-  displayName: "",
+  email: '',
+  displayName: '',
   role: UserRole.COLABORADOR,
-  password: "",
-})
-const backupDescription = ref("")
+  password: '',
+});
+const backupDescription = ref('');
 
 // Estados de operaciones
-const isExporting = ref(false)
-const isCreatingBackup = ref(false)
-const isMaintenanceRunning = ref(false)
-const isInitializingRBAC = ref(false)
-const isFixingRBAC = ref(false)
+const isExporting = ref(false);
+const isCreatingBackup = ref(false);
+const isMaintenanceRunning = ref(false);
+const isInitializingRBAC = ref(false);
+const isFixingRBAC = ref(false);
 
 // Computed properties
 const filteredUsers = computed(() => {
-  if (!users.value) return []
-  if (!userSearchQuery.value.trim()) return users.value
+  if (!users.value) return [];
+  if (!userSearchQuery.value.trim()) return users.value;
 
-  const query = userSearchQuery.value.toLowerCase()
+  const query = userSearchQuery.value.toLowerCase();
   return users.value.filter(
     (user) =>
       user.email?.toLowerCase().includes(query) ||
       user.displayName?.toLowerCase().includes(query) ||
-      user.role?.toLowerCase().includes(query)
-  )
-})
+      user.role?.toLowerCase().includes(query),
+  );
+});
 
 const userRoleOptions = computed(() => [
-  {value: UserRole.COLABORADOR, label: "Colaborador"},
-  {value: UserRole.MONITOR, label: "Monitor"},
-  {value: UserRole.MAESTRO, label: "Maestro"},
-  {value: UserRole.ADMINISTRADOR, label: "Administrador"},
-  {value: UserRole.DIRECTOR, label: "Director"},
-  {value: UserRole.SUPERUSUARIO, label: "Superusuario"},
-])
+  { value: UserRole.COLABORADOR, label: 'Colaborador' },
+  { value: UserRole.MONITOR, label: 'Monitor' },
+  { value: UserRole.MAESTRO, label: 'Maestro' },
+  { value: UserRole.ADMINISTRADOR, label: 'Administrador' },
+  { value: UserRole.DIRECTOR, label: 'Director' },
+  { value: UserRole.SUPERUSUARIO, label: 'Superusuario' },
+]);
 
 // Métodos
 async function refreshDashboard() {
-  await Promise.all([loadDashboardData(), loadUsers(), loadSystemModules()])
+  await Promise.all([loadDashboardData(), loadUsers(), loadSystemModules()]);
 }
 
 function getSystemStatus() {
-  if (!dashboardData.value?.systemHealth) return "Desconocido"
+  if (!dashboardData.value?.systemHealth) return 'Desconocido';
 
   switch (dashboardData.value.systemHealth.status) {
-    case "healthy":
-      return "Saludable"
-    case "warning":
-      return "Advertencia"
-    case "critical":
-      return "Crítico"
-    default:
-      return "Desconocido"
+  case 'healthy':
+    return 'Saludable';
+  case 'warning':
+    return 'Advertencia';
+  case 'critical':
+    return 'Crítico';
+  default:
+    return 'Desconocido';
   }
 }
 
 function navigateToModule(moduleName: string) {
-  console.log(`Navegando a módulo: ${moduleName}`)
+  console.log(`Navegando a módulo: ${moduleName}`);
   switch (moduleName) {
-    case "usuarios":
-      router.push("/superusuario/users")
-      break
-    case "rbac":
-      router.push("/superusuario/rbac")
-      break
-    case "rbac-admin":
-      router.push("/superusuario/rbac-admin")
-      break
-    case "roles":
-      router.push("/superusuario/roles")
-      break
-    case "modulos":
-      router.push("/superusuario/system")
-      break
-    case "branding":
-      router.push("/superusuario/branding")
-      break
-    case "branding-test":
-      router.push("/testing/branding")
-      break
-    case "auditoria":
-      router.push("/superusuario/audit")
-      break
-    default:
-      console.warn(`Módulo no reconocido: ${moduleName}`)
+  case 'usuarios':
+    router.push('/superusuario/users');
+    break;
+  case 'rbac':
+    router.push('/superusuario/rbac');
+    break;
+  case 'rbac-admin':
+    router.push('/superusuario/rbac-admin');
+    break;
+  case 'roles':
+    router.push('/superusuario/roles');
+    break;
+  case 'modulos':
+    router.push('/superusuario/system');
+    break;
+  case 'branding':
+    router.push('/superusuario/branding');
+    break;
+  case 'branding-test':
+    router.push('/testing/branding');
+    break;
+  case 'auditoria':
+    router.push('/superusuario/audit');
+    break;
+  default:
+    console.warn(`Módulo no reconocido: ${moduleName}`);
   }
 }
 
 async function handleChangeUserRole(user: any) {
-  selectedUser.value = user
-  newRole.value = user.role
-  roleChangeReason.value = ""
-  showRoleChangeModal.value = true
+  selectedUser.value = user;
+  newRole.value = user.role;
+  roleChangeReason.value = '';
+  showRoleChangeModal.value = true;
 }
 
 async function confirmRoleChange() {
   if (!selectedUser.value || !newRole.value || !roleChangeReason.value.trim()) {
-    return
+    return;
   }
 
   try {
-    await changeUserRole(selectedUser.value.id, newRole.value, roleChangeReason.value)
-    showRoleChangeModal.value = false
-    selectedUser.value = null
-    newRole.value = null
-    roleChangeReason.value = ""
+    await changeUserRole(selectedUser.value.id, newRole.value, roleChangeReason.value);
+    showRoleChangeModal.value = false;
+    selectedUser.value = null;
+    newRole.value = null;
+    roleChangeReason.value = '';
   } catch (err) {
-    console.error("Error changing user role:", err)
+    console.error('Error changing user role:', err);
   }
 }
 
 async function handleToggleUserStatus(user: any) {
-  const action = user.isActive ? "desactivar" : "activar"
+  const action = user.isActive ? 'desactivar' : 'activar';
   if (confirm(`¿Estás seguro de que deseas ${action} al usuario ${user.email}?`)) {
-    await toggleUserStatus(user.id, !user.isActive)
+    await toggleUserStatus(user.id, !user.isActive);
   }
 }
 
 async function handleToggleModule(module: any) {
-  const action = module.enabled ? "deshabilitar" : "habilitar"
+  const action = module.enabled ? 'deshabilitar' : 'habilitar';
   if (confirm(`¿Estás seguro de que deseas ${action} el módulo ${module.name}?`)) {
-    await toggleModule(module.id, !module.enabled)
+    await toggleModule(module.id, !module.enabled);
   }
 }
 
 async function handleCreateUser() {
   if (!newUserForm.value.email || !newUserForm.value.displayName || !newUserForm.value.password) {
-    alert("Por favor, completa todos los campos requeridos")
-    return
+    alert('Por favor, completa todos los campos requeridos');
+    return;
   }
 
   try {
@@ -773,118 +773,118 @@ async function handleCreateUser() {
       displayName: newUserForm.value.displayName,
       role: newUserForm.value.role,
       password: newUserForm.value.password,
-    })
+    });
 
-    showCreateUserModal.value = false
+    showCreateUserModal.value = false;
     newUserForm.value = {
-      email: "",
-      displayName: "",
+      email: '',
+      displayName: '',
       role: UserRole.COLABORADOR,
-      password: "",
-    }
+      password: '',
+    };
   } catch (err) {
-    console.error("Error creating user:", err)
+    console.error('Error creating user:', err);
   }
 }
 
 async function handleSystemMaintenance() {
   if (
     confirm(
-      "¿Estás seguro de que deseas ejecutar el mantenimiento del sistema? Esta operación puede tomar algunos minutos."
+      '¿Estás seguro de que deseas ejecutar el mantenimiento del sistema? Esta operación puede tomar algunos minutos.',
     )
   ) {
-    isMaintenanceRunning.value = true
+    isMaintenanceRunning.value = true;
     try {
-      await runSystemMaintenance()
-      alert("Mantenimiento completado exitosamente")
+      await runSystemMaintenance();
+      alert('Mantenimiento completado exitosamente');
     } catch (err) {
-      alert("Error durante el mantenimiento: " + (err as Error).message)
+      alert('Error durante el mantenimiento: ' + (err as Error).message);
     } finally {
-      isMaintenanceRunning.value = false
+      isMaintenanceRunning.value = false;
     }
   }
 }
 
-async function handleExportData(format: "json" | "csv" | "xlsx") {
+async function handleExportData(format: 'json' | 'csv' | 'xlsx') {
   if (confirm(`¿Deseas exportar los datos del sistema en formato ${format.toUpperCase()}?`)) {
-    isExporting.value = true
+    isExporting.value = true;
     try {
-      const exportId = await exportSystemData(format)
-      alert(`Exportación completada. ID: ${exportId}`)
+      const exportId = await exportSystemData(format);
+      alert(`Exportación completada. ID: ${exportId}`);
     } catch (err) {
-      alert("Error durante la exportación: " + (err as Error).message)
+      alert('Error durante la exportación: ' + (err as Error).message);
     } finally {
-      isExporting.value = false
+      isExporting.value = false;
     }
   }
 }
 
 async function handleCreateBackup() {
   if (!backupDescription.value.trim()) {
-    alert("Por favor, proporciona una descripción para el backup")
-    return
+    alert('Por favor, proporciona una descripción para el backup');
+    return;
   }
 
-  isCreatingBackup.value = true
+  isCreatingBackup.value = true;
   try {
-    const backupId = await createSystemBackup(backupDescription.value)
-    alert(`Backup creado exitosamente. ID: ${backupId}`)
-    showBackupModal.value = false
-    backupDescription.value = ""
+    const backupId = await createSystemBackup(backupDescription.value);
+    alert(`Backup creado exitosamente. ID: ${backupId}`);
+    showBackupModal.value = false;
+    backupDescription.value = '';
   } catch (err) {
-    alert("Error creando backup: " + (err as Error).message)
+    alert('Error creando backup: ' + (err as Error).message);
   } finally {
-    isCreatingBackup.value = false
+    isCreatingBackup.value = false;
   }
 }
 
 // Funciones RBAC simplificadas
 async function handleInitializeRBAC() {
-  if (confirm("¿Estás seguro de que deseas inicializar el sistema RBAC?")) {
-    isInitializingRBAC.value = true
+  if (confirm('¿Estás seguro de que deseas inicializar el sistema RBAC?')) {
+    isInitializingRBAC.value = true;
     try {
-      console.log("🚀 Iniciando configuración RBAC...")
+      console.log('🚀 Iniciando configuración RBAC...');
       // Simular configuración
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      alert("✅ Sistema RBAC configurado correctamente!")
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      alert('✅ Sistema RBAC configurado correctamente!');
     } catch (err) {
-      console.error("Error durante la inicialización RBAC:", err)
-      alert("Error durante la inicialización RBAC: " + (err as Error).message)
+      console.error('Error durante la inicialización RBAC:', err);
+      alert('Error durante la inicialización RBAC: ' + (err as Error).message);
     } finally {
-      isInitializingRBAC.value = false
+      isInitializingRBAC.value = false;
     }
   }
 }
 
 async function handleCheckRBACStatus() {
   try {
-    console.log("🔍 Verificando estado RBAC...")
+    console.log('🔍 Verificando estado RBAC...');
     // Simular verificación
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     alert(
-      "📊 Estado del Sistema RBAC:\n\n✅ rbac_roles: Existe\n✅ rbac_permissions: Existe\n✅ rbac_module_access: Existe\n✅ rbac_user_roles: Existe"
-    )
+      '📊 Estado del Sistema RBAC:\n\n✅ rbac_roles: Existe\n✅ rbac_permissions: Existe\n✅ rbac_module_access: Existe\n✅ rbac_user_roles: Existe',
+    );
   } catch (err) {
-    console.error("Error verificando estado RBAC:", err)
-    alert("Error verificando estado RBAC: " + (err as Error).message)
+    console.error('Error verificando estado RBAC:', err);
+    alert('Error verificando estado RBAC: ' + (err as Error).message);
   }
 }
 
 async function handleFixRBACStructure() {
-  if (confirm("¿Estás seguro de que deseas corregir la estructura RBAC?")) {
-    isFixingRBAC.value = true
+  if (confirm('¿Estás seguro de que deseas corregir la estructura RBAC?')) {
+    isFixingRBAC.value = true;
     try {
-      console.log("🛠️ Corrigiendo estructura RBAC...")
+      console.log('🛠️ Corrigiendo estructura RBAC...');
       // Simular corrección
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       alert(
-        "✅ Estructura RBAC corregida exitosamente!\n\n📊 Resumen:\n- Módulos actualizados\n- Estructura de rutas corregida\n- Bucles infinitos solucionados"
-      )
+        '✅ Estructura RBAC corregida exitosamente!\n\n📊 Resumen:\n- Módulos actualizados\n- Estructura de rutas corregida\n- Bucles infinitos solucionados',
+      );
     } catch (err) {
-      console.error("Error corrigiendo estructura RBAC:", err)
-      alert("Error corrigiendo estructura RBAC: " + (err as Error).message)
+      console.error('Error corrigiendo estructura RBAC:', err);
+      alert('Error corrigiendo estructura RBAC: ' + (err as Error).message);
     } finally {
-      isFixingRBAC.value = false
+      isFixingRBAC.value = false;
     }
   }
 }
@@ -892,73 +892,73 @@ async function handleFixRBACStructure() {
 // Métodos auxiliares para la UI
 function getAlertClass(type: string) {
   const classes = {
-    info: "alert-info",
-    warning: "alert-warning",
-    error: "alert-error",
-    success: "alert-success",
-  }
-  return classes[type as keyof typeof classes] || "alert-info"
+    info: 'alert-info',
+    warning: 'alert-warning',
+    error: 'alert-error',
+    success: 'alert-success',
+  };
+  return classes[type as keyof typeof classes] || 'alert-info';
 }
 
 function getAlertIcon(type: string) {
   const icons = {
-    info: "ℹ️",
-    warning: "⚠️",
-    error: "❌",
-    success: "✅",
-  }
-  return icons[type as keyof typeof icons] || "ℹ️"
+    info: 'ℹ️',
+    warning: '⚠️',
+    error: '❌',
+    success: '✅',
+  };
+  return icons[type as keyof typeof icons] || 'ℹ️';
 }
 
 function getAuditIcon(action: string) {
   const icons = {
-    CREATE: "➕",
-    UPDATE: "✏️",
-    DELETE: "�️",
-    LOGIN: "�",
-    LOGOUT: "🚪",
-    PERMISSION_CHANGE: "🛡️",
-    ROLE_CHANGE: "�",
-    SYSTEM_CONFIG: "⚙️",
-  }
-  return icons[action as keyof typeof icons] || "📝"
+    CREATE: '➕',
+    UPDATE: '✏️',
+    DELETE: '�️',
+    LOGIN: '�',
+    LOGOUT: '🚪',
+    PERMISSION_CHANGE: '🛡️',
+    ROLE_CHANGE: '�',
+    SYSTEM_CONFIG: '⚙️',
+  };
+  return icons[action as keyof typeof icons] || '📝';
 }
 
 function dismissAlert(alertId: string) {
-  console.log(`Dismissing alert ${alertId}`)
+  console.log(`Dismissing alert ${alertId}`);
   // TODO: Implementar dismissal real
 }
 
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
 
 function formatAuditDescription(log: any) {
   const actionNames = {
-    CREATE: "Creó",
-    UPDATE: "Actualizó",
-    DELETE: "Eliminó",
-    LOGIN: "Inició sesión",
-    LOGOUT: "Cerró sesión",
-    PERMISSION_CHANGE: "Cambió permisos",
-    ROLE_CHANGE: "Cambió rol",
-    SYSTEM_CONFIG: "Configuró sistema",
-  }
+    CREATE: 'Creó',
+    UPDATE: 'Actualizó',
+    DELETE: 'Eliminó',
+    LOGIN: 'Inició sesión',
+    LOGOUT: 'Cerró sesión',
+    PERMISSION_CHANGE: 'Cambió permisos',
+    ROLE_CHANGE: 'Cambió rol',
+    SYSTEM_CONFIG: 'Configuró sistema',
+  };
 
-  const actionName = actionNames[log.action as keyof typeof actionNames] || log.action
-  return `${actionName} ${log.resource}${log.resourceId ? ` (${log.resourceId})` : ""}`
+  const actionName = actionNames[log.action as keyof typeof actionNames] || log.action;
+  return `${actionName} ${log.resource}${log.resourceId ? ` (${log.resourceId})` : ''}`;
 }
 
 // Lifecycle
 onMounted(() => {
-  refreshDashboard()
-})
+  refreshDashboard();
+});
 </script>
 
 <style scoped>

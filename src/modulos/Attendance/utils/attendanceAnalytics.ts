@@ -438,7 +438,7 @@ export function convertDocumentsToRecords(attendanceDocuments: AttendanceDocumen
   attendanceDocuments.forEach(doc => {
     if (!doc || !doc.data) return;
 
-    // Procesar presentes
+    // Process present students
     doc.data.presentes?.forEach(studentId => {
       records.push({
         studentId,
@@ -448,8 +448,7 @@ export function convertDocumentsToRecords(attendanceDocuments: AttendanceDocumen
       });
     });
 
-    // Procesar ausentes
-    // Procesar ausentes
+    // Process absent students
     doc.data.ausentes?.forEach(studentId => {
       records.push({
         studentId,
@@ -458,9 +457,8 @@ export function convertDocumentsToRecords(attendanceDocuments: AttendanceDocumen
         status: 'Ausente',
       });
     });
-    // Procesar tardanzas
-    doc.data.tarde?.forEach(studentId => {
-    // Procesar tardanzas
+
+    // Process tardy students
     doc.data.tarde?.forEach(studentId => {
       const justification = doc.data.justificacion?.find(j => j.id === studentId);
       
@@ -473,5 +471,7 @@ export function convertDocumentsToRecords(attendanceDocuments: AttendanceDocumen
         documentUrl: justification ? justification.documentURL : undefined,
       });
     });
+  }); // Closing forEach for attendanceDocuments
+
   return records;
 }

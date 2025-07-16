@@ -186,7 +186,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from "vue"
+import { computed, ref } from 'vue';
 
 interface YearlyDataPoint {
   month: string
@@ -218,128 +218,128 @@ interface Props {
   loading?: boolean
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 // Datos de ejemplo (en implementación real vendrían de la API)
 const yearlyData = ref<YearlyDataPoint[]>([
-  {month: "Ene", value: 0.72},
-  {month: "Feb", value: 0.78},
-  {month: "Mar", value: 0.85},
-  {month: "Abr", value: 0.88},
-  {month: "May", value: 0.92},
-  {month: "Jun", value: 0.89},
-  {month: "Jul", value: 0.75},
-  {month: "Ago", value: 0.68},
-  {month: "Sep", value: 0.85},
-  {month: "Oct", value: 0.9},
-  {month: "Nov", value: 0.82},
-  {month: "Dic", value: 0.7},
-])
+  { month: 'Ene', value: 0.72 },
+  { month: 'Feb', value: 0.78 },
+  { month: 'Mar', value: 0.85 },
+  { month: 'Abr', value: 0.88 },
+  { month: 'May', value: 0.92 },
+  { month: 'Jun', value: 0.89 },
+  { month: 'Jul', value: 0.75 },
+  { month: 'Ago', value: 0.68 },
+  { month: 'Sep', value: 0.85 },
+  { month: 'Oct', value: 0.9 },
+  { month: 'Nov', value: 0.82 },
+  { month: 'Dic', value: 0.7 },
+]);
 
-const months = computed(() => yearlyData.value.map((data) => data.month))
+const months = computed(() => yearlyData.value.map((data) => data.month));
 
 const seasons = ref<Season[]>([
   {
-    name: "Primavera",
-    icon: "🌸",
+    name: 'Primavera',
+    icon: '🌸',
     performance: 0.88,
-    description: "Excelente participación",
-    factors: ["Clima", "Motivación", "Nuevos estudiantes"],
+    description: 'Excelente participación',
+    factors: ['Clima', 'Motivación', 'Nuevos estudiantes'],
   },
   {
-    name: "Verano",
-    icon: "☀️",
+    name: 'Verano',
+    icon: '☀️',
     performance: 0.77,
-    description: "Reducción por vacaciones",
-    factors: ["Vacaciones", "Calor", "Horarios flexibles"],
+    description: 'Reducción por vacaciones',
+    factors: ['Vacaciones', 'Calor', 'Horarios flexibles'],
   },
   {
-    name: "Otoño",
-    icon: "🍂",
+    name: 'Otoño',
+    icon: '🍂',
     performance: 0.86,
-    description: "Retorno y estabilidad",
-    factors: ["Vuelta rutina", "Nuevos cursos", "Clima agradable"],
+    description: 'Retorno y estabilidad',
+    factors: ['Vuelta rutina', 'Nuevos cursos', 'Clima agradable'],
   },
   {
-    name: "Invierno",
-    icon: "❄️",
+    name: 'Invierno',
+    icon: '❄️',
     performance: 0.73,
-    description: "Menor asistencia",
-    factors: ["Frío", "Fiestas", "Enfermidades"],
+    description: 'Menor asistencia',
+    factors: ['Frío', 'Fiestas', 'Enfermidades'],
   },
-])
+]);
 
 const specialEvents = ref<SpecialEvent[]>([
-  {name: "Concierto Anual", icon: "🎵", period: "Mayo", impact: 0.15},
-  {name: "Vacaciones Escolares", icon: "🏖️", period: "Jul-Ago", impact: -0.23},
-  {name: "Festivales Navideños", icon: "🎄", period: "Diciembre", impact: -0.12},
-  {name: "Recitales de Primavera", icon: "🌻", period: "Abril", impact: 0.18},
-])
+  { name: 'Concierto Anual', icon: '🎵', period: 'Mayo', impact: 0.15 },
+  { name: 'Vacaciones Escolares', icon: '🏖️', period: 'Jul-Ago', impact: -0.23 },
+  { name: 'Festivales Navideños', icon: '🎄', period: 'Diciembre', impact: -0.12 },
+  { name: 'Recitales de Primavera', icon: '🌻', period: 'Abril', impact: 0.18 },
+]);
 
 const predictions = ref<Prediction[]>([
-  {month: "Feb", expected: 0.79, confidence: 85},
-  {month: "Mar", expected: 0.84, confidence: 88},
-  {month: "Abr", expected: 0.87, confidence: 82},
-])
+  { month: 'Feb', expected: 0.79, confidence: 85 },
+  { month: 'Mar', expected: 0.84, confidence: 88 },
+  { month: 'Abr', expected: 0.87, confidence: 82 },
+]);
 
 const tooltip = ref({
   show: false,
   x: 0,
   y: 0,
-  content: "",
-})
+  content: '',
+});
 
 // Computadas
 const bestSeason = computed(() => {
   return seasons.value.reduce((best, season) => {
-    return season.performance > best.performance ? season : best
-  })
-})
+    return season.performance > best.performance ? season : best;
+  });
+});
 
 const seasonalVariation = computed(() => {
-  const values = yearlyData.value.map((data) => data.value)
-  const max = Math.max(...values)
-  const min = Math.min(...values)
-  return max - min
-})
+  const values = yearlyData.value.map((data) => data.value);
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  return max - min;
+});
 
 const predictabilityScore = computed(() => {
   // Simulación de score de predictibilidad basado en varianza
-  return 0.84
-})
+  return 0.84;
+});
 
 // Métodos para el gráfico SVG
 function getYearlyTrendPoints(): string {
   return yearlyData.value
     .map((point, index) => {
-      const x = (index * 400) / (yearlyData.value.length - 1)
-      const y = 100 - point.value * 80
-      return `${x},${y}`
+      const x = (index * 400) / (yearlyData.value.length - 1);
+      const y = 100 - point.value * 80;
+      return `${x},${y}`;
     })
-    .join(" ")
+    .join(' ');
 }
 
 function getYearlyAreaPoints(): string {
-  const points = getYearlyTrendPoints()
-  const firstX = 0
-  const lastX = 400
-  return `${firstX},100 ${points} ${lastX},100`
+  const points = getYearlyTrendPoints();
+  const firstX = 0;
+  const lastX = 400;
+  return `${firstX},100 ${points} ${lastX},100`;
 }
 
 function getSeasonBorder(performance: number): string {
-  if (performance >= 0.85) return "border-green-300 bg-green-50"
-  if (performance >= 0.75) return "border-yellow-300 bg-yellow-50"
-  return "border-red-300 bg-red-50"
+  if (performance >= 0.85) return 'border-green-300 bg-green-50';
+  if (performance >= 0.75) return 'border-yellow-300 bg-yellow-50';
+  return 'border-red-300 bg-red-50';
 }
 
 function getPerformanceColor(performance: number): string {
-  if (performance >= 0.85) return "text-green-600"
-  if (performance >= 0.75) return "text-yellow-600"
-  return "text-red-600"
+  if (performance >= 0.85) return 'text-green-600';
+  if (performance >= 0.75) return 'text-yellow-600';
+  return 'text-red-600';
 }
 
 function getImpactColor(impact: number): string {
-  return impact > 0 ? "text-green-600" : "text-red-600"
+  return impact > 0 ? 'text-green-600' : 'text-red-600';
 }
 
 function showTooltip(point: YearlyDataPoint, event: MouseEvent) {
@@ -348,11 +348,11 @@ function showTooltip(point: YearlyDataPoint, event: MouseEvent) {
     x: event.offsetX,
     y: event.offsetY - 30,
     content: `${point.month}: ${Math.round(point.value * 100)}%`,
-  }
+  };
 }
 
 function hideTooltip() {
-  tooltip.value.show = false
+  tooltip.value.show = false;
 }
 </script>
 

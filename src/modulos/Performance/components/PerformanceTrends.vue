@@ -9,7 +9,7 @@
 defineProps<{
   studentId: string
   data?: any
-}>()
+}>();
 </script>
 
 <style scoped>

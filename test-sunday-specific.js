@@ -21,9 +21,9 @@ const ensayoGeneralClass = {
     slots: [
       { day: 'Martes', startTime: '17:00', endTime: '18:30' },
       { day: 'Jueves', startTime: '17:00', endTime: '18:30' },
-      { day: 'Sábado', startTime: '09:00', endTime: '12:30' }
-    ]
-  }
+      { day: 'Sábado', startTime: '09:00', endTime: '12:30' },
+    ],
+  },
 };
 
 // Función getDayIndex exacta
@@ -35,7 +35,7 @@ const getDayIndex = (dayString) => {
     Domingo: 0, Lunes: 1, Martes: 2, Miércoles: 3, Jueves: 4, Viernes: 5, Sábado: 6,
     dom: 0, lun: 1, mar: 2, mié: 3, jue: 4, vie: 5, sáb: 6,
     Dom: 0, Lun: 1, Mar: 2, Mié: 3, Jue: 4, Vie: 5, Sáb: 6,
-    miercoles: 3, sabado: 6
+    miercoles: 3, sabado: 6,
   };
 
   const normalized = String(dayString).trim();

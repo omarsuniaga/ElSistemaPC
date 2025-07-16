@@ -64,20 +64,20 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted} from "vue"
-import {useRoute, useRouter} from "vue-router"
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const classId = ref(route.params.classId as string)
-const className = ref("")
+const classId = ref(route.params.classId as string);
+const className = ref('');
 
 onMounted(() => {
   // You could fetch class details here if needed
-})
+});
 
 const goBack = () => {
-  router.back()
-}
+  router.back();
+};
 </script>

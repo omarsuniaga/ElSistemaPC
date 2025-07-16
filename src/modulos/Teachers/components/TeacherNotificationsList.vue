@@ -192,18 +192,18 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from "vue"
-import {formatDistanceToNow} from "date-fns"
-import {es} from "date-fns/locale"
+import { computed, ref } from 'vue';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 import {
   UserPlusIcon,
   BellIcon,
   CheckIcon,
   XMarkIcon,
   ExclamationTriangleIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
-import type {TeacherNotification} from "../services/teacherNotifications"
+import type { TeacherNotification } from '../services/teacherNotifications';
 
 interface Props {
   notifications: TeacherNotification[]
@@ -213,99 +213,99 @@ interface Props {
 }
 
 interface Emits {
-  (e: "accept-invitation", notificationId: string): void
-  (e: "reject-invitation", notificationId: string): void
-  (e: "mark-as-read", notificationId: string): void
-  (e: "delete-notification", notificationId: string): void
-  (e: "retry"): void
+  (e: 'accept-invitation', notificationId: string): void
+  (e: 'reject-invitation', notificationId: string): void
+  (e: 'mark-as-read', notificationId: string): void
+  (e: 'delete-notification', notificationId: string): void
+  (e: 'retry'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isLoading: false,
   error: null,
   isProcessing: false,
-})
+});
 
-defineEmits<Emits>()
+defineEmits<Emits>();
 
 // Filtro activo
-const activeFilter = ref<"all" | "pending" | "invitations" | "general">("all")
+const activeFilter = ref<'all' | 'pending' | 'invitations' | 'general'>('all');
 
 // Computed properties
 const unreadCount = computed(
-  () => props.notifications.filter((n) => n.status === "unread" || n.status === "pending").length
-)
+  () => props.notifications.filter((n) => n.status === 'unread' || n.status === 'pending').length,
+);
 
 const pendingInvitationsCount = computed(
   () =>
-    props.notifications.filter((n) => n.type === "class-invitation" && n.status === "pending")
-      .length
-)
+    props.notifications.filter((n) => n.type === 'class-invitation' && n.status === 'pending')
+      .length,
+);
 
 const generalNotificationsCount = computed(
-  () => props.notifications.filter((n) => n.type === "general").length
-)
+  () => props.notifications.filter((n) => n.type === 'general').length,
+);
 
 const filteredNotifications = computed(() => {
   switch (activeFilter.value) {
-    case "pending":
-      return props.notifications.filter((n) => n.status === "pending")
-    case "invitations":
-      return props.notifications.filter((n) => n.type === "class-invitation")
-    case "general":
-      return props.notifications.filter((n) => n.type === "general")
-    default:
-      return props.notifications
+  case 'pending':
+    return props.notifications.filter((n) => n.status === 'pending');
+  case 'invitations':
+    return props.notifications.filter((n) => n.type === 'class-invitation');
+  case 'general':
+    return props.notifications.filter((n) => n.type === 'general');
+  default:
+    return props.notifications;
   }
-})
+});
 
 const filters = computed(() => [
-  {value: "all", label: "Todas", count: props.notifications.length},
-  {value: "pending", label: "Pendientes", count: unreadCount.value},
-  {value: "invitations", label: "Invitaciones", count: pendingInvitationsCount.value},
-  {value: "general", label: "Generales", count: generalNotificationsCount.value},
-])
+  { value: 'all', label: 'Todas', count: props.notifications.length },
+  { value: 'pending', label: 'Pendientes', count: unreadCount.value },
+  { value: 'invitations', label: 'Invitaciones', count: pendingInvitationsCount.value },
+  { value: 'general', label: 'Generales', count: generalNotificationsCount.value },
+]);
 
 // Métodos auxiliares
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case "pending":
-      return "Pendiente"
-    case "accepted":
-      return "Aceptada"
-    case "rejected":
-      return "Rechazada"
-    case "read":
-      return "Leída"
-    case "unread":
-      return "Sin leer"
-    default:
-      return status
+  case 'pending':
+    return 'Pendiente';
+  case 'accepted':
+    return 'Aceptada';
+  case 'rejected':
+    return 'Rechazada';
+  case 'read':
+    return 'Leída';
+  case 'unread':
+    return 'Sin leer';
+  default:
+    return status;
   }
-}
+};
 
 const getStatusStyle = (status: string) => {
   switch (status) {
-    case "pending":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-    case "accepted":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-    case "rejected":
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-    case "read":
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-    case "unread":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+  case 'pending':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+  case 'accepted':
+    return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+  case 'rejected':
+    return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+  case 'read':
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  case 'unread':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
   }
-}
+};
 
 const formatNotificationTime = (date: Date | string | {toDate: () => Date}) => {
   const notificationDate =
-    typeof date === "string" ? new Date(date) : date instanceof Date ? date : date.toDate() // Convert Timestamp-like objects to Date
-  return formatDistanceToNow(notificationDate, {addSuffix: true, locale: es})
-}
+    typeof date === 'string' ? new Date(date) : date instanceof Date ? date : date.toDate(); // Convert Timestamp-like objects to Date
+  return formatDistanceToNow(notificationDate, { addSuffix: true, locale: es });
+};
 </script>
 
 <style scoped>

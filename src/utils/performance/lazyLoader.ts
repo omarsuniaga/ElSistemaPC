@@ -3,7 +3,7 @@
  * Utilidad para carga perezosa optimizada de componentes
  */
 
-import {defineAsyncComponent, AsyncComponentLoader} from "vue"
+import { defineAsyncComponent, AsyncComponentLoader } from 'vue';
 
 interface LazyLoadOptions {
   loadingComponent?: any
@@ -17,67 +17,67 @@ interface LazyLoadOptions {
  * Crea un componente con carga perezosa optimizada
  */
 export function createLazyComponent(loader: AsyncComponentLoader, options: LazyLoadOptions = {}) {
-  const {loadingComponent, errorComponent, delay = 200, timeout = 10000, retries = 3} = options
+  const { loadingComponent, errorComponent, delay = 200, timeout = 10000, retries = 3 } = options;
 
   return defineAsyncComponent({
     loader: async () => {
-      let attempt = 0
+      let attempt = 0;
 
       const tryLoad = async (): Promise<any> => {
         try {
-          return await loader()
+          return await loader();
         } catch (error) {
-          attempt++
+          attempt++;
 
           if (attempt < retries) {
-            console.warn(`🔄 Reintentando carga de componente (intento ${attempt}/${retries})`)
-            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
-            return tryLoad()
+            console.warn(`🔄 Reintentando carga de componente (intento ${attempt}/${retries})`);
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+            return tryLoad();
           }
 
-          console.error("❌ Error al cargar componente después de", retries, "intentos:", error)
-          throw error
+          console.error('❌ Error al cargar componente después de', retries, 'intentos:', error);
+          throw error;
         }
-      }
+      };
 
-      return tryLoad()
+      return tryLoad();
     },
     loadingComponent,
     errorComponent,
     delay,
     timeout,
     onError: (error, retry, fail, attempts) => {
-      console.error(`🚨 Error en carga de componente (intento ${attempts}):`, error)
+      console.error(`🚨 Error en carga de componente (intento ${attempts}):`, error);
 
       if (attempts <= retries) {
-        console.log("🔄 Reintentando...")
-        retry()
+        console.log('🔄 Reintentando...');
+        retry();
       } else {
-        console.error("❌ Carga fallida definitivamente")
-        fail()
+        console.error('❌ Carga fallida definitivamente');
+        fail();
       }
     },
-  })
+  });
 }
 
 /**
  * Preloader para módulos críticos
  */
 export class ModulePreloader {
-  private static loadedModules = new Set<string>()
+  private static loadedModules = new Set<string>();
 
   static async preloadModule(moduleLoader: () => Promise<any>, moduleName: string) {
     if (this.loadedModules.has(moduleName)) {
-      return
+      return;
     }
 
     try {
-      console.log(`📦 Precargando módulo: ${moduleName}`)
-      await moduleLoader()
-      this.loadedModules.add(moduleName)
-      console.log(`✅ Módulo precargado: ${moduleName}`)
+      console.log(`📦 Precargando módulo: ${moduleName}`);
+      await moduleLoader();
+      this.loadedModules.add(moduleName);
+      console.log(`✅ Módulo precargado: ${moduleName}`);
     } catch (error) {
-      console.error(`❌ Error precargando módulo ${moduleName}:`, error)
+      console.error(`❌ Error precargando módulo ${moduleName}:`, error);
     }
   }
 
@@ -85,13 +85,13 @@ export class ModulePreloader {
     // Precargar módulos críticos en segundo plano
     if (import.meta.env.PROD) {
       setTimeout(() => {
-        this.preloadModule(() => import("@/modulos/Students/store/students"), "students-store")
-        this.preloadModule(() => import("@/modulos/Teachers/store/teachers"), "teachers-store")
+        this.preloadModule(() => import('@/modulos/Students/store/students'), 'students-store');
+        this.preloadModule(() => import('@/modulos/Teachers/store/teachers'), 'teachers-store');
         this.preloadModule(
-          () => import("@/modulos/Attendance/store/attendance"),
-          "attendance-store"
-        )
-      }, 2000)
+          () => import('@/modulos/Attendance/store/attendance'),
+          'attendance-store',
+        );
+      }, 2000);
     }
   }
 }
@@ -106,7 +106,7 @@ export const LoadingComponent = {
       <span class="ml-2 text-gray-600 dark:text-gray-300">Cargando...</span>
     </div>
   `,
-}
+};
 
 /**
  * Error component reutilizable
@@ -121,4 +121,4 @@ export const ErrorComponent = {
       <span>Error al cargar el componente</span>
     </div>
   `,
-}
+};

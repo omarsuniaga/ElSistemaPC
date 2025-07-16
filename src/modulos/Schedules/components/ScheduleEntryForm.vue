@@ -1,274 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useStudentsStore} from "../../Students/store/students"
-import {useInstrumentoStore} from "../../Instruments/store/instrumento"
-import {format, parse, isAfter} from "date-fns"
-import {es} from "date-fns/locale"
-
-const props = defineProps({
-  editMode: {
-    type: Boolean,
-    default: false,
-  },
-  initialData: {
-    type: Object,
-    default: () => ({}),
-  },
-})
-
-const emit = defineEmits(["close", "save"])
-
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-const instrumentoStore = useInstrumentoStore()
-
-// Form mode state
-const mode = ref("schedule")
-const isSubmitting = ref(false)
-
-// Form data for scheduling
-const formData = ref({
-  id: props.initialData.id || "",
-  classId: props.initialData.classId || "",
-  teacherId: props.initialData.teacherId || "",
-  studentIds: props.initialData?.studentIds ? [...props.initialData.studentIds] : [],
-  schedule: props.initialData.schedule || "",
-  classroom: props.initialData.classroom || "",
-  dayOfWeek: "",
-  startTime: "",
-  endTime: "",
-  schedules: [] as Array<{day: string; startTime: string; endTime: string}>,
-})
-
-// Form data for new class
-const newClassData = ref({
-  name: "",
-  level: "",
-  instrument: "",
-  description: "",
-})
-
-// Computed properties
-const availableClassrooms = computed(() => [
-  "Aula 101",
-  "Aula 102",
-  "Aula 103",
-  "Sala de Piano",
-  "Sala de Percusión",
-  "Estudio A",
-  "Estudio B",
-])
-
-const daysOfWeek = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
-const timeSlots = generateTimeSlots()
-
-// Validation
-const errors = ref({
-  classId: "",
-  teacherId: "",
-  studentIds: "",
-  schedule: "",
-  classroom: "",
-  name: "",
-  level: "",
-  instrument: "",
-})
-
-const instrumentCategories = computed(() => ["Cuerda", "Viento", "Percusión", "Otros"])
-
-// Selected students management
-const selectedStudents = ref(props.initialData?.studentIds || [])
-const searchTerm = ref("")
-
-const filteredStudents = computed(() => {
-  if (!searchTerm.value) return studentsStore.students
-  const term = searchTerm.value.toLowerCase()
-  return studentsStore.students.filter((student) => {
-    const fullName = `${student.nombre || ""} ${student.apellido || ""}`.toLowerCase()
-    return fullName.includes(term)
-  })
-})
-
-// Time slot generation
-function generateTimeSlots(interval: number = 30) {
-  const slots = []
-  for (let hour = 7; hour <= 21; hour++) {
-    for (let minute = 0; minute < 60; minute += interval) {
-      const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`
-      slots.push(timeString)
-    }
-  }
-  return slots
-}
-
-// Schedule validation
-function validateSchedule(schedule: any) {
-  const errors = []
-
-  if (!schedule.day) {
-    errors.push("El día es requerido")
-  }
-
-  if (!schedule.startTime || !schedule.endTime) {
-    errors.push("Las horas de inicio y fin son requeridas")
-    return errors
-  }
-
-  const start = parse(schedule.startTime, "HH:mm", new Date())
-  const end = parse(schedule.endTime, "HH:mm", new Date())
-
-  if (isAfter(start, end)) {
-    errors.push("La hora de inicio debe ser anterior a la hora de fin")
-  }
-
-  return errors
-}
-
-// Form submission
-const handleSubmit = async () => {
-  try {
-    isSubmitting.value = true
-    errors.value = {
-      classId: "",
-      teacherId: "",
-      studentIds: "",
-      schedule: "",
-      classroom: "",
-      name: "",
-      level: "",
-      instrument: "",
-    }
-    let isValid = true
-
-    // Validación básica
-    if (mode.value === "schedule") {
-      if (!formData.value.classId) {
-        errors.value.classId = "Seleccione una clase"
-        isValid = false
-      }
-      if (!formData.value.teacherId) {
-        errors.value.teacherId = "Seleccione un profesor"
-        isValid = false
-      }
-      if (!formData.value.classroom) {
-        errors.value.classroom = "Seleccione un aula"
-        isValid = false
-      }
-      if (formData.value.schedules.length === 0) {
-        errors.value.schedule = "Agregue al menos un horario"
-        isValid = false
-      }
-    }
-
-    // Validación de horarios
-    const scheduleErrors = formData.value.schedules.flatMap(validateSchedule)
-    if (scheduleErrors.length > 0) {
-      errors.value.schedule = scheduleErrors.join(", ")
-      isValid = false
-    }
-
-    if (!isValid) return
-
-    // Formatear datos para guardar
-    const dataToSave = {
-      type: mode.value,
-      data: {
-        ...formData.value,
-        schedule: formatScheduleForSave(formData.value.schedules),
-      },
-    }
-
-    emit("save", dataToSave)
-  } catch (error: any) {
-    console.error("Error en el formulario:", error)
-    errors.value.schedule = error.message
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-// Schedule formatting
-function formatScheduleForSave(
-  schedules: Array<{day: string; startTime: string; endTime: string}>
-) {
-  if (schedules.length === 1) {
-    const schedule = schedules[0]
-    return `${schedule.day} ${schedule.startTime} - ${schedule.endTime}`
-  }
-
-  return {
-    days: [...new Set(schedules.map((s) => s.day))],
-    times: schedules.map((s) => ({
-      day: s.day,
-      startTime: s.startTime,
-      endTime: s.endTime,
-    })),
-  }
-}
-
-// Schedule management
-const addSchedule = () => {
-  const scheduleErrors = validateSchedule({
-    day: formData.value.dayOfWeek,
-    startTime: formData.value.startTime,
-    endTime: formData.value.endTime,
-  })
-
-  if (scheduleErrors.length > 0) {
-    errors.value.schedule = scheduleErrors.join(", ")
-    return
-  }
-
-  formData.value.schedules.push({
-    day: formData.value.dayOfWeek,
-    startTime: formData.value.startTime,
-    endTime: formData.value.endTime,
-  })
-
-  // Limpiar campos
-  formData.value.dayOfWeek = ""
-  formData.value.startTime = ""
-  formData.value.endTime = ""
-  errors.value.schedule = ""
-}
-
-const removeSchedule = (index: number) => {
-  formData.value.schedules.splice(index, 1)
-}
-
-const toggleStudent = (studentId: string) => {
-  const index = selectedStudents.value.indexOf(studentId)
-  if (index === -1) {
-    selectedStudents.value.push(studentId)
-  } else {
-    selectedStudents.value.splice(index, 1)
-  }
-  formData.value.studentIds = [...selectedStudents.value]
-}
-
-// Initialization
-onMounted(() => {
-  if (props.initialData?.schedule) {
-    const schedule = props.initialData.schedule
-    if (typeof schedule === "string") {
-      const [day, startTime, , endTime] = schedule.split(" ")
-      formData.value.schedules = [
-        {
-          day,
-          startTime,
-          endTime: endTime || "",
-        },
-      ]
-    } else if (schedule.times) {
-      formData.value.schedules = schedule.times
-    }
-  }
-})
-</script>
-
 <template>
   <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
     <div
@@ -681,3 +410,274 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useStudentsStore } from '../../Students/store/students';
+import { useInstrumentoStore } from '../../Instruments/store/instrumento';
+import { format, parse, isAfter } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+const props = defineProps({
+  editMode: {
+    type: Boolean,
+    default: false,
+  },
+  initialData: {
+    type: Object,
+    default: () => ({}),
+  },
+});
+
+const emit = defineEmits(['close', 'save']);
+
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+const instrumentoStore = useInstrumentoStore();
+
+// Form mode state
+const mode = ref('schedule');
+const isSubmitting = ref(false);
+
+// Form data for scheduling
+const formData = ref({
+  id: props.initialData.id || '',
+  classId: props.initialData.classId || '',
+  teacherId: props.initialData.teacherId || '',
+  studentIds: props.initialData?.studentIds ? [...props.initialData.studentIds] : [],
+  schedule: props.initialData.schedule || '',
+  classroom: props.initialData.classroom || '',
+  dayOfWeek: '',
+  startTime: '',
+  endTime: '',
+  schedules: [] as Array<{day: string; startTime: string; endTime: string}>,
+});
+
+// Form data for new class
+const newClassData = ref({
+  name: '',
+  level: '',
+  instrument: '',
+  description: '',
+});
+
+// Computed properties
+const availableClassrooms = computed(() => [
+  'Aula 101',
+  'Aula 102',
+  'Aula 103',
+  'Sala de Piano',
+  'Sala de Percusión',
+  'Estudio A',
+  'Estudio B',
+]);
+
+const daysOfWeek = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const timeSlots = generateTimeSlots();
+
+// Validation
+const errors = ref({
+  classId: '',
+  teacherId: '',
+  studentIds: '',
+  schedule: '',
+  classroom: '',
+  name: '',
+  level: '',
+  instrument: '',
+});
+
+const instrumentCategories = computed(() => ['Cuerda', 'Viento', 'Percusión', 'Otros']);
+
+// Selected students management
+const selectedStudents = ref(props.initialData?.studentIds || []);
+const searchTerm = ref('');
+
+const filteredStudents = computed(() => {
+  if (!searchTerm.value) return studentsStore.students;
+  const term = searchTerm.value.toLowerCase();
+  return studentsStore.students.filter((student) => {
+    const fullName = `${student.nombre || ''} ${student.apellido || ''}`.toLowerCase();
+    return fullName.includes(term);
+  });
+});
+
+// Time slot generation
+function generateTimeSlots(interval: number = 30) {
+  const slots = [];
+  for (let hour = 7; hour <= 21; hour++) {
+    for (let minute = 0; minute < 60; minute += interval) {
+      const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      slots.push(timeString);
+    }
+  }
+  return slots;
+}
+
+// Schedule validation
+function validateSchedule(schedule: any) {
+  const errors = [];
+
+  if (!schedule.day) {
+    errors.push('El día es requerido');
+  }
+
+  if (!schedule.startTime || !schedule.endTime) {
+    errors.push('Las horas de inicio y fin son requeridas');
+    return errors;
+  }
+
+  const start = parse(schedule.startTime, 'HH:mm', new Date());
+  const end = parse(schedule.endTime, 'HH:mm', new Date());
+
+  if (isAfter(start, end)) {
+    errors.push('La hora de inicio debe ser anterior a la hora de fin');
+  }
+
+  return errors;
+}
+
+// Form submission
+const handleSubmit = async () => {
+  try {
+    isSubmitting.value = true;
+    errors.value = {
+      classId: '',
+      teacherId: '',
+      studentIds: '',
+      schedule: '',
+      classroom: '',
+      name: '',
+      level: '',
+      instrument: '',
+    };
+    let isValid = true;
+
+    // Validación básica
+    if (mode.value === 'schedule') {
+      if (!formData.value.classId) {
+        errors.value.classId = 'Seleccione una clase';
+        isValid = false;
+      }
+      if (!formData.value.teacherId) {
+        errors.value.teacherId = 'Seleccione un profesor';
+        isValid = false;
+      }
+      if (!formData.value.classroom) {
+        errors.value.classroom = 'Seleccione un aula';
+        isValid = false;
+      }
+      if (formData.value.schedules.length === 0) {
+        errors.value.schedule = 'Agregue al menos un horario';
+        isValid = false;
+      }
+    }
+
+    // Validación de horarios
+    const scheduleErrors = formData.value.schedules.flatMap(validateSchedule);
+    if (scheduleErrors.length > 0) {
+      errors.value.schedule = scheduleErrors.join(', ');
+      isValid = false;
+    }
+
+    if (!isValid) return;
+
+    // Formatear datos para guardar
+    const dataToSave = {
+      type: mode.value,
+      data: {
+        ...formData.value,
+        schedule: formatScheduleForSave(formData.value.schedules),
+      },
+    };
+
+    emit('save', dataToSave);
+  } catch (error: any) {
+    console.error('Error en el formulario:', error);
+    errors.value.schedule = error.message;
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+// Schedule formatting
+function formatScheduleForSave(
+  schedules: Array<{day: string; startTime: string; endTime: string}>,
+) {
+  if (schedules.length === 1) {
+    const schedule = schedules[0];
+    return `${schedule.day} ${schedule.startTime} - ${schedule.endTime}`;
+  }
+
+  return {
+    days: [...new Set(schedules.map((s) => s.day))],
+    times: schedules.map((s) => ({
+      day: s.day,
+      startTime: s.startTime,
+      endTime: s.endTime,
+    })),
+  };
+}
+
+// Schedule management
+const addSchedule = () => {
+  const scheduleErrors = validateSchedule({
+    day: formData.value.dayOfWeek,
+    startTime: formData.value.startTime,
+    endTime: formData.value.endTime,
+  });
+
+  if (scheduleErrors.length > 0) {
+    errors.value.schedule = scheduleErrors.join(', ');
+    return;
+  }
+
+  formData.value.schedules.push({
+    day: formData.value.dayOfWeek,
+    startTime: formData.value.startTime,
+    endTime: formData.value.endTime,
+  });
+
+  // Limpiar campos
+  formData.value.dayOfWeek = '';
+  formData.value.startTime = '';
+  formData.value.endTime = '';
+  errors.value.schedule = '';
+};
+
+const removeSchedule = (index: number) => {
+  formData.value.schedules.splice(index, 1);
+};
+
+const toggleStudent = (studentId: string) => {
+  const index = selectedStudents.value.indexOf(studentId);
+  if (index === -1) {
+    selectedStudents.value.push(studentId);
+  } else {
+    selectedStudents.value.splice(index, 1);
+  }
+  formData.value.studentIds = [...selectedStudents.value];
+};
+
+// Initialization
+onMounted(() => {
+  if (props.initialData?.schedule) {
+    const schedule = props.initialData.schedule;
+    if (typeof schedule === 'string') {
+      const [day, startTime, , endTime] = schedule.split(' ');
+      formData.value.schedules = [
+        {
+          day,
+          startTime,
+          endTime: endTime || '',
+        },
+      ];
+    } else if (schedule.times) {
+      formData.value.schedules = schedule.times;
+    }
+  }
+});
+</script>

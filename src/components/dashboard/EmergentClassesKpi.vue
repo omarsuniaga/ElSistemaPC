@@ -1,38 +1,3 @@
-<script setup lang="ts">
-import {computed} from "vue"
-import KpiCard from "./KpiCard.vue"
-
-const props = defineProps({
-  emergentClasses: {
-    type: Number,
-    required: true,
-  },
-  emergentClassPercentage: {
-    type: Number,
-    required: true,
-  },
-  totalClasses: {
-    type: Number,
-    default: 0,
-  },
-})
-
-// Determine color based on percentage
-const emergentColor = computed(() => {
-  if (props.emergentClassPercentage <= 10) return "green"
-  if (props.emergentClassPercentage <= 20) return "yellow"
-  return "red" // Too many emergent classes is concerning
-})
-
-const totalClassesDisplay = computed(() => {
-  if (props.totalClasses > 0) return props.totalClasses
-  if (props.emergentClassPercentage > 0) {
-    return Math.round(props.emergentClasses * (100 / props.emergentClassPercentage))
-  }
-  return props.emergentClasses
-})
-</script>
-
 <template>
   <KpiCard
     title="Clases emergentes"
@@ -71,3 +36,38 @@ const totalClassesDisplay = computed(() => {
     </div>
   </KpiCard>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import KpiCard from './KpiCard.vue';
+
+const props = defineProps({
+  emergentClasses: {
+    type: Number,
+    required: true,
+  },
+  emergentClassPercentage: {
+    type: Number,
+    required: true,
+  },
+  totalClasses: {
+    type: Number,
+    default: 0,
+  },
+});
+
+// Determine color based on percentage
+const emergentColor = computed(() => {
+  if (props.emergentClassPercentage <= 10) return 'green';
+  if (props.emergentClassPercentage <= 20) return 'yellow';
+  return 'red'; // Too many emergent classes is concerning
+});
+
+const totalClassesDisplay = computed(() => {
+  if (props.totalClasses > 0) return props.totalClasses;
+  if (props.emergentClassPercentage > 0) {
+    return Math.round(props.emergentClasses * (100 / props.emergentClassPercentage));
+  }
+  return props.emergentClasses;
+});
+</script>

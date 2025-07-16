@@ -94,7 +94,7 @@
           
           <div class="flex items-center justify-between">
             <span class="text-sm text-blue-600 font-medium dark:text-blue-100">{{ instrument.family }}</span>
-            <button @click.stop="goToInstrumentDetail(instrument)" class="text-blue-500 hover:text-blue-700 text-sm">Ver mapa →</button>
+            <button class="text-blue-500 hover:text-blue-700 text-sm" @click.stop="goToInstrumentDetail(instrument)">Ver mapa →</button>
           </div>
           
           <!-- Progress indicators preview -->
@@ -114,36 +114,36 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, computed} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import GeneralHeatMap from "../components/GeneralHeatMap.vue"
-import type {Instrument} from "../types/heatmap"
-import {useMusicalWorks} from "../composables/useHeatMapProjects"
+import { onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import GeneralHeatMap from '../components/GeneralHeatMap.vue';
+import type { Instrument } from '../types/heatmap';
+import { useMusicalWorks } from '../composables/useHeatMapProjects';
 
-const route = useRoute()
-const router = useRouter()
-const { loadWork, currentWork, loading } = useMusicalWorks()
+const route = useRoute();
+const router = useRouter();
+const { loadWork, currentWork, loading } = useMusicalWorks();
 
-const workId = computed(() => route.params.id as string)
+const workId = computed(() => route.params.id as string);
 
 onMounted(async () => {
   if (workId.value) {
-    await loadWork(workId.value)
+    await loadWork(workId.value);
   }
-})
+});
 
-const work = computed(() => currentWork.value)
+const work = computed(() => currentWork.value);
 
 const goToInstrumentDetail = (instrument: Instrument) => {
   router.push({ 
     name: 'montaje-instrument-detail', 
-    params: { workId: workId.value, instrumentId: instrument.id } 
-  })
-}
+    params: { workId: workId.value, instrumentId: instrument.id }, 
+  });
+};
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString("es-ES")
-}
+  return new Date(dateString).toLocaleDateString('es-ES');
+};
 </script>
 
 <style scoped>

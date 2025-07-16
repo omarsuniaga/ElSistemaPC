@@ -66,57 +66,57 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useClassesStore} from "../store/classes"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useStudentsStore} from "../../Students/store/students"
-import StudentAvatar from "../../Students/components/StudentAvatar.vue"
+import { ref, computed, onMounted } from 'vue';
+import { useClassesStore } from '../store/classes';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useStudentsStore } from '../../Students/store/students';
+import StudentAvatar from '../../Students/components/StudentAvatar.vue';
 
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
 
-const isLoading = ref(true)
-const error = ref("")
+const isLoading = ref(true);
+const error = ref('');
 
-const classes = computed(() => classesStore.classes)
+const classes = computed(() => classesStore.classes);
 
 const getTeacherName = (teacherId: string | undefined): string => {
-  if (!teacherId) return "Sin asignar"
-  const teacher = teachersStore.teachers.find((t) => t.id === teacherId)
-  return teacher ? teacher.name : "Sin asignar"
-}
+  if (!teacherId) return 'Sin asignar';
+  const teacher = teachersStore.teachers.find((t) => t.id === teacherId);
+  return teacher ? teacher.name : 'Sin asignar';
+};
 
 const getStudentCount = (studentIds: string[] | undefined) => {
-  return studentIds?.length || 0
-}
+  return studentIds?.length || 0;
+};
 
 const getScheduleDays = (
-  schedule: string | {days: string[]; startTime: string; endTime: string} | undefined
+  schedule: string | {days: string[]; startTime: string; endTime: string} | undefined,
 ) => {
-  if (typeof schedule === "object" && schedule !== null && "days" in schedule) {
-    return schedule.days
+  if (typeof schedule === 'object' && schedule !== null && 'days' in schedule) {
+    return schedule.days;
   }
-  return []
-}
+  return [];
+};
 
 const getScheduleTime = (
-  schedule: string | {days: string[]; startTime: string; endTime: string} | undefined
+  schedule: string | {days: string[]; startTime: string; endTime: string} | undefined,
 ) => {
   if (
-    typeof schedule === "object" &&
+    typeof schedule === 'object' &&
     schedule !== null &&
-    "startTime" in schedule &&
-    "endTime" in schedule
+    'startTime' in schedule &&
+    'endTime' in schedule
   ) {
-    return `${schedule.startTime}-${schedule.endTime}`
+    return `${schedule.startTime}-${schedule.endTime}`;
   }
-  return ""
-}
+  return '';
+};
 
 const getStudents = (studentIds: string[] = []) => {
-  return studentsStore.students.filter((student) => studentIds.includes(student.id))
-}
+  return studentsStore.students.filter((student) => studentIds.includes(student.id));
+};
 
 onMounted(async () => {
   try {
@@ -124,12 +124,12 @@ onMounted(async () => {
       classesStore.fetchClasses(),
       teachersStore.fetchTeachers(),
       studentsStore.fetchStudents(),
-    ])
+    ]);
   } catch (err) {
-    error.value = "Error al cargar los datos"
-    console.error("Error loading data:", err)
+    error.value = 'Error al cargar los datos';
+    console.error('Error loading data:', err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-})
+});
 </script>

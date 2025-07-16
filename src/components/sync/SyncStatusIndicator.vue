@@ -115,14 +115,14 @@ Fase 1 - Iniciativa 2: UI de Sincronización Offline
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {useSyncStore} from "@/composables/sync/useOfflineSync"
-import {useFormatters} from "@/composables/utils/useFormatters"
+import { ref, computed, watch } from 'vue';
+import { useSyncStore } from '@/composables/sync/useOfflineSync';
+import { useFormatters } from '@/composables/utils/useFormatters';
 
 // ==================== COMPOSABLES ====================
 
-const syncStore = useSyncStore()
-const {formatRelativeTime} = useFormatters()
+const syncStore = useSyncStore();
+const { formatRelativeTime } = useFormatters();
 
 // ==================== PROPS ====================
 
@@ -139,131 +139,131 @@ const props = withDefaults(defineProps<Props>(), {
   alwaysShow: false,
   showSyncButton: true,
   compact: false,
-})
+});
 
 // ==================== ESTADO LOCAL ====================
 
-const showDetails = ref(false)
+const showDetails = ref(false);
 
 // ==================== COMPUTED PROPERTIES ====================
 
-const isOnline = computed(() => syncStore.isOnline)
-const isOffline = computed(() => !syncStore.isOnline)
-const isSyncing = computed(() => syncStore.syncStatus === "syncing")
-const hasPendingOperations = computed(() => syncStore.hasPendingOperations)
-const canSync = computed(() => syncStore.canSync)
-const needRefresh = computed(() => syncStore.needRefresh)
-const syncErrors = computed(() => syncStore.syncErrors)
-const lastSyncTime = computed(() => syncStore.lastSyncTime)
+const isOnline = computed(() => syncStore.isOnline);
+const isOffline = computed(() => !syncStore.isOnline);
+const isSyncing = computed(() => syncStore.syncStatus === 'syncing');
+const hasPendingOperations = computed(() => syncStore.hasPendingOperations);
+const canSync = computed(() => syncStore.canSync);
+const needRefresh = computed(() => syncStore.needRefresh);
+const syncErrors = computed(() => syncStore.syncErrors);
+const lastSyncTime = computed(() => syncStore.lastSyncTime);
 
 // Operaciones pendientes detalladas
-const pendingAttendance = ref(0)
-const pendingTeachers = ref(0)
-const pendingObservations = ref(0)
+const pendingAttendance = ref(0);
+const pendingTeachers = ref(0);
+const pendingObservations = ref(0);
 
 // Debe mostrar el componente
 const shouldShow = computed(() => {
-  if (props.alwaysShow) return true
-  if (isOffline.value) return true
-  if (hasPendingOperations.value) return true
-  if (isSyncing.value) return true
-  if (needRefresh.value) return true
-  if (syncErrors.value.length > 0) return true
-  return false
-})
+  if (props.alwaysShow) return true;
+  if (isOffline.value) return true;
+  if (hasPendingOperations.value) return true;
+  if (isSyncing.value) return true;
+  if (needRefresh.value) return true;
+  if (syncErrors.value.length > 0) return true;
+  return false;
+});
 
 // Estado visual
 const statusColor = computed(() => {
-  if (syncErrors.value.length > 0) return "error"
-  if (needRefresh.value) return "success"
-  if (isOffline.value) return "warning"
-  if (isSyncing.value) return "info"
-  return "primary"
-})
+  if (syncErrors.value.length > 0) return 'error';
+  if (needRefresh.value) return 'success';
+  if (isOffline.value) return 'warning';
+  if (isSyncing.value) return 'info';
+  return 'primary';
+});
 
 const statusIcon = computed(() => {
-  if (syncErrors.value.length > 0) return "mdi-alert-circle"
-  if (needRefresh.value) return "mdi-update"
-  if (isOffline.value) return "mdi-wifi-off"
-  if (isSyncing.value) return "mdi-sync"
-  return "mdi-wifi"
-})
+  if (syncErrors.value.length > 0) return 'mdi-alert-circle';
+  if (needRefresh.value) return 'mdi-update';
+  if (isOffline.value) return 'mdi-wifi-off';
+  if (isSyncing.value) return 'mdi-sync';
+  return 'mdi-wifi';
+});
 
 const iconColor = computed(() => {
-  if (syncErrors.value.length > 0) return "error"
-  if (needRefresh.value) return "success"
-  if (isOffline.value) return "warning"
-  if (isSyncing.value) return "info"
-  return "primary"
-})
+  if (syncErrors.value.length > 0) return 'error';
+  if (needRefresh.value) return 'success';
+  if (isOffline.value) return 'warning';
+  if (isSyncing.value) return 'info';
+  return 'primary';
+});
 
 const statusTitle = computed(() => {
-  if (syncErrors.value.length > 0) return "Error de sincronización"
-  if (needRefresh.value) return "Actualización disponible"
-  if (isSyncing.value) return "Sincronizando..."
-  if (isOffline.value) return "Modo offline"
-  return "En línea"
-})
+  if (syncErrors.value.length > 0) return 'Error de sincronización';
+  if (needRefresh.value) return 'Actualización disponible';
+  if (isSyncing.value) return 'Sincronizando...';
+  if (isOffline.value) return 'Modo offline';
+  return 'En línea';
+});
 
 const statusDescription = computed(() => {
   if (syncErrors.value.length > 0) {
-    return `${syncErrors.value.length} error${syncErrors.value.length > 1 ? "es" : ""} de sincronización`
+    return `${syncErrors.value.length} error${syncErrors.value.length > 1 ? 'es' : ''} de sincronización`;
   }
-  if (needRefresh.value) return "Nueva versión disponible"
-  if (isSyncing.value) return `Sincronizando ${syncStore.pendingOperations} operaciones`
+  if (needRefresh.value) return 'Nueva versión disponible';
+  if (isSyncing.value) return `Sincronizando ${syncStore.pendingOperations} operaciones`;
   if (isOffline.value && hasPendingOperations.value) {
-    return `${syncStore.pendingOperations} operaciones pendientes`
+    return `${syncStore.pendingOperations} operaciones pendientes`;
   }
-  if (isOffline.value) return "Sin conexión a internet"
-  return "Todos los datos están sincronizados"
-})
+  if (isOffline.value) return 'Sin conexión a internet';
+  return 'Todos los datos están sincronizados';
+});
 
 const canShowSyncButton = computed(() => {
-  return props.showSyncButton && (hasPendingOperations.value || isOffline.value)
-})
+  return props.showSyncButton && (hasPendingOperations.value || isOffline.value);
+});
 
 const formattedLastSync = computed(() => {
-  if (!lastSyncTime.value) return "Nunca"
-  return formatRelativeTime(lastSyncTime.value)
-})
+  if (!lastSyncTime.value) return 'Nunca';
+  return formatRelativeTime(lastSyncTime.value);
+});
 
 // ==================== MÉTODOS ====================
 
 async function handleManualSync() {
   try {
-    await syncStore.forceSyncPendingOperations()
+    await syncStore.forceSyncPendingOperations();
   } catch (error) {
-    console.error("Error en sincronización manual:", error)
+    console.error('Error en sincronización manual:', error);
   }
 }
 
 async function handleUpdatePWA() {
   try {
-    await syncStore.updatePWA()
+    await syncStore.updatePWA();
   } catch (error) {
-    console.error("Error actualizando PWA:", error)
+    console.error('Error actualizando PWA:', error);
   }
 }
 
 function clearSyncErrors() {
-  syncStore.clearSyncErrors()
+  syncStore.clearSyncErrors();
 }
 
 // Actualizar detalles de operaciones pendientes
 async function updatePendingDetails() {
   // Esta función se implementará cuando tengamos el estado detallado del SW
   // Por ahora usamos valores mock
-  const total = syncStore.pendingOperations
-  pendingAttendance.value = Math.floor(total * 0.6)
-  pendingTeachers.value = Math.floor(total * 0.2)
-  pendingObservations.value = total - pendingAttendance.value - pendingTeachers.value
+  const total = syncStore.pendingOperations;
+  pendingAttendance.value = Math.floor(total * 0.6);
+  pendingTeachers.value = Math.floor(total * 0.2);
+  pendingObservations.value = total - pendingAttendance.value - pendingTeachers.value;
 }
 
 // Inicializar detalles
-updatePendingDetails()
+updatePendingDetails();
 
 // Actualizar detalles cuando cambien las operaciones pendientes
-watch(() => syncStore.pendingOperations, updatePendingDetails)
+watch(() => syncStore.pendingOperations, updatePendingDetails);
 </script>
 
 <style scoped>

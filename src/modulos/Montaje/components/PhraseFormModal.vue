@@ -231,11 +231,11 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {useMontaje} from "../composables/useMontaje"
-import {useMontajeStore} from "../store/montaje"
-import {Timestamp} from "firebase/firestore"
-import type {FraseMontaje, Obra} from "../types"
+import { ref, computed, watch } from 'vue';
+import { useMontaje } from '../composables/useMontaje';
+import { useMontajeStore } from '../store/montaje';
+import { Timestamp } from 'firebase/firestore';
+import type { FraseMontaje, Obra } from '../types';
 
 interface Props {
   isOpen: boolean
@@ -244,44 +244,44 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "saved", phrase: FraseMontaje): void
+  (e: 'close'): void
+  (e: 'saved', phrase: FraseMontaje): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
-const montajeStore = useMontajeStore()
+const montajeStore = useMontajeStore();
 
-const isSubmitting = ref(false)
+const isSubmitting = ref(false);
 
-const isEditing = computed(() => !!props.phrase)
+const isEditing = computed(() => !!props.phrase);
 
 const aspectosTecnicos = [
-  {value: "afinacion", label: "Afinación"},
-  {value: "ritmo", label: "Ritmo"},
-  {value: "dinamica", label: "Dinámica"},
-  {value: "articulacion", label: "Articulación"},
-  {value: "fraseo", label: "Fraseo"},
-  {value: "tecnica", label: "Técnica"},
-  {value: "expresion", label: "Expresión"},
-  {value: "balance", label: "Balance"},
-  {value: "precision", label: "Precisión"},
-]
+  { value: 'afinacion', label: 'Afinación' },
+  { value: 'ritmo', label: 'Ritmo' },
+  { value: 'dinamica', label: 'Dinámica' },
+  { value: 'articulacion', label: 'Articulación' },
+  { value: 'fraseo', label: 'Fraseo' },
+  { value: 'tecnica', label: 'Técnica' },
+  { value: 'expresion', label: 'Expresión' },
+  { value: 'balance', label: 'Balance' },
+  { value: 'precision', label: 'Precisión' },
+];
 
 const form = ref({
-  nombre: "",
-  obraId: "",
-  descripcion: "",
-  compases: "",
-  tempo: "",
-  tonalidad: "",
-  dificultad: "",
-  prioridad: "",
+  nombre: '',
+  obraId: '',
+  descripcion: '',
+  compases: '',
+  tempo: '',
+  tonalidad: '',
+  dificultad: '',
+  prioridad: '',
   aspectosTecnicos: [] as string[],
-  objetivosEstudio: [""],
-  notas: "",
-})
+  objetivosEstudio: [''],
+  notas: '',
+});
 
 watch(
   () => props.phrase,
@@ -290,49 +290,49 @@ watch(
       form.value = {
         nombre: newPhrase.nombre,
         obraId: newPhrase.obraId,
-        descripcion: newPhrase.descripcion || "",
+        descripcion: newPhrase.descripcion || '',
         compases: `${newPhrase.compasInicio}-${newPhrase.compasFinalizacion}`,
-        tempo: "",
-        tonalidad: "",
+        tempo: '',
+        tonalidad: '',
         dificultad: newPhrase.dificultad,
-        prioridad: "media",
+        prioridad: 'media',
         aspectosTecnicos: [...newPhrase.objetivosTecnicos],
         objetivosEstudio:
-          newPhrase.objetivosMusicales.length > 0 ? [...newPhrase.objetivosMusicales] : [""],
-        notas: "",
-      }
+          newPhrase.objetivosMusicales.length > 0 ? [...newPhrase.objetivosMusicales] : [''],
+        notas: '',
+      };
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 const addObjective = () => {
-  form.value.objetivosEstudio.push("")
-}
+  form.value.objetivosEstudio.push('');
+};
 
 const removeObjective = (index: number) => {
   if (form.value.objetivosEstudio.length > 1) {
-    form.value.objetivosEstudio.splice(index, 1)
+    form.value.objetivosEstudio.splice(index, 1);
   }
-}
+};
 
 const handleSubmit = async () => {
-  isSubmitting.value = true
+  isSubmitting.value = true;
 
   try {
     const phraseData = {
       nombre: form.value.nombre,
       obraId: form.value.obraId,
-      planAccionId: "default-plan", // TODO: Get from context
+      planAccionId: 'default-plan', // TODO: Get from context
       descripcion: form.value.descripcion,
-      compasInicio: parseInt(form.value.compases.split("-")[0]) || 1,
+      compasInicio: parseInt(form.value.compases.split('-')[0]) || 1,
       compasFinalizacion:
-        parseInt(form.value.compases.split("-")[1]) ||
-        parseInt(form.value.compases.split("-")[0]) ||
+        parseInt(form.value.compases.split('-')[1]) ||
+        parseInt(form.value.compases.split('-')[0]) ||
         1,
       dificultad: form.value.dificultad as any,
       objetivosTecnicos: form.value.aspectosTecnicos,
-      objetivosMusicales: form.value.objetivosEstudio.filter((obj) => obj.trim() !== ""),
+      objetivosMusicales: form.value.objetivosEstudio.filter((obj) => obj.trim() !== ''),
       metadatos: {
         totalCompases: 0,
         estadosCompases: {},
@@ -341,55 +341,55 @@ const handleSubmit = async () => {
         dificultadesIdentificadas: [],
         logrosAlcanzados: [],
       },
-    }
+    };
 
-    let savedPhrase: FraseMontaje
+    let savedPhrase: FraseMontaje;
 
     if (isEditing.value && props.phrase) {
       // TODO: Implement updatePhrase when available
-      console.log("Updating phrase:", phraseData)
-      savedPhrase = {...props.phrase, ...phraseData}
+      console.log('Updating phrase:', phraseData);
+      savedPhrase = { ...props.phrase, ...phraseData };
     } else {
-      const fraseId = await montajeStore.crearFrase(phraseData)
+      const fraseId = await montajeStore.crearFrase(phraseData);
       // Create the saved phrase object with the returned ID
       savedPhrase = {
         id: fraseId,
         ...phraseData,
         auditoria: {
-          creadoPor: "current-user-id", // TODO: Get from auth
+          creadoPor: 'current-user-id', // TODO: Get from auth
           fechaCreacion: Timestamp.now(),
-          modificadoPor: "current-user-id",
+          modificadoPor: 'current-user-id',
           fechaModificacion: Timestamp.now(),
           version: 1,
           activo: true,
         },
-      }
+      };
     }
 
-    emit("saved", savedPhrase)
-    closeModal()
+    emit('saved', savedPhrase);
+    closeModal();
   } catch (error) {
-    console.error("Error saving phrase:", error)
+    console.error('Error saving phrase:', error);
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 
 const closeModal = () => {
-  emit("close")
+  emit('close');
   // Reset form
   form.value = {
-    nombre: "",
-    obraId: "",
-    descripcion: "",
-    compases: "",
-    tempo: "",
-    tonalidad: "",
-    dificultad: "",
-    prioridad: "",
+    nombre: '',
+    obraId: '',
+    descripcion: '',
+    compases: '',
+    tempo: '',
+    tonalidad: '',
+    dificultad: '',
+    prioridad: '',
     aspectosTecnicos: [],
-    objetivosEstudio: [""],
-    notas: "",
-  }
-}
+    objetivosEstudio: [''],
+    notas: '',
+  };
+};
 </script>

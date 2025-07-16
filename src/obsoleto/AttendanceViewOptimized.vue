@@ -386,35 +386,35 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {format, parseISO} from "date-fns"
-import {es} from "date-fns/locale"
-import AttendanceCalendarOptimized from "../components/AttendanceCalendarOptimized.vue"
-import AttendanceListOptimized from "../components/AttendanceListOptimized.vue"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import AttendanceCalendarOptimized from '../components/AttendanceCalendarOptimized.vue';
+import AttendanceListOptimized from '../components/AttendanceListOptimized.vue';
 
-import { useClassesStore } from "../../Classes/store/classes"
-import { useAuthStore } from "../../../stores/auth"
-import { useAttendanceStore } from "../store/attendance"
+import { useClassesStore } from '../../Classes/store/classes';
+import { useAuthStore } from '../../../stores/auth';
+import { useAttendanceStore } from '../store/attendance';
 
 // 🎛️ Stores
-const classesStore = useClassesStore()
-const authStore = useAuthStore()
-const attendanceStore = useAttendanceStore()
+const classesStore = useClassesStore();
+const authStore = useAuthStore();
+const attendanceStore = useAttendanceStore();
 
 // 🎛️ Estado principal
-const currentView = ref<"calendar" | "class-select" | "attendance-list" | "reports">("calendar")
-const selectedDate = ref("")
-const selectedClass = ref("")
-const selectedClassName = ref("")
-const loading = ref(false)
-const loadingMessage = ref("Cargando...")
-const showToast = ref(false)
-const toastMessage = ref("")
-const toastType = ref<"success" | "error" | "info">("success")
-const showDebugInfo = ref(false)
-const showContextPanel = ref(true)
-const showQuickActions = ref(false)
+const currentView = ref<'calendar' | 'class-select' | 'attendance-list' | 'reports'>('calendar');
+const selectedDate = ref('');
+const selectedClass = ref('');
+const selectedClassName = ref('');
+const loading = ref(false);
+const loadingMessage = ref('Cargando...');
+const showToast = ref(false);
+const toastMessage = ref('');
+const toastType = ref<'success' | 'error' | 'info'>('success');
+const showDebugInfo = ref(false);
+const showContextPanel = ref(true);
+const showQuickActions = ref(false);
 
 interface DisplayableClass {
   id: string
@@ -423,7 +423,7 @@ interface DisplayableClass {
   timeSlot: string
   hasAttendance: boolean
 }
-const availableClasses = ref<DisplayableClass[]>([])
+const availableClasses = ref<DisplayableClass[]>([]);
 const todayStats = ref({ classes: 0, averageAttendance: 0, pending: 0 });
 
 // 🚀 Composable
@@ -433,74 +433,74 @@ const todayStats = ref({ classes: 0, averageAttendance: 0, pending: 0 });
  * 🎛️ Configuración de vistas
  */
 const viewOptions = [
-  {key: "calendar", label: "📅 Calendario"},
-  {key: "professional-calendar", label: "🎯 Calendario Pro"},
-  {key: "class-select", label: "📚 Clases"},
-  {key: "attendance-list", label: "👥 Asistencia"},
-  {key: "reports", label: "📊 Reportes"},
-]
+  { key: 'calendar', label: '📅 Calendario' },
+  { key: 'professional-calendar', label: '🎯 Calendario Pro' },
+  { key: 'class-select', label: '📚 Clases' },
+  { key: 'attendance-list', label: '👥 Asistencia' },
+  { key: 'reports', label: '📊 Reportes' },
+];
 
 const quickActions = [
-  {key: "today", label: "Ir a hoy", icon: "CalendarIcon", disabled: false},
+  { key: 'today', label: 'Ir a hoy', icon: 'CalendarIcon', disabled: false },
   {
-    key: "mark-all-present",
-    label: "Todos presentes",
-    icon: "CheckIcon",
+    key: 'mark-all-present',
+    label: 'Todos presentes',
+    icon: 'CheckIcon',
     disabled: !selectedClass.value,
   },
-  {key: "export-pdf", label: "Exportar PDF", icon: "DocumentIcon", disabled: !selectedClass.value},
-  {key: "send-notifications", label: "Notificar ausentes", icon: "BellIcon", disabled: true},
-  {key: "emergency-class", label: "Clase emergente", icon: "PlusIcon", disabled: false},
-  {key: "settings", label: "Configuración", icon: "CogIcon", disabled: false},
-]
+  { key: 'export-pdf', label: 'Exportar PDF', icon: 'DocumentIcon', disabled: !selectedClass.value },
+  { key: 'send-notifications', label: 'Notificar ausentes', icon: 'BellIcon', disabled: true },
+  { key: 'emergency-class', label: 'Clase emergente', icon: 'PlusIcon', disabled: false },
+  { key: 'settings', label: 'Configuración', icon: 'CogIcon', disabled: false },
+];
 
 /**
  * 🎯 Computed properties
  */
 const toastClass = computed(() => {
   const classes = {
-    success: "bg-green-500",
-    error: "bg-red-500",
-    warning: "bg-yellow-500",
-    info: "bg-blue-500",
-  }
-  return classes[toastType.value]
-})
+    success: 'bg-green-500',
+    error: 'bg-red-500',
+    warning: 'bg-yellow-500',
+    info: 'bg-blue-500',
+  };
+  return classes[toastType.value];
+});
 
 /**
  * 🎨 Funciones de UI
  */
 const getCurrentStep = (): string => {
   const steps = {
-    calendar: "Paso 1: Seleccionar fecha",
-    "class-select": "Paso 2: Elegir clase",
-    "attendance-list": "Paso 3: Registrar asistencia",
-    reports: "Reportes y análisis",
-  }
-  return steps[currentView.value] || ""
-}
+    calendar: 'Paso 1: Seleccionar fecha',
+    'class-select': 'Paso 2: Elegir clase',
+    'attendance-list': 'Paso 3: Registrar asistencia',
+    reports: 'Reportes y análisis',
+  };
+  return steps[currentView.value] || '';
+};
 
 const getContextMessage = (): string => {
   const messages = {
-    calendar: "Selecciona una fecha del calendario para comenzar",
-    "class-select": `Clases disponibles para ${formatSelectedDate()}`,
-    "attendance-list": `Registrando asistencia: ${selectedClassName.value}`,
-    reports: "Genera reportes de asistencia",
-  }
-  return messages[currentView.value] || ""
-}
+    calendar: 'Selecciona una fecha del calendario para comenzar',
+    'class-select': `Clases disponibles para ${formatSelectedDate()}`,
+    'attendance-list': `Registrando asistencia: ${selectedClassName.value}`,
+    reports: 'Genera reportes de asistencia',
+  };
+  return messages[currentView.value] || '';
+};
 
 const getContextDetails = (): string => {
-  if (currentView.value === "attendance-list") {
-    return `${formatSelectedDate()}`
+  if (currentView.value === 'attendance-list') {
+    return `${formatSelectedDate()}`;
   }
-  return ""
-}
+  return '';
+};
 
 const formatSelectedDate = (): string => {
-  if (!selectedDate.value) return ""
-  return format(new Date(selectedDate.value), "d 'de' MMMM, yyyy", {locale: es})
-}
+  if (!selectedDate.value) return '';
+  return format(new Date(selectedDate.value), 'd \'de\' MMMM, yyyy', { locale: es });
+};
 
 /**
  * 🎛️ Navegación entre vistas
@@ -509,74 +509,74 @@ const setCurrentView = (view: typeof currentView.value) => {
   // Manejar navegación al calendario profesional
   if (view === 'professional-calendar') {
     // Navegar directamente a la nueva vista
-    const router = useRouter()
-    router.push('/attendance/professional-calendar')
-    return
+    const router = useRouter();
+    router.push('/attendance/professional-calendar');
+    return;
   }
 
-  currentView.value = view
+  currentView.value = view;
 
   // Auto-navegación inteligente
-  if (view === "class-select" && !selectedDate.value) {
-    currentView.value = "calendar"
-    showToast("Primero selecciona una fecha", "warning")
+  if (view === 'class-select' && !selectedDate.value) {
+    currentView.value = 'calendar';
+    showToast('Primero selecciona una fecha', 'warning');
   }
 
-  if (view === "attendance-list" && (!selectedDate.value || !selectedClass.value)) {
-    currentView.value = selectedDate.value ? "class-select" : "calendar"
-    showToast("Completa los pasos anteriores", "warning")
+  if (view === 'attendance-list' && (!selectedDate.value || !selectedClass.value)) {
+    currentView.value = selectedDate.value ? 'class-select' : 'calendar';
+    showToast('Completa los pasos anteriores', 'warning');
   }
-}
+};
 
 /**
  * 📅 Manejo de fechas
  */
 const handleDateSelected = async (date: string) => {
-  selectedDate.value = date
-  selectedClass.value = ""
-  selectedClassName.value = ""
+  selectedDate.value = date;
+  selectedClass.value = '';
+  selectedClassName.value = '';
 
   // Cargar clases para esta fecha
-  await loadClassesForDate(date)
+  await loadClassesForDate(date);
 
   // Auto-navegar si solo hay una clase
   if (availableClasses.value.length === 1) {
-    selectClass(availableClasses.value[0].id)
+    selectClass(availableClasses.value[0].id);
   } else {
-    setCurrentView("class-select")
+    setCurrentView('class-select');
   }
-}
+};
 
 const handleMonthChanged = (month: string) => {
-  console.log("📅 [AttendanceView] Month changed:", month)
-}
+  console.log('📅 [AttendanceView] Month changed:', month);
+};
 
 const goToToday = () => {
-  const today = new Date().toISOString().split("T")[0]
-  handleDateSelected(today)
-}
+  const today = new Date().toISOString().split('T')[0];
+  handleDateSelected(today);
+};
 
 /**
  * 📚 Manejo de clases
  */
 const loadClassesForDate = async (date: string) => {
   try {
-    loading.value = true
-    loadingMessage.value = "Cargando clases..."
-    const teacherId = authStore.user?.uid
+    loading.value = true;
+    loadingMessage.value = 'Cargando clases...';
+    const teacherId = authStore.user?.uid;
 
     if (!teacherId) {
-      triggerToast("No se pudo identificar al maestro. Por favor, inicie sesión de nuevo.", "error")
-      availableClasses.value = []
-      return
+      triggerToast('No se pudo identificar al maestro. Por favor, inicie sesión de nuevo.', 'error');
+      availableClasses.value = [];
+      return;
     }
 
     // Usar parseISO para evitar problemas de zona horaria
-    const selectedDay = parseISO(date)
-    const dayName = selectedDay.toLocaleDateString("es-ES", {weekday: "long"}).toLowerCase()
+    const selectedDay = parseISO(date);
+    const dayName = selectedDay.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase();
 
     // Obtener las clases del store
-    const classesForDay = classesStore.getClassByDaysAndTeacher(teacherId, dayName)
+    const classesForDay = classesStore.getClassByDaysAndTeacher(teacherId, dayName);
 
     // Mapear las clases y verificar si ya tienen asistencia registrada para esa fecha
     const classPromises = classesForDay.map(async (classItem) => {
@@ -585,48 +585,48 @@ const loadClassesForDate = async (date: string) => {
       // Safely access slots, as schedule structure can be inconsistent
       if (classItem.schedule && Array.isArray(classItem.schedule.slots)) {
         timeSlot = classItem.schedule.slots.find(
-          (slot: any) => slot.day.toLowerCase() === dayName
+          (slot: any) => slot.day.toLowerCase() === dayName,
         );
       }
 
       return {
         id: classItem.id,
-        name: classItem.name || "Clase sin nombre",
+        name: classItem.name || 'Clase sin nombre',
         studentCount: classItem.studentIds?.length || 0,
-        timeSlot: timeSlot ? `${timeSlot.startTime} - ${timeSlot.endTime}` : "Horario no definido",
+        timeSlot: timeSlot ? `${timeSlot.startTime} - ${timeSlot.endTime}` : 'Horario no definido',
         hasAttendance,
       };
     });
 
-    availableClasses.value = await Promise.all(classPromises)
+    availableClasses.value = await Promise.all(classPromises);
 
     console.log(
-      `📚 [AttendanceView] ${availableClasses.value.length} clases cargadas para ${date} (${dayName})`
-    )
+      `📚 [AttendanceView] ${availableClasses.value.length} clases cargadas para ${date} (${dayName})`,
+    );
   } catch (err) {
-    const error = err as Error
-    console.error("❌ [AttendanceView] Error loading classes:", error)
-    triggerToast(`Error al cargar clases: ${error.message}`, "error")
-    availableClasses.value = []
+    const error = err as Error;
+    console.error('❌ [AttendanceView] Error loading classes:', error);
+    triggerToast(`Error al cargar clases: ${error.message}`, 'error');
+    availableClasses.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const selectClass = (classId: string) => {
-  selectedClass.value = classId
+  selectedClass.value = classId;
 
-  const classData = availableClasses.value.find((c) => c.id === classId)
-  selectedClassName.value = classData?.name || ""
+  const classData = availableClasses.value.find((c) => c.id === classId);
+  selectedClassName.value = classData?.name || '';
 
-  setCurrentView("attendance-list")
-}
+  setCurrentView('attendance-list');
+};
 
 const refreshClasses = () => {
   if (selectedDate.value) {
-    loadClassesForDate(selectedDate.value)
+    loadClassesForDate(selectedDate.value);
   }
-}
+};
 
 /**
  * ⚡ Acciones rápidas
@@ -634,57 +634,57 @@ const refreshClasses = () => {
 const executeQuickAction = (actionKey: string) => {
   const actions = {
     today: goToToday,
-    "mark-all-present": () => triggerToast("Función próximamente", "info"),
-    "export-pdf": () => triggerToast("Función próximamente", "info"),
-    "send-notifications": () => triggerToast("Función próximamente", "info"),
-    "emergency-class": createEmergencyClass,
-    settings: () => triggerToast("Función próximamente", "info"),
-  }
+    'mark-all-present': () => triggerToast('Función próximamente', 'info'),
+    'export-pdf': () => triggerToast('Función próximamente', 'info'),
+    'send-notifications': () => triggerToast('Función próximamente', 'info'),
+    'emergency-class': createEmergencyClass,
+    settings: () => triggerToast('Función próximamente', 'info'),
+  };
 
-  const action = actions[actionKey as keyof typeof actions]
+  const action = actions[actionKey as keyof typeof actions];
   if (action) {
-    action()
+    action();
   }
-}
+};
 
 const createEmergencyClass = () => {
-  triggerToast("Función de clase emergente próximamente", "info")
-}
+  triggerToast('Función de clase emergente próximamente', 'info');
+};
 
 /**
  * 📊 Reportes
  */
 const openReportsView = () => {
-  setCurrentView("reports")
-}
+  setCurrentView('reports');
+};
 
 const generateDailyReport = () => {
-  triggerToast("Generando reporte diario...", "info")
-}
+  triggerToast('Generando reporte diario...', 'info');
+};
 
 const generateWeeklyReport = () => {
-  triggerToast("Generando reporte semanal...", "info")
-}
+  triggerToast('Generando reporte semanal...', 'info');
+};
 
 /**
  * 🎉 Event handlers
  */
 const handleStatusUpdated = (studentId: string, status: string) => {
-  console.log("👤 [AttendanceView] Status updated:", studentId, status)
-}
+  console.log('👤 [AttendanceView] Status updated:', studentId, status);
+};
 
 const handleSaved = () => {
-  triggerToast("Asistencia guardada con éxito", "success")
-}
+  triggerToast('Asistencia guardada con éxito', 'success');
+};
 
 const handleError = (error: string) => {
-  triggerToast(error, "error");
+  triggerToast(error, 'error');
 };
 
 /**
  * 🎉 Toast system
  */
-const triggerToast = (message: string, type: "success" | "error" | "info" = "info") => {
+const triggerToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
   toastMessage.value = message;
   toastType.value = type;
   showToast.value = true;
@@ -697,7 +697,7 @@ const triggerToast = (message: string, type: "success" | "error" | "info" = "inf
  * 🚀 Lifecycle
  */
 onMounted(() => {
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toISOString().split('T')[0];
   loadClassesForDate(today).then(() => {
     todayStats.value.classes = availableClasses.value.length;
     todayStats.value.pending = availableClasses.value.filter((c) => !c.hasAttendance).length;

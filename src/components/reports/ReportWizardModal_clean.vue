@@ -408,27 +408,27 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {format, subDays, subWeeks, subMonths, startOfWeek, endOfWeek} from "date-fns"
-import {es} from "date-fns/locale"
+import { ref, computed, onMounted } from 'vue';
+import { format, subDays, subWeeks, subMonths, startOfWeek, endOfWeek } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 // Emits
 const emit = defineEmits<{
   close: []
   generate: [config: any]
-}>()
+}>();
 
 // Estado del asistente
-const currentStep = ref(0)
+const currentStep = ref(0);
 const reportConfig = ref({
-  type: "",
-  format: "pdf",
-  title: "",
+  type: '',
+  format: 'pdf',
+  title: '',
   dateRange: {
-    start: format(subDays(new Date(), 30), "yyyy-MM-dd"),
-    end: format(new Date(), "yyyy-MM-dd"),
+    start: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+    end: format(new Date(), 'yyyy-MM-dd'),
   },
-  datePreset: "last30days",
+  datePreset: 'last30days',
   filters: {
     classes: [],
     students: [],
@@ -443,235 +443,235 @@ const reportConfig = ref({
     recommendations: true,
     analytics: false,
   },
-})
+});
 
 // Datos de configuración
 const steps = [
-  {id: "type", title: "Tipo"},
-  {id: "data", title: "Datos"},
-  {id: "customize", title: "Personalizar"},
-  {id: "review", title: "Revisar"},
-]
+  { id: 'type', title: 'Tipo' },
+  { id: 'data', title: 'Datos' },
+  { id: 'customize', title: 'Personalizar' },
+  { id: 'review', title: 'Revisar' },
+];
 
 const reportTypes = [
   {
-    id: "attendance",
-    name: "Reporte de Asistencia",
-    description: "Análisis completo de asistencia con estadísticas y tendencias",
-    icon: "📊",
-    features: ["Estadísticas", "Gráficos", "Tendencias", "Análisis por estudiante"],
+    id: 'attendance',
+    name: 'Reporte de Asistencia',
+    description: 'Análisis completo de asistencia con estadísticas y tendencias',
+    icon: '📊',
+    features: ['Estadísticas', 'Gráficos', 'Tendencias', 'Análisis por estudiante'],
   },
   {
-    id: "risk_analysis",
-    name: "Análisis de Riesgo",
-    description: "Identificación de estudiantes que requieren atención especial",
-    icon: "⚠️",
-    features: ["Predicción IA", "Plan de acción", "Factores de riesgo", "Recomendaciones"],
+    id: 'risk_analysis',
+    name: 'Análisis de Riesgo',
+    description: 'Identificación de estudiantes que requieren atención especial',
+    icon: '⚠️',
+    features: ['Predicción IA', 'Plan de acción', 'Factores de riesgo', 'Recomendaciones'],
   },
   {
-    id: "class_performance",
-    name: "Rendimiento por Clase",
-    description: "Comparativas de rendimiento entre clases y profesores",
-    icon: "📚",
-    features: ["Benchmarks", "Comparativas", "Rankings", "Análisis de eficiencia"],
+    id: 'class_performance',
+    name: 'Rendimiento por Clase',
+    description: 'Comparativas de rendimiento entre clases y profesores',
+    icon: '📚',
+    features: ['Benchmarks', 'Comparativas', 'Rankings', 'Análisis de eficiencia'],
   },
   {
-    id: "notification_analysis",
-    name: "Análisis de Notificaciones",
-    description: "Efectividad de las comunicaciones y escalaciones",
-    icon: "📱",
-    features: ["Efectividad", "Patrones", "Respuesta", "Optimización"],
+    id: 'notification_analysis',
+    name: 'Análisis de Notificaciones',
+    description: 'Efectividad de las comunicaciones y escalaciones',
+    icon: '📱',
+    features: ['Efectividad', 'Patrones', 'Respuesta', 'Optimización'],
   },
   {
-    id: "trends_prediction",
-    name: "Tendencias y Predicción",
-    description: "Análisis predictivo con machine learning",
-    icon: "🔮",
-    features: ["IA Predictiva", "Modelos", "Forecasting", "Insights"],
+    id: 'trends_prediction',
+    name: 'Tendencias y Predicción',
+    description: 'Análisis predictivo con machine learning',
+    icon: '🔮',
+    features: ['IA Predictiva', 'Modelos', 'Forecasting', 'Insights'],
   },
   {
-    id: "custom",
-    name: "Reporte Personalizado",
-    description: "Combina múltiples tipos de análisis según tus necesidades",
-    icon: "🎯",
-    features: ["Flexible", "Combinado", "Personalizable", "Avanzado"],
+    id: 'custom',
+    name: 'Reporte Personalizado',
+    description: 'Combina múltiples tipos de análisis según tus necesidades',
+    icon: '🎯',
+    features: ['Flexible', 'Combinado', 'Personalizable', 'Avanzado'],
   },
-]
+];
 
 const outputFormats = [
   {
-    id: "pdf",
-    name: "PDF Profesional",
-    description: "Reporte profesional con gráficos y formato corporativo",
-    icon: "📄",
+    id: 'pdf',
+    name: 'PDF Profesional',
+    description: 'Reporte profesional con gráficos y formato corporativo',
+    icon: '📄',
   },
   {
-    id: "excel",
-    name: "Excel Avanzado",
-    description: "Hojas múltiples con tablas dinámicas y análisis",
-    icon: "📊",
+    id: 'excel',
+    name: 'Excel Avanzado',
+    description: 'Hojas múltiples con tablas dinámicas y análisis',
+    icon: '📊',
   },
   {
-    id: "powerpoint",
-    name: "Presentación",
-    description: "Slides ejecutivos para presentaciones",
-    icon: "📽️",
+    id: 'powerpoint',
+    name: 'Presentación',
+    description: 'Slides ejecutivos para presentaciones',
+    icon: '📽️',
   },
-]
+];
 
 const contentOptions = [
   {
-    id: "summary",
-    name: "Resumen Ejecutivo",
-    description: "Métricas principales y conclusiones clave",
+    id: 'summary',
+    name: 'Resumen Ejecutivo',
+    description: 'Métricas principales y conclusiones clave',
   },
   {
-    id: "detailed",
-    name: "Datos Detallados",
-    description: "Tablas completas con toda la información",
+    id: 'detailed',
+    name: 'Datos Detallados',
+    description: 'Tablas completas con toda la información',
   },
   {
-    id: "charts",
-    name: "Gráficos y Visualizaciones",
-    description: "Gráficos profesionales para análisis visual",
+    id: 'charts',
+    name: 'Gráficos y Visualizaciones',
+    description: 'Gráficos profesionales para análisis visual',
   },
   {
-    id: "trends",
-    name: "Análisis de Tendencias",
-    description: "Evolución temporal y patrones históricos",
+    id: 'trends',
+    name: 'Análisis de Tendencias',
+    description: 'Evolución temporal y patrones históricos',
   },
   {
-    id: "patterns",
-    name: "Detección de Patrones",
-    description: "Patrones de comportamiento identificados por IA",
+    id: 'patterns',
+    name: 'Detección de Patrones',
+    description: 'Patrones de comportamiento identificados por IA',
   },
   {
-    id: "recommendations",
-    name: "Recomendaciones",
-    description: "Sugerencias y plan de acción basado en análisis",
+    id: 'recommendations',
+    name: 'Recomendaciones',
+    description: 'Sugerencias y plan de acción basado en análisis',
   },
   {
-    id: "analytics",
-    name: "Analytics Avanzado",
-    description: "Métricas avanzadas y análisis predictivo",
+    id: 'analytics',
+    name: 'Analytics Avanzado',
+    description: 'Métricas avanzadas y análisis predictivo',
   },
-]
+];
 
 const datePresets = [
   {
-    id: "today",
-    label: "Hoy",
+    id: 'today',
+    label: 'Hoy',
     start: () => new Date(),
     end: () => new Date(),
   },
   {
-    id: "yesterday",
-    label: "Ayer",
+    id: 'yesterday',
+    label: 'Ayer',
     start: () => subDays(new Date(), 1),
     end: () => subDays(new Date(), 1),
   },
   {
-    id: "last7days",
-    label: "Últimos 7 días",
+    id: 'last7days',
+    label: 'Últimos 7 días',
     start: () => subDays(new Date(), 7),
     end: () => new Date(),
   },
   {
-    id: "last30days",
-    label: "Últimos 30 días",
+    id: 'last30days',
+    label: 'Últimos 30 días',
     start: () => subDays(new Date(), 30),
     end: () => new Date(),
   },
   {
-    id: "thisweek",
-    label: "Esta semana",
+    id: 'thisweek',
+    label: 'Esta semana',
     start: () => startOfWeek(new Date()),
     end: () => endOfWeek(new Date()),
   },
   {
-    id: "lastweek",
-    label: "Semana pasada",
+    id: 'lastweek',
+    label: 'Semana pasada',
     start: () => startOfWeek(subWeeks(new Date(), 1)),
     end: () => endOfWeek(subWeeks(new Date(), 1)),
   },
   {
-    id: "thismonth",
-    label: "Este mes",
+    id: 'thismonth',
+    label: 'Este mes',
     start: () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     end: () => new Date(),
   },
   {
-    id: "lastmonth",
-    label: "Mes pasado",
+    id: 'lastmonth',
+    label: 'Mes pasado',
     start: () => subMonths(new Date(), 1),
     end: () => subDays(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 1),
   },
-]
+];
 
 // Datos simulados para filtros
 const availableClasses = ref([
-  {id: "1", name: "Violín Básico", teacher: "Prof. María González"},
-  {id: "2", name: "Piano Intermedio", teacher: "Prof. Carlos Rodríguez"},
-  {id: "3", name: "Guitarra Avanzada", teacher: "Prof. Ana Martínez"},
-  {id: "4", name: "Coro Juvenil", teacher: "Prof. Luis Pérez"},
-])
+  { id: '1', name: 'Violín Básico', teacher: 'Prof. María González' },
+  { id: '2', name: 'Piano Intermedio', teacher: 'Prof. Carlos Rodríguez' },
+  { id: '3', name: 'Guitarra Avanzada', teacher: 'Prof. Ana Martínez' },
+  { id: '4', name: 'Coro Juvenil', teacher: 'Prof. Luis Pérez' },
+]);
 
 const availableStudents = ref([
-  {id: "1", name: "María García"},
-  {id: "2", name: "Juan Pérez"},
-  {id: "3", name: "Ana López"},
-  {id: "4", name: "Carlos Martín"},
-])
+  { id: '1', name: 'María García' },
+  { id: '2', name: 'Juan Pérez' },
+  { id: '3', name: 'Ana López' },
+  { id: '4', name: 'Carlos Martín' },
+]);
 
 // Computed properties
 const estimatedPages = computed(() => {
-  let pages = 3 // Base
-  if (reportConfig.value.content.detailed) pages += 5
-  if (reportConfig.value.content.charts) pages += 3
-  if (reportConfig.value.content.trends) pages += 2
-  if (reportConfig.value.content.patterns) pages += 2
-  if (reportConfig.value.content.analytics) pages += 4
-  return pages
-})
+  let pages = 3; // Base
+  if (reportConfig.value.content.detailed) pages += 5;
+  if (reportConfig.value.content.charts) pages += 3;
+  if (reportConfig.value.content.trends) pages += 2;
+  if (reportConfig.value.content.patterns) pages += 2;
+  if (reportConfig.value.content.analytics) pages += 4;
+  return pages;
+});
 
 const estimatedTime = computed(() => {
-  const baseTime = 30 // 30 segundos base
-  const contentTime = Object.values(reportConfig.value.content).filter(Boolean).length * 15
-  const totalSeconds = baseTime + contentTime
-  return totalSeconds > 60 ? `${Math.ceil(totalSeconds / 60)}min` : `${totalSeconds}s`
-})
+  const baseTime = 30; // 30 segundos base
+  const contentTime = Object.values(reportConfig.value.content).filter(Boolean).length * 15;
+  const totalSeconds = baseTime + contentTime;
+  return totalSeconds > 60 ? `${Math.ceil(totalSeconds / 60)}min` : `${totalSeconds}s`;
+});
 
 const estimatedSize = computed(() => {
-  let size = 2 // MB base
-  if (reportConfig.value.content.charts) size += 3
-  if (reportConfig.value.content.detailed) size += 2
-  if (reportConfig.value.format === "excel") size += 1
-  return `${size}MB`
-})
+  let size = 2; // MB base
+  if (reportConfig.value.content.charts) size += 3;
+  if (reportConfig.value.content.detailed) size += 2;
+  if (reportConfig.value.format === 'excel') size += 1;
+  return `${size}MB`;
+});
 
 // Métodos de navegación
 const nextStep = (): void => {
   if (canProceedToNext()) {
-    currentStep.value++
+    currentStep.value++;
   }
-}
+};
 
 const previousStep = (): void => {
-  currentStep.value--
-}
+  currentStep.value--;
+};
 
 const canProceedToNext = (): boolean => {
   switch (currentStep.value) {
-    case 0:
-      return !!reportConfig.value.type
-    case 1:
-      return !!reportConfig.value.dateRange.start && !!reportConfig.value.dateRange.end
-    case 2:
-      return !!reportConfig.value.format
-    default:
-      return true
+  case 0:
+    return !!reportConfig.value.type;
+  case 1:
+    return !!reportConfig.value.dateRange.start && !!reportConfig.value.dateRange.end;
+  case 2:
+    return !!reportConfig.value.format;
+  default:
+    return true;
   }
-}
+};
 
 const canGenerate = (): boolean => {
   return !!(
@@ -679,51 +679,51 @@ const canGenerate = (): boolean => {
     reportConfig.value.format &&
     reportConfig.value.dateRange.start &&
     reportConfig.value.dateRange.end
-  )
-}
+  );
+};
 
 // Métodos utilitarios
 const applyDatePreset = (preset: any): void => {
-  reportConfig.value.datePreset = preset.id
-  reportConfig.value.dateRange.start = format(preset.start(), "yyyy-MM-dd")
-  reportConfig.value.dateRange.end = format(preset.end(), "yyyy-MM-dd")
-}
+  reportConfig.value.datePreset = preset.id;
+  reportConfig.value.dateRange.start = format(preset.start(), 'yyyy-MM-dd');
+  reportConfig.value.dateRange.end = format(preset.end(), 'yyyy-MM-dd');
+};
 
 const getSelectedReportType = () => {
-  return reportTypes.find((type) => type.id === reportConfig.value.type)
-}
+  return reportTypes.find((type) => type.id === reportConfig.value.type);
+};
 
 const getSelectedFormat = () => {
-  return outputFormats.find((formatItem) => formatItem.id === reportConfig.value.format)
-}
+  return outputFormats.find((formatItem) => formatItem.id === reportConfig.value.format);
+};
 
 const getContentOptionName = (key: string): string => {
-  const option = contentOptions.find((opt) => opt.id === key)
-  return option?.name || key
-}
+  const option = contentOptions.find((opt) => opt.id === key);
+  return option?.name || key;
+};
 
 const formatDate = (dateString: string): string => {
-  if (!dateString) return "No definida"
-  return format(new Date(dateString), "dd/MM/yyyy", {locale: es})
-}
+  if (!dateString) return 'No definida';
+  return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
+};
 
 const calculateDayRange = (): number => {
-  if (!reportConfig.value.dateRange.start || !reportConfig.value.dateRange.end) return 0
-  const start = new Date(reportConfig.value.dateRange.start)
-  const end = new Date(reportConfig.value.dateRange.end)
-  return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
-}
+  if (!reportConfig.value.dateRange.start || !reportConfig.value.dateRange.end) return 0;
+  const start = new Date(reportConfig.value.dateRange.start);
+  const end = new Date(reportConfig.value.dateRange.end);
+  return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+};
 
 const generateReport = (): void => {
   if (canGenerate()) {
-    emit("generate", {...reportConfig.value})
+    emit('generate', { ...reportConfig.value });
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
   // Configurar título por defecto basado en fecha
-  const today = format(new Date(), "MMMM yyyy", {locale: es})
-  reportConfig.value.title = `Reporte de Asistencia - ${today}`
-})
+  const today = format(new Date(), 'MMMM yyyy', { locale: es });
+  reportConfig.value.title = `Reporte de Asistencia - ${today}`;
+});
 </script>

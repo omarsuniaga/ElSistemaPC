@@ -167,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 import {
   XMarkIcon,
   InformationCircleIcon,
@@ -178,18 +178,18 @@ import {
   UserGroupIcon,
   CheckCircleIcon,
   BellIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface Activity {
   id: string
-  type: "create" | "update" | "delete" | "login" | "assignment" | "approval"
+  type: 'create' | 'update' | 'delete' | 'login' | 'assignment' | 'approval'
   entity: string
   description: string
   user: string
   timestamp: Date
   icon?: string
   color?: string
-  priority?: "low" | "medium" | "high"
+  priority?: 'low' | 'medium' | 'high'
   metadata?: any
 }
 
@@ -201,12 +201,12 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   showImpactAnalysis: true,
-})
+});
 
 const emit = defineEmits<{
   close: []
   revert: [activity: Activity]
-}>()
+}>();
 
 // Icon mapping
 const activityIcons = {
@@ -217,172 +217,172 @@ const activityIcons = {
   assignment: UserGroupIcon,
   approval: CheckCircleIcon,
   default: BellIcon,
-}
+};
 
 // Computed
 const canRevert = computed(() => {
   // Only certain activities can be reverted
   return (
-    ["create", "update", "delete", "assignment"].includes(props.activity.type) &&
-    props.activity.entity !== "login"
-  )
-})
+    ['create', 'update', 'delete', 'assignment'].includes(props.activity.type) &&
+    props.activity.entity !== 'login'
+  );
+});
 
 // Methods
 const getActivityIcon = (activity: Activity) => {
-  return activityIcons[activity.type] || activityIcons.default
-}
+  return activityIcons[activity.type] || activityIcons.default;
+};
 
 const getActivityIconBg = (activity: Activity) => {
   const colorMap = {
-    create: "bg-green-100 dark:bg-green-900/20",
-    update: "bg-blue-100 dark:bg-blue-900/20",
-    delete: "bg-red-100 dark:bg-red-900/20",
-    login: "bg-purple-100 dark:bg-purple-900/20",
-    assignment: "bg-orange-100 dark:bg-orange-900/20",
-    approval: "bg-green-100 dark:bg-green-900/20",
-    default: "bg-gray-100 dark:bg-gray-700",
-  }
+    create: 'bg-green-100 dark:bg-green-900/20',
+    update: 'bg-blue-100 dark:bg-blue-900/20',
+    delete: 'bg-red-100 dark:bg-red-900/20',
+    login: 'bg-purple-100 dark:bg-purple-900/20',
+    assignment: 'bg-orange-100 dark:bg-orange-900/20',
+    approval: 'bg-green-100 dark:bg-green-900/20',
+    default: 'bg-gray-100 dark:bg-gray-700',
+  };
 
-  return colorMap[activity.type] || colorMap.default
-}
+  return colorMap[activity.type] || colorMap.default;
+};
 
 const getActivityIconColor = (activity: Activity) => {
   const colorMap = {
-    create: "text-green-600 dark:text-green-400",
-    update: "text-blue-600 dark:text-blue-400",
-    delete: "text-red-600 dark:text-red-400",
-    login: "text-purple-600 dark:text-purple-400",
-    assignment: "text-orange-600 dark:text-orange-400",
-    approval: "text-green-600 dark:text-green-400",
-    default: "text-gray-600 dark:text-gray-400",
-  }
+    create: 'text-green-600 dark:text-green-400',
+    update: 'text-blue-600 dark:text-blue-400',
+    delete: 'text-red-600 dark:text-red-400',
+    login: 'text-purple-600 dark:text-purple-400',
+    assignment: 'text-orange-600 dark:text-orange-400',
+    approval: 'text-green-600 dark:text-green-400',
+    default: 'text-gray-600 dark:text-gray-400',
+  };
 
-  return colorMap[activity.type] || colorMap.default
-}
+  return colorMap[activity.type] || colorMap.default;
+};
 
 const getTypeClasses = (type: string) => {
   const classMap = {
-    create: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    update: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-    delete: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-    login: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-    assignment: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
-    approval: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-  }
+    create: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    update: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    delete: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    login: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+    assignment: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+    approval: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  };
 
   return (
     classMap[type as keyof typeof classMap] ||
-    "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-  )
-}
+    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+  );
+};
 
 const getPriorityClasses = (priority: string) => {
   const classMap = {
-    low: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-    high: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  }
+    low: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+    high: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  };
 
   return (
     classMap[priority as keyof typeof classMap] ||
-    "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-  )
-}
+    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+  );
+};
 
 const getPriorityLabel = (priority: string) => {
   const labelMap = {
-    low: "Baja",
-    medium: "Media",
-    high: "Alta",
-  }
+    low: 'Baja',
+    medium: 'Media',
+    high: 'Alta',
+  };
 
-  return labelMap[priority as keyof typeof labelMap] || "Normal"
-}
+  return labelMap[priority as keyof typeof labelMap] || 'Normal';
+};
 
 const formatFullDate = (date: Date): string => {
-  return new Intl.DateTimeFormat("es-ES", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date);
+};
 
 const formatTimeAgo = (timestamp: Date): string => {
-  const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000)
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
-    return "Ahora"
+    return 'Ahora';
   } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60)
-    return `${minutes}m`
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes}m`;
   } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600)
-    return `${hours}h`
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours}h`;
   } else {
-    const days = Math.floor(diffInSeconds / 86400)
-    return `${days}d`
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days}d`;
   }
-}
+};
 
 const formatKey = (key: string): string => {
-  return key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase())
-}
+  return key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+};
 
 const formatValue = (value: any): string => {
-  if (value === null || value === undefined) return "N/A"
-  if (typeof value === "boolean") return value ? "Sí" : "No"
-  if (typeof value === "object") return JSON.stringify(value, null, 2)
-  return String(value)
-}
+  if (value === null || value === undefined) return 'N/A';
+  if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+  if (typeof value === 'object') return JSON.stringify(value, null, 2);
+  return String(value);
+};
 
 const getImpactDescription = (activity: Activity): string => {
   const descriptions = {
-    create: "ha creado un nuevo elemento en el sistema",
-    update: "ha modificado información existente",
-    delete: "ha eliminado información del sistema",
-    login: "ha iniciado sesión en el sistema",
-    assignment: "ha realizado una asignación",
-    approval: "ha procesado una aprobación",
-  }
+    create: 'ha creado un nuevo elemento en el sistema',
+    update: 'ha modificado información existente',
+    delete: 'ha eliminado información del sistema',
+    login: 'ha iniciado sesión en el sistema',
+    assignment: 'ha realizado una asignación',
+    approval: 'ha procesado una aprobación',
+  };
 
-  return descriptions[activity.type] || "ha realizado una acción en el sistema"
-}
+  return descriptions[activity.type] || 'ha realizado una acción en el sistema';
+};
 
 const getImpactPoints = (activity: Activity): string[] => {
   const impactMap = {
     create: [
-      "Se ha añadido nuevo contenido",
-      "Puede afectar reportes y estadísticas",
-      "Los usuarios autorizados tendrán acceso",
+      'Se ha añadido nuevo contenido',
+      'Puede afectar reportes y estadísticas',
+      'Los usuarios autorizados tendrán acceso',
     ],
     update: [
-      "La información ha sido modificada",
-      "Los cambios son visibles inmediatamente",
-      "Puede afectar funcionalidades relacionadas",
+      'La información ha sido modificada',
+      'Los cambios son visibles inmediatamente',
+      'Puede afectar funcionalidades relacionadas',
     ],
     delete: [
-      "La información ha sido eliminada permanentemente",
-      "Las referencias pueden verse afectadas",
-      "Se recomienda verificar integridad de datos",
+      'La información ha sido eliminada permanentemente',
+      'Las referencias pueden verse afectadas',
+      'Se recomienda verificar integridad de datos',
     ],
     assignment: [
-      "Se ha creado una nueva relación",
-      "Los permisos pueden haber cambiado",
-      "Verificar accesos y funcionalidades",
+      'Se ha creado una nueva relación',
+      'Los permisos pueden haber cambiado',
+      'Verificar accesos y funcionalidades',
     ],
-  }
+  };
 
   return (
-    impactMap[activity.type as keyof typeof impactMap] || ["Actividad registrada en el sistema"]
-  )
-}
+    impactMap[activity.type as keyof typeof impactMap] || ['Actividad registrada en el sistema']
+  );
+};
 
 const handleRevert = () => {
-  emit("revert", props.activity)
-}
+  emit('revert', props.activity);
+};
 </script>

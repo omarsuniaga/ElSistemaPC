@@ -1,28 +1,28 @@
-import {ref, computed} from "vue"
+import { ref, computed } from 'vue';
 
 export function useSchedule() {
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-  const loadingCount = ref(0)
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
+  const loadingCount = ref(0);
 
   // Función para obtener stores de manera segura
   const getStores = async () => {
     try {
-      const [{useClassesStore}, {useTeachersStore}, {useStudentsStore}] = await Promise.all([
-        import("../modulos/Classes/store/classes"),
-        import("../modulos/Teachers/store/teachers"),
-        import("../modulos/Students/store/students"),
-      ])
+      const [{ useClassesStore }, { useTeachersStore }, { useStudentsStore }] = await Promise.all([
+        import('../modulos/Classes/store/classes'),
+        import('../modulos/Teachers/store/teachers'),
+        import('../modulos/Students/store/students'),
+      ]);
       return {
         classesStore: useClassesStore(),
         teachersStore: useTeachersStore(),
         studentsStore: useStudentsStore(),
-      }
+      };
     } catch (error) {
-      console.warn("Stores no disponibles:", error)
-      return null
+      console.warn('Stores no disponibles:', error);
+      return null;
     }
-  }
+  };
 
   // Stats
   const classStats = computed(() => {
@@ -33,65 +33,65 @@ export function useSchedule() {
       unscheduled: 0,
       withoutTeacher: 0,
       withoutStudents: 0,
-    }
-  })
+    };
+  });
 
   // Enhanced classes with additional information - simplificado por ahora
-  const enhancedClasses = computed(() => [])
+  const enhancedClasses = computed(() => []);
 
   // Format schedules
   const formatScheduleDisplay = (schedule: any) => {
-    if (!schedule) return {days: [], startTime: "", endTime: ""}
-    if (typeof schedule === "string") {
-      const [day, start, , end] = schedule.split(" ")
-      return {days: [day || ""], startTime: start || "", endTime: end || ""}
+    if (!schedule) return { days: [], startTime: '', endTime: '' };
+    if (typeof schedule === 'string') {
+      const [day, start, , end] = schedule.split(' ');
+      return { days: [day || ''], startTime: start || '', endTime: end || '' };
     }
-    return schedule
-  }
+    return schedule;
+  };
 
   // Load data
   const loadData = async () => {
     try {
-      isLoading.value = true
-      const stores = await getStores()
-      if (!stores) return
+      isLoading.value = true;
+      const stores = await getStores();
+      if (!stores) return;
 
-      loadingCount.value = 3
+      loadingCount.value = 3;
       await Promise.all([
         stores.classesStore.fetchClasses(),
         stores.teachersStore.fetchTeachers(),
         stores.studentsStore.fetchStudents(),
-      ])
+      ]);
     } catch (err: any) {
-      error.value = err.message || "Error cargando datos"
+      error.value = err.message || 'Error cargando datos';
     } finally {
-      isLoading.value = false
-      loadingCount.value = 0
+      isLoading.value = false;
+      loadingCount.value = 0;
     }
-  }
+  };
 
   // Validar horario (simplificado)
   const validateSchedule = (schedule: any) => {
-    const errors: string[] = []
+    const errors: string[] = [];
     if (!schedule) {
-      errors.push("El horario es requerido")
-      return errors
+      errors.push('El horario es requerido');
+      return errors;
     }
-    return errors
-  }
+    return errors;
+  };
 
   // Validar conflictos de horario (simplificado)
   const validateScheduleConflicts = async (_schedule: any, _classId?: string) => {
-    const conflicts: Array<{type: string; message: string; details: string}> = []
+    const conflicts: Array<{type: string; message: string; details: string}> = [];
     // TODO: Implementar validación completa cuando los stores estén disponibles
-    return conflicts
-  }
+    return conflicts;
+  };
 
   // Verificar conflicto de tiempo
   const hasTimeConflict = (_schedule1: any, _schedule2: any) => {
     // TODO: Implementar verificación completa
-    return false
-  }
+    return false;
+  };
 
   return {
     isLoading,
@@ -105,5 +105,5 @@ export function useSchedule() {
     validateScheduleConflicts,
     hasTimeConflict,
     getStores, // Exportar para uso en componentes
-  }
+  };
 }

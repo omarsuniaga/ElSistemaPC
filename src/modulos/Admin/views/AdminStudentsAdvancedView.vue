@@ -42,19 +42,19 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, onUnmounted} from "vue"
-import {ChevronRightIcon} from "@heroicons/vue/24/outline"
-import AdvancedStudentsManagement from "../components/AdvancedStudentsManagement.vue"
-import {useAdminStudentsStore} from "../store/adminStudents"
+import { ref, onMounted, onUnmounted } from 'vue';
+import { ChevronRightIcon } from '@heroicons/vue/24/outline';
+import AdvancedStudentsManagement from '../components/AdvancedStudentsManagement.vue';
+import { useAdminStudentsStore } from '../store/adminStudents';
 
 // Stores
-const adminStudentsStore = useAdminStudentsStore()
+const adminStudentsStore = useAdminStudentsStore();
 
 // Estado de inicialización
-const isInitializing = ref(true)
+const isInitializing = ref(true);
 
 // Head metadata - simulado
-document.title = "Gestión Avanzada de Estudiantes - Academia Musical"
+document.title = 'Gestión Avanzada de Estudiantes - Academia Musical';
 
 // Lifecycle hooks
 onMounted(async () => {
@@ -68,21 +68,21 @@ onMounted(async () => {
     await Promise.all([
       adminStudentsStore.loadStudents(),
       // adminStudentsStore.fetchStudentStats() // Usar método existente
-    ])
+    ]);
 
-    console.log("✅ Sistema de gestión avanzada de estudiantes inicializado correctamente")
+    console.log('✅ Sistema de gestión avanzada de estudiantes inicializado correctamente');
   } catch (error) {
-    console.error("❌ Error al inicializar gestión avanzada:", error)
+    console.error('❌ Error al inicializar gestión avanzada:', error);
     // Aquí podrías mostrar un toast de error o redirigir
   } finally {
-    isInitializing.value = false
+    isInitializing.value = false;
   }
-})
+});
 
 onUnmounted(() => {
   // Limpiar cualquier recurso si es necesario
-  console.log("🧹 Limpiando recursos de gestión avanzada de estudiantes")
-})
+  console.log('🧹 Limpiando recursos de gestión avanzada de estudiantes');
+});
 </script>
 
 <style scoped>

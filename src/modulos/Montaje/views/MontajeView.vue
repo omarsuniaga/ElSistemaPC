@@ -391,182 +391,182 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {useMontajeStore} from "../store/montaje"
-import WorkFormModal from "../components/WorkFormModal.vue"
-import PlanModal from "../components/PlanModal.vue"
-import EvaluationModal from "../components/EvaluationModal.vue"
-import StatsCards from "../components/StatsCards.vue"
-import type {CreateWorkInput, CreateEvaluationInput} from "../types"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useMontajeStore } from '../store/montaje';
+import WorkFormModal from '../components/WorkFormModal.vue';
+import PlanModal from '../components/PlanModal.vue';
+import EvaluationModal from '../components/EvaluationModal.vue';
+import StatsCards from '../components/StatsCards.vue';
+import type { CreateWorkInput, CreateEvaluationInput } from '../types';
 
 // Router
-const router = useRouter()
+const router = useRouter();
 
 // Pinia Store
-const montajeStore = useMontajeStore()
+const montajeStore = useMontajeStore();
 
 // Local state
-const showWorkModal = ref(false)
-const showPlanModal = ref(false)
-const showEvaluationModal = ref(false)
-const showNotifications = ref(false)
+const showWorkModal = ref(false);
+const showPlanModal = ref(false);
+const showEvaluationModal = ref(false);
+const showNotifications = ref(false);
 
 // Computed
 const tabs = computed(() => [
   {
-    key: "obras",
-    label: "Obras",
+    key: 'obras',
+    label: 'Obras',
     count: montajeStore.obras.length,
   },
   {
-    key: "planes",
-    label: "Planes",
+    key: 'planes',
+    label: 'Planes',
     count: 0,
   },
   {
-    key: "evaluaciones",
-    label: "Evaluaciones",
+    key: 'evaluaciones',
+    label: 'Evaluaciones',
     count: 0,
   },
   {
-    key: "analytics",
-    label: "Análisis",
+    key: 'analytics',
+    label: 'Análisis',
   },
-])
+]);
 
 const filteredWorks = computed(() => {
-  let filtered = montajeStore.obras
+  let filtered = montajeStore.obras;
 
   if (montajeStore.searchQuery) {
     filtered = filtered.filter(
       (work) =>
         work.title?.toLowerCase().includes(montajeStore.searchQuery.toLowerCase()) ||
-        work.composer?.toLowerCase().includes(montajeStore.searchQuery.toLowerCase())
-    )
+        work.composer?.toLowerCase().includes(montajeStore.searchQuery.toLowerCase()),
+    );
   }
 
   if (montajeStore.statusFilter) {
     filtered = filtered.filter((work) => {
       switch (montajeStore.statusFilter) {
-        case "active":
-          return work.status === "en_montaje" || work.status === "en_estudio"
-        case "completed":
-          return work.status === "presentada" || work.status === "lista"
-        case "inactive":
-          return work.status === "pendiente"
-        case "archived":
-          return work.status === "archivada"
-        default:
-          return true
+      case 'active':
+        return work.status === 'en_montaje' || work.status === 'en_estudio';
+      case 'completed':
+        return work.status === 'presentada' || work.status === 'lista';
+      case 'inactive':
+        return work.status === 'pendiente';
+      case 'archived':
+        return work.status === 'archivada';
+      default:
+        return true;
       }
-    })
+    });
   }
 
   if (montajeStore.difficultyFilter) {
-    filtered = filtered.filter((work) => work.difficulty === montajeStore.difficultyFilter)
+    filtered = filtered.filter((work) => work.difficulty === montajeStore.difficultyFilter);
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 // Methods
 const closeWorkModal = () => {
-  showWorkModal.value = false
-  montajeStore.selectWork(null)
-  montajeStore.clearSelectedWork()
-}
+  showWorkModal.value = false;
+  montajeStore.selectWork(null);
+  montajeStore.clearSelectedWork();
+};
 
 const closeEvaluationModal = () => {
-  showEvaluationModal.value = false
-  workToEvaluate.value = null
-}
+  showEvaluationModal.value = false;
+  workToEvaluate.value = null;
+};
 
 const editWork = (work: any) => {
-  montajeStore.selectWork(work)
-  showWorkModal.value = true
-}
+  montajeStore.selectWork(work);
+  showWorkModal.value = true;
+};
 
 const openWorkDetail = (work: any) => {
-  console.log("🎵 Abriendo detalle de obra:", work.titulo || work.title || "Sin título")
-  console.log("📄 Datos completos de la obra:", work)
+  console.log('🎵 Abriendo detalle de obra:', work.titulo || work.title || 'Sin título');
+  console.log('📄 Datos completos de la obra:', work);
 
   if (!work.id) {
-    console.error("❌ Error: La obra no tiene ID")
-    return
+    console.error('❌ Error: La obra no tiene ID');
+    return;
   }
 
   // Navegar solo con el ID de la obra
   router.push({
-    name: "MontajeObraDetail",
-    params: {id: work.id},
-  })
-}
+    name: 'MontajeObraDetail',
+    params: { id: work.id },
+  });
+};
 
 const handleWorkSubmit = async (workData: CreateWorkInput) => {
   try {
-    console.log("🔄 Iniciando guardado de obra:", workData)
+    console.log('🔄 Iniciando guardado de obra:', workData);
 
     const completeWorkData = {
       ...workData,
-      repertorioId: "default-repertorio",
-    }
+      repertorioId: 'default-repertorio',
+    };
 
     if (montajeStore.selectedWork) {
-      console.log("📝 Actualizando obra existente:", montajeStore.selectedWork.id)
-      await montajeStore.actualizarObra(montajeStore.selectedWork.id, completeWorkData)
-      console.log("✅ Obra actualizada exitosamente")
+      console.log('📝 Actualizando obra existente:', montajeStore.selectedWork.id);
+      await montajeStore.actualizarObra(montajeStore.selectedWork.id, completeWorkData);
+      console.log('✅ Obra actualizada exitosamente');
     } else {
-      console.log("➕ Creando nueva obra")
-      const result = await montajeStore.crearObra(completeWorkData)
-      console.log("✅ Obra creada exitosamente:", result)
+      console.log('➕ Creando nueva obra');
+      const result = await montajeStore.crearObra(completeWorkData);
+      console.log('✅ Obra creada exitosamente:', result);
     }
-    closeWorkModal()
+    closeWorkModal();
   } catch (error) {
-    console.error("❌ Error saving work:", error)
-    alert(`Error al guardar la obra: ${error.message || error}`)
+    console.error('❌ Error saving work:', error);
+    alert(`Error al guardar la obra: ${error.message || error}`);
   }
-}
+};
 
 const handlePlanSubmit = async (planData: any) => {
   try {
-    console.log("Plan data:", planData)
-    await montajeStore.crearPlanAccion(planData)
-    showPlanModal.value = false
+    console.log('Plan data:', planData);
+    await montajeStore.crearPlanAccion(planData);
+    showPlanModal.value = false;
   } catch (error) {
-    console.error("Error creating plan:", error)
+    console.error('Error creating plan:', error);
   }
-}
+};
 
 const handleEvaluationSubmit = async (evaluationData: CreateEvaluationInput) => {
   try {
-    console.log("Evaluation data:", evaluationData)
-    await montajeStore.crearEvaluacionContinua(evaluationData)
-    closeEvaluationModal()
+    console.log('Evaluation data:', evaluationData);
+    await montajeStore.crearEvaluacionContinua(evaluationData);
+    closeEvaluationModal();
   } catch (error) {
-    console.error("Error creating evaluation:", error)
+    console.error('Error creating evaluation:', error);
   }
-}
+};
 
 const formatDate = (date: Date) => {
-  return date.toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 // Lifecycle
 onMounted(async () => {
   try {
-    await montajeStore.cargarObras("default-repertorio")
-    console.log("✅ Datos del módulo Montaje cargados")
+    await montajeStore.cargarObras('default-repertorio');
+    console.log('✅ Datos del módulo Montaje cargados');
   } catch (error) {
-    console.error("❌ Error loading montaje data:", error)
+    console.error('❌ Error loading montaje data:', error);
   }
-})
+});
 </script>
 
 <style scoped>

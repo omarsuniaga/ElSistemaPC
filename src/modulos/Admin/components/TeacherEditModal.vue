@@ -109,31 +109,31 @@
 </template>
 
 <script setup lang="ts">
-import {ref, watch} from "vue"
-import {XMarkIcon} from "@heroicons/vue/24/outline"
+import { ref, watch } from 'vue';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
 
 // Props
 const props = defineProps<{
   isVisible: boolean
   teacher?: any
-}>()
+}>();
 
 // Emits
 const emit = defineEmits<{
   close: []
   update: [teacher: any]
-}>()
+}>();
 
 // State
-const loading = ref(false)
+const loading = ref(false);
 const form = ref({
-  nombre: "",
-  apellido: "",
-  email: "",
-  telefono: "",
-  especialidades: "",
+  nombre: '',
+  apellido: '',
+  email: '',
+  telefono: '',
+  especialidades: '',
   activo: true,
-})
+});
 
 // Update form when teacher changes
 watch(
@@ -141,42 +141,42 @@ watch(
   (newTeacher) => {
     if (newTeacher) {
       form.value = {
-        nombre: newTeacher.nombre || "",
-        apellido: newTeacher.apellido || "",
-        email: newTeacher.email || "",
-        telefono: newTeacher.telefono || "",
+        nombre: newTeacher.nombre || '',
+        apellido: newTeacher.apellido || '',
+        email: newTeacher.email || '',
+        telefono: newTeacher.telefono || '',
         especialidades: Array.isArray(newTeacher.especialidades)
-          ? newTeacher.especialidades.join(", ")
-          : newTeacher.especialidades || "",
+          ? newTeacher.especialidades.join(', ')
+          : newTeacher.especialidades || '',
         activo: newTeacher.activo !== false,
-      }
+      };
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 // Handle form submission
 const handleSubmit = async () => {
   try {
-    loading.value = true
+    loading.value = true;
 
     // Process specialties
     const especialidadesArray = form.value.especialidades
-      .split(",")
+      .split(',')
       .map((s) => s.trim())
-      .filter((s) => s.length > 0)
+      .filter((s) => s.length > 0);
 
     const teacherData = {
       id: props.teacher.id,
       ...form.value,
       especialidades: especialidadesArray,
-    }
+    };
 
-    emit("update", teacherData)
+    emit('update', teacherData);
   } catch (error) {
-    console.error("Error updating teacher:", error)
+    console.error('Error updating teacher:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>

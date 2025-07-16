@@ -18,9 +18,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {ChevronRightIcon} from "@heroicons/vue/24/outline"
-import * as HeroIcons from "@heroicons/vue/24/outline"
+import { computed } from 'vue';
+import { ChevronRightIcon } from '@heroicons/vue/24/outline';
+import * as HeroIcons from '@heroicons/vue/24/outline';
 
 interface Props {
   title: string
@@ -28,28 +28,28 @@ interface Props {
   color: string
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   click: []
-}>()
+}>();
 
 const iconComponent = computed(() => {
-  return (HeroIcons as any)[props.icon] || HeroIcons.CogIcon
-})
+  return (HeroIcons as any)[props.icon] || HeroIcons.CogIcon;
+});
 
 const colorClasses = computed(() => {
   const colors = {
-    red: "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700",
-    blue: "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700",
+    red: 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700',
+    blue: 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700',
     green:
-      "bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700",
+      'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700',
     purple:
-      "bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700",
+      'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700',
     orange:
-      "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700",
-  }
+      'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700',
+  };
 
-  return colors[props.color as keyof typeof colors] || colors.blue
-})
+  return colors[props.color as keyof typeof colors] || colors.blue;
+});
 </script>

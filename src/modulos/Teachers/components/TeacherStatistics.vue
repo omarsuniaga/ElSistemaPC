@@ -1,74 +1,3 @@
-<script setup lang="ts">
-// ../modulos/Teacher/components/TeacherStatistics.vue
-import {computed} from "vue"
-import {ChartBarIcon, PieChartIcon} from "@heroicons/vue/24/outline"
-
-const props = defineProps({
-  classes: {
-    type: Array,
-    required: true,
-    default: () => [],
-  },
-})
-
-// Calcular estadísticas de clases por nivel
-const classesByLevel = computed(() => {
-  const levels = {}
-
-  props.classes.forEach((classItem) => {
-    const level = classItem.level || "Sin nivel"
-    levels[level] = (levels[level] || 0) + 1
-  })
-
-  return Object.entries(levels).map(([level, count]) => ({
-    level,
-    count,
-    percentage: Math.round(((count as number) * 100) / props.classes.length),
-  }))
-})
-
-// Calcular estadísticas de clases por instrumento
-const classesByInstrument = computed(() => {
-  const instruments = {}
-
-  props.classes.forEach((classItem) => {
-    const instrument = classItem.instrument || "Sin instrumento"
-    instruments[instrument] = (instruments[instrument] || 0) + 1
-  })
-
-  return Object.entries(instruments).map(([instrument, count]) => ({
-    instrument,
-    count,
-    percentage: Math.round(((count as number) * 100) / props.classes.length),
-  }))
-})
-
-// Calcular total de estudiantes
-const totalStudents = computed(() => {
-  return props.classes.reduce((acc, curr) => {
-    return acc + (curr.studentIds?.length || 0)
-  }, 0)
-})
-
-// Calcular total de horas de clase semanales
-const totalHoursWeekly = computed(() => {
-  return props.classes.reduce((acc, curr) => {
-    if (!curr.schedule || !curr.schedule.slots) return acc
-
-    return (
-      acc +
-      curr.schedule.slots.reduce((slotAcc, slot) => {
-        const startTime = slot.startTime.split(":").map(Number)
-        const endTime = slot.endTime.split(":").map(Number)
-        const hours = endTime[0] - startTime[0]
-        const minutes = endTime[1] - startTime[1]
-        return slotAcc + hours + minutes / 60
-      }, 0)
-    )
-  }, 0)
-})
-</script>
-
 <template>
   <div class="space-y-6">
     <!-- Resumen general -->
@@ -138,3 +67,74 @@ const totalHoursWeekly = computed(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+// ../modulos/Teacher/components/TeacherStatistics.vue
+import { computed } from 'vue';
+import { ChartBarIcon, PieChartIcon } from '@heroicons/vue/24/outline';
+
+const props = defineProps({
+  classes: {
+    type: Array,
+    required: true,
+    default: () => [],
+  },
+});
+
+// Calcular estadísticas de clases por nivel
+const classesByLevel = computed(() => {
+  const levels = {};
+
+  props.classes.forEach((classItem) => {
+    const level = classItem.level || 'Sin nivel';
+    levels[level] = (levels[level] || 0) + 1;
+  });
+
+  return Object.entries(levels).map(([level, count]) => ({
+    level,
+    count,
+    percentage: Math.round(((count as number) * 100) / props.classes.length),
+  }));
+});
+
+// Calcular estadísticas de clases por instrumento
+const classesByInstrument = computed(() => {
+  const instruments = {};
+
+  props.classes.forEach((classItem) => {
+    const instrument = classItem.instrument || 'Sin instrumento';
+    instruments[instrument] = (instruments[instrument] || 0) + 1;
+  });
+
+  return Object.entries(instruments).map(([instrument, count]) => ({
+    instrument,
+    count,
+    percentage: Math.round(((count as number) * 100) / props.classes.length),
+  }));
+});
+
+// Calcular total de estudiantes
+const totalStudents = computed(() => {
+  return props.classes.reduce((acc, curr) => {
+    return acc + (curr.studentIds?.length || 0);
+  }, 0);
+});
+
+// Calcular total de horas de clase semanales
+const totalHoursWeekly = computed(() => {
+  return props.classes.reduce((acc, curr) => {
+    if (!curr.schedule || !curr.schedule.slots) return acc;
+
+    return (
+      acc +
+      curr.schedule.slots.reduce((slotAcc, slot) => {
+        const startTime = slot.startTime.split(':').map(Number);
+        const endTime = slot.endTime.split(':').map(Number);
+        const hours = endTime[0] - startTime[0];
+        const minutes = endTime[1] - startTime[1];
+        return slotAcc + hours + minutes / 60;
+      }, 0)
+    );
+  }, 0);
+});
+</script>

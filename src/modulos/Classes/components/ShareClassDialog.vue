@@ -137,16 +137,16 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import type {ClassData} from "../types/class"
+import { ref, computed, watch } from 'vue';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import type { ClassData } from '../types/class';
 
 interface Props {
   open: boolean
   availableClasses: ClassData[]
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   close: []
@@ -159,60 +159,60 @@ const emit = defineEmits<{
       }>
     },
   ]
-}>()
+}>();
 
-const teachersStore = useTeachersStore()
+const teachersStore = useTeachersStore();
 
 // Reactive data
-const selectedClassId = ref("")
-const selectedTeachers = ref<string[]>([])
-const teacherPermissions = ref<Record<string, string>>({})
+const selectedClassId = ref('');
+const selectedTeachers = ref<string[]>([]);
+const teacherPermissions = ref<Record<string, string>>({});
 
 // Computed
-const teachers = computed(() => teachersStore.teachers)
+const teachers = computed(() => teachersStore.teachers);
 
 const canShare = computed(() => {
-  return selectedClassId.value && selectedTeachers.value.length > 0
-})
+  return selectedClassId.value && selectedTeachers.value.length > 0;
+});
 
 // Methods
 const getSelectedClassName = () => {
-  const classItem = props.availableClasses.find((c) => c.id === selectedClassId.value)
-  return classItem?.name || ""
-}
+  const classItem = props.availableClasses.find((c) => c.id === selectedClassId.value);
+  return classItem?.name || '';
+};
 
 const getTeacherName = (teacherId: string) => {
-  const teacher = teachers.value.find((t) => t.id === teacherId)
-  return teacher?.name || "Maestro no encontrado"
-}
+  const teacher = teachers.value.find((t) => t.id === teacherId);
+  return teacher?.name || 'Maestro no encontrado';
+};
 
 const getPermissionText = (permission: string) => {
   const texts: Record<string, string> = {
-    read: "Solo lectura",
-    write: "Editor",
-    manage: "Administrador",
-  }
-  return texts[permission] || permission
-}
+    read: 'Solo lectura',
+    write: 'Editor',
+    manage: 'Administrador',
+  };
+  return texts[permission] || permission;
+};
 
 const handleShare = () => {
-  if (!canShare.value) return
+  if (!canShare.value) return;
 
   const shareData = {
     classId: selectedClassId.value,
     teachers: selectedTeachers.value.map((teacherId) => ({
       teacherId,
-      permissions: [teacherPermissions.value[teacherId] || "read"],
+      permissions: [teacherPermissions.value[teacherId] || 'read'],
     })),
-  }
+  };
 
-  emit("share", shareData)
+  emit('share', shareData);
 
   // Reset form
-  selectedClassId.value = ""
-  selectedTeachers.value = []
-  teacherPermissions.value = {}
-}
+  selectedClassId.value = '';
+  selectedTeachers.value = [];
+  teacherPermissions.value = {};
+};
 
 // Watch for teacher selection changes to set default permissions
 watch(
@@ -221,31 +221,31 @@ watch(
     // Add default permissions for newly selected teachers
     newTeachers.forEach((teacherId) => {
       if (!teacherPermissions.value[teacherId]) {
-        teacherPermissions.value[teacherId] = "read"
+        teacherPermissions.value[teacherId] = 'read';
       }
-    })
+    });
 
     // Remove permissions for unselected teachers
     Object.keys(teacherPermissions.value).forEach((teacherId) => {
       if (!newTeachers.includes(teacherId)) {
-        delete teacherPermissions.value[teacherId]
+        delete teacherPermissions.value[teacherId];
       }
-    })
+    });
   },
-  {deep: true}
-)
+  { deep: true },
+);
 
 // Reset form when dialog opens/closes
 watch(
   () => props.open,
   (isOpen) => {
     if (!isOpen) {
-      selectedClassId.value = ""
-      selectedTeachers.value = []
-      teacherPermissions.value = {}
+      selectedClassId.value = '';
+      selectedTeachers.value = [];
+      teacherPermissions.value = {};
     }
-  }
-)
+  },
+);
 </script>
 
 <style scoped>

@@ -563,7 +563,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed} from "vue"
+import { ref, onMounted, computed } from 'vue';
 import {
   InformationCircleIcon,
   ChevronDownIcon,
@@ -573,32 +573,32 @@ import {
   AcademicCapIcon,
   MagnifyingGlassIcon,
   ArrowLeftIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Componentes modulares
-import AttendanceFilters from "./reports/attendance/components/AttendanceFilters.vue"
-import AttendanceExportBar from "./reports/attendance/components/AttendanceExportBar.vue"
-import AttendanceStats from "./reports/attendance/components/AttendanceStats.vue"
+import AttendanceFilters from './reports/attendance/components/AttendanceFilters.vue';
+import AttendanceExportBar from './reports/attendance/components/AttendanceExportBar.vue';
+import AttendanceStats from './reports/attendance/components/AttendanceStats.vue';
 
 // Composable principal
-import {useAttendanceReport} from "./reports/attendance/composables/useAttendanceReport"
+import { useAttendanceReport } from './reports/attendance/composables/useAttendanceReport';
 
 // Utilidades
 import {
   calculateAttendancePercentage,
   calculateStudentAttendancePercentage,
-} from "./reports/attendance/utils/attendanceCalculations"
+} from './reports/attendance/utils/attendanceCalculations';
 import {
   formatDate,
   formatDateShort,
   getStatusSymbol,
   getStatusClass,
   getDayName,
-} from "./reports/attendance/utils/attendanceFormatters"
+} from './reports/attendance/utils/attendanceFormatters';
 
 // Stores
-import {useTeachersStore} from "@/modulos/Teachers/store/teachers"
-import {useClassesStore} from "@/modulos/Classes/store/classes"
+import { useTeachersStore } from '@/modulos/Teachers/store/teachers';
+import { useClassesStore } from '@/modulos/Classes/store/classes';
 
 // Types
 interface Teacher {
@@ -616,74 +616,74 @@ interface ClassItem {
 }
 
 // Stores
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
 
 // Estado para selección de maestros
-const searchQuery = ref("")
-const statusFilter = ref("")
-const selectedTeacherId = ref<string | null>(null)
+const searchQuery = ref('');
+const statusFilter = ref('');
+const selectedTeacherId = ref<string | null>(null);
 
 // Computed para maestros
 const filteredTeachers = computed(() => {
-  let teachers = teachersStore.teachers
+  let teachers = teachersStore.teachers;
 
   // Filtrar por búsqueda
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     teachers = teachers.filter(
       (teacher: Teacher) =>
         teacher.name?.toLowerCase().includes(query) ||
         teacher.email?.toLowerCase().includes(query) ||
-        teacher.specialties?.some((specialty: string) => specialty.toLowerCase().includes(query))
-    )
+        teacher.specialties?.some((specialty: string) => specialty.toLowerCase().includes(query)),
+    );
   }
 
   // Filtrar por estado
   if (statusFilter.value) {
-    teachers = teachers.filter((teacher: Teacher) => teacher.status === statusFilter.value)
+    teachers = teachers.filter((teacher: Teacher) => teacher.status === statusFilter.value);
   }
 
-  return teachers
-})
+  return teachers;
+});
 
 const selectedTeacherName = computed(() => {
-  if (!selectedTeacherId.value) return ""
-  const teacher = teachersStore.teachers.find((t: Teacher) => t.id === selectedTeacherId.value)
-  return teacher?.name || "Maestro"
-})
+  if (!selectedTeacherId.value) return '';
+  const teacher = teachersStore.teachers.find((t: Teacher) => t.id === selectedTeacherId.value);
+  return teacher?.name || 'Maestro';
+});
 
 const teacherClassesCount = computed(() => {
-  const counts: Record<string, number> = {}
+  const counts: Record<string, number> = {};
   classesStore.classes.forEach((classItem: ClassItem) => {
     if (classItem.teacherId) {
-      counts[classItem.teacherId] = (counts[classItem.teacherId] || 0) + 1
+      counts[classItem.teacherId] = (counts[classItem.teacherId] || 0) + 1;
     }
-  })
-  return counts
-})
+  });
+  return counts;
+});
 
 // Métodos para selección de maestros
 const selectTeacher = (teacher: Teacher) => {
-  selectedTeacherId.value = teacher.id
-}
+  selectedTeacherId.value = teacher.id;
+};
 
 const goBackToTeachers = () => {
-  selectedTeacherId.value = null
-}
+  selectedTeacherId.value = null;
+};
 
 const clearFilters = () => {
-  searchQuery.value = ""
-  statusFilter.value = ""
-}
+  searchQuery.value = '';
+  statusFilter.value = '';
+};
 
 // Props
 const props = defineProps({
   teacherId: {
     type: String,
-    default: "",
+    default: '',
   },
-})
+});
 
 // Usar el composable principal solo cuando hay un maestro seleccionado
 const {
@@ -734,38 +734,38 @@ const {
   debugFullState,
   debugStores,
   debugAllStores,
-} = useAttendanceReport({teacherId: selectedTeacherId.value || props.teacherId})
+} = useAttendanceReport({ teacherId: selectedTeacherId.value || props.teacherId });
 
 // Variable para modo desarrollo
 const isDevelopment = computed(() => {
   try {
-    return import.meta.env.DEV || import.meta.env.MODE === "development"
+    return import.meta.env.DEV || import.meta.env.MODE === 'development';
   } catch {
-    return false
+    return false;
   }
-})
+});
 
 // Inicialización
 onMounted(async () => {
   try {
     // Cargar maestros y clases
-    await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()])
+    await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()]);
 
     // Si no hay maestro seleccionado y hay un teacherId en props, usarlo
     if (!selectedTeacherId.value && props.teacherId) {
-      selectedTeacherId.value = props.teacherId
+      selectedTeacherId.value = props.teacherId;
     }
 
     // Si hay un maestro seleccionado, cargar el informe
     if (selectedTeacherId.value) {
-      await fetchReport()
+      await fetchReport();
     }
 
-    console.log("✅ Componente inicializado correctamente")
+    console.log('✅ Componente inicializado correctamente');
   } catch (err) {
-    console.error("❌ Error al inicializar componente:", err)
+    console.error('❌ Error al inicializar componente:', err);
   }
-})
+});
 </script>
 
 <style scoped>

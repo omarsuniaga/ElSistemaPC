@@ -1,55 +1,4 @@
 ```vue
-<script setup lang="ts">
-import {ref} from "vue"
-import {Dialog, DialogPanel} from "@headlessui/vue"
-import type {Repertoire} from "../types/repertoire"
-
-const props = defineProps<{
-  initialData?: Partial<Repertoire>
-}>()
-
-const emit = defineEmits<{
-  (e: "submit", data: Partial<Repertoire>): void
-  (e: "cancel"): void
-}>()
-
-const formData = ref({
-  name: "",
-  description: "",
-  category: "",
-  tags: [] as string[],
-  ...props.initialData,
-})
-
-const categories = ["Classical", "Jazz", "Popular", "Contemporary", "Folk"]
-
-const availableTags = [
-  "piano",
-  "violin",
-  "guitar",
-  "ensemble",
-  "solo",
-  "duet",
-  "beginner",
-  "intermediate",
-  "advanced",
-]
-
-const addTag = (tag: string) => {
-  if (!formData.value.tags.includes(tag)) {
-    formData.value.tags.push(tag)
-  }
-}
-
-const removeTag = (tag: string) => {
-  formData.value.tags = formData.value.tags.filter((t) => t !== tag)
-}
-
-const handleSubmit = () => {
-  emit("submit", formData.value)
-}
-</script>
-
 <template>
   <Dialog :open="true" class="relative z-50" @close="emit('cancel')">
     <div class="fixed inset-0 bg-black/30" aria-hidden="true" />
@@ -127,4 +76,55 @@ const handleSubmit = () => {
     </div>
   </Dialog>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { Dialog, DialogPanel } from '@headlessui/vue';
+import type { Repertoire } from '../types/repertoire';
+
+const props = defineProps<{
+  initialData?: Partial<Repertoire>
+}>();
+
+const emit = defineEmits<{
+  (e: 'submit', data: Partial<Repertoire>): void
+  (e: 'cancel'): void
+}>();
+
+const formData = ref({
+  name: '',
+  description: '',
+  category: '',
+  tags: [] as string[],
+  ...props.initialData,
+});
+
+const categories = ['Classical', 'Jazz', 'Popular', 'Contemporary', 'Folk'];
+
+const availableTags = [
+  'piano',
+  'violin',
+  'guitar',
+  'ensemble',
+  'solo',
+  'duet',
+  'beginner',
+  'intermediate',
+  'advanced',
+];
+
+const addTag = (tag: string) => {
+  if (!formData.value.tags.includes(tag)) {
+    formData.value.tags.push(tag);
+  }
+};
+
+const removeTag = (tag: string) => {
+  formData.value.tags = formData.value.tags.filter((t) => t !== tag);
+};
+
+const handleSubmit = () => {
+  emit('submit', formData.value);
+};
+</script>
 ```

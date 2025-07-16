@@ -1,67 +1,4 @@
 <!-- src/modulos/attendance/components/AttendanceHeader.vue -->
-<script setup lang="ts">
-import {
-  ViewColumnsIcon,
-  ChatBubbleLeftRightIcon,
-  ArrowDownOnSquareIcon,
-  ArrowDownTrayIcon,
-  PencilSquareIcon,
-  PlusCircleIcon,
-  ArrowLeftIcon,
-  CalendarIcon,
-} from "@heroicons/vue/24/outline"
-import ClassObservationBadge from "./ClassObservationBadge.vue"
-import {computed} from "vue"
-import {useRBACStore} from "../../../stores/rbacStore"
-
-const rbacStore = useRBACStore()
-
-const props = defineProps<{
-  className?: string
-  pendingChangesCount?: number
-  isDisabled?: boolean
-  observations?: string
-  shouldAnimateObservationsButton?: boolean
-  hasObservations?: boolean
-  observationButtonText?: string
-  classId?: string // Para el nuevo sistema
-  selectedDate?: string // Para el nuevo sistema
-}>()
-
-const emit = defineEmits<{
-  (e: "navigate-to-workspace"): void
-  (e: "save"): void
-  (e: "open-export"): void
-  (e: "open-observation"): void
-  (e: "click"): void
-}>()
-
-// RBAC computed properties
-const canEditAttendance = computed(() => {
-  return rbacStore.hasPermission("attendance_edit") || rbacStore.hasRole("Maestro")
-})
-
-const canExportAttendance = computed(() => {
-  return rbacStore.hasPermission("attendance_export") || rbacStore.hasRole("Maestro")
-})
-
-const canManageObservations = computed(() => {
-  return rbacStore.hasPermission("attendance_observe") || rbacStore.hasRole("Maestro")
-})
-
-// Computed property to determine button text based on whether observations exist
-const observationButtonText = computed(() => {
-  return props.hasObservations ? "Consultar" : "Agregar"
-})
-
-// Computed property for the button tooltip
-const observationTooltip = computed(() => {
-  return props.hasObservations
-    ? "Consultar observaciones de esta clase"
-    : "Agregar nueva observación para esta clase"
-})
-</script>
-
 <template>
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
@@ -158,6 +95,69 @@ const observationTooltip = computed(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import {
+  ViewColumnsIcon,
+  ChatBubbleLeftRightIcon,
+  ArrowDownOnSquareIcon,
+  ArrowDownTrayIcon,
+  PencilSquareIcon,
+  PlusCircleIcon,
+  ArrowLeftIcon,
+  CalendarIcon,
+} from '@heroicons/vue/24/outline';
+import ClassObservationBadge from './ClassObservationBadge.vue';
+import { computed } from 'vue';
+import { useRBACStore } from '../../../stores/rbacStore';
+
+const rbacStore = useRBACStore();
+
+const props = defineProps<{
+  className?: string
+  pendingChangesCount?: number
+  isDisabled?: boolean
+  observations?: string
+  shouldAnimateObservationsButton?: boolean
+  hasObservations?: boolean
+  observationButtonText?: string
+  classId?: string // Para el nuevo sistema
+  selectedDate?: string // Para el nuevo sistema
+}>();
+
+const emit = defineEmits<{
+  (e: 'navigate-to-workspace'): void
+  (e: 'save'): void
+  (e: 'open-export'): void
+  (e: 'open-observation'): void
+  (e: 'click'): void
+}>();
+
+// RBAC computed properties
+const canEditAttendance = computed(() => {
+  return rbacStore.hasPermission('attendance_edit') || rbacStore.hasRole('Maestro');
+});
+
+const canExportAttendance = computed(() => {
+  return rbacStore.hasPermission('attendance_export') || rbacStore.hasRole('Maestro');
+});
+
+const canManageObservations = computed(() => {
+  return rbacStore.hasPermission('attendance_observe') || rbacStore.hasRole('Maestro');
+});
+
+// Computed property to determine button text based on whether observations exist
+const observationButtonText = computed(() => {
+  return props.hasObservations ? 'Consultar' : 'Agregar';
+});
+
+// Computed property for the button tooltip
+const observationTooltip = computed(() => {
+  return props.hasObservations
+    ? 'Consultar observaciones de esta clase'
+    : 'Agregar nueva observación para esta clase';
+});
+</script>
 
 <style scoped>
 /* Usa utilidades de Tailwind o tu framework de estilos */

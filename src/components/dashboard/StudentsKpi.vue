@@ -1,55 +1,3 @@
-<script setup lang="ts">
-import {computed} from "vue"
-import KpiCard from "./KpiCard.vue"
-
-const props = defineProps({
-  studentsPresent: {
-    type: Number,
-    required: true,
-  },
-  attendancePercentage: {
-    type: Number,
-    required: true,
-  },
-  previousAttendancePercentage: {
-    type: Number,
-    default: 0,
-  },
-  totalActiveStudents: {
-    type: Number,
-    default: 0,
-  },
-})
-
-// Determine color based on attendance percentage
-const attendanceColor = computed(() => {
-  if (props.attendancePercentage >= 90) return "green"
-  if (props.attendancePercentage >= 70) return "blue"
-  if (props.attendancePercentage >= 50) return "yellow"
-  return "red"
-})
-
-// Determine if low attendance warning should be displayed
-const showLowAttendanceWarning = computed(() => {
-  return props.attendancePercentage < 70
-})
-
-// Determine trend based on previous data
-const trend = computed(() => {
-  if (
-    props.previousAttendancePercentage === 0 ||
-    props.attendancePercentage === props.previousAttendancePercentage
-  ) {
-    return "neutral"
-  }
-  return props.attendancePercentage > props.previousAttendancePercentage ? "up" : "down"
-})
-
-const totalStudentsDisplay = computed(() => {
-  return props.totalActiveStudents || props.studentsPresent
-})
-</script>
-
 <template>
   <KpiCard
     title="Estudiantes presentes"
@@ -108,3 +56,55 @@ const totalStudentsDisplay = computed(() => {
     </div>
   </KpiCard>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import KpiCard from './KpiCard.vue';
+
+const props = defineProps({
+  studentsPresent: {
+    type: Number,
+    required: true,
+  },
+  attendancePercentage: {
+    type: Number,
+    required: true,
+  },
+  previousAttendancePercentage: {
+    type: Number,
+    default: 0,
+  },
+  totalActiveStudents: {
+    type: Number,
+    default: 0,
+  },
+});
+
+// Determine color based on attendance percentage
+const attendanceColor = computed(() => {
+  if (props.attendancePercentage >= 90) return 'green';
+  if (props.attendancePercentage >= 70) return 'blue';
+  if (props.attendancePercentage >= 50) return 'yellow';
+  return 'red';
+});
+
+// Determine if low attendance warning should be displayed
+const showLowAttendanceWarning = computed(() => {
+  return props.attendancePercentage < 70;
+});
+
+// Determine trend based on previous data
+const trend = computed(() => {
+  if (
+    props.previousAttendancePercentage === 0 ||
+    props.attendancePercentage === props.previousAttendancePercentage
+  ) {
+    return 'neutral';
+  }
+  return props.attendancePercentage > props.previousAttendancePercentage ? 'up' : 'down';
+});
+
+const totalStudentsDisplay = computed(() => {
+  return props.totalActiveStudents || props.studentsPresent;
+});
+</script>

@@ -371,8 +371,8 @@ v-if="tab.count > 0" :class="[
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot} from "@headlessui/vue"
+import { ref, computed } from 'vue';
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
 import {
   CheckIcon,
   ExclamationTriangleIcon,
@@ -382,7 +382,7 @@ import {
   EyeIcon,
   CheckCircleIcon,
   XMarkIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface ImportResult {
   total: number
@@ -404,124 +404,124 @@ interface Props {
   result: ImportResult
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 const emit = defineEmits<{
   close: []
   viewStudents: [studentIds: string[]]
-}>()
+}>();
 
 // Estado local
-const activeTab = ref("successful")
+const activeTab = ref('successful');
 
 // Computed
 const resultIcon = computed(() => {
-  if (props.result.errors > props.result.successful) return XMarkIcon
-  if (props.result.warnings > 0) return ExclamationTriangleIcon
-  return CheckCircleIcon
-})
+  if (props.result.errors > props.result.successful) return XMarkIcon;
+  if (props.result.warnings > 0) return ExclamationTriangleIcon;
+  return CheckCircleIcon;
+});
 
 const resultIconClass = computed(() => {
-  if (props.result.errors > props.result.successful) return "text-red-500"
-  if (props.result.warnings > 0) return "text-yellow-500"
-  return "text-green-500"
-})
+  if (props.result.errors > props.result.successful) return 'text-red-500';
+  if (props.result.warnings > 0) return 'text-yellow-500';
+  return 'text-green-500';
+});
 
 const tabs = computed(() => [
   {
-    id: "successful",
-    label: "Exitosos",
+    id: 'successful',
+    label: 'Exitosos',
     count: props.result.successful,
-    color: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
+    color: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
   },
   {
-    id: "warnings",
-    label: "Advertencias",
+    id: 'warnings',
+    label: 'Advertencias',
     count: props.result.warnings,
-    color: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
+    color: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
   },
   {
-    id: "errors",
-    label: "Errores",
+    id: 'errors',
+    label: 'Errores',
     count: props.result.errors,
-    color: "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200",
+    color: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
   },
   {
-    id: "summary",
-    label: "Resumen",
+    id: 'summary',
+    label: 'Resumen',
     count: 0,
-    color: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200",
+    color: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
   },
-])
+]);
 
 const recommendations = computed(() => {
-  const recs: string[] = []
+  const recs: string[] = [];
 
   if (props.result.errors > 0) {
-    recs.push("Revisa los errores y corrige el archivo antes de importar nuevamente")
+    recs.push('Revisa los errores y corrige el archivo antes de importar nuevamente');
   }
 
   if (props.result.warnings > 0) {
-    recs.push("Los registros con advertencias fueron importados con valores por defecto")
+    recs.push('Los registros con advertencias fueron importados con valores por defecto');
   }
 
   if (props.result.successful > 0) {
-    recs.push("Verifica que todos los estudiantes importados tengan la información correcta")
+    recs.push('Verifica que todos los estudiantes importados tengan la información correcta');
   }
 
-  const errorRate = (props.result.errors / props.result.total) * 100
+  const errorRate = (props.result.errors / props.result.total) * 100;
   if (errorRate > 20) {
-    recs.push("Alta tasa de errores: considera revisar el formato del archivo")
+    recs.push('Alta tasa de errores: considera revisar el formato del archivo');
   }
 
-  return recs
-})
+  return recs;
+});
 
 // Methods
 const closeModal = () => {
-  emit("close")
-}
+  emit('close');
+};
 
 const viewImportedStudents = () => {
-  const studentIds = props.result.successfulRecords.map((record) => record.id)
-  emit("viewStudents", studentIds)
-  closeModal()
-}
+  const studentIds = props.result.successfulRecords.map((record) => record.id);
+  emit('viewStudents', studentIds);
+  closeModal();
+};
 
 const downloadErrorReport = () => {
   // TODO: Implementar descarga de reporte de errores
-  console.log("Descargando reporte de errores...", props.result.errorRecords)
-}
+  console.log('Descargando reporte de errores...', props.result.errorRecords);
+};
 
 const downloadFullReport = () => {
   // TODO: Implementar descarga de reporte completo
-  console.log("Descargando reporte completo...", props.result)
-}
+  console.log('Descargando reporte completo...', props.result);
+};
 
 const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes"
+  if (bytes === 0) return '0 Bytes';
 
-  const k = 1024
-  const sizes = ["Bytes", "KB", "MB", "GB"]
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-}
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 const formatDate = (date: Date): string => {
-  return date.toLocaleString("es-ES", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+  return date.toLocaleString('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const formatDuration = (ms: number): string => {
-  if (ms < 1000) return `${ms}ms`
-  const seconds = (ms / 1000).toFixed(1)
-  return `${seconds}s`
-}
+  if (ms < 1000) return `${ms}ms`;
+  const seconds = (ms / 1000).toFixed(1);
+  return `${seconds}s`;
+};
 </script>
 
 <style scoped>

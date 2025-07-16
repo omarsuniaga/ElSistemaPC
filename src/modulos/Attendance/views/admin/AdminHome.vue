@@ -1,33 +1,3 @@
-<script setup lang="ts">
-/* ------------------------------------------------------------------
- * Attendance Admin Home – nueva vista compacta
- * ------------------------------------------------------------------
- * 1. Orquesta header, calendario, list y modales usando composables limpios.
- * 2. Solo importa componentes UI puros; la lógica está en composables.
- * ------------------------------------------------------------------ */
-import {onMounted} from "vue"
-
-import AttendanceHeader from "../../components/AttendanceHeader.vue"
-import AttendanceList from "../../components/AttendanceList.vue"
-import Calendar from "@/components/Calendar.vue"
-
-import {useAttendanceState} from "../../composables/useAttendanceState"
-import {useModal} from "../../composables/useModal"
-import {useToast} from "../../composables/useToast"
-
-/* ---------- state global para admin ---------- */
-const state = useAttendanceState("admin")
-const modal = useModal()
-const toast = useToast()
-
-onMounted(() => state.init())
-
-/* ---------- handlers ---------- */
-function handleSaved() {
-  toast.success("Asistencia guardada")
-}
-</script>
-
 <template>
   <div class="p-4 space-y-4">
     <!-- Header -->
@@ -94,6 +64,36 @@ function handleSaved() {
     />
   </div>
 </template>
+
+<script setup lang="ts">
+/* ------------------------------------------------------------------
+ * Attendance Admin Home – nueva vista compacta
+ * ------------------------------------------------------------------
+ * 1. Orquesta header, calendario, list y modales usando composables limpios.
+ * 2. Solo importa componentes UI puros; la lógica está en composables.
+ * ------------------------------------------------------------------ */
+import { onMounted } from 'vue';
+
+import AttendanceHeader from '../../components/AttendanceHeader.vue';
+import AttendanceList from '../../components/AttendanceList.vue';
+import Calendar from '@/components/Calendar.vue';
+
+import { useAttendanceState } from '../../composables/useAttendanceState';
+import { useModal } from '../../composables/useModal';
+import { useToast } from '../../composables/useToast';
+
+/* ---------- state global para admin ---------- */
+const state = useAttendanceState('admin');
+const modal = useModal();
+const toast = useToast();
+
+onMounted(() => state.init());
+
+/* ---------- handlers ---------- */
+function handleSaved() {
+  toast.success('Asistencia guardada');
+}
+</script>
 
 <style scoped>
 /* contenedor simple */

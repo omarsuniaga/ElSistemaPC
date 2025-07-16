@@ -202,13 +202,13 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {format, parseISO} from "date-fns"
-import {es} from "date-fns/locale"
-import StudentSelector from "./StudentSelector.vue"
-import {useStudentsStore} from "../../Students/store/students"
-import {useAuthStore} from "../../../stores/auth"
-import {useEmergencyClasses} from "../../../composables/useEmergencyClasses"
+import { ref, computed, onMounted, watch } from 'vue';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import StudentSelector from './StudentSelector.vue';
+import { useStudentsStore } from '../../Students/store/students';
+import { useAuthStore } from '../../../stores/auth';
+import { useEmergencyClasses } from '../../../composables/useEmergencyClasses';
 
 // Types
 interface EmergencyClassData {
@@ -229,105 +229,105 @@ interface Props {
 }
 
 interface Emits {
-  (e: "update:modelValue", value: boolean): void
+  (e: 'update:modelValue', value: boolean): void
   (
-    e: "submitted",
+    e: 'submitted',
     data: EmergencyClassData & {date: string; teacherId: string; emergencyClassId?: string}
   ): void
-  (e: "cancel"): void
+  (e: 'cancel'): void
 }
 
 // Props and emits
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
 // Stores and composables
-const studentsStore = useStudentsStore()
-const authStore = useAuthStore()
-const {createEmergencyClass, isCreating, error: emergencyClassError} = useEmergencyClasses()
+const studentsStore = useStudentsStore();
+const authStore = useAuthStore();
+const { createEmergencyClass, isCreating, error: emergencyClassError } = useEmergencyClasses();
 
 // Reactive state
-const loadingStudents = ref(false)
-const availableStudents = ref<any[]>([])
+const loadingStudents = ref(false);
+const availableStudents = ref<any[]>([]);
 
 // Form data
 const formData = ref<EmergencyClassData>({
-  className: "",
-  classType: "",
-  startTime: "",
-  endTime: "",
-  instrument: "",
-  reason: "",
+  className: '',
+  classType: '',
+  startTime: '',
+  endTime: '',
+  instrument: '',
+  reason: '',
   selectedStudents: [],
-})
+});
 
 // Computed properties
 const isFormValid = computed(() => {
   const valid =
-    formData.value.className.trim() !== "" &&
-    formData.value.classType !== "" &&
-    formData.value.startTime !== "" &&
-    formData.value.endTime !== "" &&
-    formData.value.reason.trim() !== "" &&
+    formData.value.className.trim() !== '' &&
+    formData.value.classType !== '' &&
+    formData.value.startTime !== '' &&
+    formData.value.endTime !== '' &&
+    formData.value.reason.trim() !== '' &&
     formData.value.selectedStudents.length > 0 &&
-    formData.value.startTime < formData.value.endTime
+    formData.value.startTime < formData.value.endTime;
 
   // Debug logging
-  console.log("[EmergencyClassModal] Form validation:", {
-    className: formData.value.className.trim() !== "",
-    classType: formData.value.classType !== "",
-    startTime: formData.value.startTime !== "",
-    endTime: formData.value.endTime !== "",
-    reason: formData.value.reason.trim() !== "",
+  console.log('[EmergencyClassModal] Form validation:', {
+    className: formData.value.className.trim() !== '',
+    classType: formData.value.classType !== '',
+    startTime: formData.value.startTime !== '',
+    endTime: formData.value.endTime !== '',
+    reason: formData.value.reason.trim() !== '',
     selectedStudents: formData.value.selectedStudents.length,
     timeValid: formData.value.startTime < formData.value.endTime,
     overall: valid,
-  })
+  });
 
-  return valid
-})
+  return valid;
+});
 
 // Methods
 const formatDate = (dateStr: string) => {
   try {
-    return format(parseISO(dateStr), "EEEE, d 'de' MMMM 'de' yyyy", {locale: es})
+    return format(parseISO(dateStr), 'EEEE, d \'de\' MMMM \'de\' yyyy', { locale: es });
   } catch (error) {
-    return dateStr
+    return dateStr;
   }
-}
+};
 
 const loadAvailableStudents = async () => {
   try {
-    loadingStudents.value = true
-    console.log("[EmergencyClassModal] Cargando estudiantes disponibles...")
+    loadingStudents.value = true;
+    console.log('[EmergencyClassModal] Cargando estudiantes disponibles...');
 
     // Cargar todos los estudiantes activos
-    await studentsStore.fetchStudents()
-    availableStudents.value = studentsStore.students.filter((student) => student.activo !== false)
+    await studentsStore.fetchStudents();
+    availableStudents.value = studentsStore.students.filter((student) => student.activo !== false);
 
-    console.log("[EmergencyClassModal] Estudiantes cargados:", availableStudents.value.length)
+    console.log('[EmergencyClassModal] Estudiantes cargados:', availableStudents.value.length);
   } catch (error) {
-    console.error("[EmergencyClassModal] Error cargando estudiantes:", error)
-    availableStudents.value = []
+    console.error('[EmergencyClassModal] Error cargando estudiantes:', error);
+    availableStudents.value = [];
   } finally {
-    loadingStudents.value = false
+    loadingStudents.value = false;
   }
-}
+};
 
 const handleStudentsChanged = (selectedStudents: string[]) => {
-  console.log("[EmergencyClassModal] Students changed:", selectedStudents)
-  formData.value.selectedStudents = selectedStudents
-}
+  console.log('[EmergencyClassModal] Students changed:', selectedStudents);
+  formData.value.selectedStudents = selectedStudents;
+};
 
 const handleSubmit = async () => {
-  if (!isFormValid.value || isCreating.value) return
+  if (!isFormValid.value || isCreating.value) return;
 
   try {
-    console.log("[EmergencyClassModal] Enviando datos de clase emergente:", formData.value)
+    console.log('[EmergencyClassModal] Enviando datos de clase emergente:', formData.value);
 
-    const teacherId = authStore.user?.uid
+    const teacherId = authStore.user?.uid;
     if (!teacherId) {
-      throw new Error("No se pudo obtener el ID del maestro")
+      throw new Error('No se pudo obtener el ID del maestro');
     }
 
     // Create the emergency class using the composable
@@ -341,67 +341,67 @@ const handleSubmit = async () => {
       reason: formData.value.reason,
       selectedStudents: formData.value.selectedStudents,
       teacherId,
-    })
+    });
 
     if (emergencyClassId) {
-      console.log("[EmergencyClassModal] Clase emergente creada con ID:", emergencyClassId)
+      console.log('[EmergencyClassModal] Clase emergente creada con ID:', emergencyClassId);
 
       // Emit the form data with additional metadata
-      emit("submitted", {
+      emit('submitted', {
         ...formData.value,
         date: props.date,
         teacherId,
         emergencyClassId,
-      })
+      });
     } else {
-      throw new Error(emergencyClassError.value || "Error al crear la clase emergente")
+      throw new Error(emergencyClassError.value || 'Error al crear la clase emergente');
     }
   } catch (error) {
-    console.error("[EmergencyClassModal] Error al crear clase emergente:", error)
+    console.error('[EmergencyClassModal] Error al crear clase emergente:', error);
     // TODO: Show error message to user
   }
-}
+};
 
 const handleCancel = () => {
-  emit("cancel")
-  emit("update:modelValue", false)
-}
+  emit('cancel');
+  emit('update:modelValue', false);
+};
 
 const resetForm = () => {
   formData.value = {
-    className: "",
-    classType: "",
-    startTime: "",
-    endTime: "",
-    instrument: "",
-    reason: "",
+    className: '',
+    classType: '',
+    startTime: '',
+    endTime: '',
+    instrument: '',
+    reason: '',
     selectedStudents: [],
-  }
-}
+  };
+};
 
 // Watchers
 watch(
   () => props.modelValue,
   (newValue) => {
     if (newValue) {
-      loadAvailableStudents()
+      loadAvailableStudents();
 
       // Set default class name based on existing class if provided
       if (props.className) {
-        formData.value.className = `${props.className} - Emergente`
+        formData.value.className = `${props.className} - Emergente`;
       }
     } else {
-      resetForm()
+      resetForm();
     }
-  }
-)
+  },
+);
 
 // Initialize
 onMounted(() => {
   if (props.modelValue) {
-    loadAvailableStudents()
+    loadAvailableStudents();
   }
-})
+});
 </script>
 
 <style scoped>

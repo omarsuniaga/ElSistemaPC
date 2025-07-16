@@ -211,7 +211,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 import {
   UserGroupIcon,
   UserIcon,
@@ -219,10 +219,10 @@ import {
   MagnifyingGlassIcon,
   ArrowLeftIcon,
   ArrowPathIcon,
-} from "@heroicons/vue/24/outline"
-import {useTeachersStore} from "@/modulos/Teachers/store/teachers"
-import {useClassesStore} from "@/modulos/Classes/store/classes"
-import TeacherAttendanceReport from "./reports/TeacherAttendanceReport.vue"
+} from '@heroicons/vue/24/outline';
+import { useTeachersStore } from '@/modulos/Teachers/store/teachers';
+import { useClassesStore } from '@/modulos/Classes/store/classes';
+import TeacherAttendanceReport from './reports/TeacherAttendanceReport.vue';
 
 // Types
 interface Teacher {
@@ -240,87 +240,87 @@ interface ClassItem {
 }
 
 // Stores
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
 
 // Estado
-const loading = ref(false)
-const error = ref<string | null>(null)
-const searchQuery = ref("")
-const statusFilter = ref("")
-const selectedTeacherId = ref<string | null>(null)
+const loading = ref(false);
+const error = ref<string | null>(null);
+const searchQuery = ref('');
+const statusFilter = ref('');
+const selectedTeacherId = ref<string | null>(null);
 
 // Computed
 const filteredTeachers = computed(() => {
-  let teachers = teachersStore.teachers
+  let teachers = teachersStore.teachers;
 
   // Filtrar por búsqueda
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     teachers = teachers.filter(
       (teacher: Teacher) =>
         teacher.name?.toLowerCase().includes(query) ||
         teacher.email?.toLowerCase().includes(query) ||
-        teacher.specialties?.some((specialty: string) => specialty.toLowerCase().includes(query))
-    )
+        teacher.specialties?.some((specialty: string) => specialty.toLowerCase().includes(query)),
+    );
   }
 
   // Filtrar por estado
   if (statusFilter.value) {
-    teachers = teachers.filter((teacher: Teacher) => teacher.status === statusFilter.value)
+    teachers = teachers.filter((teacher: Teacher) => teacher.status === statusFilter.value);
   }
 
-  return teachers
-})
+  return teachers;
+});
 
 const selectedTeacherName = computed(() => {
-  if (!selectedTeacherId.value) return ""
-  const teacher = teachersStore.teachers.find((t: Teacher) => t.id === selectedTeacherId.value)
-  return teacher?.name || "Maestro"
-})
+  if (!selectedTeacherId.value) return '';
+  const teacher = teachersStore.teachers.find((t: Teacher) => t.id === selectedTeacherId.value);
+  return teacher?.name || 'Maestro';
+});
 
 const teacherClassesCount = computed(() => {
-  const counts: Record<string, number> = {}
+  const counts: Record<string, number> = {};
   classesStore.classes.forEach((classItem: ClassItem) => {
     if (classItem.teacherId) {
-      counts[classItem.teacherId] = (counts[classItem.teacherId] || 0) + 1
+      counts[classItem.teacherId] = (counts[classItem.teacherId] || 0) + 1;
     }
-  })
-  return counts
-})
+  });
+  return counts;
+});
 
 // Métodos
 const refreshTeachers = async () => {
   try {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
 
-    await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()])
+    await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()]);
   } catch (err: any) {
-    error.value = err.message || "Error al cargar los maestros"
-    console.error("Error refreshing teachers:", err)
+    error.value = err.message || 'Error al cargar los maestros';
+    console.error('Error refreshing teachers:', err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const selectTeacher = (teacher: Teacher) => {
-  selectedTeacherId.value = teacher.id
-}
+  selectedTeacherId.value = teacher.id;
+};
 
 const goBackToTeachers = () => {
-  selectedTeacherId.value = null
-}
+  selectedTeacherId.value = null;
+};
 
 const clearFilters = () => {
-  searchQuery.value = ""
-  statusFilter.value = ""
-}
+  searchQuery.value = '';
+  statusFilter.value = '';
+};
 
 // Inicialización
 onMounted(async () => {
-  await refreshTeachers()
-})
+  await refreshTeachers();
+});
 </script>
 
 <style scoped>

@@ -12,15 +12,15 @@
         </div>
         <div class="flex gap-2">
           <button
-            @click="generateReport('performance')"
             :disabled="loading"
             class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50"
+            @click="generateReport('performance')"
           >
             📈 Generar Reporte
           </button>
           <button
-            @click="exportData"
             class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+            @click="exportData"
           >
             📤 Exportar Datos
           </button>
@@ -183,14 +183,14 @@
           </div>
           <div class="flex gap-2">
             <button
-              @click="viewReport(report)"
               class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+              @click="viewReport(report)"
             >
               👁️ Ver
             </button>
             <button
-              @click="downloadReport(report)"
               class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors"
+              @click="downloadReport(report)"
             >
               📥 Descargar
             </button>
@@ -210,46 +210,46 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useAnalytics } from '../composables/useAnalytics'
-import type { MusicalWork } from '../types/heatmap'
+import { ref, computed, onMounted } from 'vue';
+import { useAnalytics } from '../composables/useAnalytics';
+import type { MusicalWork } from '../types/heatmap';
 
 const props = defineProps<{
   work: MusicalWork
-}>()
+}>();
 
-const { reports, loading, generatePerformanceReport, getPredictiveInsights } = useAnalytics()
+const { reports, loading, generatePerformanceReport, getPredictiveInsights } = useAnalytics();
 
 // Mock data for demonstration
-const overallProgress = ref(67)
-const totalPracticeHours = ref(142)
-const averageScore = ref(3.8)
+const overallProgress = ref(67);
+const totalPracticeHours = ref(142);
+const averageScore = ref(3.8);
 
 const daysRemaining = computed(() => {
-  if (!props.work.endDate) return 0
-  const end = new Date(props.work.endDate)
-  const now = new Date()
-  const diff = end.getTime() - now.getTime()
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
-})
+  if (!props.work.endDate) return 0;
+  const end = new Date(props.work.endDate);
+  const now = new Date();
+  const diff = end.getTime() - now.getTime();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+});
 
 const insights = ref([
   'La sección de cuerdas muestra una mejora constante del 15% en las últimas 4 semanas',
   'Los vientos necesitan más trabajo en afinación y cohesión según las últimas evaluaciones',
   'El tiempo de práctica promedio ha aumentado un 23% comparado con el mes anterior',
-  'Se detecta una correlación positiva entre las horas de ensayo seccional y la mejora en cohesión'
-])
+  'Se detecta una correlación positiva entre las horas de ensayo seccional y la mejora en cohesión',
+]);
 
 const recommendations = ref([
   'Incrementar ensayos seccionales para vientos en un 30% durante las próximas 2 semanas',
   'Implementar ejercicios específicos de afinación al inicio de cada ensayo',
   'Establecer metas semanales más específicas para cada sección',
-  'Considerar sesiones de coaching individual para instrumentos con menor progreso'
-])
+  'Considerar sesiones de coaching individual para instrumentos con menor progreso',
+]);
 
 const generateReport = async (type: string) => {
-  await generatePerformanceReport(props.work.id, 'monthly')
-}
+  await generatePerformanceReport(props.work.id, 'monthly');
+};
 
 const exportData = () => {
   // Simulate data export
@@ -258,43 +258,43 @@ const exportData = () => {
     metrics: {
       overallProgress: overallProgress.value,
       practiceHours: totalPracticeHours.value,
-      averageScore: averageScore.value
+      averageScore: averageScore.value,
     },
     insights: insights.value,
-    recommendations: recommendations.value
-  }
+    recommendations: recommendations.value,
+  };
   
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `analisis_${props.work.name}_${new Date().toISOString().split('T')[0]}.json`
-  a.click()
-  URL.revokeObjectURL(url)
-}
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `analisis_${props.work.name}_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
 
 const getInstrumentScore = (instrumentId: string): number => {
   // Mock calculation
-  return 2.5 + Math.random() * 2.5
-}
+  return 2.5 + Math.random() * 2.5;
+};
 
 const getInstrumentTrend = (instrumentId: string): number => {
   // Mock trend calculation
-  return (Math.random() - 0.5) * 2
-}
+  return (Math.random() - 0.5) * 2;
+};
 
 const getPerformanceColor = (score: number): string => {
-  if (score <= 2) return 'bg-red-500'
-  if (score <= 3) return 'bg-yellow-500'
-  if (score <= 4) return 'bg-blue-500'
-  return 'bg-green-500'
-}
+  if (score <= 2) return 'bg-red-500';
+  if (score <= 3) return 'bg-yellow-500';
+  if (score <= 4) return 'bg-blue-500';
+  return 'bg-green-500';
+};
 
 const getTrendClass = (trend: number): string => {
-  if (trend > 0.1) return 'bg-green-100 text-green-700'
-  if (trend < -0.1) return 'bg-red-100 text-red-700'
-  return 'bg-gray-100 text-gray-700'
-}
+  if (trend > 0.1) return 'bg-green-100 text-green-700';
+  if (trend < -0.1) return 'bg-red-100 text-red-700';
+  return 'bg-gray-100 text-gray-700';
+};
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('es-ES', {
@@ -302,21 +302,21 @@ const formatDate = (dateString: string) => {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+    minute: '2-digit',
+  });
+};
 
 const viewReport = (report: any) => {
   // Open report in modal or new view
-  console.log('Viewing report:', report)
-}
+  console.log('Viewing report:', report);
+};
 
 const downloadReport = (report: any) => {
   // Download report as PDF or Excel
-  console.log('Downloading report:', report)
-}
+  console.log('Downloading report:', report);
+};
 
 onMounted(() => {
   // Load initial analytics data
-})
+});
 </script>

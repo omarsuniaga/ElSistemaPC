@@ -314,161 +314,161 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useBrandingStore} from "@/stores/brandingStore"
-import {logger} from "@/utils/logging/logger"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useBrandingStore } from '@/stores/brandingStore';
+import { logger } from '@/utils/logging/logger';
 
 // Store
-const brandingStore = useBrandingStore()
+const brandingStore = useBrandingStore();
 
 // Estado local
-const tempConfig = ref({...brandingStore.config})
-const uploadingLogo = ref(false)
-const logoInput = ref<HTMLInputElement>()
-const importInput = ref<HTMLInputElement>()
+const tempConfig = ref({ ...brandingStore.config });
+const uploadingLogo = ref(false);
+const logoInput = ref<HTMLInputElement>();
+const importInput = ref<HTMLInputElement>();
 
 // Computed properties
 const hasChanges = computed(() => {
-  return JSON.stringify(tempConfig.value) !== JSON.stringify(brandingStore.config)
-})
+  return JSON.stringify(tempConfig.value) !== JSON.stringify(brandingStore.config);
+});
 
 // Paletas de colores predefinidas
 const colorPalettes = [
   {
-    name: "Azul Profesional",
-    colors: ["#1976d2", "#424242", "#82b1ff", "#fafafa"],
+    name: 'Azul Profesional',
+    colors: ['#1976d2', '#424242', '#82b1ff', '#fafafa'],
   },
   {
-    name: "Verde Natura",
-    colors: ["#388e3c", "#2e7d32", "#81c784", "#f1f8e9"],
+    name: 'Verde Natura',
+    colors: ['#388e3c', '#2e7d32', '#81c784', '#f1f8e9'],
   },
   {
-    name: "Púrpura Elegante",
-    colors: ["#7b1fa2", "#4a148c", "#ba68c8", "#f3e5f5"],
+    name: 'Púrpura Elegante',
+    colors: ['#7b1fa2', '#4a148c', '#ba68c8', '#f3e5f5'],
   },
   {
-    name: "Naranja Vibrante",
-    colors: ["#f57c00", "#e65100", "#ffb74d", "#fff3e0"],
+    name: 'Naranja Vibrante',
+    colors: ['#f57c00', '#e65100', '#ffb74d', '#fff3e0'],
   },
   {
-    name: "Rojo Passion",
-    colors: ["#d32f2f", "#b71c1c", "#e57373", "#ffebee"],
+    name: 'Rojo Passion',
+    colors: ['#d32f2f', '#b71c1c', '#e57373', '#ffebee'],
   },
-]
+];
 
 // Watchers
 watch(
   () => brandingStore.config,
   (newConfig) => {
-    tempConfig.value = {...newConfig}
+    tempConfig.value = { ...newConfig };
   },
-  {deep: true}
-)
+  { deep: true },
+);
 
 // Métodos
 function onConfigChange() {
   // Aplicar cambios inmediatamente para vista previa
-  brandingStore.previewChanges(tempConfig.value)
+  brandingStore.previewChanges(tempConfig.value);
 }
 
 function triggerLogoUpload() {
-  logoInput.value?.click()
+  logoInput.value?.click();
 }
 
 async function handleLogoUpload(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
 
-  if (!file) return
+  if (!file) return;
 
   try {
-    uploadingLogo.value = true
+    uploadingLogo.value = true;
 
     // Validar archivo
     if (file.size > 5 * 1024 * 1024) {
       // 5MB max
-      throw new Error("El archivo es demasiado grande. Máximo 5MB.")
+      throw new Error('El archivo es demasiado grande. Máximo 5MB.');
     }
 
-    if (!file.type.startsWith("image/")) {
-      throw new Error("Solo se permiten archivos de imagen.")
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Solo se permiten archivos de imagen.');
     }
 
     // Subir logo
-    const logoUrl = await brandingStore.uploadLogo(file)
+    const logoUrl = await brandingStore.uploadLogo(file);
 
     // Actualizar configuración temporal
-    tempConfig.value.logo.url = logoUrl
-    tempConfig.value.logo.alt = tempConfig.value.logo.alt || file.name
+    tempConfig.value.logo.url = logoUrl;
+    tempConfig.value.logo.alt = tempConfig.value.logo.alt || file.name;
 
-    onConfigChange()
+    onConfigChange();
 
-    logger.info("BRANDING_MANAGER", "Logo subido exitosamente")
+    logger.info('BRANDING_MANAGER', 'Logo subido exitosamente');
   } catch (error) {
-    logger.error("BRANDING_MANAGER", "Error subiendo logo", error)
-    alert(`Error subiendo logo: ${error instanceof Error ? error.message : "Error desconocido"}`)
+    logger.error('BRANDING_MANAGER', 'Error subiendo logo', error);
+    alert(`Error subiendo logo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
   } finally {
-    uploadingLogo.value = false
-    target.value = "" // Reset input
+    uploadingLogo.value = false;
+    target.value = ''; // Reset input
   }
 }
 
 function applyColorPalette(palette: (typeof colorPalettes)[0]) {
-  tempConfig.value.colors.primary = palette.colors[0]
-  tempConfig.value.colors.secondary = palette.colors[1]
-  tempConfig.value.colors.accent = palette.colors[2]
-  tempConfig.value.colors.background = palette.colors[3]
+  tempConfig.value.colors.primary = palette.colors[0];
+  tempConfig.value.colors.secondary = palette.colors[1];
+  tempConfig.value.colors.accent = palette.colors[2];
+  tempConfig.value.colors.background = palette.colors[3];
 
-  onConfigChange()
+  onConfigChange();
 }
 
 async function saveChanges() {
   try {
     // Actualizar configuración en el store
-    Object.assign(brandingStore.config, tempConfig.value)
-    await brandingStore.saveBrandingConfig()
+    Object.assign(brandingStore.config, tempConfig.value);
+    await brandingStore.saveBrandingConfig();
 
-    alert("✅ Configuración guardada exitosamente")
-    logger.info("BRANDING_MANAGER", "Configuración guardada")
+    alert('✅ Configuración guardada exitosamente');
+    logger.info('BRANDING_MANAGER', 'Configuración guardada');
   } catch (error) {
-    logger.error("BRANDING_MANAGER", "Error guardando configuración", error)
-    alert(`❌ Error guardando: ${error instanceof Error ? error.message : "Error desconocido"}`)
+    logger.error('BRANDING_MANAGER', 'Error guardando configuración', error);
+    alert(`❌ Error guardando: ${error instanceof Error ? error.message : 'Error desconocido'}`);
   }
 }
 
 function triggerConfigImport() {
-  importInput.value?.click()
+  importInput.value?.click();
 }
 
 async function handleConfigImport(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
 
-  if (!file) return
+  if (!file) return;
 
   try {
-    await brandingStore.importConfig(file)
-    tempConfig.value = {...brandingStore.config}
+    await brandingStore.importConfig(file);
+    tempConfig.value = { ...brandingStore.config };
 
-    alert("✅ Configuración importada exitosamente")
-    logger.info("BRANDING_MANAGER", "Configuración importada")
+    alert('✅ Configuración importada exitosamente');
+    logger.info('BRANDING_MANAGER', 'Configuración importada');
   } catch (error) {
-    logger.error("BRANDING_MANAGER", "Error importando configuración", error)
-    alert(`❌ Error importando: ${error instanceof Error ? error.message : "Error desconocido"}`)
+    logger.error('BRANDING_MANAGER', 'Error importando configuración', error);
+    alert(`❌ Error importando: ${error instanceof Error ? error.message : 'Error desconocido'}`);
   } finally {
-    target.value = "" // Reset input
+    target.value = ''; // Reset input
   }
 }
 
 // Lifecycle
 onMounted(async () => {
   try {
-    await brandingStore.loadBrandingConfig()
-    tempConfig.value = {...brandingStore.config}
+    await brandingStore.loadBrandingConfig();
+    tempConfig.value = { ...brandingStore.config };
   } catch (error) {
-    logger.error("BRANDING_MANAGER", "Error cargando configuración inicial", error)
+    logger.error('BRANDING_MANAGER', 'Error cargando configuración inicial', error);
   }
-})
+});
 </script>
 
 <style scoped>

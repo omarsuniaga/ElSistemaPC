@@ -187,8 +187,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {useRBACManagement} from "@/composables/useRBACManagement"
+import { ref, computed, watch } from 'vue';
+import { useRBACManagement } from '@/composables/useRBACManagement';
 
 interface User {
   id: string
@@ -207,34 +207,34 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "saved", user: User): void
+  (e: 'close'): void
+  (e: 'saved', user: User): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
-const {roles, permissions, loadRoles, loadPermissions} = useRBACManagement()
-const loading = ref(false)
+const { roles, permissions, loadRoles, loadPermissions } = useRBACManagement();
+const loading = ref(false);
 
 const formData = ref({
-  email: "",
-  displayName: "",
-  role: "",
+  email: '',
+  displayName: '',
+  role: '',
   isActive: true,
-})
+});
 
 // Computed para obtener permisos del rol seleccionado
 const rolePermissions = computed(() => {
   if (!formData.value.role || !roles.value.length || !permissions.value.length) {
-    return []
+    return [];
   }
 
-  const role = roles.value.find((r) => r.name === formData.value.role)
-  if (!role) return []
+  const role = roles.value.find((r) => r.name === formData.value.role);
+  if (!role) return [];
 
-  return permissions.value.filter((p) => role.permissions.includes(p.id))
-})
+  return permissions.value.filter((p) => role.permissions.includes(p.id));
+});
 
 // Resetear formulario cuando se abre/cierra el modal
 watch(
@@ -243,32 +243,32 @@ watch(
     if (newVal && props.user) {
       formData.value = {
         email: props.user.email,
-        displayName: props.user.displayName || "",
+        displayName: props.user.displayName || '',
         role: props.user.role,
         isActive: props.user.isActive,
-      }
+      };
 
       // Cargar datos necesarios
       if (roles.value.length === 0) {
-        loadRoles()
+        loadRoles();
       }
       if (permissions.value.length === 0) {
-        loadPermissions()
+        loadPermissions();
       }
     }
-  }
-)
+  },
+);
 
 const onRoleChange = () => {
-  console.log("Rol cambiado a:", formData.value.role)
+  console.log('Rol cambiado a:', formData.value.role);
   // Aquí podrías mostrar una confirmación si el cambio de rol es significativo
-}
+};
 
 const handleSubmit = async () => {
-  if (!props.user) return
+  if (!props.user) return;
 
   try {
-    loading.value = true
+    loading.value = true;
 
     // Aquí deberías implementar la lógica para actualizar el usuario
     // Por ahora, simularemos la actualización
@@ -277,36 +277,36 @@ const handleSubmit = async () => {
       displayName: formData.value.displayName,
       role: formData.value.role,
       isActive: formData.value.isActive,
-    }
+    };
 
     // TODO: Implementar la actualización real del usuario en Firestore
-    console.log("Actualizando usuario:", updatedUser)
+    console.log('Actualizando usuario:', updatedUser);
 
     // Simular un delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    emit("saved", updatedUser)
-    emit("close")
+    emit('saved', updatedUser);
+    emit('close');
   } catch (error) {
-    console.error("Error al actualizar usuario:", error)
-    alert("Error al actualizar el usuario. Por favor, inténtalo de nuevo.")
+    console.error('Error al actualizar usuario:', error);
+    alert('Error al actualizar el usuario. Por favor, inténtalo de nuevo.');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const formatDate = (date: any) => {
-  if (!date) return "No disponible"
+  if (!date) return 'No disponible';
 
-  const d = date.toDate ? date.toDate() : new Date(date)
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d)
-}
+  const d = date.toDate ? date.toDate() : new Date(date);
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d);
+};
 </script>
 
 <style scoped>

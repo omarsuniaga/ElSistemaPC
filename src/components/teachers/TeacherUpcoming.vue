@@ -213,8 +213,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   format,
   isToday,
@@ -231,230 +231,230 @@ import {
   endOfMonth,
   isBefore,
   isAfter,
-} from "date-fns"
-import {es} from "date-fns/locale"
-import {useClassesStore} from "../../stores/classes"
-import {ClockIcon, CalendarIcon, UserGroupIcon} from "@heroicons/vue/24/outline"
+} from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useClassesStore } from '../../stores/classes';
+import { ClockIcon, CalendarIcon, UserGroupIcon } from '@heroicons/vue/24/outline';
 
 // Router
-const router = useRouter()
+const router = useRouter();
 
 // Stores
-const classesStore = useClassesStore()
+const classesStore = useClassesStore();
 
 // Estado
-const isLoading = ref(true)
-const dateRange = ref("week") // 'today', 'week', 'month'
-const today = new Date()
-const upcomingEvents = ref([])
+const isLoading = ref(true);
+const dateRange = ref('week'); // 'today', 'week', 'month'
+const today = new Date();
+const upcomingEvents = ref([]);
 
 // ID del profesor (simulado)
-const teacherId = "1" // En un caso real, se obtendría del usuario autenticado
+const teacherId = '1'; // En un caso real, se obtendría del usuario autenticado
 
 // Establecer el rango de fechas
 const setDateRange = (range) => {
-  dateRange.value = range
-  loadClassEvents()
-}
+  dateRange.value = range;
+  loadClassEvents();
+};
 
 // Texto para el rango de fechas seleccionado
 const getDateRangeText = () => {
   switch (dateRange.value) {
-    case "today":
-      return "hoy"
-    case "week":
-      return "esta semana"
-    case "month":
-      return "este mes"
-    default:
-      return "el período seleccionado"
+  case 'today':
+    return 'hoy';
+  case 'week':
+    return 'esta semana';
+  case 'month':
+    return 'este mes';
+  default:
+    return 'el período seleccionado';
   }
-}
+};
 
 // Agrupar eventos por fecha
 const groupedUpcomingClasses = computed(() => {
-  const todayEvents = upcomingEvents.value.filter((event) => isToday(event.startDateTime))
+  const todayEvents = upcomingEvents.value.filter((event) => isToday(event.startDateTime));
 
-  const futureEvents = upcomingEvents.value.filter((event) => !isToday(event.startDateTime))
+  const futureEvents = upcomingEvents.value.filter((event) => !isToday(event.startDateTime));
 
   // Agrupar eventos por fecha
-  const groupedEvents = []
+  const groupedEvents = [];
   futureEvents.forEach((event) => {
-    const eventDate = startOfDay(event.startDateTime)
+    const eventDate = startOfDay(event.startDateTime);
 
     // Buscar si ya existe un grupo para esta fecha
-    const existingGroup = groupedEvents.find((group) => isSameDay(group.date, eventDate))
+    const existingGroup = groupedEvents.find((group) => isSameDay(group.date, eventDate));
 
     if (existingGroup) {
-      existingGroup.events.push(event)
+      existingGroup.events.push(event);
     } else {
       groupedEvents.push({
         date: eventDate,
         events: [event],
-      })
+      });
     }
-  })
+  });
 
   // Ordenar grupos por fecha
-  return groupedEvents.sort((a, b) => a.date.getTime() - b.date.getTime())
-})
+  return groupedEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
+});
 
 // Obtener clases para hoy
 const getTodayClasses = () => {
-  return upcomingEvents.value.filter((event) => isToday(event.startDateTime))
-}
+  return upcomingEvents.value.filter((event) => isToday(event.startDateTime));
+};
 
 // Cargar eventos de clases
 const loadClassEvents = async () => {
-  isLoading.value = true
+  isLoading.value = true;
 
   try {
     // Cargar clases si no están ya cargadas
     if (classesStore.classes.length === 0) {
-      await classesStore.fetchClasses()
+      await classesStore.fetchClasses();
     }
 
     // Filtrar clases para este profesor
-    const teacherClasses = classesStore.classes.filter((c) => c.teacherId === teacherId)
+    const teacherClasses = classesStore.classes.filter((c) => c.teacherId === teacherId);
 
     // Calcular rango de fechas para filtrar eventos
-    const currentDate = new Date()
-    let rangeStart, rangeEnd
+    const currentDate = new Date();
+    let rangeStart, rangeEnd;
 
     switch (dateRange.value) {
-      case "today":
-        rangeStart = startOfDay(currentDate)
-        rangeEnd = endOfDay(currentDate)
-        break
-      case "week":
-        rangeStart = startOfWeek(currentDate, {weekStartsOn: 1})
-        rangeEnd = endOfWeek(currentDate, {weekStartsOn: 1})
-        break
-      case "month":
-        rangeStart = startOfMonth(currentDate)
-        rangeEnd = endOfMonth(currentDate)
-        break
+    case 'today':
+      rangeStart = startOfDay(currentDate);
+      rangeEnd = endOfDay(currentDate);
+      break;
+    case 'week':
+      rangeStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+      rangeEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+      break;
+    case 'month':
+      rangeStart = startOfMonth(currentDate);
+      rangeEnd = endOfMonth(currentDate);
+      break;
     }
 
     // Convertir clases a eventos
-    const events = []
+    const events = [];
 
     teacherClasses.forEach((cls) => {
       // Obtener eventos de clases programadas
       if (cls.scheduledDates) {
         cls.scheduledDates.forEach((scheduledDate) => {
-          const eventDate = parseISO(scheduledDate.date)
+          const eventDate = parseISO(scheduledDate.date);
 
           // Verificar si está en el rango seleccionado
           if (isAfter(eventDate, rangeStart) && isBefore(eventDate, rangeEnd)) {
-            const [startHour, startMinute] = scheduledDate.time.split(":").map(Number)
-            const startDateTime = new Date(eventDate)
-            startDateTime.setHours(startHour, startMinute, 0)
+            const [startHour, startMinute] = scheduledDate.time.split(':').map(Number);
+            const startDateTime = new Date(eventDate);
+            startDateTime.setHours(startHour, startMinute, 0);
 
-            const duration = scheduledDate.duration || 1.5 // Duración por defecto: 1.5 horas
-            const endDateTime = addMinutes(startDateTime, duration * 60)
+            const duration = scheduledDate.duration || 1.5; // Duración por defecto: 1.5 horas
+            const endDateTime = addMinutes(startDateTime, duration * 60);
 
             events.push({
               id: `scheduled-${cls.id}-${scheduledDate.date}`,
               classId: cls.id,
               title: cls.name,
-              description: cls.description || "",
+              description: cls.description || '',
               startDateTime,
               endDateTime,
-              location: scheduledDate.location || "Aula por asignar",
-              instrument: cls.instrument || "Música",
-              level: cls.level || "Todos los niveles",
+              location: scheduledDate.location || 'Aula por asignar',
+              instrument: cls.instrument || 'Música',
+              level: cls.level || 'Todos los niveles',
               studentCount: cls.studentIds?.length || 0,
               isScheduled: true,
-            })
+            });
           }
-        })
+        });
       }
 
       // Obtener eventos del horario semanal regular
       if (cls.schedule) {
         cls.schedule.forEach((schedule) => {
           // Para cada día en el rango, verificar si corresponde al día de la semana del horario
-          const currentCheckDate = new Date(rangeStart)
+          const currentCheckDate = new Date(rangeStart);
 
           while (currentCheckDate <= rangeEnd) {
-            const weekDayName = format(currentCheckDate, "EEEE", {locale: es})
-            const capitalizedWeekDay = weekDayName.charAt(0).toUpperCase() + weekDayName.slice(1)
+            const weekDayName = format(currentCheckDate, 'EEEE', { locale: es });
+            const capitalizedWeekDay = weekDayName.charAt(0).toUpperCase() + weekDayName.slice(1);
 
             // Si el día coincide con el del horario
             if (capitalizedWeekDay === schedule.day) {
-              const [startHour, startMinute] = schedule.startTime.split(":").map(Number)
-              const startDateTime = new Date(currentCheckDate)
-              startDateTime.setHours(startHour, startMinute, 0)
+              const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
+              const startDateTime = new Date(currentCheckDate);
+              startDateTime.setHours(startHour, startMinute, 0);
 
-              const duration = schedule.duration || 1.5 // Duración por defecto: 1.5 horas
-              const endDateTime = addMinutes(startDateTime, duration * 60)
+              const duration = schedule.duration || 1.5; // Duración por defecto: 1.5 horas
+              const endDateTime = addMinutes(startDateTime, duration * 60);
 
               // Solo añadir si no hay un evento programado específicamente para esta fecha/hora
               const hasSpecificEvent = events.some(
                 (event) =>
                   isSameDay(event.startDateTime, startDateTime) &&
                   event.startDateTime.getHours() === startHour &&
-                  event.startDateTime.getMinutes() === startMinute
-              )
+                  event.startDateTime.getMinutes() === startMinute,
+              );
 
               if (!hasSpecificEvent) {
                 events.push({
-                  id: `regular-${cls.id}-${format(startDateTime, "yyyy-MM-dd-HH-mm")}`,
+                  id: `regular-${cls.id}-${format(startDateTime, 'yyyy-MM-dd-HH-mm')}`,
                   classId: cls.id,
                   title: cls.name,
-                  description: cls.description || "",
+                  description: cls.description || '',
                   startDateTime,
                   endDateTime,
-                  location: schedule.location || "Aula por asignar",
-                  instrument: cls.instrument || "Música",
-                  level: cls.level || "Todos los niveles",
+                  location: schedule.location || 'Aula por asignar',
+                  instrument: cls.instrument || 'Música',
+                  level: cls.level || 'Todos los niveles',
                   studentCount: cls.studentIds?.length || 0,
                   isRegular: true,
-                })
+                });
               }
             }
 
             // Avanzar al siguiente día
-            currentCheckDate.setDate(currentCheckDate.getDate() + 1)
+            currentCheckDate.setDate(currentCheckDate.getDate() + 1);
           }
-        })
+        });
       }
-    })
+    });
 
     // Ordenar eventos por fecha/hora
-    events.sort((a, b) => a.startDateTime.getTime() - b.startDateTime.getTime())
+    events.sort((a, b) => a.startDateTime.getTime() - b.startDateTime.getTime());
 
-    upcomingEvents.value = events
+    upcomingEvents.value = events;
   } catch (error) {
-    console.error("Error al cargar eventos de clases:", error)
+    console.error('Error al cargar eventos de clases:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Formatear título de fecha
 const formatDateTitle = (date) => {
   if (isToday(date)) {
-    return "Hoy, " + format(date, "d 'de' MMMM", {locale: es})
+    return 'Hoy, ' + format(date, 'd \'de\' MMMM', { locale: es });
   }
-  return format(date, "EEEE, d 'de' MMMM", {locale: es})
-}
+  return format(date, 'EEEE, d \'de\' MMMM', { locale: es });
+};
 
 // Formatear hora
 const formatTime = (date) => {
-  return format(date, "HH:mm")
-}
+  return format(date, 'HH:mm');
+};
 
 // Navegar a la página de detalles de clase
 const goToClass = (classId) => {
-  router.push(`/classes/${classId}`)
-}
+  router.push(`/classes/${classId}`);
+};
 
 // Cargar datos al montar el componente
 onMounted(() => {
-  loadClassEvents()
-})
+  loadClassEvents();
+});
 </script>
 
 <style scoped>

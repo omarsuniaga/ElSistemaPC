@@ -3,173 +3,6 @@
 Panel de acciones rápidas para optimizar el flujo de trabajo del maestro
 -->
 
-<script setup lang="ts">
-import {computed, ref} from "vue"
-
-// Tipos
-interface ClassItem {
-  id: string
-  name: string
-  hasAttendance: boolean
-  students?: number
-  studentIds?: string[]
-  canTakeAttendance?: boolean
-}
-
-// Props
-const props = defineProps<{
-  classes: ClassItem[]
-  selectedDate: string
-}>()
-
-// Emits
-const emit = defineEmits<{
-  "quick-complete-all": []
-  "create-emergency": []
-}>()
-
-// Estado del componente
-const isProcessing = ref(false)
-const showConfirmDialog = ref(false)
-
-/**
- * 🎯 COMPUTED PROPERTIES
- */
-
-// Clases pendientes que se pueden completar automáticamente
-const pendingClasses = computed(() => {
-  return props.classes.filter((cls) => !cls.hasAttendance && cls.canTakeAttendance)
-})
-
-// Estadísticas de acciones rápidas
-const quickStats = computed(() => {
-  const total = props.classes.length
-  const pending = pendingClasses.value.length
-  const totalStudents = props.classes.reduce(
-    (sum, cls) => sum + (cls.studentIds?.length || cls.students || 0),
-    0
-  )
-  const pendingStudents = pendingClasses.value.reduce(
-    (sum, cls) => sum + (cls.studentIds?.length || cls.students || 0),
-    0
-  )
-
-  return {
-    total,
-    pending,
-    totalStudents,
-    pendingStudents,
-    canQuickComplete: pending > 0 && pending === total,
-  }
-})
-
-// Configuración de botones de acción
-const actionButtons = computed(() => [
-  {
-    id: "quick-complete",
-    label: "Marcar Todo Presente",
-    description: `${quickStats.value.pending} clase${quickStats.value.pending > 1 ? "s" : ""} (${quickStats.value.pendingStudents} estudiantes)`,
-    icon: "check-all",
-    color: "green",
-    enabled: quickStats.value.pending > 0,
-    dangerous: false,
-    action: () => handleQuickCompleteAll(),
-  },
-  {
-    id: "create-emergency",
-    label: "Clase Emergente",
-    description: "Crear nueva clase para hoy",
-    icon: "plus",
-    color: "blue",
-    enabled: true,
-    dangerous: false,
-    action: () => handleCreateEmergency(),
-  },
-  {
-    id: "batch-review",
-    label: "Revisar en Lote",
-    description: "Verificar todas las clases",
-    icon: "eye",
-    color: "purple",
-    enabled: props.classes.length > 0,
-    dangerous: false,
-    action: () => handleBatchReview(),
-  },
-])
-
-/**
- * 🎯 MÉTODOS
- */
-
-// Completar todas las clases pendientes automáticamente
-const handleQuickCompleteAll = () => {
-  if (quickStats.value.pending === 0) return
-
-  console.log("⚡ [QuickActions] Quick complete all requested")
-  showConfirmDialog.value = true
-}
-
-// Confirmar completar todas las clases
-const confirmQuickComplete = async () => {
-  isProcessing.value = true
-  showConfirmDialog.value = false
-
-  try {
-    console.log("⚡ [QuickActions] Executing quick complete all...")
-    emit("quick-complete-all")
-
-    // Simular procesamiento
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-  } catch (error) {
-    console.error("❌ [QuickActions] Error in quick complete:", error)
-  } finally {
-    isProcessing.value = false
-  }
-}
-
-// Crear clase emergente
-const handleCreateEmergency = () => {
-  console.log("🚨 [QuickActions] Create emergency class requested")
-  emit("create-emergency")
-}
-
-// Revisar en lote (placeholder)
-const handleBatchReview = () => {
-  console.log("👁️ [QuickActions] Batch review requested")
-  // TODO: Implementar revisión en lote
-}
-
-// Obtener clases CSS para botones
-const getButtonClasses = (button: any) => {
-  if (!button.enabled) {
-    return "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600 cursor-not-allowed"
-  }
-
-  const colorMap = {
-    green:
-      "bg-green-50 text-green-700 hover:bg-green-100 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-800/30 dark:border-green-800",
-    blue: "bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-800/30 dark:border-blue-800",
-    purple:
-      "bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:bg-purple-800/30 dark:border-purple-800",
-    red: "bg-red-50 text-red-700 hover:bg-red-100 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-800/30 dark:border-red-800",
-  }
-
-  return colorMap[button.color as keyof typeof colorMap] || colorMap.blue
-}
-
-// Renderizar iconos SVG
-const renderIcon = (iconName: string) => {
-  const icons = {
-    "check-all": "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
-    plus: "M12 6v6m0 0v6m0-6h6m-6 0H6",
-    eye: "M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z",
-    clock: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
-  }
-
-  return icons[iconName as keyof typeof icons] || icons.plus
-}
-</script>
-
 <template>
   <div class="space-y-4">
     <!-- 📊 HEADER CON ESTADÍSTICAS -->
@@ -398,6 +231,173 @@ const renderIcon = (iconName: string) => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed, ref } from 'vue';
+
+// Tipos
+interface ClassItem {
+  id: string
+  name: string
+  hasAttendance: boolean
+  students?: number
+  studentIds?: string[]
+  canTakeAttendance?: boolean
+}
+
+// Props
+const props = defineProps<{
+  classes: ClassItem[]
+  selectedDate: string
+}>();
+
+// Emits
+const emit = defineEmits<{
+  'quick-complete-all': []
+  'create-emergency': []
+}>();
+
+// Estado del componente
+const isProcessing = ref(false);
+const showConfirmDialog = ref(false);
+
+/**
+ * 🎯 COMPUTED PROPERTIES
+ */
+
+// Clases pendientes que se pueden completar automáticamente
+const pendingClasses = computed(() => {
+  return props.classes.filter((cls) => !cls.hasAttendance && cls.canTakeAttendance);
+});
+
+// Estadísticas de acciones rápidas
+const quickStats = computed(() => {
+  const total = props.classes.length;
+  const pending = pendingClasses.value.length;
+  const totalStudents = props.classes.reduce(
+    (sum, cls) => sum + (cls.studentIds?.length || cls.students || 0),
+    0,
+  );
+  const pendingStudents = pendingClasses.value.reduce(
+    (sum, cls) => sum + (cls.studentIds?.length || cls.students || 0),
+    0,
+  );
+
+  return {
+    total,
+    pending,
+    totalStudents,
+    pendingStudents,
+    canQuickComplete: pending > 0 && pending === total,
+  };
+});
+
+// Configuración de botones de acción
+const actionButtons = computed(() => [
+  {
+    id: 'quick-complete',
+    label: 'Marcar Todo Presente',
+    description: `${quickStats.value.pending} clase${quickStats.value.pending > 1 ? 's' : ''} (${quickStats.value.pendingStudents} estudiantes)`,
+    icon: 'check-all',
+    color: 'green',
+    enabled: quickStats.value.pending > 0,
+    dangerous: false,
+    action: () => handleQuickCompleteAll(),
+  },
+  {
+    id: 'create-emergency',
+    label: 'Clase Emergente',
+    description: 'Crear nueva clase para hoy',
+    icon: 'plus',
+    color: 'blue',
+    enabled: true,
+    dangerous: false,
+    action: () => handleCreateEmergency(),
+  },
+  {
+    id: 'batch-review',
+    label: 'Revisar en Lote',
+    description: 'Verificar todas las clases',
+    icon: 'eye',
+    color: 'purple',
+    enabled: props.classes.length > 0,
+    dangerous: false,
+    action: () => handleBatchReview(),
+  },
+]);
+
+/**
+ * 🎯 MÉTODOS
+ */
+
+// Completar todas las clases pendientes automáticamente
+const handleQuickCompleteAll = () => {
+  if (quickStats.value.pending === 0) return;
+
+  console.log('⚡ [QuickActions] Quick complete all requested');
+  showConfirmDialog.value = true;
+};
+
+// Confirmar completar todas las clases
+const confirmQuickComplete = async () => {
+  isProcessing.value = true;
+  showConfirmDialog.value = false;
+
+  try {
+    console.log('⚡ [QuickActions] Executing quick complete all...');
+    emit('quick-complete-all');
+
+    // Simular procesamiento
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  } catch (error) {
+    console.error('❌ [QuickActions] Error in quick complete:', error);
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+// Crear clase emergente
+const handleCreateEmergency = () => {
+  console.log('🚨 [QuickActions] Create emergency class requested');
+  emit('create-emergency');
+};
+
+// Revisar en lote (placeholder)
+const handleBatchReview = () => {
+  console.log('👁️ [QuickActions] Batch review requested');
+  // TODO: Implementar revisión en lote
+};
+
+// Obtener clases CSS para botones
+const getButtonClasses = (button: any) => {
+  if (!button.enabled) {
+    return 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600 cursor-not-allowed';
+  }
+
+  const colorMap = {
+    green:
+      'bg-green-50 text-green-700 hover:bg-green-100 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-800/30 dark:border-green-800',
+    blue: 'bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-800/30 dark:border-blue-800',
+    purple:
+      'bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:bg-purple-800/30 dark:border-purple-800',
+    red: 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-800/30 dark:border-red-800',
+  };
+
+  return colorMap[button.color as keyof typeof colorMap] || colorMap.blue;
+};
+
+// Renderizar iconos SVG
+const renderIcon = (iconName: string) => {
+  const icons = {
+    'check-all': 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+    plus: 'M12 6v6m0 0v6m0-6h6m-6 0H6',
+    eye: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z',
+    clock: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+  };
+
+  return icons[iconName as keyof typeof icons] || icons.plus;
+};
+</script>
 
 <style scoped>
 /* Animaciones personalizadas */

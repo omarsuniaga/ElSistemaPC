@@ -386,9 +386,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useHistoryTracker} from "../composables/useHistoryTracker"
-import type {HistoryEntry, Version, Snapshot, Work, User} from "../types"
+import { ref, computed, onMounted } from 'vue';
+import { useHistoryTracker } from '../composables/useHistoryTracker';
+import type { HistoryEntry, Version, Snapshot, Work, User } from '../types';
 
 const {
   history,
@@ -400,276 +400,276 @@ const {
   createHistorySnapshot,
   restoreToVersion,
   exportHistoryData,
-} = useHistoryTracker()
+} = useHistoryTracker();
 
 // State
-const viewMode = ref<"timeline" | "versions" | "snapshots">("timeline")
-const selectedItems = ref<string[]>([])
-const showCompareTool = ref(false)
-const showDetailsModal = ref(false)
-const selectedEntry = ref<HistoryEntry | null>(null)
+const viewMode = ref<'timeline' | 'versions' | 'snapshots'>('timeline');
+const selectedItems = ref<string[]>([]);
+const showCompareTool = ref(false);
+const showDetailsModal = ref(false);
+const selectedEntry = ref<HistoryEntry | null>(null);
 
 // Filters
 const filters = ref({
-  workId: "",
-  changeType: "",
-  userId: "",
-  startDate: "",
-  endDate: "",
-})
+  workId: '',
+  changeType: '',
+  userId: '',
+  startDate: '',
+  endDate: '',
+});
 
 // Computed
 const filteredHistory = computed(() => {
-  let result = history.value
+  let result = history.value;
 
   if (filters.value.workId) {
-    result = result.filter((entry) => entry.workId === filters.value.workId)
+    result = result.filter((entry) => entry.workId === filters.value.workId);
   }
 
   if (filters.value.changeType) {
-    result = result.filter((entry) => entry.type === filters.value.changeType)
+    result = result.filter((entry) => entry.type === filters.value.changeType);
   }
 
   if (filters.value.userId) {
-    result = result.filter((entry) => entry.userId === filters.value.userId)
+    result = result.filter((entry) => entry.userId === filters.value.userId);
   }
 
   if (filters.value.startDate) {
     result = result.filter(
-      (entry) => new Date(entry.timestamp) >= new Date(filters.value.startDate)
-    )
+      (entry) => new Date(entry.timestamp) >= new Date(filters.value.startDate),
+    );
   }
 
   if (filters.value.endDate) {
-    result = result.filter((entry) => new Date(entry.timestamp) <= new Date(filters.value.endDate))
+    result = result.filter((entry) => new Date(entry.timestamp) <= new Date(filters.value.endDate));
   }
 
-  return result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-})
+  return result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+});
 
 const filteredVersions = computed(() => {
-  let result = versions.value
+  let result = versions.value;
 
   if (filters.value.workId) {
-    result = result.filter((version) => version.workId === filters.value.workId)
+    result = result.filter((version) => version.workId === filters.value.workId);
   }
 
   if (filters.value.userId) {
-    result = result.filter((version) => version.userId === filters.value.userId)
+    result = result.filter((version) => version.userId === filters.value.userId);
   }
 
-  return result.sort((a, b) => b.version - a.version)
-})
+  return result.sort((a, b) => b.version - a.version);
+});
 
 const filteredSnapshots = computed(() => {
-  let result = snapshots.value
+  let result = snapshots.value;
 
   if (filters.value.workId) {
-    result = result.filter((snapshot) => snapshot.workId === filters.value.workId)
+    result = result.filter((snapshot) => snapshot.workId === filters.value.workId);
   }
 
   if (filters.value.userId) {
-    result = result.filter((snapshot) => snapshot.userId === filters.value.userId)
+    result = result.filter((snapshot) => snapshot.userId === filters.value.userId);
   }
 
-  return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-})
+  return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+});
 
 const filteredItems = computed(() => {
   switch (viewMode.value) {
-    case "timeline":
-      return filteredHistory.value
-    case "versions":
-      return filteredVersions.value
-    case "snapshots":
-      return filteredSnapshots.value
-    default:
-      return []
+  case 'timeline':
+    return filteredHistory.value;
+  case 'versions':
+    return filteredVersions.value;
+  case 'snapshots':
+    return filteredSnapshots.value;
+  default:
+    return [];
   }
-})
+});
 
 // Methods
 const createSnapshot = async () => {
   try {
     await createHistorySnapshot({
       title: `Snapshot ${new Date().toLocaleDateString()}`,
-      description: "Snapshot manual del estado actual",
-    })
+      description: 'Snapshot manual del estado actual',
+    });
   } catch (error) {
-    console.error("Error creating snapshot:", error)
+    console.error('Error creating snapshot:', error);
   }
-}
+};
 
 const exportHistory = async () => {
   try {
     await exportHistoryData({
-      format: "JSON",
+      format: 'JSON',
       includeSnapshots: true,
       dateRange: {
         start: filters.value.startDate,
         end: filters.value.endDate,
       },
-    })
+    });
   } catch (error) {
-    console.error("Error exporting history:", error)
+    console.error('Error exporting history:', error);
   }
-}
+};
 
 const toggleSelection = (itemId: string) => {
-  const index = selectedItems.value.indexOf(itemId)
+  const index = selectedItems.value.indexOf(itemId);
   if (index > -1) {
-    selectedItems.value.splice(index, 1)
+    selectedItems.value.splice(index, 1);
   } else {
     if (selectedItems.value.length < 2) {
-      selectedItems.value.push(itemId)
+      selectedItems.value.push(itemId);
     } else {
-      selectedItems.value = [itemId]
+      selectedItems.value = [itemId];
     }
   }
-}
+};
 
 const viewDetails = (entry: HistoryEntry) => {
-  selectedEntry.value = entry
-  showDetailsModal.value = true
-}
+  selectedEntry.value = entry;
+  showDetailsModal.value = true;
+};
 
 const restoreVersion = async (item: HistoryEntry | Version) => {
   try {
-    await restoreToVersion(item.id)
-    selectedItems.value = []
+    await restoreToVersion(item.id);
+    selectedItems.value = [];
   } catch (error) {
-    console.error("Error restoring version:", error)
+    console.error('Error restoring version:', error);
   }
-}
+};
 
 const previewVersion = (version: Version) => {
   // Implementation for version preview
-  console.log("Preview version:", version.id)
-}
+  console.log('Preview version:', version.id);
+};
 
 const downloadVersion = (version: Version) => {
   // Implementation for version download
-  console.log("Download version:", version.id)
-}
+  console.log('Download version:', version.id);
+};
 
 const downloadSnapshot = (entry: HistoryEntry) => {
   // Implementation for snapshot download
-  console.log("Download snapshot:", entry.id)
-}
+  console.log('Download snapshot:', entry.id);
+};
 
 const viewSnapshot = (snapshot: Snapshot) => {
   // Implementation for snapshot view
-  console.log("View snapshot:", snapshot.id)
-}
+  console.log('View snapshot:', snapshot.id);
+};
 
 const restoreSnapshot = async (snapshot: Snapshot) => {
   try {
-    await restoreToVersion(snapshot.id)
+    await restoreToVersion(snapshot.id);
   } catch (error) {
-    console.error("Error restoring snapshot:", error)
+    console.error('Error restoring snapshot:', error);
   }
-}
+};
 
 const deleteSnapshot = async (snapshot: Snapshot) => {
   // Implementation for snapshot deletion
-  console.log("Delete snapshot:", snapshot.id)
-}
+  console.log('Delete snapshot:', snapshot.id);
+};
 
 const getSelectedItem = (itemId: string) => {
   return [...history.value, ...versions.value, ...snapshots.value].find(
-    (item) => item.id === itemId
-  )
-}
+    (item) => item.id === itemId,
+  );
+};
 
 const closeCompareTool = () => {
-  showCompareTool.value = false
-  selectedItems.value = []
-}
+  showCompareTool.value = false;
+  selectedItems.value = [];
+};
 
 const closeDetailsModal = () => {
-  showDetailsModal.value = false
-  selectedEntry.value = null
-}
+  showDetailsModal.value = false;
+  selectedEntry.value = null;
+};
 
 const exportComparison = () => {
   // Implementation for comparison export
-  console.log("Export comparison")
-}
+  console.log('Export comparison');
+};
 
 // Utility functions
 const isSameDay = (date1: string, date2: string) => {
-  const d1 = new Date(date1).toDateString()
-  const d2 = new Date(date2).toDateString()
-  return d1 === d2
-}
+  const d1 = new Date(date1).toDateString();
+  const d2 = new Date(date2).toDateString();
+  return d1 === d2;
+};
 
 const formatDateHeader = (date: string) => {
-  const today = new Date().toDateString()
-  const yesterday = new Date(Date.now() - 86400000).toDateString()
-  const dateStr = new Date(date).toDateString()
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  const dateStr = new Date(date).toDateString();
 
-  if (dateStr === today) return "Hoy"
-  if (dateStr === yesterday) return "Ayer"
+  if (dateStr === today) return 'Hoy';
+  if (dateStr === yesterday) return 'Ayer';
 
-  return new Date(date).toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
+  return new Date(date).toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
 
 const formatTime = (date: string) => {
-  return new Date(date).toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+  return new Date(date).toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
-}
+  return new Date(date).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
 
 const formatFullDate = (date: string) => {
-  return new Date(date).toLocaleString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+  return new Date(date).toLocaleString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const getChangeIcon = (type: string) => {
   const icons: Record<string, string> = {
-    CREATE: "fas fa-plus",
-    UPDATE: "fas fa-edit",
-    DELETE: "fas fa-trash",
-    VERSION: "fas fa-code-branch",
-    RESTORE: "fas fa-undo",
-  }
-  return icons[type] || "fas fa-info-circle"
-}
+    CREATE: 'fas fa-plus',
+    UPDATE: 'fas fa-edit',
+    DELETE: 'fas fa-trash',
+    VERSION: 'fas fa-code-branch',
+    RESTORE: 'fas fa-undo',
+  };
+  return icons[type] || 'fas fa-info-circle';
+};
 
 const getChangeTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
-    CREATE: "Creación",
-    UPDATE: "Actualización",
-    DELETE: "Eliminación",
-    VERSION: "Nueva versión",
-    RESTORE: "Restauración",
-  }
-  return labels[type] || type
-}
+    CREATE: 'Creación',
+    UPDATE: 'Actualización',
+    DELETE: 'Eliminación',
+    VERSION: 'Nueva versión',
+    RESTORE: 'Restauración',
+  };
+  return labels[type] || type;
+};
 
 onMounted(() => {
   // Data is loaded through composables
-})
+});
 </script>
 
 <style scoped>

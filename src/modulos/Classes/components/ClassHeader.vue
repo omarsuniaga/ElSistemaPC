@@ -1,47 +1,3 @@
-<script setup lang="ts">
-import {ref} from "vue"
-import {
-  UserGroupIcon,
-  EllipsisVerticalIcon,
-  PencilIcon,
-  TrashIcon,
-  ClipboardDocumentCheckIcon,
-  BookOpenIcon,
-  AcademicCapIcon,
-  ArrowLeftIcon,
-  ClockIcon,
-  ChatBubbleLeftRightIcon,
-} from "@heroicons/vue/24/outline"
-
-const props = defineProps({
-  selectedClass: {
-    type: Object,
-    required: true,
-  },
-  isMobile: {
-    type: Boolean,
-    default: false,
-  },
-  formattedSchedule: {
-    type: String,
-    required: true,
-  },
-  activeSection: {
-    type: String,
-    required: true,
-  },
-})
-
-const emit = defineEmits(["go-back", "toggle-menu", "set-active-section"])
-
-const menuOpen = ref(false)
-
-const toggleMenu = () => {
-  menuOpen.value = !menuOpen.value
-  emit("toggle-menu")
-}
-</script>
-
 <template>
   <div class="sticky top-0 z-10 bg-blue-600 dark:bg-blue-900 text-white shadow-md">
     <!-- Mobile Header -->
@@ -143,3 +99,47 @@ const toggleMenu = () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import {
+  UserGroupIcon,
+  EllipsisVerticalIcon,
+  PencilIcon,
+  TrashIcon,
+  ClipboardDocumentCheckIcon,
+  BookOpenIcon,
+  AcademicCapIcon,
+  ArrowLeftIcon,
+  ClockIcon,
+  ChatBubbleLeftRightIcon,
+} from '@heroicons/vue/24/outline';
+
+const props = defineProps({
+  selectedClass: {
+    type: Object,
+    required: true,
+  },
+  isMobile: {
+    type: Boolean,
+    default: false,
+  },
+  formattedSchedule: {
+    type: String,
+    required: true,
+  },
+  activeSection: {
+    type: String,
+    required: true,
+  },
+});
+
+const emit = defineEmits(['go-back', 'toggle-menu', 'set-active-section']);
+
+const menuOpen = ref(false);
+
+const toggleMenu = () => {
+  menuOpen.value = !menuOpen.value;
+  emit('toggle-menu');
+};
+</script>

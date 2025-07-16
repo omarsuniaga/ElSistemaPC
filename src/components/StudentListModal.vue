@@ -120,11 +120,11 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import {collection, query, where, getDocs} from "firebase/firestore"
-import {db} from "../firebase"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import {useAttendanceStore} from "../modulos/Attendance/store/attendance"
+import { ref, computed, watch, onMounted } from 'vue';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
 
 // Props
 const props = defineProps<{
@@ -132,114 +132,114 @@ const props = defineProps<{
   classId: string
   date: string
   title?: string
-}>()
+}>();
 
 // Emits
-const emit = defineEmits(["close"])
+const emit = defineEmits(['close']);
 
 // Estado reactivo
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const students = ref<any[]>([])
-const searchTerm = ref("")
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const students = ref<any[]>([]);
+const searchTerm = ref('');
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
 
 // Computados
 const filteredStudents = computed(() => {
-  if (!searchTerm.value) return students.value
+  if (!searchTerm.value) return students.value;
 
-  const term = searchTerm.value.toLowerCase()
+  const term = searchTerm.value.toLowerCase();
   return students.value.filter(
     (student) =>
       student.nombre.toLowerCase().includes(term) ||
       student.apellido.toLowerCase().includes(term) ||
-      (student.instrumento && student.instrumento.toLowerCase().includes(term))
-  )
-})
+      (student.instrumento && student.instrumento.toLowerCase().includes(term)),
+  );
+});
 
 // Métodos
 const close = () => {
-  emit("close")
-}
+  emit('close');
+};
 
 const loadStudents = async () => {
-  if (!props.classId || !props.date) return
+  if (!props.classId || !props.date) return;
 
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
     // Cargar estudiantes si no están en el store
     if (studentsStore.students.length === 0) {
-      await studentsStore.fetchStudents()
+      await studentsStore.fetchStudents();
     }
 
     // Cargar asistencia para la fecha y clase específica
-    const attendanceDoc = await attendanceStore.fetchAttendanceDocument(props.date, props.classId)
+    const attendanceDoc = await attendanceStore.fetchAttendanceDocument(props.date, props.classId);
 
     // Buscar estudiantes asignados a esta clase
-    const classesCollection = collection(db, "CLASES")
-    const classQuery = query(classesCollection, where("id", "==", props.classId))
-    const classSnapshot = await getDocs(classQuery)
+    const classesCollection = collection(db, 'CLASES');
+    const classQuery = query(classesCollection, where('id', '==', props.classId));
+    const classSnapshot = await getDocs(classQuery);
 
     if (classSnapshot.empty) {
-      throw new Error("No se encontró la clase especificada")
+      throw new Error('No se encontró la clase especificada');
     }
 
-    const classData = classSnapshot.docs[0].data()
-    const studentIds = classData.studentIds || []
+    const classData = classSnapshot.docs[0].data();
+    const studentIds = classData.studentIds || [];
 
     // Obtener datos de estudiantes y asignar estado de asistencia
     const studentsList = studentIds.map((studentId) => {
       const studentData = studentsStore.students.find((s) => s.id === studentId) || {
-        nombre: "Estudiante",
-        apellido: "Desconocido",
-      }
+        nombre: 'Estudiante',
+        apellido: 'Desconocido',
+      };
 
       // Determinar estado de asistencia
-      let status = "No registrado"
+      let status = 'No registrado';
       if (attendanceDoc) {
         if (attendanceDoc.data.presentes.includes(studentId)) {
-          status = "Presente"
+          status = 'Presente';
         } else if (attendanceDoc.data.ausentes.includes(studentId)) {
-          status = "Ausente"
+          status = 'Ausente';
         } else if (attendanceDoc.data.tarde.includes(studentId)) {
           // Verificar si es justificado
-          const justificado = attendanceDoc.data.justificacion?.some((j) => j.id === studentId)
-          status = justificado ? "Justificado" : "Tardanza"
+          const justificado = attendanceDoc.data.justificacion?.some((j) => j.id === studentId);
+          status = justificado ? 'Justificado' : 'Tardanza';
         }
       }
 
       return {
         ...studentData,
         status,
-      }
-    })
+      };
+    });
 
-    students.value = studentsList
+    students.value = studentsList;
   } catch (err) {
-    console.error("Error al cargar estudiantes:", err)
-    error.value = `Error al cargar estudiantes: ${err instanceof Error ? err.message : "Error desconocido"}`
+    console.error('Error al cargar estudiantes:', err);
+    error.value = `Error al cargar estudiantes: ${err instanceof Error ? err.message : 'Error desconocido'}`;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Observadores
 watch(
   () => props.isVisible,
   (newValue) => {
     if (newValue) {
-      loadStudents()
+      loadStudents();
     }
-  }
-)
+  },
+);
 
 // Ciclo de vida
 onMounted(() => {
   if (props.isVisible) {
-    loadStudents()
+    loadStudents();
   }
-})
+});
 </script>

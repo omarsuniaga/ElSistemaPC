@@ -1,7 +1,3 @@
-<script setup>
-// Este componente sirve como documentación sobre cómo implementar componentes reactivos
-</script>
-
 <template>
   <div class="reactive-guide p-6">
     <h1 class="text-2xl font-bold mb-4">Guía de Implementación Reactiva</h1>
@@ -182,6 +178,10 @@ export const useStudentsStore = defineStore('students', () => {
     </div>
   </div>
 </template>
+
+<script setup>
+// Este componente sirve como documentación sobre cómo implementar componentes reactivos
+</script>
 
 <style scoped>
 .reactive-guide {

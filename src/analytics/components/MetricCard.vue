@@ -60,84 +60,84 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 
 interface Props {
   title: string
   value: string | number
   icon?: string
   trend?: number
-  color?: "blue" | "green" | "red" | "yellow" | "purple" | "gray"
+  color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple' | 'gray'
   showProgress?: boolean
   maxValue?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   trend: 0,
-  color: "blue",
+  color: 'blue',
   showProgress: false,
   maxValue: 100,
-})
+});
 
 const displayValue = computed(() => {
-  if (typeof props.value === "number") {
+  if (typeof props.value === 'number') {
     if (props.value > 1000) {
-      return (props.value / 1000).toFixed(1) + "k"
+      return (props.value / 1000).toFixed(1) + 'k';
     }
-    return props.value.toString()
+    return props.value.toString();
   }
-  return props.value
-})
+  return props.value;
+});
 
 const cardColorClass = computed(() => {
-  const baseClasses = "border-l-4"
+  const baseClasses = 'border-l-4';
   const colorMap = {
-    blue: "border-blue-500",
-    green: "border-green-500",
-    red: "border-red-500",
-    yellow: "border-yellow-500",
-    purple: "border-purple-500",
-    gray: "border-gray-500",
-  }
-  return `${baseClasses} ${colorMap[props.color]}`
-})
+    blue: 'border-blue-500',
+    green: 'border-green-500',
+    red: 'border-red-500',
+    yellow: 'border-yellow-500',
+    purple: 'border-purple-500',
+    gray: 'border-gray-500',
+  };
+  return `${baseClasses} ${colorMap[props.color]}`;
+});
 
 const valueColorClass = computed(() => {
   const colorMap = {
-    blue: "text-blue-700",
-    green: "text-green-700",
-    red: "text-red-700",
-    yellow: "text-yellow-700",
-    purple: "text-purple-700",
-    gray: "text-gray-700",
-  }
-  return colorMap[props.color]
-})
+    blue: 'text-blue-700',
+    green: 'text-green-700',
+    red: 'text-red-700',
+    yellow: 'text-yellow-700',
+    purple: 'text-purple-700',
+    gray: 'text-gray-700',
+  };
+  return colorMap[props.color];
+});
 
 const trendColorClass = computed(() => {
-  return props.trend > 0 ? "text-green-600" : "text-red-600"
-})
+  return props.trend > 0 ? 'text-green-600' : 'text-red-600';
+});
 
 const progressColorClass = computed(() => {
   const colorMap = {
-    blue: "bg-blue-500",
-    green: "bg-green-500",
-    red: "bg-red-500",
-    yellow: "bg-yellow-500",
-    purple: "bg-purple-500",
-    gray: "bg-gray-500",
-  }
-  return colorMap[props.color]
-})
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    red: 'bg-red-500',
+    yellow: 'bg-yellow-500',
+    purple: 'bg-purple-500',
+    gray: 'bg-gray-500',
+  };
+  return colorMap[props.color];
+});
 
 const progressPercentage = computed(() => {
-  if (!props.showProgress) return 0
+  if (!props.showProgress) return 0;
 
   const numericValue =
-    typeof props.value === "string" ? parseFloat(props.value.replace("%", "")) : props.value
+    typeof props.value === 'string' ? parseFloat(props.value.replace('%', '')) : props.value;
 
-  return Math.min(100, Math.max(0, (numericValue / props.maxValue) * 100))
-})
+  return Math.min(100, Math.max(0, (numericValue / props.maxValue) * 100));
+});
 </script>
 
 <style scoped>

@@ -108,19 +108,19 @@
 </template>
 
 <script setup lang="ts">
-import {Dialog, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild} from "@headlessui/vue"
+import { Dialog, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
 
 defineProps<{
   message: string | null
-}>()
+}>();
 
 defineEmits<{
-  (e: "close"): void
-}>()
+  (e: 'close'): void
+}>();
 </script>
 
 <script lang="ts">
 export default {
-  name: "ErrorModal",
-}
+  name: 'ErrorModal',
+};
 </script>

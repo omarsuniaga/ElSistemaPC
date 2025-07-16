@@ -234,9 +234,9 @@ Puede usar las siguientes variables:
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot} from "@headlessui/vue"
-import {XMarkIcon, PaperAirplaneIcon} from "@heroicons/vue/24/outline"
+import { ref, computed, watch } from 'vue';
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
+import { XMarkIcon, PaperAirplaneIcon } from '@heroicons/vue/24/outline';
 
 interface Student {
   id: string
@@ -262,29 +262,29 @@ interface SendProgress {
   total: number
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 const emit = defineEmits<{
   close: []
   sent: [count: number]
-}>()
+}>();
 
 // Estado local
-const showRecipientsList = ref(false)
-const selectedTemplate = ref("")
-const isSending = ref(false)
-const sendProgress = ref<SendProgress>({sent: 0, total: 0})
+const showRecipientsList = ref(false);
+const selectedTemplate = ref('');
+const isSending = ref(false);
+const sendProgress = ref<SendProgress>({ sent: 0, total: 0 });
 
 const emailData = ref<EmailData>({
-  subject: "",
-  message: "",
+  subject: '',
+  message: '',
   sendCopy: false,
   highPriority: false,
-})
+});
 
 // Templates predefinidas
 const templates = {
   welcome: {
-    subject: "Bienvenido/a a la Academia Musical",
+    subject: 'Bienvenido/a a la Academia Musical',
     message: `Estimado/a {firstName},
 
 ¡Bienvenido/a a nuestra Academia Musical! Estamos emocionados de tenerte como parte de nuestra comunidad musical.
@@ -297,7 +297,7 @@ Saludos cordiales,
 {academyName}`,
   },
   reminder: {
-    subject: "Recordatorio: Tu clase de música",
+    subject: 'Recordatorio: Tu clase de música',
     message: `Hola {firstName},
 
 Este es un recordatorio amigable sobre tu próxima clase de música.
@@ -309,7 +309,7 @@ No olvides traer tu instrumento y materiales de estudio.
 {academyName}`,
   },
   payment: {
-    subject: "Recordatorio de Pago - Academia Musical",
+    subject: 'Recordatorio de Pago - Academia Musical',
     message: `Estimado/a {firstName},
 
 Te recordamos que tienes un pago pendiente por tus clases de música.
@@ -321,7 +321,7 @@ Gracias por tu comprensión.
 {academyName}`,
   },
   announcement: {
-    subject: "Anuncio Important - Academia Musical",
+    subject: 'Anuncio Important - Academia Musical',
     message: `Estimado/a {firstName},
 
 Queremos informarte sobre una novedad importante en nuestra academia.
@@ -332,7 +332,7 @@ Queremos informarte sobre una novedad importante en nuestra academia.
 
 {academyName}`,
   },
-}
+};
 
 // Computed
 const canSend = computed(() => {
@@ -341,87 +341,87 @@ const canSend = computed(() => {
     emailData.value.message.trim() &&
     props.selectedStudents.length > 0 &&
     !isSending.value
-  )
-})
+  );
+});
 
 const previewMessage = computed(() => {
-  if (!emailData.value.message) return ""
+  if (!emailData.value.message) return '';
 
   // Simular reemplazo de variables con el primer estudiante
-  let preview = emailData.value.message
+  let preview = emailData.value.message;
   if (props.selectedStudents.length > 0) {
-    const firstStudent = props.selectedStudents[0]
+    const firstStudent = props.selectedStudents[0];
     preview = preview
       .replace(/{firstName}/g, firstStudent.firstName)
       .replace(/{lastName}/g, firstStudent.lastName)
-      .replace(/{academyName}/g, "Academia Musical")
-      .replace(/{date}/g, new Date().toLocaleDateString())
+      .replace(/{academyName}/g, 'Academia Musical')
+      .replace(/{date}/g, new Date().toLocaleDateString());
   }
 
-  return preview
-})
+  return preview;
+});
 
 // Methods
 const closeModal = () => {
   if (!isSending.value) {
-    emit("close")
+    emit('close');
   }
-}
+};
 
 const removeRecipient = (studentId: string) => {
-  const updatedStudents = props.selectedStudents.filter((s) => s.id !== studentId)
-  emit("close") // Temporal - idealmente se actualizaría la lista sin cerrar
-}
+  const updatedStudents = props.selectedStudents.filter((s) => s.id !== studentId);
+  emit('close'); // Temporal - idealmente se actualizaría la lista sin cerrar
+};
 
 const loadTemplate = () => {
   if (selectedTemplate.value && templates[selectedTemplate.value as keyof typeof templates]) {
-    const template = templates[selectedTemplate.value as keyof typeof templates]
-    emailData.value.subject = template.subject
-    emailData.value.message = template.message
+    const template = templates[selectedTemplate.value as keyof typeof templates];
+    emailData.value.subject = template.subject;
+    emailData.value.message = template.message;
   }
-}
+};
 
 const sendEmails = async () => {
-  if (!canSend.value) return
+  if (!canSend.value) return;
 
   try {
-    isSending.value = true
-    sendProgress.value = {sent: 0, total: props.selectedStudents.length}
+    isSending.value = true;
+    sendProgress.value = { sent: 0, total: props.selectedStudents.length };
 
     // Simular envío progresivo
     for (let i = 0; i < props.selectedStudents.length; i++) {
-      const student = props.selectedStudents[i]
+      const student = props.selectedStudents[i];
 
       // Simular procesamiento
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // TODO: Implementar envío real del email
-      await sendEmailToStudent(student)
+      await sendEmailToStudent(student);
 
-      sendProgress.value.sent++
+      sendProgress.value.sent++;
     }
 
     // Éxito
-    emit("sent", props.selectedStudents.length)
+    emit('sent', props.selectedStudents.length);
 
     // Limpiar formulario
     emailData.value = {
-      subject: "",
-      message: "",
+      subject: '',
+      message: '',
       sendCopy: false,
       highPriority: false,
-    }
-    selectedTemplate.value = ""
+    };
+    selectedTemplate.value = '';
 
-    closeModal()
+    closeModal();
   } catch (error) {
-    console.error("Error enviando emails:", error)
+    console.error('Error enviando emails:', error);
     // TODO: Mostrar error al usuario
   } finally {
-    isSending.value = false
-    sendProgress.value = {sent: 0, total: 0}
+    isSending.value = false;
+    sendProgress.value = { sent: 0, total: 0 };
   }
-}
+};
 
 const sendEmailToStudent = async (student: Student) => {
   // TODO: Implementar envío real usando un servicio de email
@@ -430,10 +430,10 @@ const sendEmailToStudent = async (student: Student) => {
     message: emailData.value.message
       .replace(/{firstName}/g, student.firstName)
       .replace(/{lastName}/g, student.lastName)
-      .replace(/{academyName}/g, "Academia Musical")
+      .replace(/{academyName}/g, 'Academia Musical')
       .replace(/{date}/g, new Date().toLocaleDateString()),
-  })
-}
+  });
+};
 
 // Watchers
 watch(
@@ -441,19 +441,19 @@ watch(
   (newValue) => {
     if (!newValue) {
       // Reset al cerrar
-      showRecipientsList.value = false
-      selectedTemplate.value = ""
+      showRecipientsList.value = false;
+      selectedTemplate.value = '';
       if (!isSending.value) {
         emailData.value = {
-          subject: "",
-          message: "",
+          subject: '',
+          message: '',
           sendCopy: false,
           highPriority: false,
-        }
+        };
       }
     }
-  }
-)
+  },
+);
 </script>
 
 <style scoped>

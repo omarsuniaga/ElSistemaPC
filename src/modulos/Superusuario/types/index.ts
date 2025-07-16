@@ -1,18 +1,18 @@
 // src/modulos/Superusuario/types/index.ts
-import type {Permission} from "../../Auth/types/permissions"
-import {UserRole} from "../../Auth/types/permissions"
+import type { Permission } from '../../Auth/types/permissions';
+import { UserRole } from '../../Auth/types/permissions';
 
 // Re-export from Auth types for convenience
-export type {Permission}
-export {UserRole}
+export type { Permission };
+export { UserRole };
 
 // ========== CONFIGURACIÓN DEL SISTEMA ==========
 export interface SystemConfiguration {
   id: string
   name: string
   value: any
-  type: "string" | "number" | "boolean" | "object" | "array"
-  category: "general" | "security" | "performance" | "ui" | "notifications"
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array'
+  category: 'general' | 'security' | 'performance' | 'ui' | 'notifications'
   description: string
   editable: boolean
   createdAt: Date
@@ -56,7 +56,7 @@ export interface ModuleConfiguration {
   availableForRoles: UserRole[]
   icon?: string
   order: number
-  category: "core" | "academic" | "administrative" | "reporting" | "system"
+  category: 'core' | 'academic' | 'administrative' | 'reporting' | 'system'
   components: ComponentConfiguration[]
   views: ViewConfiguration[]
   createdAt: Date
@@ -96,14 +96,14 @@ export interface AuditLog {
   userName: string
   userRole: UserRole
   action:
-    | "CREATE"
-    | "UPDATE"
-    | "DELETE"
-    | "LOGIN"
-    | "LOGOUT"
-    | "PERMISSION_CHANGE"
-    | "ROLE_CHANGE"
-    | "SYSTEM_CONFIG"
+    | 'CREATE'
+    | 'UPDATE'
+    | 'DELETE'
+    | 'LOGIN'
+    | 'LOGOUT'
+    | 'PERMISSION_CHANGE'
+    | 'ROLE_CHANGE'
+    | 'SYSTEM_CONFIG'
   resource: string
   resourceId?: string
   oldValue?: any
@@ -140,7 +140,7 @@ export interface BackupConfiguration {
   id: string
   name: string
   description: string
-  frequency: "daily" | "weekly" | "monthly" | "manual"
+  frequency: 'daily' | 'weekly' | 'monthly' | 'manual'
   includedCollections: string[]
   retentionDays: number
   isActive: boolean
@@ -157,7 +157,7 @@ export interface BackupRecord {
   fileSize: number
   collections: string[]
   documentCount: number
-  status: "pending" | "in_progress" | "completed" | "failed"
+  status: 'pending' | 'in_progress' | 'completed' | 'failed'
   progress?: number
   error?: string
   downloadUrl?: string
@@ -199,7 +199,7 @@ export interface HolidaySchedule {
   name: string
   startDate: Date
   endDate: Date
-  type: "national" | "institutional" | "break"
+  type: 'national' | 'institutional' | 'break'
   isRecurring: boolean
   description?: string
 }
@@ -207,7 +207,7 @@ export interface HolidaySchedule {
 // ========== DASHBOARD DATA ==========
 export interface SuperusuarioDashboardData {
   systemHealth: {
-    status: "healthy" | "warning" | "critical"
+    status: 'healthy' | 'warning' | 'critical'
     uptime: number
     lastError?: Date
     version: string
@@ -232,7 +232,7 @@ export interface SuperusuarioDashboardData {
 
 export interface SystemAlert {
   id: string
-  type: "info" | "warning" | "error" | "success"
+  type: 'info' | 'warning' | 'error' | 'success'
   title: string
   message: string
   timestamp: Date

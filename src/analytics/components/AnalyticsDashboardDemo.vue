@@ -121,19 +121,19 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {useAdvancedAnalytics} from "../composables/useAdvancedAnalytics"
+import { computed } from 'vue';
+import { useAdvancedAnalytics } from '../composables/useAdvancedAnalytics';
 
 // Componentes
-import MetricCard from "./MetricCard.vue"
-import RiskStudentsWidget from "./RiskStudentsWidget.vue"
-import SmartRecommendationsWidget from "./SmartRecommendationsWidget.vue"
-import AlertsWidget from "./AlertsWidget.vue"
-import AttendancePredictionChart from "./AttendancePredictionChart.vue"
-import WeeklyTrendsChart from "./WeeklyTrendsChart.vue"
-import KeyInsightsWidget from "./KeyInsightsWidget.vue"
-import TimeSlotAnalysisWidget from "./TimeSlotAnalysisWidget.vue"
-import SeasonalPatternsWidget from "./SeasonalPatternsWidget.vue"
+import MetricCard from './MetricCard.vue';
+import RiskStudentsWidget from './RiskStudentsWidget.vue';
+import SmartRecommendationsWidget from './SmartRecommendationsWidget.vue';
+import AlertsWidget from './AlertsWidget.vue';
+import AttendancePredictionChart from './AttendancePredictionChart.vue';
+import WeeklyTrendsChart from './WeeklyTrendsChart.vue';
+import KeyInsightsWidget from './KeyInsightsWidget.vue';
+import TimeSlotAnalysisWidget from './TimeSlotAnalysisWidget.vue';
+import SeasonalPatternsWidget from './SeasonalPatternsWidget.vue';
 
 // Composable principal
 const {
@@ -147,38 +147,38 @@ const {
   predictions,
   lastUpdated,
   refreshData,
-} = useAdvancedAnalytics()
+} = useAdvancedAnalytics();
 
 // Datos computados para componentes específicos
 const weeklyTrends = computed(() => [
-  {label: "Lun", value: 85},
-  {label: "Mar", value: 92},
-  {label: "Mié", value: 88},
-  {label: "Jue", value: 94},
-  {label: "Vie", value: 78},
-  {label: "Sáb", value: 65},
-  {label: "Dom", value: 52},
-])
+  { label: 'Lun', value: 85 },
+  { label: 'Mar', value: 92 },
+  { label: 'Mié', value: 88 },
+  { label: 'Jue', value: 94 },
+  { label: 'Vie', value: 78 },
+  { label: 'Sáb', value: 65 },
+  { label: 'Dom', value: 52 },
+]);
 
 const timeSlots = computed(() => [
-  {time: "08:00", attendance: 75, efficiency: 0.75},
-  {time: "09:00", attendance: 85, efficiency: 0.85},
-  {time: "10:00", attendance: 92, efficiency: 0.92},
-  {time: "11:00", attendance: 88, efficiency: 0.88},
-  {time: "14:00", attendance: 82, efficiency: 0.82},
-  {time: "15:00", attendance: 90, efficiency: 0.9},
-  {time: "16:00", attendance: 87, efficiency: 0.87},
-  {time: "17:00", attendance: 78, efficiency: 0.78},
-])
+  { time: '08:00', attendance: 75, efficiency: 0.75 },
+  { time: '09:00', attendance: 85, efficiency: 0.85 },
+  { time: '10:00', attendance: 92, efficiency: 0.92 },
+  { time: '11:00', attendance: 88, efficiency: 0.88 },
+  { time: '14:00', attendance: 82, efficiency: 0.82 },
+  { time: '15:00', attendance: 90, efficiency: 0.9 },
+  { time: '16:00', attendance: 87, efficiency: 0.87 },
+  { time: '17:00', attendance: 78, efficiency: 0.78 },
+]);
 
 function formatDate(date: Date | null): string {
-  if (!date) return "Nunca"
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
+  if (!date) return 'Nunca';
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
 </script>
 

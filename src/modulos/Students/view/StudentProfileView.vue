@@ -1,1273 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import {ref as vueRef} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import {format, isValid} from "date-fns"
-import {es} from "date-fns/locale"
-import {
-  UserIcon,
-  AcademicCapIcon,
-  CalendarIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  BuildingLibraryIcon,
-  ClockIcon,
-  DocumentTextIcon,
-  ChartBarIcon,
-  CameraIcon,
-  MusicalNoteIcon,
-  UserGroupIcon,
-  BookOpenIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ArrowPathIcon,
-  PencilIcon,
-  TrashIcon,
-  CheckIcon,
-  XMarkIcon,
-  IdentificationIcon,
-  BriefcaseIcon,
-  MapPinIcon,
-  ArchiveBoxIcon,
-  DocumentArrowUpIcon,
-  ArrowTopRightOnSquareIcon,
-} from "@heroicons/vue/24/outline"
-import {useStudentsStore} from "../store/students"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useOptimizedAttendance} from "../../Attendance/composables/useOptimizedAttendance"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import PerformanceWidget from "../../Performance/components/PerformanceWidget.vue"
-import FileUpload from "../../../components/FileUpload.vue"
-import StudentAvatar from "../components/StudentAvatar.vue"
-import {useObservationsStore} from "@/stores/observations"
-import type {ObservationData} from "@/stores/observations"
-import {collection, query, where, getDocs, orderBy} from "firebase/firestore"
-import {db} from "../../../firebase/config"
-import {useWhatsAppLogsStore} from "@/stores/whatsappLogs"
-import {generarPdfDesdeHtml} from "@/utils/pdfService"
-import {Line} from "vue-chartjs"
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js"
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
-
-const route = useRoute()
-const router = useRouter()
-const studentsStore = useStudentsStore()
-const classesStore = useClassesStore()
-const attendanceStore = useAttendanceStore()
-const teachersStore = useTeachersStore()
-const observationsStore = useObservationsStore()
-const whatsappLogsStore = useWhatsAppLogsStore()
-
-// Composable optimizado para asistencias
-const {
-  loading: attendanceLoading,
-  error: attendanceError,
-  getStudentRecords,
-  searchByDateRange,
-} = useOptimizedAttendance()
-
-const studentId = route.params.id as string
-const student = computed(() => studentsStore.students.find((s) => s.id.toString() === studentId))
-
-// Función para calcular la edad basada en la fecha de nacimiento
-const calculatedAge = computed(() => {
-  try {
-    if (!student.value?.nac) return "?"
-
-    let birthDate
-    let dateStr: any = student.value.nac
-
-    // Si es un objeto Date, convertirlo a string ISO
-    if (dateStr instanceof Date) {
-      dateStr = dateStr.toISOString().split("T")[0]
-    }
-
-    // Asegurarnos de que es un string
-    dateStr = String(dateStr)
-
-    // Limpiar la fecha de caracteres extra
-    dateStr = dateStr.trim().replace(/[^\d/-]/g, "")
-
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      // Formato YYYY-MM-DD
-      birthDate = new Date(dateStr)
-    } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
-      // Formato DD/MM/YYYY
-      const [day, month, year] = dateStr.split("/").map(Number)
-      birthDate = new Date(year, month - 1, day)
-    } else if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
-      // Formato DD-MM-YYYY
-      const [day, month, year] = dateStr.split("-").map(Number)
-      birthDate = new Date(year, month - 1, day)
-    } else {
-      // Último intento de parsear la fecha
-      birthDate = new Date(dateStr)
-    }
-
-    // Validar que la fecha es válida y está en un rango razonable
-    if (
-      isNaN(birthDate.getTime()) ||
-      birthDate.getFullYear() < 1900 ||
-      birthDate.getFullYear() > new Date().getFullYear()
-    ) {
-      console.error("Fecha de nacimiento inválida o fuera de rango:", dateStr)
-      return "?"
-    }
-
-    // Calcular edad
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-
-    // Ajustar edad si aún no ha llegado el cumpleaños este año
-    const m = today.getMonth() - birthDate.getMonth()
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
-
-    return age
-  } catch (error) {
-    console.error("Error al calcular la edad:", error)
-    return "?"
-  }
-})
-
-// Add the missing classes computed property
-const classes = computed(() => {
-  // If classesStore has classes array, use it to extract the names
-  // Otherwise provide a default set of groups
-  return classesStore.classes && classesStore.classes.length > 0
-    ? Array.from(new Set(classesStore.classes.map((c) => c.name))).filter(
-        (name) => name && typeof name === "string"
-      )
-    : ["Teoría Musical", "Coro", "Orquesta"]
-})
-
-const attendanceData = computed(() => {
-  // Si tenemos datos reales de asistencia, usarlos
-  if (studentAttendance.value && studentAttendance.value.chartData) {
-    const {labels, presentData, absentData, justifiedData, lateData, attendanceRateData} =
-      studentAttendance.value.chartData
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: "% Asistencia",
-          data: attendanceRateData,
-          borderColor: "#3b82f6",
-          backgroundColor: "rgba(59, 130, 246, 0.1)",
-          borderWidth: 3,
-          pointBackgroundColor: "#3b82f6",
-          pointRadius: 5,
-          pointHoverRadius: 7,
-          fill: true,
-          tension: 0.3,
-          type: "line",
-          yAxisID: "y1",
-          order: 0,
-        },
-        {
-          label: "Asistencias",
-          data: presentData,
-          borderColor: "#22c55e",
-          backgroundColor: "rgba(34, 197, 94, 0.7)",
-          borderWidth: 1,
-          yAxisID: "y",
-          order: 1,
-        },
-        {
-          label: "Tardanzas",
-          data: lateData,
-          borderColor: "#f59e0b",
-          backgroundColor: "rgba(245, 158, 11, 0.7)",
-          borderWidth: 1,
-          yAxisID: "y",
-          order: 2,
-        },
-        {
-          label: "Ausencias",
-          data: absentData,
-          borderColor: "#ef4444",
-          backgroundColor: "rgba(239, 68, 68, 0.7)",
-          borderWidth: 1,
-          yAxisID: "y",
-          order: 3,
-        },
-        {
-          label: "Justificadas",
-          data: justifiedData,
-          borderColor: "#a855f7",
-          backgroundColor: "rgba(168, 85, 247, 0.7)",
-          borderWidth: 1,
-          yAxisID: "y",
-          order: 4,
-        },
-      ],
-    }
-  }
-
-  // Si no hay datos reales, usar datos de ejemplo
-  const labels = ["Ene", "Feb", "Mar", "Abr", "May", "Jun"]
-  const present = [12, 10, 14, 8, 10, 11]
-  const absent = [3, 4, 2, 3, 2, 4]
-  const justified = [1, 2, 1, 1, 1, 2]
-  const late = [2, 1, 2, 3, 2, 1]
-  const rate = [80, 75, 85, 70, 80, 75]
-
-  return {
-    labels,
-    datasets: [
-      {
-        label: "% Asistencia",
-        data: rate,
-        borderColor: "#3b82f6",
-        backgroundColor: "rgba(59, 130, 246, 0.1)",
-        borderWidth: 3,
-        pointBackgroundColor: "#3b82f6",
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        fill: true,
-        tension: 0.3,
-        type: "line",
-        yAxisID: "y1",
-        order: 0,
-      },
-      {
-        label: "Asistencias",
-        data: present,
-        borderColor: "#22c55e",
-        backgroundColor: "rgba(34, 197, 94, 0.7)",
-        borderWidth: 1,
-        yAxisID: "y",
-        order: 1,
-      },
-      {
-        label: "Tardanzas",
-        data: late,
-        borderColor: "#f59e0b",
-        backgroundColor: "rgba(245, 158, 11, 0.7)",
-        borderWidth: 1,
-        yAxisID: "y",
-        order: 2,
-      },
-      {
-        label: "Ausencias",
-        data: absent,
-        borderColor: "#ef4444",
-        backgroundColor: "rgba(239, 68, 68, 0.7)",
-        borderWidth: 1,
-        yAxisID: "y",
-        order: 3,
-      },
-      {
-        label: "Justificadas",
-        data: justified,
-        borderColor: "#a855f7",
-        backgroundColor: "rgba(168, 85, 247, 0.7)",
-        borderWidth: 1,
-        yAxisID: "y",
-        order: 4,
-      },
-    ],
-  }
-})
-
-// Obtener y procesar los datos de asistencia del estudiante
-const studentAttendance = computed(() => {
-  if (!student.value || !studentId)
-    return {
-      records: [],
-      summary: {
-        total: 0,
-        present: 0,
-        absent: 0,
-        justified: 0,
-        late: 0,
-        attendanceRate: 0,
-      },
-      classification: "Sin datos",
-      monthlyData: {},
-      recentRecords: [],
-      classPerformance: [],
-    }
-  // Obtener los registros de asistencia del estudiante usando el composable optimizado
-  const attendanceRecords = getStudentRecords.value(studentId)
-
-  // Si no hay registros, devolvemos un objeto vacío
-  if (!attendanceRecords || attendanceRecords.length === 0) {
-    return {
-      records: [],
-      summary: {
-        total: 0,
-        present: 0,
-        absent: 0,
-        justified: 0,
-        late: 0,
-        attendanceRate: 0,
-      },
-      classification: "Sin datos",
-      monthlyData: {},
-      recentRecords: [],
-      classPerformance: [],
-    }
-  }
-
-  // Resumen de asistencias (normalizar estados a minúsculas para consistencia)
-  const present = attendanceRecords.filter(
-    (record) =>
-      record.status?.toLowerCase() === "presente" || record.status?.toLowerCase() === "present"
-  ).length
-
-  const absent = attendanceRecords.filter(
-    (record) =>
-      record.status?.toLowerCase() === "ausente" || record.status?.toLowerCase() === "absent"
-  ).length
-
-  const justified = attendanceRecords.filter(
-    (record) =>
-      (record.status?.toLowerCase() === "ausente" || record.status?.toLowerCase() === "absent") &&
-      record.justification
-  ).length
-
-  const late = attendanceRecords.filter(
-    (record) =>
-      record.status?.toLowerCase() === "tardanza" ||
-      record.status?.toLowerCase() === "tarde" ||
-      record.status?.toLowerCase() === "late"
-  ).length
-
-  const total = attendanceRecords.length
-
-  // Para el cálculo de tasa de asistencia, consideramos presentes + justificados + tarde como "asistencias"
-  const attendedClasses = present + late
-  const attendanceRate = total > 0 ? Math.round((attendedClasses / total) * 100) : 0
-
-  // Clasificación del estudiante según su tasa de asistencia
-  let classification = "Sin datos"
-  if (total > 0) {
-    if (attendanceRate >= 70) {
-      classification = "Responsable"
-    } else if (attendanceRate >= 40) {
-      classification = "Irregular"
-    } else {
-      classification = "Crítico"
-    }
-  }
-
-  // Obtener rendimiento por clase
-  const classPerformance = []
-
-  // Definir tipo para resumen de clases
-  interface ClassSummary {
-    classId: string
-    className: string
-    total: number
-    present: number
-    absent: number
-    justified: number
-    late: number
-    rate: number
-  }
-
-  const classesSummary: Record<string, ClassSummary> = {}
-
-  // Agrupar registros por clase
-  attendanceRecords.forEach((record) => {
-    if (!record.classId) return
-
-    if (!classesSummary[record.classId]) {
-      classesSummary[record.classId] = {
-        classId: record.classId,
-        className: "",
-        total: 0,
-        present: 0,
-        absent: 0,
-        justified: 0,
-        late: 0,
-        rate: 0,
-      }
-    }
-
-    // Obtener nombre de la clase
-    if (!classesSummary[record.classId].className) {
-      const classInfo = classesStore.getClassById
-        ? classesStore.getClassById(record.classId)
-        : classesStore.classes.find((c) => c.id === record.classId)
-
-      if (classInfo) {
-        classesSummary[record.classId].className = classInfo.name || "Clase sin nombre"
-      }
-    }
-
-    classesSummary[record.classId].total++
-
-    if (record.status?.toLowerCase() === "presente" || record.status?.toLowerCase() === "present") {
-      classesSummary[record.classId].present++
-    } else if (
-      record.status?.toLowerCase() === "ausente" ||
-      record.status?.toLowerCase() === "absent"
-    ) {
-      classesSummary[record.classId].absent++
-      if (record.justification) {
-        classesSummary[record.classId].justified++
-      }
-    } else if (
-      record.status?.toLowerCase() === "tardanza" ||
-      record.status?.toLowerCase() === "tarde" ||
-      record.status?.toLowerCase() === "late"
-    ) {
-      classesSummary[record.classId].late++
-    }
-  })
-
-  // Calcular tasa de asistencia para cada clase
-  Object.values(classesSummary).forEach((classData) => {
-    const attended = classData.present + classData.late
-    classData.rate = classData.total > 0 ? Math.round((attended / classData.total) * 100) : 0
-    classPerformance.push(classData)
-  })
-
-  // Ordenar clases por tasa de asistencia (de menor a mayor para resaltar problemas)
-  classPerformance.sort((a, b) => a.rate - b.rate)
-
-  // Datos para la gráfica por mes
-  const monthlyData = attendanceRecords.reduce((acc, record) => {
-    if (!record.Fecha) return acc
-
-    try {
-      // Extraer el mes de la fecha
-      const date = new Date(record.Fecha)
-      const monthYear = format(date, "MMM yyyy", {locale: es})
-
-      if (!acc[monthYear]) {
-        acc[monthYear] = {
-          present: 0,
-          absent: 0,
-          justified: 0,
-          late: 0,
-          total: 0,
-        }
-      }
-
-      acc[monthYear].total++
-
-      if (
-        record.status?.toLowerCase() === "presente" ||
-        record.status?.toLowerCase() === "present"
-      ) {
-        acc[monthYear].present++
-      } else if (
-        record.status?.toLowerCase() === "ausente" ||
-        record.status?.toLowerCase() === "absent"
-      ) {
-        acc[monthYear].absent++
-        if (record.justification) {
-          acc[monthYear].justified++
-        }
-      } else if (
-        record.status?.toLowerCase() === "tardanza" ||
-        record.status?.toLowerCase() === "tarde" ||
-        record.status?.toLowerCase() === "late"
-      ) {
-        acc[monthYear].late++
-      }
-    } catch (error) {
-      console.error("Error al procesar fecha:", record.Fecha, error)
-    }
-
-    return acc
-  }, {})
-
-  // Convertir los datos mensuales para la gráfica
-  const months = Object.keys(monthlyData).slice(-6) // Últimos 6 meses
-  const presentData = months.map((m) => monthlyData[m].present)
-  const absentData = months.map((m) => monthlyData[m].absent)
-  const justifiedData = months.map((m) => monthlyData[m].justified)
-  const lateData = months.map((m) => monthlyData[m].late)
-  const attendanceRateData = months.map((m) => {
-    const attended = monthlyData[m].present + monthlyData[m].late
-    return monthlyData[m].total > 0 ? Math.round((attended / monthlyData[m].total) * 100) : 0
-  })
-
-  // Obtener los últimos 10 registros ordenados por fecha
-  const recentRecords = [...attendanceRecords]
-    .sort((a, b) => {
-      if (!a.Fecha || !b.Fecha) return 0
-      return new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime()
-    })
-    .slice(0, 10)
-    .map((record) => {
-      // Enriquecer los datos con información adicional
-      const classInfo = classesStore.getClassById
-        ? classesStore.getClassById(record.classId)
-        : classesStore.classes.find((c) => c.id === record.classId)
-
-      const teacherInfo =
-        classInfo?.teacherId && teachersStore.getTeacherById
-          ? teachersStore.getTeacherById(classInfo.teacherId)
-          : teachersStore.teachers?.find((t) => t.id === classInfo?.teacherId)
-
-      const recordDate = new Date(record.Fecha)
-      return {
-        ...record,
-        className: classInfo?.name || "Clase desconocida",
-        teacherName: teacherInfo?.name || "Profesor desconocido",
-        formattedDate: recordDate
-          ? format(recordDate, "EEEE d 'de' MMMM yyyy", {locale: es})
-          : "Fecha desconocida",
-        // Format the date day with capitalization for better readability
-        formattedDateCapitalized: recordDate
-          ? format(recordDate, "EEEE d 'de' MMMM yyyy", {locale: es}).replace(/^\w/, (c) =>
-              c.toUpperCase()
-            )
-          : "Fecha desconocida",
-      }
-    })
-
-  return {
-    records: attendanceRecords,
-    summary: {
-      total,
-      present,
-      absent,
-      justified,
-      late,
-      attendanceRate,
-    },
-    classification,
-    chartData: {
-      labels: months,
-      presentData,
-      absentData,
-      justifiedData,
-      lateData,
-      attendanceRateData,
-    },
-    monthlyData,
-    recentRecords,
-    classPerformance,
-  }
-})
-
-// Variables para actualización de datos
-const isRefreshing = ref(false)
-
-// Función para actualizar los datos de asistencia del estudiante desde Firestore
-const refreshAttendanceData = async () => {
-  if (!studentId) return
-
-  try {
-    isRefreshing.value = true
-
-    // Obtener fechas para el rango (últimos 3 meses)
-    const today = new Date()
-    const threeMonthsAgo = new Date(today)
-    threeMonthsAgo.setMonth(today.getMonth() - 3)
-    const startDate = format(threeMonthsAgo, "yyyy-MM-dd")
-    const endDate = format(today, "yyyy-MM-dd")
-
-    // Los datos se cargarán automáticamente en el mounted del componente
-    console.log(`📊 Preparando datos de asistencia para el rango ${startDate} al ${endDate}`)
-
-    // Si hay clases específicas del estudiante, cargar sus documentos de asistencia
-    const studentClassIds = classesStore.classes
-      .filter((c) => c.studentIds?.includes(studentId))
-      .map((c) => c.id)
-
-    if (studentClassIds.length > 0) {
-      // Para cada clase, actualizar también los documentos de asistencia
-      for (const classId of studentClassIds) {
-        await attendanceStore.fetchAttendanceDocument(format(today, "yyyy-MM-dd"), classId)
-      }
-    }
-
-    console.log("✅ Datos de asistencia actualizados desde Firestore")
-  } catch (error) {
-    console.error("Error al actualizar los datos de asistencia:", error)
-  } finally {
-    isRefreshing.value = false
-  }
-}
-
-// Lista reactiva de clases para el estudiante actual
-const studentClasses = computed(() => {
-  if (!student.value || !studentId) {
-    console.log("No hay estudiante seleccionado o ID de estudiante")
-    return []
-  }
-  // Normalizar el ID para asegurar que las comparaciones funcionen
-  const normalizedStudentId = String(studentId)
-
-  // Filtrar clases directamente usando las propiedades disponibles en classesStore.classes
-  // Esto evita conflictos con getters/métodos
-  const classesForStudent = classesStore.classes.filter(
-    (classItem) =>
-      classItem.studentIds &&
-      Array.isArray(classItem.studentIds) &&
-      classItem.studentIds.includes(normalizedStudentId)
-  )
-
-  // Devolver información relevante de las clases
-  return classesForStudent.map((classItem) => {
-    const teacherInfo = classItem.teacherId
-      ? teachersStore.getTeacherById(classItem.teacherId)
-      : null
-    const teacherName = teacherInfo ? teacherInfo.name : null
-
-    return {
-      id: classItem.id,
-      name: classItem.name || "Clase sin nombre",
-      teacher:
-        teacherName ||
-        (classItem.teacherId ? `Profesor (ID: ${classItem.teacherId})` : "Sin profesor asignado"),
-      level: classItem.level || "Nivel no especificado",
-      schedule:
-        classItem.schedule && classItem.schedule.slots
-          ? classItem.schedule.slots
-              .map((slot) => `${slot.day} ${slot.startTime}-${slot.endTime}`)
-              .join(", ")
-          : "Horario no definido",
-    }
-  })
-})
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "top" as const,
-      labels: {
-        usePointStyle: true,
-        padding: 15,
-      },
-    },
-    tooltip: {
-      mode: "index",
-      intersect: false,
-      callbacks: {
-        label(context) {
-          let label = context.dataset.label || ""
-          if (label) {
-            label += ": "
-          }
-          if (context.parsed.y !== null) {
-            if (context.dataset.yAxisID === "y1") {
-              label += context.parsed.y + "%"
-            } else {
-              label += context.parsed.y
-            }
-          }
-          return label
-        },
-      },
-    },
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      title: {
-        display: true,
-        text: "Cantidad de asistencias",
-        color: "#6b7280",
-      },
-      grid: {
-        color: "rgba(160, 174, 192, 0.1)",
-      },
-      ticks: {
-        color: "#6b7280",
-      },
-    },
-    y1: {
-      beginAtZero: true,
-      position: "right",
-      max: 100,
-      title: {
-        display: true,
-        text: "Porcentaje (%)",
-        color: "#3b82f6",
-      },
-      grid: {
-        drawOnChartArea: false,
-      },
-      ticks: {
-        color: "#3b82f6",
-        callback(value) {
-          return value + "%"
-        },
-      },
-    },
-    x: {
-      grid: {
-        color: "rgba(160, 174, 192, 0.1)",
-      },
-      ticks: {
-        color: "#6b7280",
-      },
-    },
-  },
-  interaction: {
-    mode: "index",
-    intersect: false,
-  },
-}
-
-const isUploading = ref(false)
-const showDeleteConfirm = ref(false)
-const isDeleting = ref(false)
-
-// Función para manejar errores de carga de imágenes
-const handleImageError = (event: Event) => {
-  const imgElement = event.target as HTMLImageElement
-  const fallbackUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.value?.nombre || "default"}`
-  console.log(
-    "[StudentProfileView] Error al cargar imagen de avatar, usando fallback:",
-    fallbackUrl
-  )
-  imgElement.src = fallbackUrl
-}
-
-// Reemplazar la función actual por esta
-const handleProfilePhotoUpload = async (url) => {
-  if (!student.value) return
-
-  isUploading.value = true
-  try {
-    console.log("[StudentProfileView] URL de foto recibida:", url)
-
-    // Verificar que sea una URL válida de Firebase Storage
-    if (!url || !url.includes("firebasestorage.googleapis.com")) {
-      console.error("[StudentProfileView] URL inválida:", url)
-      throw new Error("La URL de la imagen no es válida")
-    }
-
-    await studentsStore.updateStudent(studentId, {photoURL: url})
-    console.log("[StudentProfileView] Avatar actualizado correctamente")
-  } catch (error) {
-    console.error("Error actualizando foto de perfil:", error)
-  } finally {
-    isUploading.value = false
-  }
-}
-
-const handleDocumentUpload = async (files: FileList, documentType: string) => {
-  if (!student.value || !files.length) return
-
-  isUploading.value = true
-  try {
-    const file = files[0]
-    const path = `documents/${student.value.id}/${documentType}/${file.name}`
-    const url = await uploadFile(file, path)
-
-    const documentos = {
-      ...(student.value.documentos || {}),
-      [documentType]: {
-        url,
-        fecha: new Date().toISOString(),
-      },
-    }
-
-    await studentsStore.updateStudent(studentId, {
-      ...student.value,
-      documentos,
-    })
-  } catch (error) {
-    console.error("Error uploading document:", error)
-    // Add error handling/notification here
-  } finally {
-    isUploading.value = false
-  }
-}
-
-const isEditing = ref(false)
-// Define a type for localStudent that matches the student structure
-type StudentType = typeof student.value
-const localStudent = ref({} as StudentType)
-
-// Extract unique instruments from all students
-const uniqueInstruments = computed(() => {
-  // Create a Set to automatically handle uniqueness
-  const instrumentSet = new Set()
-
-  // Extract instruments from all students
-  studentsStore.students.forEach((student) => {
-    if (student.instrumento && student.instrumento.trim() !== "") {
-      instrumentSet.add(student.instrumento)
-    }
-  })
-
-  // Convert Set to Array and sort alphabetically
-  return Array.from(instrumentSet).sort()
-})
-
-// Extract unique groups from all students
-const uniqueGroups = computed(() => {
-  // Create a Set to automatically handle uniqueness
-  const groupSet = new Set()
-
-  // Extract groups from all students
-  studentsStore.students.forEach((student) => {
-    // Check if grupo property exists and is an array
-    if (student.grupo && Array.isArray(student.grupo)) {
-      // Add each group to the set
-      student.grupo.forEach((group) => {
-        if (group && typeof group === "string" && group.trim() !== "") {
-          groupSet.add(group.trim())
-        }
-      })
-    }
-    // Handle case where grupo might be a string
-    else if (student.grupo && typeof student.grupo === "string" && student.grupo.trim() !== "") {
-      groupSet.add(student.grupo.trim())
-    }
-  })
-
-  // Convert Set to Array and sort alphabetically
-  return Array.from(groupSet).sort()
-})
-
-// Extract unique classes from all students (using grupos values as classes)
-const availableClasses = computed(() => {
-  // Create a Set to automatically handle uniqueness
-  const classSet = new Set()
-
-  // Extract classes from students' grupo property
-  studentsStore.students.forEach((student) => {
-    // Add regular clase values
-    if (student.clase && typeof student.clase === "string" && student.clase.trim() !== "") {
-      classSet.add(student.clase.trim())
-    }
-    // Add values from grupo arrays as potential classes
-    if (student.grupo) {
-      // Handle grupo as array
-      if (Array.isArray(student.grupo)) {
-        student.grupo.forEach((group) => {
-          if (group && typeof group === "string" && group.trim() !== "") {
-            classSet.add(group.trim())
-          }
-        })
-      }
-      // Handle grupo as string that looks like an array "[item1,item2]"
-      else if (
-        typeof student.grupo === "string" &&
-        student.grupo.startsWith("[") &&
-        student.grupo.endsWith("]")
-      ) {
-        try {
-          const parsed = JSON.parse(student.grupo)
-          if (Array.isArray(parsed)) {
-            parsed.forEach((item) => {
-              if (item && typeof item === "string" && item.trim() !== "") {
-                classSet.add(item.trim())
-              }
-            })
-          } else {
-            // If parsing doesn't result in array, use as string
-            classSet.add(student.grupo.trim())
-          }
-        } catch (e) {
-          // If parsing fails, use as string
-          if (student.grupo.trim() !== "") {
-            classSet.add(student.grupo.trim())
-          }
-        }
-      }
-      // Handle grupo as simple string (fallback)
-      else if (typeof student.grupo === "string" && student.grupo?.trim() !== "") {
-        classSet.add(student.grupo.trim())
-      }
-    }
-  })
-
-  // Convert Set to Array and sort alphabetically
-  return Array.from(classSet).sort()
-})
-
-watch(
-  student,
-  (newStudent) => {
-    if (newStudent) {
-      localStudent.value = {...newStudent}
-    }
-  },
-  {immediate: true}
-)
-
-const handleEdit = () => {
-  if (student.value?.id) {
-    router.push(`/students/edit/${student.value.id}`)
-  } else {
-    console.error("No se pudo obtener el ID del estudiante")
-  }
-}
-
-const handleSave = async () => {
-  if (isSaving.value) return
-
-  isSaving.value = true
-
-  try {
-    // Crear un objeto solo con los campos que queremos actualizar
-    const updates: any = {
-      ...localStudent.value,
-      updatedAt: new Date(),
-    }
-
-    // Actualizar la edad con el valor calculado antes de guardar
-    if (localStudent.value.nac) {
-      const calculatedAgeValue = calculatedAge.value
-      if (typeof calculatedAgeValue === "number") {
-        updates.edad = calculatedAgeValue
-      }
-    }
-
-    // Eliminar campos que no deberían actualizarse
-    delete updates.id
-    delete updates.createdAt
-
-    console.log("Actualizando estudiante con datos:", updates)
-
-    await studentsStore.updateStudent(studentId, updates)
-
-    // Actualizar los datos locales con los datos actualizados del store
-    const updatedStudent = studentsStore.getStudentById(studentId)
-    if (updatedStudent) {
-      localStudent.value = {...updatedStudent}
-    }
-
-    isEditing.value = false
-    showNotification("Cambios guardados correctamente", "success")
-  } catch (error) {
-    console.error("Error al guardar cambios:", error)
-    showNotification("Error al guardar los cambios. Por favor, inténtalo de nuevo.", "error")
-  } finally {
-    isSaving.value = false
-  }
-}
-
-const handleDelete = () => {
-  showDeleteConfirm.value = true
-}
-
-const confirmDelete = async () => {
-  if (!student.value?.id) return
-  isDeleting.value = true
-  try {
-    await studentsStore.deleteStudent(student.value.id)
-    showDeleteConfirm.value = false
-    isDeleting.value = false
-    // Redirigir a la lista de alumnos tras eliminar
-    router.push("/students")
-  } catch (error) {
-    isDeleting.value = false
-    showDeleteConfirm.value = false
-    console.error("Error al eliminar alumno:", error)
-    // Aquí podrías mostrar un toast o alerta
-  }
-}
-
-// onMounted para cargar los datos necesarios del estudiante
-onMounted(async () => {
-  // Cargar el id de estudiante desde la ruta
-  const studentId = route.params.id as string
-
-  // Verificar si tenemos un ID de estudiante válido
-  if (studentId) {
-    try {
-      isRefreshing.value = true
-      console.log("🔄 Cargando datos del estudiante:", studentId)
-
-      // Asegurar que los estudiantes estén cargados
-      if (studentsStore.students.length === 0) {
-        await studentsStore.fetchStudents()
-      }
-
-      // Asegurar que tenemos el estudiante actual
-      if (!student.value) {
-        await studentsStore.fetchStudentById(studentId)
-      }
-
-      // Cargar las clases específicas para este estudiante desde Firestore
-      await classesStore.fetchClassesByStudentId(studentId)
-
-      // Si tenemos IDs de profesores, cargarlos también
-      if (classesStore.classes.length > 0) {
-        const teacherIds = new Set<string>()
-
-        // Recopilar todos los IDs de profesores de las clases del estudiante
-        classesStore.classes
-          .filter((c) => c.studentIds?.includes(studentId))
-          .forEach((c) => {
-            if (c.teacherId) teacherIds.add(c.teacherId)
-          })
-
-        // Cargar información de los profesores si no la tenemos ya
-        if (teacherIds.size > 0 && teachersStore.teachers.length === 0) {
-          await teachersStore.fetchTeachers()
-        }
-
-        // Obtener todas las clases del estudiante
-        const studentClassIds = classesStore.classes
-          .filter((c) => c.studentIds?.includes(studentId))
-          .map((c) => c.id)
-        // Cargar las asistencias para cada clase
-        try {
-          // Obtener fechas para el rango (últimos 3 meses)
-          const today = new Date()
-          const threeMonthsAgo = new Date(today)
-          threeMonthsAgo.setMonth(today.getMonth() - 3)
-
-          const startDate = format(threeMonthsAgo, "yyyy-MM-dd")
-          const endDate = format(today, "yyyy-MM-dd")
-
-          // Cargar registros de asistencia usando el composable optimizado
-          console.log(`🔄 Cargando asistencias del ${startDate} al ${endDate}`)
-          await searchByDateRange(startDate, endDate)
-
-          console.log("✅ Registros de asistencia cargados correctamente")
-        } catch (error) {
-          console.error("❌ Error al cargar registros de asistencia:", error)
-        }
-      }
-
-      console.log("✅ Datos del estudiante cargados correctamente")
-    } catch (error) {
-      console.error("❌ Error al cargar datos del estudiante:", error)
-    } finally {
-      isRefreshing.value = false
-    }
-  } else {
-    console.error("❌ ID de estudiante no válido:", studentId)
-  }
-})
-
-// Función para determinar la información de contacto
-const contactInfo = computed(() => {
-  if (!student.value) return null
-
-  const contacts = []
-
-  // Agregar teléfono del estudiante si existe y es válido
-  if (student.value.tlf && student.value.tlf !== "Vacio" && student.value.tlf.trim()) {
-    contacts.push({number: student.value.tlf.trim(), type: "Personal"})
-  }
-
-  // Agregar teléfono de la madre si existe y es válido
-  if (
-    student.value.tlf_madre &&
-    student.value.tlf_madre !== "Vacio" &&
-    student.value.tlf_madre.trim()
-  ) {
-    contacts.push({number: student.value.tlf_madre.trim(), type: "Madre"})
-  }
-
-  // Agregar teléfono del padre si existe y es válido
-  if (
-    student.value.tlf_padre &&
-    student.value.tlf_padre !== "Vacio" &&
-    student.value.tlf_padre.trim()
-  ) {
-    contacts.push({number: student.value.tlf_padre.trim(), type: "Padre"})
-  }
-
-  return contacts
-})
-
-// Función para calcular la fecha de inscripción
-const inscriptionDate = computed(() => {
-  if (!student.value) return null
-
-  let date = null
-
-  // Primero intentar usar la fecha de inscripción explícita si existe
-  if (student.value.fecInscripcion) {
-    const parsedDate = new Date(student.value.fecInscripcion)
-    if (!isNaN(parsedDate.getTime())) {
-      date = parsedDate
-    }
-  }
-
-  // Si no hay fecha de inscripción explícita, intentar con createdAt
-  if (!date && student.value.createdAt) {
-    if (typeof student.value.createdAt === "number") {
-      date = new Date(student.value.createdAt)
-    } else if (typeof student.value.createdAt === "string") {
-      date = new Date(student.value.createdAt)
-    } else if (student.value.createdAt?.toDate) {
-      date = student.value.createdAt.toDate()
-    }
-  }
-
-  // Si aún no tenemos fecha, intentar con el ID numérico como último recurso
-  if (!date && /^\d+$/.test(student.value.id)) {
-    const timestamp = parseInt(student.value.id)
-    // Verificar que el timestamp parece válido (después de 2000 y antes de ahora)
-    if (timestamp > 946684800000 && timestamp < Date.now()) {
-      date = new Date(timestamp)
-    }
-  }
-
-  return date
-})
-
-// Función para formatear fechas de manera consistente
-const formatDate = (date) => {
-  if (!date || !isValid(new Date(date))) return "Fecha no disponible"
-  return format(new Date(date), "dd/MM/yyyy", {locale: es})
-}
-
-const handleDocumentDelete = async (documentType) => {
-  try {
-    const documentos = {...student.value.documentos}
-    delete documentos[documentType]
-    await studentsStore.updateStudent(studentId, {
-      ...student.value,
-      documentos,
-    })
-  } catch (error) {
-    console.error("Error deleting document:", error)
-  }
-}
-
-const isDocumentPDF = (documentType) => {
-  return student.value?.documentos?.[documentType]?.url?.toLowerCase().endsWith(".pdf")
-}
-
-const isDocumentImage = (documentType) => {
-  const url = student.value?.documentos?.[documentType]?.url?.toLowerCase()
-  return url?.endsWith(".jpg") || url?.endsWith(".jpeg") || url?.endsWith(".png")
-}
-
-// Date range for attendance records - default to last month
-const dateRange = ref({
-  start: format(new Date(new Date().setMonth(new Date().getMonth() - 1)), "yyyy-MM-dd"),
-  end: format(new Date(), "yyyy-MM-dd"),
-})
-
-// Reset date range to initial state (last month to current date)
-const resetDateRange = () => {
-  dateRange.value = {
-    start: format(new Date(new Date().setMonth(new Date().getMonth() - 1)), "yyyy-MM-dd"),
-    end: format(new Date(), "yyyy-MM-dd"),
-  }
-}
-
-// Filtered attendance records based on date range
-const filteredAttendanceRecords = computed(() => {
-  if (!studentAttendance.value.records) return []
-
-  // Use recentRecords for formatting but filter by the date range
-  const filtered = studentAttendance.value.recentRecords.filter((record) => {
-    if (!record.Fecha) return false
-
-    try {
-      const recordDate = new Date(record.Fecha)
-      const startDate = new Date(dateRange.value.start)
-      const endDate = new Date(dateRange.value.end)
-
-      // Validate dates
-      if (isNaN(recordDate.getTime())) return false
-
-      // Filter by date range
-      if (isValid(startDate) && recordDate < startDate) return false
-      if (isValid(endDate) && recordDate > endDate) return false
-
-      return true
-    } catch (error) {
-      console.error("Error filtering date:", error)
-      return false
-    }
-  })
-
-  // Sort by date (most recent first)
-  return [...filtered].sort((a, b) => {
-    if (!a.Fecha || !b.Fecha) return 0
-    return new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime()
-  })
-})
-
-// Métodos para el widget de rendimiento
-const handleViewPerformanceDetails = () => {
-  // Navegar a una vista detallada de rendimiento
-  router.push(`/students/${studentId}/performance`)
-}
-
-const handleViewRecommendations = () => {
-  // Navegar a las recomendaciones específicas del estudiante
-  router.push(`/students/${studentId}/recommendations`)
-}
-
-const handleExpandPerformance = () => {
-  // Expandir el widget de rendimiento en una vista modal o pantalla completa
-  // Por ahora simplemente navegamos a los detalles
-  handleViewPerformanceDetails()
-}
-
-// Rango de fechas para filtrar observaciones (por defecto últimos 6 meses)
-const today = new Date()
-const sixMonthsAgo = new Date()
-sixMonthsAgo.setMonth(today.getMonth() - 6)
-const obsDateRange = ref({
-  start: sixMonthsAgo.toISOString().split("T")[0],
-  end: today.toISOString().split("T")[0],
-})
-
-const studentObservations = computed<ObservationData[]>(() => {
-  if (!student.value || !student.value.id) return []
-  return observationsStore.getObservationsByStudentIdAndDateRange(
-    student.value.id,
-    obsDateRange.value.start,
-    obsDateRange.value.end
-  )
-})
-
-// Historial de mensajes WhatsApp usando el store
-const whatsappDateRange = ref({
-  start: sixMonthsAgo.toISOString().split("T")[0],
-  end: today.toISOString().split("T")[0],
-})
-
-const loadWhatsAppLogs = async () => {
-  if (!student.value || !student.value.id) return
-  await whatsappLogsStore.fetchLogsByStudentIdAndDateRange(
-    student.value.id,
-    whatsappDateRange.value.start,
-    whatsappDateRange.value.end
-  )
-}
-
-watch([() => student.value?.id, whatsappDateRange], loadWhatsAppLogs, {immediate: true})
-
-onMounted(async () => {
-  if (student.value && student.value.id) {
-    await observationsStore.fetchObservations({studentId: student.value.id})
-  }
-})
-
-const exportProfileToPDF = async () => {
-  const nombre = student.value ? `${student.value.nombre}_${student.value.apellido}` : "Alumno"
-  await generarPdfDesdeHtml({
-    elementId: "student-profile-pdf",
-    filename: `Perfil_${nombre}.pdf`,
-    logoUrl: new URL("@/assets/ElSistemaPCLogo.jpeg", import.meta.url).href,
-    institutionName: "El Sistema Punta Cana",
-    footerText: "Documento generado automáticamente por El Sistema PC",
-    margin: 10,
-  })
-}
-</script>
-
 <template>
   <div>
     <div class="flex justify-end mb-4">
@@ -1749,6 +479,1276 @@ const exportProfileToPDF = async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue';
+import { ref as vueRef } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { format, isValid } from 'date-fns';
+import { es } from 'date-fns/locale';
+import {
+  UserIcon,
+  AcademicCapIcon,
+  CalendarIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  BuildingLibraryIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  ChartBarIcon,
+  CameraIcon,
+  MusicalNoteIcon,
+  UserGroupIcon,
+  BookOpenIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+  PencilIcon,
+  TrashIcon,
+  CheckIcon,
+  XMarkIcon,
+  IdentificationIcon,
+  BriefcaseIcon,
+  MapPinIcon,
+  ArchiveBoxIcon,
+  DocumentArrowUpIcon,
+  ArrowTopRightOnSquareIcon,
+} from '@heroicons/vue/24/outline';
+import { useStudentsStore } from '../store/students';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useAttendance } from '../../Attendance/composables/useAttendance';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import PerformanceWidget from '../../Performance/components/PerformanceWidget.vue';
+import FileUpload from '../../../components/FileUpload.vue';
+import StudentAvatar from '../components/StudentAvatar.vue';
+import { useObservationsStore } from '@/stores/observations';
+import type { ObservationData } from '@/stores/observations';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { db } from '../../../firebase/config';
+import { useWhatsAppLogsStore } from '@/stores/whatsappLogs';
+import { generarPdfDesdeHtml } from '@/utils/pdfService';
+import { Line } from 'vue-chartjs';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
+const route = useRoute();
+const router = useRouter();
+const studentsStore = useStudentsStore();
+const classesStore = useClassesStore();
+const attendanceStore = useAttendanceStore();
+const teachersStore = useTeachersStore();
+const observationsStore = useObservationsStore();
+const whatsappLogsStore = useWhatsAppLogsStore();
+
+// Composable optimizado para asistencias
+const {
+  loading: attendanceLoading,
+  error: attendanceError,
+  getStudentRecords,
+  searchByDateRange,
+} = useOptimizedAttendance();
+
+const studentId = route.params.id as string;
+const student = computed(() => studentsStore.students.find((s) => s.id.toString() === studentId));
+
+// Función para calcular la edad basada en la fecha de nacimiento
+const calculatedAge = computed(() => {
+  try {
+    if (!student.value?.nac) return '?';
+
+    let birthDate;
+    let dateStr: any = student.value.nac;
+
+    // Si es un objeto Date, convertirlo a string ISO
+    if (dateStr instanceof Date) {
+      dateStr = dateStr.toISOString().split('T')[0];
+    }
+
+    // Asegurarnos de que es un string
+    dateStr = String(dateStr);
+
+    // Limpiar la fecha de caracteres extra
+    dateStr = dateStr.trim().replace(/[^\d/-]/g, '');
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      // Formato YYYY-MM-DD
+      birthDate = new Date(dateStr);
+    } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+      // Formato DD/MM/YYYY
+      const [day, month, year] = dateStr.split('/').map(Number);
+      birthDate = new Date(year, month - 1, day);
+    } else if (/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+      // Formato DD-MM-YYYY
+      const [day, month, year] = dateStr.split('-').map(Number);
+      birthDate = new Date(year, month - 1, day);
+    } else {
+      // Último intento de parsear la fecha
+      birthDate = new Date(dateStr);
+    }
+
+    // Validar que la fecha es válida y está en un rango razonable
+    if (
+      isNaN(birthDate.getTime()) ||
+      birthDate.getFullYear() < 1900 ||
+      birthDate.getFullYear() > new Date().getFullYear()
+    ) {
+      console.error('Fecha de nacimiento inválida o fuera de rango:', dateStr);
+      return '?';
+    }
+
+    // Calcular edad
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+
+    // Ajustar edad si aún no ha llegado el cumpleaños este año
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    return age;
+  } catch (error) {
+    console.error('Error al calcular la edad:', error);
+    return '?';
+  }
+});
+
+// Add the missing classes computed property
+const classes = computed(() => {
+  // If classesStore has classes array, use it to extract the names
+  // Otherwise provide a default set of groups
+  return classesStore.classes && classesStore.classes.length > 0
+    ? Array.from(new Set(classesStore.classes.map((c) => c.name))).filter(
+      (name) => name && typeof name === 'string',
+    )
+    : ['Teoría Musical', 'Coro', 'Orquesta'];
+});
+
+const attendanceData = computed(() => {
+  // Si tenemos datos reales de asistencia, usarlos
+  if (studentAttendance.value && studentAttendance.value.chartData) {
+    const { labels, presentData, absentData, justifiedData, lateData, attendanceRateData } =
+      studentAttendance.value.chartData;
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: '% Asistencia',
+          data: attendanceRateData,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 3,
+          pointBackgroundColor: '#3b82f6',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          fill: true,
+          tension: 0.3,
+          type: 'line',
+          yAxisID: 'y1',
+          order: 0,
+        },
+        {
+          label: 'Asistencias',
+          data: presentData,
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34, 197, 94, 0.7)',
+          borderWidth: 1,
+          yAxisID: 'y',
+          order: 1,
+        },
+        {
+          label: 'Tardanzas',
+          data: lateData,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.7)',
+          borderWidth: 1,
+          yAxisID: 'y',
+          order: 2,
+        },
+        {
+          label: 'Ausencias',
+          data: absentData,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.7)',
+          borderWidth: 1,
+          yAxisID: 'y',
+          order: 3,
+        },
+        {
+          label: 'Justificadas',
+          data: justifiedData,
+          borderColor: '#a855f7',
+          backgroundColor: 'rgba(168, 85, 247, 0.7)',
+          borderWidth: 1,
+          yAxisID: 'y',
+          order: 4,
+        },
+      ],
+    };
+  }
+
+  // Si no hay datos reales, usar datos de ejemplo
+  const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+  const present = [12, 10, 14, 8, 10, 11];
+  const absent = [3, 4, 2, 3, 2, 4];
+  const justified = [1, 2, 1, 1, 1, 2];
+  const late = [2, 1, 2, 3, 2, 1];
+  const rate = [80, 75, 85, 70, 80, 75];
+
+  return {
+    labels,
+    datasets: [
+      {
+        label: '% Asistencia',
+        data: rate,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 3,
+        pointBackgroundColor: '#3b82f6',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.3,
+        type: 'line',
+        yAxisID: 'y1',
+        order: 0,
+      },
+      {
+        label: 'Asistencias',
+        data: present,
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+        borderWidth: 1,
+        yAxisID: 'y',
+        order: 1,
+      },
+      {
+        label: 'Tardanzas',
+        data: late,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.7)',
+        borderWidth: 1,
+        yAxisID: 'y',
+        order: 2,
+      },
+      {
+        label: 'Ausencias',
+        data: absent,
+        borderColor: '#ef4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+        borderWidth: 1,
+        yAxisID: 'y',
+        order: 3,
+      },
+      {
+        label: 'Justificadas',
+        data: justified,
+        borderColor: '#a855f7',
+        backgroundColor: 'rgba(168, 85, 247, 0.7)',
+        borderWidth: 1,
+        yAxisID: 'y',
+        order: 4,
+      },
+    ],
+  };
+});
+
+// Obtener y procesar los datos de asistencia del estudiante
+const studentAttendance = computed(() => {
+  if (!student.value || !studentId)
+    return {
+      records: [],
+      summary: {
+        total: 0,
+        present: 0,
+        absent: 0,
+        justified: 0,
+        late: 0,
+        attendanceRate: 0,
+      },
+      classification: 'Sin datos',
+      monthlyData: {},
+      recentRecords: [],
+      classPerformance: [],
+    };
+  // Obtener los registros de asistencia del estudiante usando el composable optimizado
+  const attendanceRecords = getStudentRecords.value(studentId);
+
+  // Si no hay registros, devolvemos un objeto vacío
+  if (!attendanceRecords || attendanceRecords.length === 0) {
+    return {
+      records: [],
+      summary: {
+        total: 0,
+        present: 0,
+        absent: 0,
+        justified: 0,
+        late: 0,
+        attendanceRate: 0,
+      },
+      classification: 'Sin datos',
+      monthlyData: {},
+      recentRecords: [],
+      classPerformance: [],
+    };
+  }
+
+  // Resumen de asistencias (normalizar estados a minúsculas para consistencia)
+  const present = attendanceRecords.filter(
+    (record) =>
+      record.status?.toLowerCase() === 'presente' || record.status?.toLowerCase() === 'present',
+  ).length;
+
+  const absent = attendanceRecords.filter(
+    (record) =>
+      record.status?.toLowerCase() === 'ausente' || record.status?.toLowerCase() === 'absent',
+  ).length;
+
+  const justified = attendanceRecords.filter(
+    (record) =>
+      (record.status?.toLowerCase() === 'ausente' || record.status?.toLowerCase() === 'absent') &&
+      record.justification,
+  ).length;
+
+  const late = attendanceRecords.filter(
+    (record) =>
+      record.status?.toLowerCase() === 'tardanza' ||
+      record.status?.toLowerCase() === 'tarde' ||
+      record.status?.toLowerCase() === 'late',
+  ).length;
+
+  const total = attendanceRecords.length;
+
+  // Para el cálculo de tasa de asistencia, consideramos presentes + justificados + tarde como "asistencias"
+  const attendedClasses = present + late;
+  const attendanceRate = total > 0 ? Math.round((attendedClasses / total) * 100) : 0;
+
+  // Clasificación del estudiante según su tasa de asistencia
+  let classification = 'Sin datos';
+  if (total > 0) {
+    if (attendanceRate >= 70) {
+      classification = 'Responsable';
+    } else if (attendanceRate >= 40) {
+      classification = 'Irregular';
+    } else {
+      classification = 'Crítico';
+    }
+  }
+
+  // Obtener rendimiento por clase
+  const classPerformance = [];
+
+  // Definir tipo para resumen de clases
+  interface ClassSummary {
+    classId: string
+    className: string
+    total: number
+    present: number
+    absent: number
+    justified: number
+    late: number
+    rate: number
+  }
+
+  const classesSummary: Record<string, ClassSummary> = {};
+
+  // Agrupar registros por clase
+  attendanceRecords.forEach((record) => {
+    if (!record.classId) return;
+
+    if (!classesSummary[record.classId]) {
+      classesSummary[record.classId] = {
+        classId: record.classId,
+        className: '',
+        total: 0,
+        present: 0,
+        absent: 0,
+        justified: 0,
+        late: 0,
+        rate: 0,
+      };
+    }
+
+    // Obtener nombre de la clase
+    if (!classesSummary[record.classId].className) {
+      const classInfo = classesStore.getClassById
+        ? classesStore.getClassById(record.classId)
+        : classesStore.classes.find((c) => c.id === record.classId);
+
+      if (classInfo) {
+        classesSummary[record.classId].className = classInfo.name || 'Clase sin nombre';
+      }
+    }
+
+    classesSummary[record.classId].total++;
+
+    if (record.status?.toLowerCase() === 'presente' || record.status?.toLowerCase() === 'present') {
+      classesSummary[record.classId].present++;
+    } else if (
+      record.status?.toLowerCase() === 'ausente' ||
+      record.status?.toLowerCase() === 'absent'
+    ) {
+      classesSummary[record.classId].absent++;
+      if (record.justification) {
+        classesSummary[record.classId].justified++;
+      }
+    } else if (
+      record.status?.toLowerCase() === 'tardanza' ||
+      record.status?.toLowerCase() === 'tarde' ||
+      record.status?.toLowerCase() === 'late'
+    ) {
+      classesSummary[record.classId].late++;
+    }
+  });
+
+  // Calcular tasa de asistencia para cada clase
+  Object.values(classesSummary).forEach((classData) => {
+    const attended = classData.present + classData.late;
+    classData.rate = classData.total > 0 ? Math.round((attended / classData.total) * 100) : 0;
+    classPerformance.push(classData);
+  });
+
+  // Ordenar clases por tasa de asistencia (de menor a mayor para resaltar problemas)
+  classPerformance.sort((a, b) => a.rate - b.rate);
+
+  // Datos para la gráfica por mes
+  const monthlyData = attendanceRecords.reduce((acc, record) => {
+    if (!record.Fecha) return acc;
+
+    try {
+      // Extraer el mes de la fecha
+      const date = new Date(record.Fecha);
+      const monthYear = format(date, 'MMM yyyy', { locale: es });
+
+      if (!acc[monthYear]) {
+        acc[monthYear] = {
+          present: 0,
+          absent: 0,
+          justified: 0,
+          late: 0,
+          total: 0,
+        };
+      }
+
+      acc[monthYear].total++;
+
+      if (
+        record.status?.toLowerCase() === 'presente' ||
+        record.status?.toLowerCase() === 'present'
+      ) {
+        acc[monthYear].present++;
+      } else if (
+        record.status?.toLowerCase() === 'ausente' ||
+        record.status?.toLowerCase() === 'absent'
+      ) {
+        acc[monthYear].absent++;
+        if (record.justification) {
+          acc[monthYear].justified++;
+        }
+      } else if (
+        record.status?.toLowerCase() === 'tardanza' ||
+        record.status?.toLowerCase() === 'tarde' ||
+        record.status?.toLowerCase() === 'late'
+      ) {
+        acc[monthYear].late++;
+      }
+    } catch (error) {
+      console.error('Error al procesar fecha:', record.Fecha, error);
+    }
+
+    return acc;
+  }, {});
+
+  // Convertir los datos mensuales para la gráfica
+  const months = Object.keys(monthlyData).slice(-6); // Últimos 6 meses
+  const presentData = months.map((m) => monthlyData[m].present);
+  const absentData = months.map((m) => monthlyData[m].absent);
+  const justifiedData = months.map((m) => monthlyData[m].justified);
+  const lateData = months.map((m) => monthlyData[m].late);
+  const attendanceRateData = months.map((m) => {
+    const attended = monthlyData[m].present + monthlyData[m].late;
+    return monthlyData[m].total > 0 ? Math.round((attended / monthlyData[m].total) * 100) : 0;
+  });
+
+  // Obtener los últimos 10 registros ordenados por fecha
+  const recentRecords = [...attendanceRecords]
+    .sort((a, b) => {
+      if (!a.Fecha || !b.Fecha) return 0;
+      return new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime();
+    })
+    .slice(0, 10)
+    .map((record) => {
+      // Enriquecer los datos con información adicional
+      const classInfo = classesStore.getClassById
+        ? classesStore.getClassById(record.classId)
+        : classesStore.classes.find((c) => c.id === record.classId);
+
+      const teacherInfo =
+        classInfo?.teacherId && teachersStore.getTeacherById
+          ? teachersStore.getTeacherById(classInfo.teacherId)
+          : teachersStore.teachers?.find((t) => t.id === classInfo?.teacherId);
+
+      const recordDate = new Date(record.Fecha);
+      return {
+        ...record,
+        className: classInfo?.name || 'Clase desconocida',
+        teacherName: teacherInfo?.name || 'Profesor desconocido',
+        formattedDate: recordDate
+          ? format(recordDate, 'EEEE d \'de\' MMMM yyyy', { locale: es })
+          : 'Fecha desconocida',
+        // Format the date day with capitalization for better readability
+        formattedDateCapitalized: recordDate
+          ? format(recordDate, 'EEEE d \'de\' MMMM yyyy', { locale: es }).replace(/^\w/, (c) =>
+            c.toUpperCase(),
+          )
+          : 'Fecha desconocida',
+      };
+    });
+
+  return {
+    records: attendanceRecords,
+    summary: {
+      total,
+      present,
+      absent,
+      justified,
+      late,
+      attendanceRate,
+    },
+    classification,
+    chartData: {
+      labels: months,
+      presentData,
+      absentData,
+      justifiedData,
+      lateData,
+      attendanceRateData,
+    },
+    monthlyData,
+    recentRecords,
+    classPerformance,
+  };
+});
+
+// Variables para actualización de datos
+const isRefreshing = ref(false);
+
+// Función para actualizar los datos de asistencia del estudiante desde Firestore
+const refreshAttendanceData = async () => {
+  if (!studentId) return;
+
+  try {
+    isRefreshing.value = true;
+
+    // Obtener fechas para el rango (últimos 3 meses)
+    const today = new Date();
+    const threeMonthsAgo = new Date(today);
+    threeMonthsAgo.setMonth(today.getMonth() - 3);
+    const startDate = format(threeMonthsAgo, 'yyyy-MM-dd');
+    const endDate = format(today, 'yyyy-MM-dd');
+
+    // Los datos se cargarán automáticamente en el mounted del componente
+    console.log(`📊 Preparando datos de asistencia para el rango ${startDate} al ${endDate}`);
+
+    // Si hay clases específicas del estudiante, cargar sus documentos de asistencia
+    const studentClassIds = classesStore.classes
+      .filter((c) => c.studentIds?.includes(studentId))
+      .map((c) => c.id);
+
+    if (studentClassIds.length > 0) {
+      // Para cada clase, actualizar también los documentos de asistencia
+      for (const classId of studentClassIds) {
+        await attendanceStore.fetchAttendanceDocument(format(today, 'yyyy-MM-dd'), classId);
+      }
+    }
+
+    console.log('✅ Datos de asistencia actualizados desde Firestore');
+  } catch (error) {
+    console.error('Error al actualizar los datos de asistencia:', error);
+  } finally {
+    isRefreshing.value = false;
+  }
+};
+
+// Lista reactiva de clases para el estudiante actual
+const studentClasses = computed(() => {
+  if (!student.value || !studentId) {
+    console.log('No hay estudiante seleccionado o ID de estudiante');
+    return [];
+  }
+  // Normalizar el ID para asegurar que las comparaciones funcionen
+  const normalizedStudentId = String(studentId);
+
+  // Filtrar clases directamente usando las propiedades disponibles en classesStore.classes
+  // Esto evita conflictos con getters/métodos
+  const classesForStudent = classesStore.classes.filter(
+    (classItem) =>
+      classItem.studentIds &&
+      Array.isArray(classItem.studentIds) &&
+      classItem.studentIds.includes(normalizedStudentId),
+  );
+
+  // Devolver información relevante de las clases
+  return classesForStudent.map((classItem) => {
+    const teacherInfo = classItem.teacherId
+      ? teachersStore.getTeacherById(classItem.teacherId)
+      : null;
+    const teacherName = teacherInfo ? teacherInfo.name : null;
+
+    return {
+      id: classItem.id,
+      name: classItem.name || 'Clase sin nombre',
+      teacher:
+        teacherName ||
+        (classItem.teacherId ? `Profesor (ID: ${classItem.teacherId})` : 'Sin profesor asignado'),
+      level: classItem.level || 'Nivel no especificado',
+      schedule:
+        classItem.schedule && classItem.schedule.slots
+          ? classItem.schedule.slots
+            .map((slot) => `${slot.day} ${slot.startTime}-${slot.endTime}`)
+            .join(', ')
+          : 'Horario no definido',
+    };
+  });
+});
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top' as const,
+      labels: {
+        usePointStyle: true,
+        padding: 15,
+      },
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      callbacks: {
+        label(context) {
+          let label = context.dataset.label || '';
+          if (label) {
+            label += ': ';
+          }
+          if (context.parsed.y !== null) {
+            if (context.dataset.yAxisID === 'y1') {
+              label += context.parsed.y + '%';
+            } else {
+              label += context.parsed.y;
+            }
+          }
+          return label;
+        },
+      },
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      title: {
+        display: true,
+        text: 'Cantidad de asistencias',
+        color: '#6b7280',
+      },
+      grid: {
+        color: 'rgba(160, 174, 192, 0.1)',
+      },
+      ticks: {
+        color: '#6b7280',
+      },
+    },
+    y1: {
+      beginAtZero: true,
+      position: 'right',
+      max: 100,
+      title: {
+        display: true,
+        text: 'Porcentaje (%)',
+        color: '#3b82f6',
+      },
+      grid: {
+        drawOnChartArea: false,
+      },
+      ticks: {
+        color: '#3b82f6',
+        callback(value) {
+          return value + '%';
+        },
+      },
+    },
+    x: {
+      grid: {
+        color: 'rgba(160, 174, 192, 0.1)',
+      },
+      ticks: {
+        color: '#6b7280',
+      },
+    },
+  },
+  interaction: {
+    mode: 'index',
+    intersect: false,
+  },
+};
+
+const isUploading = ref(false);
+const showDeleteConfirm = ref(false);
+const isDeleting = ref(false);
+
+// Función para manejar errores de carga de imágenes
+const handleImageError = (event: Event) => {
+  const imgElement = event.target as HTMLImageElement;
+  const fallbackUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.value?.nombre || 'default'}`;
+  console.log(
+    '[StudentProfileView] Error al cargar imagen de avatar, usando fallback:',
+    fallbackUrl,
+  );
+  imgElement.src = fallbackUrl;
+};
+
+// Reemplazar la función actual por esta
+const handleProfilePhotoUpload = async (url) => {
+  if (!student.value) return;
+
+  isUploading.value = true;
+  try {
+    console.log('[StudentProfileView] URL de foto recibida:', url);
+
+    // Verificar que sea una URL válida de Firebase Storage
+    if (!url || !url.includes('firebasestorage.googleapis.com')) {
+      console.error('[StudentProfileView] URL inválida:', url);
+      throw new Error('La URL de la imagen no es válida');
+    }
+
+    await studentsStore.updateStudent(studentId, { photoURL: url });
+    console.log('[StudentProfileView] Avatar actualizado correctamente');
+  } catch (error) {
+    console.error('Error actualizando foto de perfil:', error);
+  } finally {
+    isUploading.value = false;
+  }
+};
+
+const handleDocumentUpload = async (files: FileList, documentType: string) => {
+  if (!student.value || !files.length) return;
+
+  isUploading.value = true;
+  try {
+    const file = files[0];
+    const path = `documents/${student.value.id}/${documentType}/${file.name}`;
+    const url = await uploadFile(file, path);
+
+    const documentos = {
+      ...(student.value.documentos || {}),
+      [documentType]: {
+        url,
+        fecha: new Date().toISOString(),
+      },
+    };
+
+    await studentsStore.updateStudent(studentId, {
+      ...student.value,
+      documentos,
+    });
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    // Add error handling/notification here
+  } finally {
+    isUploading.value = false;
+  }
+};
+
+const isEditing = ref(false);
+// Define a type for localStudent that matches the student structure
+type StudentType = typeof student.value
+const localStudent = ref({} as StudentType);
+
+// Extract unique instruments from all students
+const uniqueInstruments = computed(() => {
+  // Create a Set to automatically handle uniqueness
+  const instrumentSet = new Set();
+
+  // Extract instruments from all students
+  studentsStore.students.forEach((student) => {
+    if (student.instrumento && student.instrumento.trim() !== '') {
+      instrumentSet.add(student.instrumento);
+    }
+  });
+
+  // Convert Set to Array and sort alphabetically
+  return Array.from(instrumentSet).sort();
+});
+
+// Extract unique groups from all students
+const uniqueGroups = computed(() => {
+  // Create a Set to automatically handle uniqueness
+  const groupSet = new Set();
+
+  // Extract groups from all students
+  studentsStore.students.forEach((student) => {
+    // Check if grupo property exists and is an array
+    if (student.grupo && Array.isArray(student.grupo)) {
+      // Add each group to the set
+      student.grupo.forEach((group) => {
+        if (group && typeof group === 'string' && group.trim() !== '') {
+          groupSet.add(group.trim());
+        }
+      });
+    }
+    // Handle case where grupo might be a string
+    else if (student.grupo && typeof student.grupo === 'string' && student.grupo.trim() !== '') {
+      groupSet.add(student.grupo.trim());
+    }
+  });
+
+  // Convert Set to Array and sort alphabetically
+  return Array.from(groupSet).sort();
+});
+
+// Extract unique classes from all students (using grupos values as classes)
+const availableClasses = computed(() => {
+  // Create a Set to automatically handle uniqueness
+  const classSet = new Set();
+
+  // Extract classes from students' grupo property
+  studentsStore.students.forEach((student) => {
+    // Add regular clase values
+    if (student.clase && typeof student.clase === 'string' && student.clase.trim() !== '') {
+      classSet.add(student.clase.trim());
+    }
+    // Add values from grupo arrays as potential classes
+    if (student.grupo) {
+      // Handle grupo as array
+      if (Array.isArray(student.grupo)) {
+        student.grupo.forEach((group) => {
+          if (group && typeof group === 'string' && group.trim() !== '') {
+            classSet.add(group.trim());
+          }
+        });
+      }
+      // Handle grupo as string that looks like an array "[item1,item2]"
+      else if (
+        typeof student.grupo === 'string' &&
+        student.grupo.startsWith('[') &&
+        student.grupo.endsWith(']')
+      ) {
+        try {
+          const parsed = JSON.parse(student.grupo);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((item) => {
+              if (item && typeof item === 'string' && item.trim() !== '') {
+                classSet.add(item.trim());
+              }
+            });
+          } else {
+            // If parsing doesn't result in array, use as string
+            classSet.add(student.grupo.trim());
+          }
+        } catch (e) {
+          // If parsing fails, use as string
+          if (student.grupo.trim() !== '') {
+            classSet.add(student.grupo.trim());
+          }
+        }
+      }
+      // Handle grupo as simple string (fallback)
+      else if (typeof student.grupo === 'string' && student.grupo?.trim() !== '') {
+        classSet.add(student.grupo.trim());
+      }
+    }
+  });
+
+  // Convert Set to Array and sort alphabetically
+  return Array.from(classSet).sort();
+});
+
+watch(
+  student,
+  (newStudent) => {
+    if (newStudent) {
+      localStudent.value = { ...newStudent };
+    }
+  },
+  { immediate: true },
+);
+
+const handleEdit = () => {
+  if (student.value?.id) {
+    router.push(`/students/edit/${student.value.id}`);
+  } else {
+    console.error('No se pudo obtener el ID del estudiante');
+  }
+};
+
+const handleSave = async () => {
+  if (isSaving.value) return;
+
+  isSaving.value = true;
+
+  try {
+    // Crear un objeto solo con los campos que queremos actualizar
+    const updates: any = {
+      ...localStudent.value,
+      updatedAt: new Date(),
+    };
+
+    // Actualizar la edad con el valor calculado antes de guardar
+    if (localStudent.value.nac) {
+      const calculatedAgeValue = calculatedAge.value;
+      if (typeof calculatedAgeValue === 'number') {
+        updates.edad = calculatedAgeValue;
+      }
+    }
+
+    // Eliminar campos que no deberían actualizarse
+    delete updates.id;
+    delete updates.createdAt;
+
+    console.log('Actualizando estudiante con datos:', updates);
+
+    await studentsStore.updateStudent(studentId, updates);
+
+    // Actualizar los datos locales con los datos actualizados del store
+    const updatedStudent = studentsStore.getStudentById(studentId);
+    if (updatedStudent) {
+      localStudent.value = { ...updatedStudent };
+    }
+
+    isEditing.value = false;
+    showNotification('Cambios guardados correctamente', 'success');
+  } catch (error) {
+    console.error('Error al guardar cambios:', error);
+    showNotification('Error al guardar los cambios. Por favor, inténtalo de nuevo.', 'error');
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+const handleDelete = () => {
+  showDeleteConfirm.value = true;
+};
+
+const confirmDelete = async () => {
+  if (!student.value?.id) return;
+  isDeleting.value = true;
+  try {
+    await studentsStore.deleteStudent(student.value.id);
+    showDeleteConfirm.value = false;
+    isDeleting.value = false;
+    // Redirigir a la lista de alumnos tras eliminar
+    router.push('/students');
+  } catch (error) {
+    isDeleting.value = false;
+    showDeleteConfirm.value = false;
+    console.error('Error al eliminar alumno:', error);
+    // Aquí podrías mostrar un toast o alerta
+  }
+};
+
+// onMounted para cargar los datos necesarios del estudiante
+onMounted(async () => {
+  // Cargar el id de estudiante desde la ruta
+  const studentId = route.params.id as string;
+
+  // Verificar si tenemos un ID de estudiante válido
+  if (studentId) {
+    try {
+      isRefreshing.value = true;
+      console.log('🔄 Cargando datos del estudiante:', studentId);
+
+      // Asegurar que los estudiantes estén cargados
+      if (studentsStore.students.length === 0) {
+        await studentsStore.fetchStudents();
+      }
+
+      // Asegurar que tenemos el estudiante actual
+      if (!student.value) {
+        await studentsStore.fetchStudentById(studentId);
+      }
+
+      // Cargar las clases específicas para este estudiante desde Firestore
+      await classesStore.fetchClassesByStudentId(studentId);
+
+      // Si tenemos IDs de profesores, cargarlos también
+      if (classesStore.classes.length > 0) {
+        const teacherIds = new Set<string>();
+
+        // Recopilar todos los IDs de profesores de las clases del estudiante
+        classesStore.classes
+          .filter((c) => c.studentIds?.includes(studentId))
+          .forEach((c) => {
+            if (c.teacherId) teacherIds.add(c.teacherId);
+          });
+
+        // Cargar información de los profesores si no la tenemos ya
+        if (teacherIds.size > 0 && teachersStore.teachers.length === 0) {
+          await teachersStore.fetchTeachers();
+        }
+
+        // Obtener todas las clases del estudiante
+        const studentClassIds = classesStore.classes
+          .filter((c) => c.studentIds?.includes(studentId))
+          .map((c) => c.id);
+        // Cargar las asistencias para cada clase
+        try {
+          // Obtener fechas para el rango (últimos 3 meses)
+          const today = new Date();
+          const threeMonthsAgo = new Date(today);
+          threeMonthsAgo.setMonth(today.getMonth() - 3);
+
+          const startDate = format(threeMonthsAgo, 'yyyy-MM-dd');
+          const endDate = format(today, 'yyyy-MM-dd');
+
+          // Cargar registros de asistencia usando el composable optimizado
+          console.log(`🔄 Cargando asistencias del ${startDate} al ${endDate}`);
+          await searchByDateRange(startDate, endDate);
+
+          console.log('✅ Registros de asistencia cargados correctamente');
+        } catch (error) {
+          console.error('❌ Error al cargar registros de asistencia:', error);
+        }
+      }
+
+      console.log('✅ Datos del estudiante cargados correctamente');
+    } catch (error) {
+      console.error('❌ Error al cargar datos del estudiante:', error);
+    } finally {
+      isRefreshing.value = false;
+    }
+  } else {
+    console.error('❌ ID de estudiante no válido:', studentId);
+  }
+});
+
+// Función para determinar la información de contacto
+const contactInfo = computed(() => {
+  if (!student.value) return null;
+
+  const contacts = [];
+
+  // Agregar teléfono del estudiante si existe y es válido
+  if (student.value.tlf && student.value.tlf !== 'Vacio' && student.value.tlf.trim()) {
+    contacts.push({ number: student.value.tlf.trim(), type: 'Personal' });
+  }
+
+  // Agregar teléfono de la madre si existe y es válido
+  if (
+    student.value.tlf_madre &&
+    student.value.tlf_madre !== 'Vacio' &&
+    student.value.tlf_madre.trim()
+  ) {
+    contacts.push({ number: student.value.tlf_madre.trim(), type: 'Madre' });
+  }
+
+  // Agregar teléfono del padre si existe y es válido
+  if (
+    student.value.tlf_padre &&
+    student.value.tlf_padre !== 'Vacio' &&
+    student.value.tlf_padre.trim()
+  ) {
+    contacts.push({ number: student.value.tlf_padre.trim(), type: 'Padre' });
+  }
+
+  return contacts;
+});
+
+// Función para calcular la fecha de inscripción
+const inscriptionDate = computed(() => {
+  if (!student.value) return null;
+
+  let date = null;
+
+  // Primero intentar usar la fecha de inscripción explícita si existe
+  if (student.value.fecInscripcion) {
+    const parsedDate = new Date(student.value.fecInscripcion);
+    if (!isNaN(parsedDate.getTime())) {
+      date = parsedDate;
+    }
+  }
+
+  // Si no hay fecha de inscripción explícita, intentar con createdAt
+  if (!date && student.value.createdAt) {
+    if (typeof student.value.createdAt === 'number') {
+      date = new Date(student.value.createdAt);
+    } else if (typeof student.value.createdAt === 'string') {
+      date = new Date(student.value.createdAt);
+    } else if (student.value.createdAt?.toDate) {
+      date = student.value.createdAt.toDate();
+    }
+  }
+
+  // Si aún no tenemos fecha, intentar con el ID numérico como último recurso
+  if (!date && /^\d+$/.test(student.value.id)) {
+    const timestamp = parseInt(student.value.id);
+    // Verificar que el timestamp parece válido (después de 2000 y antes de ahora)
+    if (timestamp > 946684800000 && timestamp < Date.now()) {
+      date = new Date(timestamp);
+    }
+  }
+
+  return date;
+});
+
+// Función para formatear fechas de manera consistente
+const formatDate = (date) => {
+  if (!date || !isValid(new Date(date))) return 'Fecha no disponible';
+  return format(new Date(date), 'dd/MM/yyyy', { locale: es });
+};
+
+const handleDocumentDelete = async (documentType) => {
+  try {
+    const documentos = { ...student.value.documentos };
+    delete documentos[documentType];
+    await studentsStore.updateStudent(studentId, {
+      ...student.value,
+      documentos,
+    });
+  } catch (error) {
+    console.error('Error deleting document:', error);
+  }
+};
+
+const isDocumentPDF = (documentType) => {
+  return student.value?.documentos?.[documentType]?.url?.toLowerCase().endsWith('.pdf');
+};
+
+const isDocumentImage = (documentType) => {
+  const url = student.value?.documentos?.[documentType]?.url?.toLowerCase();
+  return url?.endsWith('.jpg') || url?.endsWith('.jpeg') || url?.endsWith('.png');
+};
+
+// Date range for attendance records - default to last month
+const dateRange = ref({
+  start: format(new Date(new Date().setMonth(new Date().getMonth() - 1)), 'yyyy-MM-dd'),
+  end: format(new Date(), 'yyyy-MM-dd'),
+});
+
+// Reset date range to initial state (last month to current date)
+const resetDateRange = () => {
+  dateRange.value = {
+    start: format(new Date(new Date().setMonth(new Date().getMonth() - 1)), 'yyyy-MM-dd'),
+    end: format(new Date(), 'yyyy-MM-dd'),
+  };
+};
+
+// Filtered attendance records based on date range
+const filteredAttendanceRecords = computed(() => {
+  if (!studentAttendance.value.records) return [];
+
+  // Use recentRecords for formatting but filter by the date range
+  const filtered = studentAttendance.value.recentRecords.filter((record) => {
+    if (!record.Fecha) return false;
+
+    try {
+      const recordDate = new Date(record.Fecha);
+      const startDate = new Date(dateRange.value.start);
+      const endDate = new Date(dateRange.value.end);
+
+      // Validate dates
+      if (isNaN(recordDate.getTime())) return false;
+
+      // Filter by date range
+      if (isValid(startDate) && recordDate < startDate) return false;
+      if (isValid(endDate) && recordDate > endDate) return false;
+
+      return true;
+    } catch (error) {
+      console.error('Error filtering date:', error);
+      return false;
+    }
+  });
+
+  // Sort by date (most recent first)
+  return [...filtered].sort((a, b) => {
+    if (!a.Fecha || !b.Fecha) return 0;
+    return new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime();
+  });
+});
+
+// Métodos para el widget de rendimiento
+const handleViewPerformanceDetails = () => {
+  // Navegar a una vista detallada de rendimiento
+  router.push(`/students/${studentId}/performance`);
+};
+
+const handleViewRecommendations = () => {
+  // Navegar a las recomendaciones específicas del estudiante
+  router.push(`/students/${studentId}/recommendations`);
+};
+
+const handleExpandPerformance = () => {
+  // Expandir el widget de rendimiento en una vista modal o pantalla completa
+  // Por ahora simplemente navegamos a los detalles
+  handleViewPerformanceDetails();
+};
+
+// Rango de fechas para filtrar observaciones (por defecto últimos 6 meses)
+const today = new Date();
+const sixMonthsAgo = new Date();
+sixMonthsAgo.setMonth(today.getMonth() - 6);
+const obsDateRange = ref({
+  start: sixMonthsAgo.toISOString().split('T')[0],
+  end: today.toISOString().split('T')[0],
+});
+
+const studentObservations = computed<ObservationData[]>(() => {
+  if (!student.value || !student.value.id) return [];
+  return observationsStore.getObservationsByStudentIdAndDateRange(
+    student.value.id,
+    obsDateRange.value.start,
+    obsDateRange.value.end,
+  );
+});
+
+// Historial de mensajes WhatsApp usando el store
+const whatsappDateRange = ref({
+  start: sixMonthsAgo.toISOString().split('T')[0],
+  end: today.toISOString().split('T')[0],
+});
+
+const loadWhatsAppLogs = async () => {
+  if (!student.value || !student.value.id) return;
+  await whatsappLogsStore.fetchLogsByStudentIdAndDateRange(
+    student.value.id,
+    whatsappDateRange.value.start,
+    whatsappDateRange.value.end,
+  );
+};
+
+watch([() => student.value?.id, whatsappDateRange], loadWhatsAppLogs, { immediate: true });
+
+onMounted(async () => {
+  if (student.value && student.value.id) {
+    await observationsStore.fetchObservations({ studentId: student.value.id });
+  }
+});
+
+const exportProfileToPDF = async () => {
+  const nombre = student.value ? `${student.value.nombre}_${student.value.apellido}` : 'Alumno';
+  await generarPdfDesdeHtml({
+    elementId: 'student-profile-pdf',
+    filename: `Perfil_${nombre}.pdf`,
+    logoUrl: new URL('@/assets/ElSistemaPCLogo.jpeg', import.meta.url).href,
+    institutionName: 'El Sistema Punta Cana',
+    footerText: 'Documento generado automáticamente por El Sistema PC',
+    margin: 10,
+  });
+};
+</script>
 
 <style scoped>
 /* Animaciones y transiciones */

@@ -1,27 +1,3 @@
-<script lang="ts" setup>
-// src/components/NotificationSystem.vue
-import {
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-  InformationCircleIcon,
-  XMarkIcon,
-} from "@heroicons/vue/20/solid"
-
-const notifications = ref([])
-
-const getNotificationClass = (type) => {
-  const classes = {
-    success: "bg-green-50 border-green-500 text-green-800 dark:bg-green-900 dark:text-green-100",
-    warning:
-      "bg-yellow-50 border-yellow-500 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
-    error: "bg-red-50 border-red-500 text-red-800 dark:bg-red-900 dark:text-red-100",
-    info: "bg-blue-50 border-blue-500 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
-  }
-  return classes[type] || classes.info
-}
-</script>
-
 <template>
   <div class="fixed top-4 right-4 z-50 flex flex-col gap-2 w-full max-w-sm">
     <transition-group name="notification">
@@ -57,6 +33,30 @@ const getNotificationClass = (type) => {
     </transition-group>
   </div>
 </template>
+
+<script lang="ts" setup>
+// src/components/NotificationSystem.vue
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+  InformationCircleIcon,
+  XMarkIcon,
+} from '@heroicons/vue/20/solid';
+
+const notifications = ref([]);
+
+const getNotificationClass = (type) => {
+  const classes = {
+    success: 'bg-green-50 border-green-500 text-green-800 dark:bg-green-900 dark:text-green-100',
+    warning:
+      'bg-yellow-50 border-yellow-500 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100',
+    error: 'bg-red-50 border-red-500 text-red-800 dark:bg-red-900 dark:text-red-100',
+    info: 'bg-blue-50 border-blue-500 text-blue-800 dark:bg-blue-900 dark:text-blue-100',
+  };
+  return classes[type] || classes.info;
+};
+</script>
 <style scoped>
 .notification-enter-active,
 .notification-leave-active {

@@ -7,6 +7,6 @@
 
 <script>
 export default {
-  name: "CoursesView",
-}
+  name: 'CoursesView',
+};
 </script>

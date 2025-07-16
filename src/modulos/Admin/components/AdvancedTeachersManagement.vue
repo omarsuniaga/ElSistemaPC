@@ -456,9 +456,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useEnhancedTeachersStore} from "../store/enhancedTeachers"
-import type {TeacherPerformanceAnalysis} from "../services/advancedTeachersService"
+import { ref, computed, onMounted } from 'vue';
+import { useEnhancedTeachersStore } from '../store/enhancedTeachers';
+import type { TeacherPerformanceAnalysis } from '../services/advancedTeachersService';
 import {
   AcademicCapIcon,
   UsersIcon,
@@ -468,45 +468,45 @@ import {
   ArrowDownTrayIcon,
   ArrowPathIcon,
   XMarkIcon,
-} from "@heroicons/vue/24/outline"
-import * as XLSX from "xlsx"
+} from '@heroicons/vue/24/outline';
+import * as XLSX from 'xlsx';
 
-const store = useEnhancedTeachersStore()
+const store = useEnhancedTeachersStore();
 
 // State
-const selectedTeacher = ref<TeacherPerformanceAnalysis | null>(null)
+const selectedTeacher = ref<TeacherPerformanceAnalysis | null>(null);
 
 // Computed
-const loading = computed(() => store.loading)
-const metrics = computed(() => store.metrics)
-const filteredTeachers = computed(() => store.filteredTeachers)
-const performanceStats = computed(() => store.performanceStats)
-const topPerformingTeachers = computed(() => store.topPerformingTeachers)
-const filters = computed(() => store.filters)
+const loading = computed(() => store.loading);
+const metrics = computed(() => store.metrics);
+const filteredTeachers = computed(() => store.filteredTeachers);
+const performanceStats = computed(() => store.performanceStats);
+const topPerformingTeachers = computed(() => store.topPerformingTeachers);
+const filters = computed(() => store.filters);
 
 // Methods
 const refreshData = async () => {
-  await store.fetchAllData()
-}
+  await store.fetchAllData();
+};
 
 const exportData = () => {
-  const data = store.exportTeachersData()
-  const ws = XLSX.utils.json_to_sheet(data)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, "Maestros")
-  XLSX.writeFile(wb, `maestros_${new Date().toISOString().split("T")[0]}.xlsx`)
-}
+  const data = store.exportTeachersData();
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Maestros');
+  XLSX.writeFile(wb, `maestros_${new Date().toISOString().split('T')[0]}.xlsx`);
+};
 
 const showTeacherDetails = (teacher: TeacherPerformanceAnalysis) => {
-  selectedTeacher.value = teacher
-}
+  selectedTeacher.value = teacher;
+};
 
 const clearFilters = () => {
-  store.clearFilters()
-}
+  store.clearFilters();
+};
 
 // Lifecycle
 onMounted(() => {
-  refreshData()
-})
+  refreshData();
+});
 </script>

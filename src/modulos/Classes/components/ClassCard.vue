@@ -1,140 +1,3 @@
-<script setup lang="ts">
-import {computed} from "vue"
-import {useTeachersStore} from "../../../modulos/Teachers/store/teachers"
-import type {ClassData} from "../types/class"
-import {
-  UserIcon,
-  UserGroupIcon,
-  AcademicCapIcon,
-  MusicalNoteIcon,
-  ClockIcon,
-  PencilIcon,
-  TrashIcon,
-} from "@heroicons/vue/24/outline"
-
-const props = defineProps<{
-  classData: ClassData
-  studentCount: number
-  topStudents: Array<{id: string; nombre: string; apellido: string}>
-}>()
-
-const emit = defineEmits<{
-  (e: "edit", id: string): void
-  (e: "delete", id: string): void
-  (e: "manage-students", id: string): void
-}>()
-
-const teachersStore = useTeachersStore()
-
-// Computed properties
-const selectedGroupTeacher = computed(() => {
-  return teachersStore.teachers.find((t) => t.id === props.classData.teacherId)
-})
-
-// Helper Functions
-const getTeacherName = (teacherId?: string): string => {
-  if (!teacherId) return "Profesor no asignado"
-  const teacher = teachersStore.teachers.find((t) => t.id === teacherId)
-  return teacher ? `${teacher.name}` : "Profesor no asignado"
-}
-
-// Tipo para los slots de horario
-interface ScheduleSlot {
-  day: string
-  startTime: string
-  endTime: string
-}
-
-type ScheduleType = {slots: ScheduleSlot[]} | ScheduleSlot | string | undefined
-
-const formatSchedule = (schedule?: ScheduleType): string => {
-  try {
-    console.log("Horario recibido:", schedule) // Log para depuración
-
-    // Si no hay horario definido
-    if (!schedule) {
-      console.log("No hay horario definido")
-      return "Horario no definido"
-    }
-
-    // Si es un string, devolverlo directamente (formato legado)
-    if (typeof schedule === "string") {
-      return schedule
-    }
-
-    // Si es un array (puede ser un array de slots)
-    if (Array.isArray(schedule)) {
-      console.log("Es un array de slots:", schedule)
-      if (schedule.length === 0) return "Sin horario"
-
-      return (
-        schedule
-          .map((slot: any) => {
-            if (!slot) return ""
-            // Intentar diferentes formatos de slot
-            if (slot.day && slot.startTime && slot.endTime) {
-              return `${slot.day} ${slot.startTime}-${slot.endTime}`
-            }
-            if (slot.start && slot.end) {
-              return `${slot.start}-${slot.end}`
-            }
-            return ""
-          })
-          .filter(Boolean)
-          .join(", ") || "Horario no válido"
-      )
-    }
-
-    // Si es un objeto con slots
-    if (schedule && typeof schedule === "object" && "slots" in schedule) {
-      const slots = (schedule as any).slots
-      if (!Array.isArray(slots) || slots.length === 0) {
-        return "Sin horario"
-      }
-
-      return slots
-        .map((slot: any) => {
-          if (!slot) return ""
-          // Manejar diferentes formatos de slot
-          if (slot.day && slot.startTime && slot.endTime) {
-            return `${slot.day} ${slot.startTime}-${slot.endTime}`
-          }
-          if (slot.day && slot.start && slot.end) {
-            return `${slot.day} ${slot.start}-${slot.end}`
-          }
-          return ""
-        })
-        .filter(Boolean)
-        .join(", ")
-    }
-
-    // Si es un objeto directo con day, startTime, endTime
-    if (schedule && typeof schedule === "object" && "day" in schedule) {
-      const s = schedule as any
-      if (s.day && s.startTime && s.endTime) {
-        return `${s.day} ${s.startTime}-${s.endTime}`
-      }
-      if (s.day && s.start && s.end) {
-        return `${s.day} ${s.start}-${s.end}`
-      }
-    }
-
-    // Si es un objeto con start y end directos
-    if (schedule && typeof schedule === "object" && "start" in schedule && "end" in schedule) {
-      const s = schedule as any
-      return `${s.start}-${s.end}`
-    }
-
-    // Si no coincide con ningún formato conocido
-    console.warn("Formato de horario no reconocido:", schedule)
-    return "Horario no definido"
-  } catch (error) {
-    console.error("Error al formatear el horario:", error, "Horario:", schedule)
-    return "Error en horario"
-  }
-}
-</script>
-
 <template>
   <div
     class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow border border-gray-100 dark:border-gray-700"
@@ -219,3 +82,140 @@ const formatSchedule = (schedule?: ScheduleType): string => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import { useTeachersStore } from '../../../modulos/Teachers/store/teachers';
+import type { ClassData } from '../types/class';
+import {
+  UserIcon,
+  UserGroupIcon,
+  AcademicCapIcon,
+  MusicalNoteIcon,
+  ClockIcon,
+  PencilIcon,
+  TrashIcon,
+} from '@heroicons/vue/24/outline';
+
+const props = defineProps<{
+  classData: ClassData
+  studentCount: number
+  topStudents: Array<{id: string; nombre: string; apellido: string}>
+}>();
+
+const emit = defineEmits<{
+  (e: 'edit', id: string): void
+  (e: 'delete', id: string): void
+  (e: 'manage-students', id: string): void
+}>();
+
+const teachersStore = useTeachersStore();
+
+// Computed properties
+const selectedGroupTeacher = computed(() => {
+  return teachersStore.teachers.find((t) => t.id === props.classData.teacherId);
+});
+
+// Helper Functions
+const getTeacherName = (teacherId?: string): string => {
+  if (!teacherId) return 'Profesor no asignado';
+  const teacher = teachersStore.teachers.find((t) => t.id === teacherId);
+  return teacher ? `${teacher.name}` : 'Profesor no asignado';
+};
+
+// Tipo para los slots de horario
+interface ScheduleSlot {
+  day: string
+  startTime: string
+  endTime: string
+}
+
+type ScheduleType = {slots: ScheduleSlot[]} | ScheduleSlot | string | undefined
+
+const formatSchedule = (schedule?: ScheduleType): string => {
+  try {
+    console.log('Horario recibido:', schedule); // Log para depuración
+
+    // Si no hay horario definido
+    if (!schedule) {
+      console.log('No hay horario definido');
+      return 'Horario no definido';
+    }
+
+    // Si es un string, devolverlo directamente (formato legado)
+    if (typeof schedule === 'string') {
+      return schedule;
+    }
+
+    // Si es un array (puede ser un array de slots)
+    if (Array.isArray(schedule)) {
+      console.log('Es un array de slots:', schedule);
+      if (schedule.length === 0) return 'Sin horario';
+
+      return (
+        schedule
+          .map((slot: any) => {
+            if (!slot) return '';
+            // Intentar diferentes formatos de slot
+            if (slot.day && slot.startTime && slot.endTime) {
+              return `${slot.day} ${slot.startTime}-${slot.endTime}`;
+            }
+            if (slot.start && slot.end) {
+              return `${slot.start}-${slot.end}`;
+            }
+            return '';
+          })
+          .filter(Boolean)
+          .join(', ') || 'Horario no válido'
+      );
+    }
+
+    // Si es un objeto con slots
+    if (schedule && typeof schedule === 'object' && 'slots' in schedule) {
+      const slots = (schedule as any).slots;
+      if (!Array.isArray(slots) || slots.length === 0) {
+        return 'Sin horario';
+      }
+
+      return slots
+        .map((slot: any) => {
+          if (!slot) return '';
+          // Manejar diferentes formatos de slot
+          if (slot.day && slot.startTime && slot.endTime) {
+            return `${slot.day} ${slot.startTime}-${slot.endTime}`;
+          }
+          if (slot.day && slot.start && slot.end) {
+            return `${slot.day} ${slot.start}-${slot.end}`;
+          }
+          return '';
+        })
+        .filter(Boolean)
+        .join(', ');
+    }
+
+    // Si es un objeto directo con day, startTime, endTime
+    if (schedule && typeof schedule === 'object' && 'day' in schedule) {
+      const s = schedule as any;
+      if (s.day && s.startTime && s.endTime) {
+        return `${s.day} ${s.startTime}-${s.endTime}`;
+      }
+      if (s.day && s.start && s.end) {
+        return `${s.day} ${s.start}-${s.end}`;
+      }
+    }
+
+    // Si es un objeto con start y end directos
+    if (schedule && typeof schedule === 'object' && 'start' in schedule && 'end' in schedule) {
+      const s = schedule as any;
+      return `${s.start}-${s.end}`;
+    }
+
+    // Si no coincide con ningún formato conocido
+    console.warn('Formato de horario no reconocido:', schedule);
+    return 'Horario no definido';
+  } catch (error) {
+    console.error('Error al formatear el horario:', error, 'Horario:', schedule);
+    return 'Error en horario';
+  }
+};
+</script>

@@ -102,60 +102,60 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {useAuthStore} from "@/stores/auth"
-import {useAdminStudentsStore} from "../store/adminStudents"
-import {useRBACStore} from "@/stores/rbacStore"
+import { computed } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import { useAdminStudentsStore } from '../store/adminStudents';
+import { useRBACStore } from '@/stores/rbacStore';
 
 // Stores
-const authStore = useAuthStore()
-const studentsStore = useAdminStudentsStore()
-const rbacStore = useRBACStore()
+const authStore = useAuthStore();
+const studentsStore = useAdminStudentsStore();
+const rbacStore = useRBACStore();
 
 // Computed
-const currentUser = computed(() => authStore.user)
-const students = computed(() => studentsStore.students)
-const isLoading = computed(() => studentsStore.isLoading)
-const error = computed(() => studentsStore.error)
-const filteredStudents = computed(() => studentsStore.filteredStudents)
+const currentUser = computed(() => authStore.user);
+const students = computed(() => studentsStore.students);
+const isLoading = computed(() => studentsStore.isLoading);
+const error = computed(() => studentsStore.error);
+const filteredStudents = computed(() => studentsStore.filteredStudents);
 const paginatedStudents = computed(() => {
   // Esta es una aproximación - necesitaríamos acceso a la paginación del componente padre
-  return filteredStudents.value.slice(0, 20)
-})
-const canViewStudent = computed(() => rbacStore.hasPermission("students", "view"))
+  return filteredStudents.value.slice(0, 20);
+});
+const canViewStudent = computed(() => rbacStore.hasPermission('students', 'view'));
 
 // Methods
 const refreshData = async () => {
-  console.log("🔄 Refrescando datos de estudiantes...")
-  await studentsStore.loadStudents()
-}
+  console.log('🔄 Refrescando datos de estudiantes...');
+  await studentsStore.loadStudents();
+};
 
 const clearCache = () => {
-  console.log("🗑️ Limpiando caché de estudiantes...")
-  const keys = Object.keys(localStorage).filter((key) => key.startsWith("students_"))
+  console.log('🗑️ Limpiando caché de estudiantes...');
+  const keys = Object.keys(localStorage).filter((key) => key.startsWith('students_'));
   keys.forEach((key) => {
-    localStorage.removeItem(key)
-    console.log(`Removed cache key: ${key}`)
-  })
-  refreshData()
-}
+    localStorage.removeItem(key);
+    console.log(`Removed cache key: ${key}`);
+  });
+  refreshData();
+};
 
 const logDebugInfo = () => {
-  console.group("🔍 ADMIN STUDENTS DEBUG INFO")
-  console.log("Current User:", currentUser.value)
-  console.log("Students Count:", students.value.length)
-  console.log("Filtered Students Count:", filteredStudents.value.length)
-  console.log("Is Loading:", isLoading.value)
-  console.log("Error:", error.value)
-  console.log("Can View Students:", canViewStudent.value)
-  console.log("RBAC Permissions:", rbacStore.userPermissions)
+  console.group('🔍 ADMIN STUDENTS DEBUG INFO');
+  console.log('Current User:', currentUser.value);
+  console.log('Students Count:', students.value.length);
+  console.log('Filtered Students Count:', filteredStudents.value.length);
+  console.log('Is Loading:', isLoading.value);
+  console.log('Error:', error.value);
+  console.log('Can View Students:', canViewStudent.value);
+  console.log('RBAC Permissions:', rbacStore.userPermissions);
   if (students.value.length > 0) {
-    console.log("Sample Student:", students.value[0])
+    console.log('Sample Student:', students.value[0]);
   }
   console.log(
-    "LocalStorage Students Cache:",
-    Object.keys(localStorage).filter((key) => key.startsWith("students_"))
-  )
-  console.groupEnd()
-}
+    'LocalStorage Students Cache:',
+    Object.keys(localStorage).filter((key) => key.startsWith('students_')),
+  );
+  console.groupEnd();
+};
 </script>

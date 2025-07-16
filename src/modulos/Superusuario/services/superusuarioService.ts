@@ -14,9 +14,9 @@ import {
   onSnapshot,
   enableNetwork,
   disableNetwork,
-} from "firebase/firestore"
-import {db} from "@/firebase"
-import {UserRole} from "@/modulos/Auth/types/permissions"
+} from 'firebase/firestore';
+import { db } from '@/firebase';
+import { UserRole } from '@/modulos/Auth/types/permissions';
 import {
   SystemConfiguration,
   RoleConfiguration,
@@ -28,90 +28,90 @@ import {
   SuperusuarioDashboardData,
   SystemAlert,
   SuperusuarioFilters,
-} from "../types"
+} from '../types';
 
 class SuperusuarioService {
   private readonly COLLECTIONS = {
-    SYSTEM_CONFIG: "system_configuration",
-    ROLES: "role_configurations",
-    USER_ROLES: "user_role_assignments",
-    MODULES: "module_configurations",
-    COMPONENTS: "component_configurations",
-    VIEWS: "view_configurations",
-    AUDIT_LOGS: "audit_logs",
-    SYSTEM_METRICS: "system_metrics",
-    BACKUPS: "backup_configurations",
-    BACKUP_RECORDS: "backup_records",
-    INSTITUTIONAL: "institutional_data",
-    ALERTS: "system_alerts",
-  } as const
+    SYSTEM_CONFIG: 'system_configuration',
+    ROLES: 'role_configurations',
+    USER_ROLES: 'user_role_assignments',
+    MODULES: 'module_configurations',
+    COMPONENTS: 'component_configurations',
+    VIEWS: 'view_configurations',
+    AUDIT_LOGS: 'audit_logs',
+    SYSTEM_METRICS: 'system_metrics',
+    BACKUPS: 'backup_configurations',
+    BACKUP_RECORDS: 'backup_records',
+    INSTITUTIONAL: 'institutional_data',
+    ALERTS: 'system_alerts',
+  } as const;
 
   // ========== CONFIGURACIÓN DEL SISTEMA ==========
 
   async getSystemConfigurations(): Promise<SystemConfiguration[]> {
     try {
       const snapshot = await getDocs(
-        query(collection(db, this.COLLECTIONS.SYSTEM_CONFIG), orderBy("category"), orderBy("name"))
-      )
+        query(collection(db, this.COLLECTIONS.SYSTEM_CONFIG), orderBy('category'), orderBy('name')),
+      );
       return snapshot.docs.map((doc) => {
-        const data = doc.data()
+        const data = doc.data();
         return {
           id: doc.id,
           ...data,
           createdAt: this.safeConvertTimestamp(data.createdAt),
           updatedAt: this.safeConvertTimestamp(data.updatedAt),
-        }
-      }) as SystemConfiguration[]
+        };
+      }) as SystemConfiguration[];
     } catch (error) {
-      console.error("Error fetching system configurations:", error)
-      throw new Error("No se pudieron cargar las configuraciones del sistema")
+      console.error('Error fetching system configurations:', error);
+      throw new Error('No se pudieron cargar las configuraciones del sistema');
     }
   }
 
   async updateSystemConfiguration(
     id: string,
-    updates: Partial<SystemConfiguration>
+    updates: Partial<SystemConfiguration>,
   ): Promise<void> {
     try {
       await updateDoc(doc(db, this.COLLECTIONS.SYSTEM_CONFIG, id), {
         ...updates,
         updatedAt: Timestamp.now(),
-      })
+      });
 
       // Registrar auditoría
       await this.createAuditLog({
-        action: "UPDATE",
-        resource: "system_configuration",
+        action: 'UPDATE',
+        resource: 'system_configuration',
         resourceId: id,
         newValue: updates,
-      })
+      });
     } catch (error) {
-      console.error("Error updating system configuration:", error)
-      throw new Error("No se pudo actualizar la configuración")
+      console.error('Error updating system configuration:', error);
+      throw new Error('No se pudo actualizar la configuración');
     }
   }
 
   async createSystemConfiguration(
-    config: Omit<SystemConfiguration, "id" | "createdAt" | "updatedAt">
+    config: Omit<SystemConfiguration, 'id' | 'createdAt' | 'updatedAt'>,
   ): Promise<string> {
     try {
       const docRef = await addDoc(collection(db, this.COLLECTIONS.SYSTEM_CONFIG), {
         ...config,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
-      })
+      });
 
       await this.createAuditLog({
-        action: "CREATE",
-        resource: "system_configuration",
+        action: 'CREATE',
+        resource: 'system_configuration',
         resourceId: docRef.id,
         newValue: config,
-      })
+      });
 
-      return docRef.id
+      return docRef.id;
     } catch (error) {
-      console.error("Error creating system configuration:", error)
-      throw new Error("No se pudo crear la configuración")
+      console.error('Error creating system configuration:', error);
+      throw new Error('No se pudo crear la configuración');
     }
   }
 
@@ -119,107 +119,107 @@ class SuperusuarioService {
 
   async getRoleConfigurations(): Promise<RoleConfiguration[]> {
     try {
-      const snapshot = await getDocs(query(collection(db, this.COLLECTIONS.ROLES), orderBy("role")))
+      const snapshot = await getDocs(query(collection(db, this.COLLECTIONS.ROLES), orderBy('role')));
 
       return snapshot.docs.map((doc) => {
-        const data = doc.data()
+        const data = doc.data();
         return {
           ...data,
           createdAt: this.safeConvertTimestamp(data.createdAt),
           updatedAt: this.safeConvertTimestamp(data.updatedAt),
-        }
-      }) as RoleConfiguration[]
+        };
+      }) as RoleConfiguration[];
     } catch (error) {
-      console.error("Error fetching role configurations:", error)
-      throw new Error("No se pudieron cargar las configuraciones de roles")
+      console.error('Error fetching role configurations:', error);
+      throw new Error('No se pudieron cargar las configuraciones de roles');
     }
   }
 
   async updateRoleConfiguration(
     role: UserRole,
-    updates: Partial<RoleConfiguration>
+    updates: Partial<RoleConfiguration>,
   ): Promise<void> {
     try {
-      const roleDoc = doc(db, this.COLLECTIONS.ROLES, role)
+      const roleDoc = doc(db, this.COLLECTIONS.ROLES, role);
       await updateDoc(roleDoc, {
         ...updates,
         updatedAt: Timestamp.now(),
-      })
+      });
 
       await this.createAuditLog({
-        action: "UPDATE",
-        resource: "role_configuration",
+        action: 'UPDATE',
+        resource: 'role_configuration',
         resourceId: role,
         newValue: updates,
-      })
+      });
     } catch (error) {
-      console.error("Error updating role configuration:", error)
-      throw new Error("No se pudo actualizar la configuración del rol")
+      console.error('Error updating role configuration:', error);
+      throw new Error('No se pudo actualizar la configuración del rol');
     }
   }
 
   // ========== GESTIÓN DE ASIGNACIONES DE ROLES ==========
   async getUserRoleAssignments(filters?: SuperusuarioFilters): Promise<UserRoleAssignment[]> {
     try {
-      const queryConstraints = []
+      const queryConstraints = [];
 
       if (filters?.userRoles?.length) {
-        queryConstraints.push(where("currentRole", "in", filters.userRoles))
+        queryConstraints.push(where('currentRole', 'in', filters.userRoles));
       }
 
       if (filters?.dateRange) {
         queryConstraints.push(
-          where("assignedAt", ">=", Timestamp.fromDate(filters.dateRange.start)),
-          where("assignedAt", "<=", Timestamp.fromDate(filters.dateRange.end))
-        )
+          where('assignedAt', '>=', Timestamp.fromDate(filters.dateRange.start)),
+          where('assignedAt', '<=', Timestamp.fromDate(filters.dateRange.end)),
+        );
       }
 
       // orderBy must come after where clauses
-      queryConstraints.push(orderBy("assignedAt", "desc"))
+      queryConstraints.push(orderBy('assignedAt', 'desc'));
       const snapshot = await getDocs(
-        query(collection(db, this.COLLECTIONS.USER_ROLES), ...queryConstraints)
-      )
+        query(collection(db, this.COLLECTIONS.USER_ROLES), ...queryConstraints),
+      );
 
       return snapshot.docs.map((doc) => {
-        const data = doc.data()
+        const data = doc.data();
         return {
           ...data,
           assignedAt: this.safeConvertTimestamp(data.assignedAt),
           expiresAt: this.safeConvertTimestamp(data.expiresAt),
-        }
-      }) as UserRoleAssignment[]
+        };
+      }) as UserRoleAssignment[];
     } catch (error) {
-      console.error("Error fetching user role assignments:", error)
-      throw new Error("No se pudieron cargar las asignaciones de roles")
+      console.error('Error fetching user role assignments:', error);
+      throw new Error('No se pudieron cargar las asignaciones de roles');
     }
   }
 
-  async assignUserRole(assignment: Omit<UserRoleAssignment, "assignedAt">): Promise<void> {
+  async assignUserRole(assignment: Omit<UserRoleAssignment, 'assignedAt'>): Promise<void> {
     try {
       await addDoc(collection(db, this.COLLECTIONS.USER_ROLES), {
         ...assignment,
         assignedAt: Timestamp.now(),
         expiresAt: assignment.expiresAt ? Timestamp.fromDate(assignment.expiresAt) : null,
-      })
+      });
 
       // También actualizar el documento del usuario
-      await updateDoc(doc(db, "users", assignment.userId), {
+      await updateDoc(doc(db, 'users', assignment.userId), {
         role: assignment.newRole || assignment.currentRole,
         roleUpdatedAt: Timestamp.now(),
         roleUpdatedBy: assignment.assignedBy,
-      })
+      });
 
       await this.createAuditLog({
-        action: "ROLE_CHANGE",
-        resource: "user_role",
+        action: 'ROLE_CHANGE',
+        resource: 'user_role',
         resourceId: assignment.userId,
-        oldValue: {role: assignment.currentRole},
-        newValue: {role: assignment.newRole || assignment.currentRole},
-        metadata: {reason: assignment.reason},
-      })
+        oldValue: { role: assignment.currentRole },
+        newValue: { role: assignment.newRole || assignment.currentRole },
+        metadata: { reason: assignment.reason },
+      });
     } catch (error) {
-      console.error("Error assigning user role:", error)
-      throw new Error("No se pudo asignar el rol al usuario")
+      console.error('Error assigning user role:', error);
+      throw new Error('No se pudo asignar el rol al usuario');
     }
   }
 
@@ -228,84 +228,84 @@ class SuperusuarioService {
   async getModuleConfigurations(): Promise<ModuleConfiguration[]> {
     try {
       const snapshot = await getDocs(
-        query(collection(db, this.COLLECTIONS.MODULES), orderBy("category"), orderBy("order"))
-      )
+        query(collection(db, this.COLLECTIONS.MODULES), orderBy('category'), orderBy('order')),
+      );
 
       return snapshot.docs.map((doc) => {
-        const data = doc.data()
+        const data = doc.data();
         return {
           id: doc.id,
           ...data,
           createdAt: this.safeConvertTimestamp(data.createdAt),
           updatedAt: this.safeConvertTimestamp(data.updatedAt),
-        }
-      }) as ModuleConfiguration[]
+        };
+      }) as ModuleConfiguration[];
     } catch (error) {
-      console.error("Error fetching module configurations:", error)
-      throw new Error("No se pudieron cargar las configuraciones de módulos")
+      console.error('Error fetching module configurations:', error);
+      throw new Error('No se pudieron cargar las configuraciones de módulos');
     }
   }
 
   async updateModuleConfiguration(
     id: string,
-    updates: Partial<ModuleConfiguration>
+    updates: Partial<ModuleConfiguration>,
   ): Promise<void> {
     try {
       await updateDoc(doc(db, this.COLLECTIONS.MODULES, id), {
         ...updates,
         updatedAt: Timestamp.now(),
-      })
+      });
 
       await this.createAuditLog({
-        action: "UPDATE",
-        resource: "module_configuration",
+        action: 'UPDATE',
+        resource: 'module_configuration',
         resourceId: id,
         newValue: updates,
-      })
+      });
     } catch (error) {
-      console.error("Error updating module configuration:", error)
-      throw new Error("No se pudo actualizar la configuración del módulo")
+      console.error('Error updating module configuration:', error);
+      throw new Error('No se pudo actualizar la configuración del módulo');
     }
   }
   // ========== AUDITORÍA ==========
 
   async getAuditLogs(filters?: SuperusuarioFilters, pageSize = 50): Promise<AuditLog[]> {
     try {
-      const queryConstraints = []
+      const queryConstraints = [];
 
       if (filters?.userRoles?.length) {
-        queryConstraints.push(where("userRole", "in", filters.userRoles))
+        queryConstraints.push(where('userRole', 'in', filters.userRoles));
       }
 
       if (filters?.actions?.length) {
-        queryConstraints.push(where("action", "in", filters.actions))
+        queryConstraints.push(where('action', 'in', filters.actions));
       }
 
       if (filters?.dateRange) {
         queryConstraints.push(
-          where("timestamp", ">=", Timestamp.fromDate(filters.dateRange.start)),
-          where("timestamp", "<=", Timestamp.fromDate(filters.dateRange.end))
-        )
+          where('timestamp', '>=', Timestamp.fromDate(filters.dateRange.start)),
+          where('timestamp', '<=', Timestamp.fromDate(filters.dateRange.end)),
+        );
       }
 
       // orderBy and limit must come after where clauses
-      queryConstraints.push(orderBy("timestamp", "desc"), limit(pageSize))
+      queryConstraints.push(orderBy('timestamp', 'desc'), limit(pageSize));
 
       const snapshot = await getDocs(
-        query(collection(db, this.COLLECTIONS.AUDIT_LOGS), ...queryConstraints)
-      )
+        query(collection(db, this.COLLECTIONS.AUDIT_LOGS), ...queryConstraints),
+      );
 
       return snapshot.docs.map((doc) => {
-        const data = doc.data()
+        const data = doc.data();
         return {
           id: doc.id,
           ...data,
           timestamp: this.safeConvertTimestamp(data.timestamp),
-        }
-      }) as AuditLog[]
+        };
+      }) as AuditLog[];
     } catch (error) {
-      console.error("Error fetching audit logs:", error)
-      throw new Error("No se pudieron cargar los logs de auditoría")
+      console.error('Error fetching audit logs:', error);
+      throw new Error('No se pudieron cargar los logs de auditoría');
     }
   }
 
@@ -317,9 +317,9 @@ class SuperusuarioService {
         ...logData,
         timestamp: Timestamp.now(),
         success: true,
-      })
+      });
     } catch (error) {
-      console.error("Error creating audit log:", error)
+      console.error('Error creating audit log:', error);
       // No lanzar error para evitar interrumpir el flujo principal
     }
   }
@@ -328,51 +328,51 @@ class SuperusuarioService {
 
   async getSystemMetrics(hours = 24): Promise<SystemMetrics[]> {
     try {
-      const cutoffTime = new Date()
-      cutoffTime.setHours(cutoffTime.getHours() - hours)
+      const cutoffTime = new Date();
+      cutoffTime.setHours(cutoffTime.getHours() - hours);
 
       const snapshot = await getDocs(
         query(
           collection(db, this.COLLECTIONS.SYSTEM_METRICS),
-          where("timestamp", ">=", Timestamp.fromDate(cutoffTime)),
-          orderBy("timestamp", "desc")
-        )
-      )
+          where('timestamp', '>=', Timestamp.fromDate(cutoffTime)),
+          orderBy('timestamp', 'desc'),
+        ),
+      );
 
       return snapshot.docs.map((doc) => {
-        const data = doc.data()
+        const data = doc.data();
         return {
           ...data,
           timestamp: this.safeConvertTimestamp(data.timestamp),
-        }
-      }) as SystemMetrics[]
+        };
+      }) as SystemMetrics[];
     } catch (error) {
-      console.error("Error fetching system metrics:", error)
-      throw new Error("No se pudieron cargar las métricas del sistema")
+      console.error('Error fetching system metrics:', error);
+      throw new Error('No se pudieron cargar las métricas del sistema');
     }
   }
   // ========== DASHBOARD ==========
   async getDashboardData(): Promise<SuperusuarioDashboardData> {
     try {
-      console.log("🔄 Cargando datos reales del dashboard...")
+      console.log('🔄 Cargando datos reales del dashboard...');
 
       // Obtener estadísticas reales de usuarios
-      const userStats = await this.getUserStatistics()
+      const userStats = await this.getUserStatistics();
 
       // Obtener estadísticas reales de estudiantes
-      const studentStats = await this.getStudentStatistics()
+      const studentStats = await this.getStudentStatistics();
 
       // Obtener logs de auditoría recientes
-      const recentLogs = await this.getRecentAuditLogs()
+      const recentLogs = await this.getRecentAuditLogs();
 
       // Obtener alertas del sistema
-      const alerts = await this.getSystemAlerts()
+      const alerts = await this.getSystemAlerts();
 
       const dashboardData: SuperusuarioDashboardData = {
         systemHealth: {
-          status: "healthy",
-          uptime: Math.floor((Date.now() - new Date("2024-01-01").getTime()) / 1000),
-          version: "1.0.0",
+          status: 'healthy',
+          uptime: Math.floor((Date.now() - new Date('2024-01-01').getTime()) / 1000),
+          version: '1.0.0',
         },
         userStats: {
           ...userStats,
@@ -386,89 +386,89 @@ class SuperusuarioService {
           totalSessions: userStats.totalUsers * 5, // Estimación basada en usuarios
           averageSessionDuration: 3600, // 1 hora
           mostUsedFeatures: [
-            {feature: "Registro de Asistencia", usage: Math.floor(userStats.totalUsers * 0.8)},
-            {feature: "Gestión de Estudiantes", usage: Math.floor(userStats.totalUsers * 0.6)},
-            {feature: "Gestión de Clases", usage: Math.floor(userStats.totalUsers * 0.4)},
-            {feature: "Reportes", usage: Math.floor(userStats.totalUsers * 0.3)},
+            { feature: 'Registro de Asistencia', usage: Math.floor(userStats.totalUsers * 0.8) },
+            { feature: 'Gestión de Estudiantes', usage: Math.floor(userStats.totalUsers * 0.6) },
+            { feature: 'Gestión de Clases', usage: Math.floor(userStats.totalUsers * 0.4) },
+            { feature: 'Reportes', usage: Math.floor(userStats.totalUsers * 0.3) },
           ],
         },
         recentAuditLogs: recentLogs,
         systemAlerts: alerts,
-      }
+      };
 
-      console.log("✅ Datos del dashboard cargados:", {
+      console.log('✅ Datos del dashboard cargados:', {
         totalUsers: dashboardData.userStats.totalUsers,
         totalStudents: dashboardData.userStats.totalStudents,
         activeStudents: dashboardData.userStats.activeStudents,
-      })
+      });
 
-      return dashboardData
+      return dashboardData;
     } catch (error) {
-      console.error("❌ Error fetching dashboard data:", error)
+      console.error('❌ Error fetching dashboard data:', error);
       // Fallback a datos por defecto en caso de error
-      return this.getFallbackDashboardData()
+      return this.getFallbackDashboardData();
     }
   }
 
   private async getUserStatistics() {
     try {
-      console.log("📊 Obteniendo estadísticas de usuarios...")
+      console.log('📊 Obteniendo estadísticas de usuarios...');
 
       // Obtener todos los usuarios
-      const usersSnapshot = await getDocs(collection(db, "users"))
-      const users = usersSnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}))
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const users = usersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-      const totalUsers = users.length
-      const activeUsers = users.filter((user) => user.isActive !== false).length
+      const totalUsers = users.length;
+      const activeUsers = users.filter((user) => user.isActive !== false).length;
 
       // Calcular usuarios nuevos este mes
-      const thisMonth = new Date()
-      thisMonth.setDate(1) // Primer día del mes
-      thisMonth.setHours(0, 0, 0, 0)
+      const thisMonth = new Date();
+      thisMonth.setDate(1); // Primer día del mes
+      thisMonth.setHours(0, 0, 0, 0);
 
       const newUsersThisMonth = users.filter((user) => {
-        if (!user.createdAt) return false
+        if (!user.createdAt) return false;
         const createdDate = user.createdAt.toDate
           ? user.createdAt.toDate()
-          : new Date(user.createdAt)
-        return createdDate >= thisMonth
-      }).length
+          : new Date(user.createdAt);
+        return createdDate >= thisMonth;
+      }).length;
 
       // Contar usuarios por rol
       const usersByRole = {
-        [UserRole.MAESTRO]: users.filter((u) => u.role === "Maestro" || u.role === UserRole.MAESTRO)
+        [UserRole.MAESTRO]: users.filter((u) => u.role === 'Maestro' || u.role === UserRole.MAESTRO)
           .length,
         [UserRole.DIRECTOR]: users.filter(
-          (u) => u.role === "Director" || u.role === UserRole.DIRECTOR
+          (u) => u.role === 'Director' || u.role === UserRole.DIRECTOR,
         ).length,
         [UserRole.ADMINISTRADOR]: users.filter(
-          (u) => u.role === "Admin" || u.role === UserRole.ADMINISTRADOR
+          (u) => u.role === 'Admin' || u.role === UserRole.ADMINISTRADOR,
         ).length,
         [UserRole.SUPERUSUARIO]: users.filter(
-          (u) => u.role === "Superusuario" || u.role === UserRole.SUPERUSUARIO
+          (u) => u.role === 'Superusuario' || u.role === UserRole.SUPERUSUARIO,
         ).length,
         [UserRole.COLABORADOR]: users.filter(
-          (u) => u.role === "Colaborador" || u.role === UserRole.COLABORADOR
+          (u) => u.role === 'Colaborador' || u.role === UserRole.COLABORADOR,
         ).length,
-        [UserRole.MONITOR]: users.filter((u) => u.role === "Monitor" || u.role === UserRole.MONITOR)
+        [UserRole.MONITOR]: users.filter((u) => u.role === 'Monitor' || u.role === UserRole.MONITOR)
           .length,
-      }
+      };
 
-      console.log("✅ Estadísticas de usuarios:", {
+      console.log('✅ Estadísticas de usuarios:', {
         totalUsers,
         activeUsers,
         newUsersThisMonth,
         usersByRole,
-      })
+      });
 
       return {
         totalUsers,
         activeUsers,
         newUsersThisMonth,
         usersByRole,
-      }
+      };
     } catch (error) {
-      console.error("❌ Error obteniendo estadísticas de usuarios:", error)
+      console.error('❌ Error obteniendo estadísticas de usuarios:', error);
       return {
         totalUsers: 0,
         activeUsers: 0,
@@ -481,88 +481,88 @@ class SuperusuarioService {
           [UserRole.COLABORADOR]: 0,
           [UserRole.MONITOR]: 0,
         },
-      }
+      };
     }
   }
 
   private async getStudentStatistics() {
     try {
-      console.log("🎓 Obteniendo estadísticas de estudiantes...")
+      console.log('🎓 Obteniendo estadísticas de estudiantes...');
 
       // Obtener todos los estudiantes
-      const studentsSnapshot = await getDocs(collection(db, "estudiantes"))
-      const students = studentsSnapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}))
+      const studentsSnapshot = await getDocs(collection(db, 'estudiantes'));
+      const students = studentsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-      const totalStudents = students.length
+      const totalStudents = students.length;
       const activeStudents = students.filter(
-        (student) => student.activo !== false && student.estado !== "inactivo"
-      ).length
+        (student) => student.activo !== false && student.estado !== 'inactivo',
+      ).length;
 
       // Calcular estudiantes nuevos este mes
-      const thisMonth = new Date()
-      thisMonth.setDate(1)
-      thisMonth.setHours(0, 0, 0, 0)
+      const thisMonth = new Date();
+      thisMonth.setDate(1);
+      thisMonth.setHours(0, 0, 0, 0);
 
       const newStudentsThisMonth = students.filter((student) => {
-        if (!student.fechaInscripcion && !student.createdAt) return false
+        if (!student.fechaInscripcion && !student.createdAt) return false;
         const createdDate = student.fechaInscripcion?.toDate
           ? student.fechaInscripcion.toDate()
           : student.createdAt?.toDate
             ? student.createdAt.toDate()
-            : new Date(student.fechaInscripcion || student.createdAt)
-        return createdDate >= thisMonth
-      }).length
+            : new Date(student.fechaInscripcion || student.createdAt);
+        return createdDate >= thisMonth;
+      }).length;
 
-      console.log("✅ Estadísticas de estudiantes:", {
+      console.log('✅ Estadísticas de estudiantes:', {
         totalStudents,
         activeStudents,
         newStudentsThisMonth,
-      })
+      });
 
       return {
         totalStudents,
         activeStudents,
         newStudentsThisMonth,
-      }
+      };
     } catch (error) {
-      console.error("❌ Error obteniendo estadísticas de estudiantes:", error)
+      console.error('❌ Error obteniendo estadísticas de estudiantes:', error);
       return {
         totalStudents: 0,
         activeStudents: 0,
         newStudentsThisMonth: 0,
-      }
+      };
     }
   }
 
   private async getRecentAuditLogs(): Promise<any[]> {
     try {
-      console.log("📋 Obteniendo logs de auditoría recientes...")
+      console.log('📋 Obteniendo logs de auditoría recientes...');
 
       const logsSnapshot = await getDocs(
-        query(collection(db, this.COLLECTIONS.AUDIT_LOGS), orderBy("timestamp", "desc"), limit(10))
-      )
+        query(collection(db, this.COLLECTIONS.AUDIT_LOGS), orderBy('timestamp', 'desc'), limit(10)),
+      );
 
       const logs = logsSnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         timestamp: doc.data().timestamp?.toDate ? doc.data().timestamp.toDate() : new Date(),
-      }))
+      }));
 
-      console.log(`✅ ${logs.length} logs de auditoría obtenidos`)
-      return logs
+      console.log(`✅ ${logs.length} logs de auditoría obtenidos`);
+      return logs;
     } catch (error) {
-      console.error("❌ Error obteniendo logs de auditoría:", error)
-      return []
+      console.error('❌ Error obteniendo logs de auditoría:', error);
+      return [];
     }
   }
 
   private getFallbackDashboardData(): SuperusuarioDashboardData {
-    console.log("⚠️ Usando datos de fallback para el dashboard")
+    console.log('⚠️ Usando datos de fallback para el dashboard');
     return {
       systemHealth: {
-        status: "healthy",
+        status: 'healthy',
         uptime: 0,
-        version: "1.0.0",
+        version: '1.0.0',
       },
       userStats: {
         totalUsers: 0,
@@ -587,7 +587,7 @@ class SuperusuarioService {
       },
       recentAuditLogs: [],
       systemAlerts: [],
-    }
+    };
   }
 
   private async getSystemAlerts(): Promise<SystemAlert[]> {
@@ -603,36 +603,36 @@ class SuperusuarioService {
       // return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SystemAlert[];      // Por ahora retornamos datos simulados hasta que se configure la colección de alertas
       return [
         {
-          id: "1",
-          type: "warning",
-          title: "Memoria del servidor alta",
-          message: "El uso de memoria ha superado el 85%",
+          id: '1',
+          type: 'warning',
+          title: 'Memoria del servidor alta',
+          message: 'El uso de memoria ha superado el 85%',
           timestamp: new Date(),
           isRead: false,
           actionRequired: true,
         },
         {
-          id: "2",
-          type: "info",
-          title: "Backup completado",
-          message: "Backup diario completado exitosamente",
+          id: '2',
+          type: 'info',
+          title: 'Backup completado',
+          message: 'Backup diario completado exitosamente',
           timestamp: new Date(Date.now() - 3600000), // 1 hora atrás
           isRead: false,
           actionRequired: false,
         },
         {
-          id: "3",
-          type: "error",
-          title: "Error de conexión",
-          message: "Problemas de conectividad detectados",
+          id: '3',
+          type: 'error',
+          title: 'Error de conexión',
+          message: 'Problemas de conectividad detectados',
           timestamp: new Date(Date.now() - 7200000), // 2 horas atrás
           isRead: false,
           actionRequired: true,
         },
-      ]
+      ];
     } catch (error) {
-      console.error("Error fetching system alerts:", error)
-      return []
+      console.error('Error fetching system alerts:', error);
+      return [];
     }
   }
 
@@ -642,53 +642,53 @@ class SuperusuarioService {
    */
   async getAllUsers(): Promise<any[]> {
     try {
-      const usersSnapshot = await getDocs(collection(db, "USERS"))
+      const usersSnapshot = await getDocs(collection(db, 'USERS'));
       return usersSnapshot.docs.map((doc) => {
-        const data = doc.data()
+        const data = doc.data();
         return {
           id: doc.id,
           ...data,
           createdAt: this.safeConvertTimestamp(data.createdAt),
           updatedAt: this.safeConvertTimestamp(data.updatedAt),
-        }
-      })
+        };
+      });
     } catch (error) {
-      console.error("Error fetching users:", error)
+      console.error('Error fetching users:', error);
       // Datos mock mientras se configura Firebase
       return [
         {
-          id: "user1",
-          email: "superuser@test.com",
+          id: 'user1',
+          email: 'superuser@test.com',
           role: UserRole.SUPERUSUARIO,
           isActive: true,
-          displayName: "Superusuario Test",
+          displayName: 'Superusuario Test',
           createdAt: new Date(),
         },
         {
-          id: "user2",
-          email: "admin@test.com",
+          id: 'user2',
+          email: 'admin@test.com',
           role: UserRole.ADMINISTRADOR,
           isActive: true,
-          displayName: "Administrador Test",
+          displayName: 'Administrador Test',
           createdAt: new Date(),
         },
         {
-          id: "user3",
-          email: "director@test.com",
+          id: 'user3',
+          email: 'director@test.com',
           role: UserRole.DIRECTOR,
           isActive: true,
-          displayName: "Director Test",
+          displayName: 'Director Test',
           createdAt: new Date(),
         },
         {
-          id: "user4",
-          email: "teacher@test.com",
+          id: 'user4',
+          email: 'teacher@test.com',
           role: UserRole.MAESTRO,
           isActive: false,
-          displayName: "Maestro Test",
+          displayName: 'Maestro Test',
           createdAt: new Date(),
         },
-      ]
+      ];
     }
   }
 
@@ -697,36 +697,36 @@ class SuperusuarioService {
    */
   async changeUserRole(userId: string, newRole: UserRole, reason: string): Promise<void> {
     try {
-      const userRef = doc(db, "USERS", userId)
-      const userData = await getDoc(userRef)
+      const userRef = doc(db, 'USERS', userId);
+      const userData = await getDoc(userRef);
 
       if (!userData.exists()) {
-        throw new Error("Usuario no encontrado")
+        throw new Error('Usuario no encontrado');
       }
 
-      const oldRole = userData.data().role
+      const oldRole = userData.data().role;
 
       await updateDoc(userRef, {
         role: newRole,
         updatedAt: Timestamp.now(),
-        updatedBy: "current_superuser", // TODO: obtener del contexto actual
-      })
+        updatedBy: 'current_superuser', // TODO: obtener del contexto actual
+      });
 
       // Registrar auditoría
       await this.createAuditLog({
-        action: "ROLE_CHANGE",
-        resource: "user",
+        action: 'ROLE_CHANGE',
+        resource: 'user',
         resourceId: userId,
-        oldValue: {role: oldRole},
-        newValue: {role: newRole},
-        metadata: {reason},
-      })
+        oldValue: { role: oldRole },
+        newValue: { role: newRole },
+        metadata: { reason },
+      });
 
-      console.log(`Rol de usuario ${userId} cambiado de ${oldRole} a ${newRole}`)
+      console.log(`Rol de usuario ${userId} cambiado de ${oldRole} a ${newRole}`);
     } catch (error) {
-      console.error("Error changing user role:", error)
+      console.error('Error changing user role:', error);
       // Simular éxito para testing
-      console.log(`[MOCK] Rol de usuario ${userId} cambiado a ${newRole}. Razón: ${reason}`)
+      console.log(`[MOCK] Rol de usuario ${userId} cambiado a ${newRole}. Razón: ${reason}`);
     }
   }
 
@@ -735,28 +735,28 @@ class SuperusuarioService {
    */
   async toggleUserStatus(userId: string, isActive: boolean): Promise<void> {
     try {
-      const userRef = doc(db, "USERS", userId)
+      const userRef = doc(db, 'USERS', userId);
 
       await updateDoc(userRef, {
         isActive,
         updatedAt: Timestamp.now(),
-        updatedBy: "current_superuser",
-      })
+        updatedBy: 'current_superuser',
+      });
 
       // Registrar auditoría
       await this.createAuditLog({
-        action: "UPDATE",
-        resource: "user_status",
+        action: 'UPDATE',
+        resource: 'user_status',
         resourceId: userId,
-        newValue: {isActive},
-        metadata: {action: isActive ? "activated" : "deactivated"},
-      })
+        newValue: { isActive },
+        metadata: { action: isActive ? 'activated' : 'deactivated' },
+      });
 
-      console.log(`Usuario ${userId} ${isActive ? "activado" : "desactivado"}`)
+      console.log(`Usuario ${userId} ${isActive ? 'activado' : 'desactivado'}`);
     } catch (error) {
-      console.error("Error toggling user status:", error)
+      console.error('Error toggling user status:', error);
       // Simular éxito para testing
-      console.log(`[MOCK] Usuario ${userId} ${isActive ? "activado" : "desactivado"}`)
+      console.log(`[MOCK] Usuario ${userId} ${isActive ? 'activado' : 'desactivado'}`);
     }
   }
 
@@ -771,29 +771,29 @@ class SuperusuarioService {
   }): Promise<string> {
     try {
       // TODO: Integrar con Firebase Auth para crear el usuario
-      const newUserRef = await addDoc(collection(db, "USERS"), {
+      const newUserRef = await addDoc(collection(db, 'USERS'), {
         ...userData,
         isActive: true,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
-        createdBy: "current_superuser",
-      })
+        createdBy: 'current_superuser',
+      });
 
       // Registrar auditoría
       await this.createAuditLog({
-        action: "CREATE",
-        resource: "user",
+        action: 'CREATE',
+        resource: 'user',
         resourceId: newUserRef.id,
         newValue: userData,
-      })
+      });
 
-      return newUserRef.id
+      return newUserRef.id;
     } catch (error) {
-      console.error("Error creating user:", error)
+      console.error('Error creating user:', error);
       // Simular éxito para testing
-      const mockId = "mock-" + Date.now()
-      console.log(`[MOCK] Usuario creado: ${userData.email} con rol ${userData.role}`)
-      return mockId
+      const mockId = 'mock-' + Date.now();
+      console.log(`[MOCK] Usuario creado: ${userData.email} con rol ${userData.role}`);
+      return mockId;
     }
   }
 
@@ -807,51 +807,51 @@ class SuperusuarioService {
       // TODO: Implementar consulta real a colección de módulos
       return [
         {
-          id: "attendance",
-          name: "Asistencias",
+          id: 'attendance',
+          name: 'Asistencias',
           enabled: true,
-          description: "Gestión de asistencias de estudiantes",
-          category: "academic",
+          description: 'Gestión de asistencias de estudiantes',
+          category: 'academic',
         },
         {
-          id: "repertorio",
-          name: "Repertorio",
+          id: 'repertorio',
+          name: 'Repertorio',
           enabled: true,
-          description: "Gestión de repertorio musical",
-          category: "academic",
+          description: 'Gestión de repertorio musical',
+          category: 'academic',
         },
         {
-          id: "students",
-          name: "Estudiantes",
+          id: 'students',
+          name: 'Estudiantes',
           enabled: true,
-          description: "Gestión de estudiantes",
-          category: "core",
+          description: 'Gestión de estudiantes',
+          category: 'core',
         },
         {
-          id: "teachers",
-          name: "Maestros",
+          id: 'teachers',
+          name: 'Maestros',
           enabled: true,
-          description: "Gestión de maestros",
-          category: "core",
+          description: 'Gestión de maestros',
+          category: 'core',
         },
         {
-          id: "reports",
-          name: "Reportes",
+          id: 'reports',
+          name: 'Reportes',
           enabled: false,
-          description: "Generación de reportes",
-          category: "reporting",
+          description: 'Generación de reportes',
+          category: 'reporting',
         },
         {
-          id: "notifications",
-          name: "Notificaciones",
+          id: 'notifications',
+          name: 'Notificaciones',
           enabled: true,
-          description: "Sistema de notificaciones",
-          category: "system",
+          description: 'Sistema de notificaciones',
+          category: 'system',
         },
-      ]
+      ];
     } catch (error) {
-      console.error("Error fetching system modules:", error)
-      return []
+      console.error('Error fetching system modules:', error);
+      return [];
     }
   }
 
@@ -861,19 +861,19 @@ class SuperusuarioService {
   async toggleModule(moduleId: string, enabled: boolean): Promise<void> {
     try {
       // TODO: Implementar actualización real en Firebase
-      console.log(`[MOCK] Módulo ${moduleId} ${enabled ? "habilitado" : "deshabilitado"}`)
+      console.log(`[MOCK] Módulo ${moduleId} ${enabled ? 'habilitado' : 'deshabilitado'}`);
 
       // Registrar auditoría
       await this.createAuditLog({
-        action: "UPDATE",
-        resource: "system_module",
+        action: 'UPDATE',
+        resource: 'system_module',
         resourceId: moduleId,
-        newValue: {enabled},
-        metadata: {action: enabled ? "enabled" : "disabled"},
-      })
+        newValue: { enabled },
+        metadata: { action: enabled ? 'enabled' : 'disabled' },
+      });
     } catch (error) {
-      console.error("Error toggling module:", error)
-      throw new Error(`No se pudo ${enabled ? "habilitar" : "deshabilitar"} el módulo`)
+      console.error('Error toggling module:', error);
+      throw new Error(`No se pudo ${enabled ? 'habilitar' : 'deshabilitar'} el módulo`);
     }
   }
 
@@ -884,56 +884,56 @@ class SuperusuarioService {
    */
   async runSystemMaintenance(): Promise<void> {
     try {
-      console.log("Iniciando mantenimiento del sistema...")
+      console.log('Iniciando mantenimiento del sistema...');
 
       // Simular operaciones de mantenimiento
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Registrar auditoría
       await this.createAuditLog({
-        action: "SYSTEM_CONFIG",
-        resource: "system_maintenance",
+        action: 'SYSTEM_CONFIG',
+        resource: 'system_maintenance',
         metadata: {
-          operation: "maintenance",
-          status: "completed",
-          duration: "2 seconds",
+          operation: 'maintenance',
+          status: 'completed',
+          duration: '2 seconds',
         },
-      })
+      });
 
-      console.log("Mantenimiento completado exitosamente")
+      console.log('Mantenimiento completado exitosamente');
     } catch (error) {
-      console.error("Error durante mantenimiento:", error)
-      throw new Error("Error durante el mantenimiento del sistema")
+      console.error('Error durante mantenimiento:', error);
+      throw new Error('Error durante el mantenimiento del sistema');
     }
   }
 
   /**
    * Exporta datos del sistema
    */
-  async exportSystemData(format: "json" | "csv" | "xlsx"): Promise<string> {
+  async exportSystemData(format: 'json' | 'csv' | 'xlsx'): Promise<string> {
     try {
-      console.log(`Exportando datos del sistema en formato ${format}...`)
+      console.log(`Exportando datos del sistema en formato ${format}...`);
 
       // Simular exportación
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      const exportId = `export_${Date.now()}.${format}`
+      const exportId = `export_${Date.now()}.${format}`;
 
       // Registrar auditoría
       await this.createAuditLog({
-        action: "SYSTEM_CONFIG",
-        resource: "data_export",
+        action: 'SYSTEM_CONFIG',
+        resource: 'data_export',
         metadata: {
           format,
           exportId,
-          status: "completed",
+          status: 'completed',
         },
-      })
+      });
 
-      return exportId
+      return exportId;
     } catch (error) {
-      console.error("Error during data export:", error)
-      throw new Error("Error durante la exportación de datos")
+      console.error('Error during data export:', error);
+      throw new Error('Error durante la exportación de datos');
     }
   }
 
@@ -942,65 +942,65 @@ class SuperusuarioService {
    */
   async createSystemBackup(description: string): Promise<string> {
     try {
-      console.log("Creando backup del sistema...")
+      console.log('Creando backup del sistema...');
 
       // Simular creación de backup
-      await new Promise((resolve) => setTimeout(resolve, 5000))
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
-      const backupId = `backup_${Date.now()}`
+      const backupId = `backup_${Date.now()}`;
 
       // Registrar auditoría
       await this.createAuditLog({
-        action: "SYSTEM_CONFIG",
-        resource: "system_backup",
+        action: 'SYSTEM_CONFIG',
+        resource: 'system_backup',
         metadata: {
           backupId,
           description,
-          status: "completed",
+          status: 'completed',
         },
-      })
+      });
 
-      return backupId
+      return backupId;
     } catch (error) {
-      console.error("Error creating backup:", error)
-      throw new Error("Error durante la creación del backup")
+      console.error('Error creating backup:', error);
+      throw new Error('Error durante la creación del backup');
     }
   }
 
   async createBackup(collections: string[], description: string): Promise<string> {
     try {
-      const backupRecord: Omit<BackupRecord, "id"> = {
-        configurationId: "manual",
+      const backupRecord: Omit<BackupRecord, 'id'> = {
+        configurationId: 'manual',
         fileName: `backup_${Date.now()}.json`,
         fileSize: 0,
         collections,
         documentCount: 0,
-        status: "pending",
-        createdBy: "current_user", // Debería obtenerse del contexto
+        status: 'pending',
+        createdBy: 'current_user', // Debería obtenerse del contexto
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
-      }
+      };
 
       const docRef = await addDoc(collection(db, this.COLLECTIONS.BACKUP_RECORDS), {
         ...backupRecord,
         createdAt: Timestamp.now(),
         expiresAt: Timestamp.fromDate(backupRecord.expiresAt),
-      })
+      });
 
       // Aquí se iniciaría el proceso de respaldo real
       // En una implementación completa, esto sería un Cloud Function
 
       await this.createAuditLog({
-        action: "CREATE",
-        resource: "backup",
+        action: 'CREATE',
+        resource: 'backup',
         resourceId: docRef.id,
-        metadata: {collections, description},
-      })
+        metadata: { collections, description },
+      });
 
-      return docRef.id
+      return docRef.id;
     } catch (error) {
-      console.error("Error creating backup:", error)
-      throw new Error("No se pudo crear el respaldo")
+      console.error('Error creating backup:', error);
+      throw new Error('No se pudo crear el respaldo');
     }
   }
 
@@ -1009,19 +1009,19 @@ class SuperusuarioService {
   async toggleNetworkStatus(enable: boolean): Promise<void> {
     try {
       if (enable) {
-        await enableNetwork(db)
+        await enableNetwork(db);
       } else {
-        await disableNetwork(db)
+        await disableNetwork(db);
       }
 
       await this.createAuditLog({
-        action: "SYSTEM_CONFIG",
-        resource: "network_status",
-        newValue: {enabled: enable},
-      })
+        action: 'SYSTEM_CONFIG',
+        resource: 'network_status',
+        newValue: { enabled: enable },
+      });
     } catch (error) {
-      console.error("Error toggling network status:", error)
-      throw new Error("No se pudo cambiar el estado de la red")
+      console.error('Error toggling network status:', error);
+      throw new Error('No se pudo cambiar el estado de la red');
     }
   }
 
@@ -1030,23 +1030,23 @@ class SuperusuarioService {
     const unsubscribe = onSnapshot(
       query(
         collection(db, this.COLLECTIONS.ALERTS),
-        where("isRead", "==", false),
-        orderBy("timestamp", "desc"),
-        limit(10)
+        where('isRead', '==', false),
+        orderBy('timestamp', 'desc'),
+        limit(10),
       ),
       (snapshot) => {
         const alerts = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
           timestamp: doc.data().timestamp?.toDate(),
-        })) as SystemAlert[]
-        callback(alerts)
+        })) as SystemAlert[];
+        callback(alerts);
       },
       (error) => {
-        console.error("Error listening to system alerts:", error)
-      }
-    )
-    return unsubscribe
+        console.error('Error listening to system alerts:', error);
+      },
+    );
+    return unsubscribe;
   }
 
   // ========== MÉTODOS UTILITARIOS ==========
@@ -1058,47 +1058,47 @@ class SuperusuarioService {
     try {
       // Si es null o undefined, retorna null
       if (!timestamp) {
-        return null
+        return null;
       }
 
       // Si ya es una instancia de Date, la retorna
       if (timestamp instanceof Date) {
-        return timestamp
+        return timestamp;
       }
 
       // Si es un Timestamp de Firestore y tiene el método toDate
-      if (timestamp && typeof timestamp.toDate === "function") {
-        return timestamp.toDate()
+      if (timestamp && typeof timestamp.toDate === 'function') {
+        return timestamp.toDate();
       }
 
       // Si es un objeto con seconds y nanoseconds (formato Timestamp)
       if (
         timestamp &&
-        typeof timestamp === "object" &&
-        "seconds" in timestamp &&
-        typeof timestamp.seconds === "number"
+        typeof timestamp === 'object' &&
+        'seconds' in timestamp &&
+        typeof timestamp.seconds === 'number'
       ) {
-        return new Date(timestamp.seconds * 1000)
+        return new Date(timestamp.seconds * 1000);
       }
 
       // Si es un string que puede ser parseado como fecha
-      if (typeof timestamp === "string") {
-        const parsed = new Date(timestamp)
-        return isNaN(parsed.getTime()) ? null : parsed
+      if (typeof timestamp === 'string') {
+        const parsed = new Date(timestamp);
+        return isNaN(parsed.getTime()) ? null : parsed;
       }
 
       // Si es un número (timestamp en milisegundos)
-      if (typeof timestamp === "number") {
-        return new Date(timestamp)
+      if (typeof timestamp === 'number') {
+        return new Date(timestamp);
       }
 
       // En cualquier otro caso, retorna null
-      return null
+      return null;
     } catch (error) {
-      console.warn("Error converting timestamp:", error, timestamp)
-      return null
+      console.warn('Error converting timestamp:', error, timestamp);
+      return null;
     }
   }
 }
 
-export const superusuarioService = new SuperusuarioService()
+export const superusuarioService = new SuperusuarioService();

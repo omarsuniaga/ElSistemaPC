@@ -143,10 +143,10 @@
 </template>
 
 <script>
-import {computed} from "vue"
+import { computed } from 'vue';
 
 export default {
-  name: "AttendanceOverview",
+  name: 'AttendanceOverview',
   props: {
     stats: {
       type: Object,
@@ -163,55 +163,55 @@ export default {
   },
   setup(props) {
     const getPercentage = (value) => {
-      if (props.stats.totalSessions === 0) return 0
-      return Math.round((value / props.stats.totalSessions) * 100)
-    }
+      if (props.stats.totalSessions === 0) return 0;
+      return Math.round((value / props.stats.totalSessions) * 100);
+    };
 
     const getPerformanceClass = (rate) => {
-      if (rate >= 90) return "excellent"
-      if (rate >= 80) return "good"
-      if (rate >= 70) return "average"
-      return "poor"
-    }
+      if (rate >= 90) return 'excellent';
+      if (rate >= 80) return 'good';
+      if (rate >= 70) return 'average';
+      return 'poor';
+    };
 
     const getPerformanceText = (rate) => {
-      if (rate >= 90) return "Excelente"
-      if (rate >= 80) return "Buena"
-      if (rate >= 70) return "Regular"
-      return "Deficiente"
-    }
+      if (rate >= 90) return 'Excelente';
+      if (rate >= 80) return 'Buena';
+      if (rate >= 70) return 'Regular';
+      return 'Deficiente';
+    };
 
     const getPunctualityClass = () => {
-      const lateRate = getPercentage(props.stats.totalLate)
-      if (lateRate <= 5) return "excellent"
-      if (lateRate <= 10) return "good"
-      if (lateRate <= 20) return "average"
-      return "poor"
-    }
+      const lateRate = getPercentage(props.stats.totalLate);
+      if (lateRate <= 5) return 'excellent';
+      if (lateRate <= 10) return 'good';
+      if (lateRate <= 20) return 'average';
+      return 'poor';
+    };
 
     const getPunctualityText = () => {
-      const lateRate = getPercentage(props.stats.totalLate)
-      if (lateRate <= 5) return "Excelente"
-      if (lateRate <= 10) return "Buena"
-      if (lateRate <= 20) return "Regular"
-      return "Deficiente"
-    }
+      const lateRate = getPercentage(props.stats.totalLate);
+      if (lateRate <= 5) return 'Excelente';
+      if (lateRate <= 10) return 'Buena';
+      if (lateRate <= 20) return 'Regular';
+      return 'Deficiente';
+    };
 
     const getParticipationClass = () => {
-      const participationRate = props.stats.attendanceRate
-      if (participationRate >= 85) return "excellent"
-      if (participationRate >= 75) return "good"
-      if (participationRate >= 65) return "average"
-      return "poor"
-    }
+      const participationRate = props.stats.attendanceRate;
+      if (participationRate >= 85) return 'excellent';
+      if (participationRate >= 75) return 'good';
+      if (participationRate >= 65) return 'average';
+      return 'poor';
+    };
 
     const getParticipationText = () => {
-      const participationRate = props.stats.attendanceRate
-      if (participationRate >= 85) return "Alta"
-      if (participationRate >= 75) return "Media"
-      if (participationRate >= 65) return "Regular"
-      return "Baja"
-    }
+      const participationRate = props.stats.attendanceRate;
+      if (participationRate >= 85) return 'Alta';
+      if (participationRate >= 75) return 'Media';
+      if (participationRate >= 65) return 'Regular';
+      return 'Baja';
+    };
 
     return {
       getPercentage,
@@ -221,9 +221,9 @@ export default {
       getPunctualityText,
       getParticipationClass,
       getParticipationText,
-    }
+    };
   },
-}
+};
 </script>
 
 <style scoped>

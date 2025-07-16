@@ -11,7 +11,7 @@
         class="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer"
         @click="viewDetails(activity)"
       >
-        <h2 class="text-xl font-bold">Clase: {{ activity.classId }}</h2>
+        <h2 class="text-xl font-bold">Clase: {{ getClassName(activity.classId) }}</h2>
         <p><strong>Presentes:</strong> {{ activity.data.presentes.length }}</p>
         <p><strong>Ausentes:</strong> {{ activity.data.ausentes.length }}</p>
         <p>
@@ -32,48 +32,56 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import {useAttendanceStore} from "../store/attendance"
-import {format, parseISO, isValid} from "date-fns"
-import {es} from "date-fns/locale"
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useAttendanceStore } from '../store/attendance';
+import { useClassesStore } from '../../Classes/store/classes';
+import { format, parseISO, isValid } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-const route = useRoute()
-const router = useRouter()
-const attendanceStore = useAttendanceStore()
+const route = useRoute();
+const router = useRouter();
+const attendanceStore = useAttendanceStore();
+const classesStore = useClassesStore();
 
 // Get date param from URL (ej: "20250318")
-const routeDateParam = route.params.date as string
+const routeDateParam = route.params.date as string;
 
 // Convert from YYYYMMDD to YYYY-MM-DD
 const formattedDate = computed(() => {
   if (routeDateParam && routeDateParam.length === 8) {
-    const year = routeDateParam.substring(0, 4)
-    const month = routeDateParam.substring(4, 6)
-    const day = routeDateParam.substring(6, 8)
-    return `${year}-${month}-${day}`
+    const year = routeDateParam.substring(0, 4);
+    const month = routeDateParam.substring(4, 6);
+    const day = routeDateParam.substring(6, 8);
+    return `${year}-${month}-${day}`;
   }
-  return routeDateParam || ""
-})
+  return routeDateParam || '';
+});
 
-const activities = ref<any[]>([])
+const activities = ref<any[]>([]);
 
 onMounted(async () => {
   try {
     // Load all attendance documents
-    await attendanceStore.fetchAttendanceDocuments()
+    await attendanceStore.fetchAttendanceDocuments();
     // Filter documents matching the selected date
     activities.value = attendanceStore.attendanceDocuments.filter(
-      (doc) => doc.fecha === formattedDate.value
-    )
+      (doc) => doc.fecha === formattedDate.value,
+    );
   } catch (error) {
-    console.error("Error fetching activities:", error)
+    console.error('Error fetching activities:', error);
   }
-})
+});
 
 const viewDetails = (activity: any) => {
   // Navigate to the detail view: /attendance/YYYYMMDD/classId
-  const dateParam = route.params.date
-  router.push(`/attendance/${dateParam}/${activity.classId}`)
-}
+  const dateParam = route.params.date;
+  router.push(`/attendance/${dateParam}/${activity.classId}`);
+};
+
+// Mapeo de id de clase a nombre
+const getClassName = (classId) => {
+  const classObj = classesStore.getClassById(classId);
+  return classObj ? classObj.name : classId;
+};
 </script>

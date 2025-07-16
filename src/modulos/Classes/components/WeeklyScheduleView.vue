@@ -765,14 +765,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, inject} from "vue"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useStudentsStore} from "../../Students/store/students"
-import {useClassesStore} from "../store/classes"
-import {useAuthStore} from "../../../stores/auth"
-import {getAppConfig, setAppConfig, type AppConfig} from "../service/appConfig"
-import ScheduleStatsBar from "./ScheduleStatsBar.vue"
-import type {ClassData} from "../types/class"
+import { ref, computed, onMounted, inject } from 'vue';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useStudentsStore } from '../../Students/store/students';
+import { useClassesStore } from '../store/classes';
+import { useAuthStore } from '../../../stores/auth';
+import { getAppConfig, setAppConfig, type AppConfig } from '../service/appConfig';
+import ScheduleStatsBar from './ScheduleStatsBar.vue';
+import type { ClassData } from '../types/class';
 
 // Extend Window interface for demo system
 declare global {
@@ -785,736 +785,736 @@ interface Props {
   classes?: ClassData[]
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
-const classesStore = useClassesStore()
-const authStore = useAuthStore()
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
+const classesStore = useClassesStore();
+const authStore = useAuthStore();
 
 // Get current teacher ID from injection or auth
-const currentTeacherId = inject<string>("currentTeacherId") || authStore.user?.uid || ""
+const currentTeacherId = inject<string>('currentTeacherId') || authStore.user?.uid || '';
 
 // Reactive data
-const viewMode = ref<"week" | "list">("week")
-const searchTerm = ref("")
-const selectedTeacher = ref("")
-const selectedInstrument = ref("")
-const selectedProgram = ref("")
-const filterType = ref<"all" | "owned" | "shared-with-me" | "shared-owned">("all")
-const selectedClass = ref<ClassData | null>(null)
-const currentWeekStart = ref(new Date())
-const isLoading = ref(false)
-const loadingMessage = ref("Cargando datos...")
+const viewMode = ref<'week' | 'list'>('week');
+const searchTerm = ref('');
+const selectedTeacher = ref('');
+const selectedInstrument = ref('');
+const selectedProgram = ref('');
+const filterType = ref<'all' | 'owned' | 'shared-with-me' | 'shared-owned'>('all');
+const selectedClass = ref<ClassData | null>(null);
+const currentWeekStart = ref(new Date());
+const isLoading = ref(false);
+const loadingMessage = ref('Cargando datos...');
 
 // Permissions modal
-const showPermissionsModal = ref(false)
-const selectedClassForPermissions = ref<ClassData | null>(null)
-const tempPermissions = ref<Record<string, string[]>>({})
+const showPermissionsModal = ref(false);
+const selectedClassForPermissions = ref<ClassData | null>(null);
+const tempPermissions = ref<Record<string, string[]>>({});
 
 // Time configuration
 const timeConfig = ref<AppConfig>({
   esTemprano: true,
   esTarde: true,
   esNoche: true,
-  viewMode: "standard",
-})
+  viewMode: 'standard',
+});
 
 // Computed properties
 const allClasses = computed(() => {
-  return props.classes || classesStore.classes || []
-})
+  return props.classes || classesStore.classes || [];
+});
 
 const teachers = computed(() => {
-  return teachersStore.teachers || []
-})
+  return teachersStore.teachers || [];
+});
 
 const students = computed(() => {
-  return studentsStore.students || []
-})
+  return studentsStore.students || [];
+});
 
 const instruments = computed(() => {
-  const instrumentSet = new Set<string>()
+  const instrumentSet = new Set<string>();
   allClasses.value.forEach((classItem) => {
     if (classItem.instrument) {
-      instrumentSet.add(classItem.instrument)
+      instrumentSet.add(classItem.instrument);
     }
-  })
-  return Array.from(instrumentSet).sort()
-})
+  });
+  return Array.from(instrumentSet).sort();
+});
 
 const filteredClasses = computed(() => {
-  let classes = allClasses.value
+  let classes = allClasses.value;
 
   // Apply search filter
   if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase()
+    const term = searchTerm.value.toLowerCase();
     classes = classes.filter(
       (classItem) =>
         classItem.name?.toLowerCase().includes(term) ||
         classItem.instrument?.toLowerCase().includes(term) ||
-        classItem.description?.toLowerCase().includes(term)
-    )
+        classItem.description?.toLowerCase().includes(term),
+    );
   }
 
   // Apply teacher filter
   if (selectedTeacher.value) {
-    classes = classes.filter((classItem) => classItem.teacherId === selectedTeacher.value)
+    classes = classes.filter((classItem) => classItem.teacherId === selectedTeacher.value);
   }
 
   // Apply instrument filter
   if (selectedInstrument.value) {
-    classes = classes.filter((classItem) => classItem.instrument === selectedInstrument.value)
+    classes = classes.filter((classItem) => classItem.instrument === selectedInstrument.value);
   }
 
   // Apply program filter
   if (selectedProgram.value) {
-    classes = classes.filter((classItem) => classItem.level === selectedProgram.value)
+    classes = classes.filter((classItem) => classItem.level === selectedProgram.value);
   }
 
   // Apply shared classes filter
-  if (filterType.value !== "all") {
+  if (filterType.value !== 'all') {
     switch (filterType.value) {
-      case "owned":
-        classes = classes.filter((classItem) => classItem.teacherId === currentTeacherId)
-        break
-      case "shared-with-me":
-        classes = classes.filter((classItem) => isSharedWithMe(classItem))
-        break
-      case "shared-owned":
-        classes = classes.filter((classItem) => isMySharedClass(classItem))
-        break
+    case 'owned':
+      classes = classes.filter((classItem) => classItem.teacherId === currentTeacherId);
+      break;
+    case 'shared-with-me':
+      classes = classes.filter((classItem) => isSharedWithMe(classItem));
+      break;
+    case 'shared-owned':
+      classes = classes.filter((classItem) => isMySharedClass(classItem));
+      break;
     }
   }
 
   // Apply time period filters
   if (!timeConfig.value.esTemprano || !timeConfig.value.esTarde || !timeConfig.value.esNoche) {
     classes = classes.filter((classItem) => {
-      const schedules = getClassSchedules(classItem)
+      const schedules = getClassSchedules(classItem);
       return schedules.some((schedule) => {
-        if (!schedule.startTime) return true
+        if (!schedule.startTime) return true;
         
-        const [hours] = schedule.startTime.split(":").map(Number)
+        const [hours] = schedule.startTime.split(':').map(Number);
         
         // Check if class falls within active time periods
-        if (timeConfig.value.esTemprano && hours >= 7 && hours < 14) return true
-        if (timeConfig.value.esTarde && hours >= 14 && hours < 19) return true
-        if (timeConfig.value.esNoche && hours >= 19 && hours < 23) return true
+        if (timeConfig.value.esTemprano && hours >= 7 && hours < 14) return true;
+        if (timeConfig.value.esTarde && hours >= 14 && hours < 19) return true;
+        if (timeConfig.value.esNoche && hours >= 19 && hours < 23) return true;
         
-        return false
-      })
-    })
+        return false;
+      });
+    });
   }
 
-  return classes
-})
+  return classes;
+});
 
 const weekDays = computed(() => {
-  const days = []
+  const days = [];
   for (let i = 0; i < 6; i++) {
-    const date = new Date(currentWeekStart.value)
-    date.setDate(currentWeekStart.value.getDate() + i)
+    const date = new Date(currentWeekStart.value);
+    date.setDate(currentWeekStart.value.getDate() + i);
     
-    const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayNamesSpanish = [
-      "Domingo",
-      "Lunes",
-      "Martes",
-      "Miércoles",
-      "Jueves",
-      "Viernes",
-      "Sábado",
-    ]
+      'Domingo',
+      'Lunes',
+      'Martes',
+      'Miércoles',
+      'Jueves',
+      'Viernes',
+      'Sábado',
+    ];
     
     days.push({
       key: dayNames[date.getDay()],
       name: dayNamesSpanish[date.getDay()],
-      date: date.toLocaleDateString("es-ES", {day: "numeric", month: "short"}),
+      date: date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
       fullDate: date,
-    })
+    });
   }
-  return days
-})
+  return days;
+});
 
 const timeSlots = computed(() => {
-  const slots = []
+  const slots = [];
   
   // Generate time slots based on active periods
   if (timeConfig.value.esTemprano) {
     for (let hour = 7; hour < 14; hour++) {
-      slots.push(`${hour.toString().padStart(2, "0")}:00`)
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
     }
   }
   
   if (timeConfig.value.esTarde) {
     for (let hour = 14; hour < 19; hour++) {
-      slots.push(`${hour.toString().padStart(2, "0")}:00`)
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
     }
   }
   
   if (timeConfig.value.esNoche) {
     for (let hour = 19; hour < 23; hour++) {
-      slots.push(`${hour.toString().padStart(2, "0")}:00`)
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
     }
   }
   
   // If no periods are selected, show all day
   if (!timeConfig.value.esTemprano && !timeConfig.value.esTarde && !timeConfig.value.esNoche) {
     for (let hour = 7; hour < 23; hour++) {
-      slots.push(`${hour.toString().padStart(2, "0")}:00`)
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
     }
   }
   
-  return slots
-})
+  return slots;
+});
 
 // Set current week to start of week (Monday)
 const setCurrentWeekStart = () => {
-  const today = new Date()
-  const dayOfWeek = today.getDay()
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1))
-  monday.setHours(0, 0, 0, 0)
-  currentWeekStart.value = monday
-}
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  monday.setHours(0, 0, 0, 0);
+  currentWeekStart.value = monday;
+};
 
 // Save time configuration to Firestore
 const saveTimeConfig = async () => {
   try {
-    await setAppConfig(timeConfig.value)
-    console.log("Configuración de tiempo guardada")
+    await setAppConfig(timeConfig.value);
+    console.log('Configuración de tiempo guardada');
   } catch (error) {
-    console.error("Error al guardar configuración de tiempo:", error)
+    console.error('Error al guardar configuración de tiempo:', error);
   }
-}
+};
 
 // Load time configuration from Firestore
 const loadTimeConfig = async () => {
   try {
-    const config = await getAppConfig()
-    timeConfig.value = config
-    console.log("Configuración de tiempo cargada:", config)
+    const config = await getAppConfig();
+    timeConfig.value = config;
+    console.log('Configuración de tiempo cargada:', config);
   } catch (error) {
-    console.error("Error al cargar configuración de tiempo:", error)
+    console.error('Error al cargar configuración de tiempo:', error);
   }
-}
+};
 
 // Shared classes helper functions
 const isSharedWithMe = (classItem: ClassData): boolean => {
-  if (!classItem.teachers || !Array.isArray(classItem.teachers)) return false
+  if (!classItem.teachers || !Array.isArray(classItem.teachers)) return false;
 
   const isInTeachers = classItem.teachers.some((teacherItem) => {
-    if (typeof teacherItem === "string") {
-      return teacherItem === currentTeacherId
-    } else if (typeof teacherItem === "object" && teacherItem.teacherId) {
-      return teacherItem.teacherId === currentTeacherId
+    if (typeof teacherItem === 'string') {
+      return teacherItem === currentTeacherId;
+    } else if (typeof teacherItem === 'object' && teacherItem.teacherId) {
+      return teacherItem.teacherId === currentTeacherId;
     }
-    return false
-  })
+    return false;
+  });
 
-  return isInTeachers && classItem.teacherId !== currentTeacherId
-}
+  return isInTeachers && classItem.teacherId !== currentTeacherId;
+};
 
 const isMySharedClass = (classItem: ClassData): boolean => {
-  if (!classItem.teachers || !Array.isArray(classItem.teachers)) return false
+  if (!classItem.teachers || !Array.isArray(classItem.teachers)) return false;
 
-  return classItem.teacherId === currentTeacherId && classItem.teachers.length > 1
-}
+  return classItem.teacherId === currentTeacherId && classItem.teachers.length > 1;
+};
 
 const canManagePermissions = (classItem: ClassData): boolean => {
   // Only the owner can manage permissions, or users with 'manage' permission
-  if (classItem.teacherId === currentTeacherId) return true
+  if (classItem.teacherId === currentTeacherId) return true;
 
-  const myPermissions = getMyPermissions(classItem)
-  return myPermissions.includes("manage")
-}
+  const myPermissions = getMyPermissions(classItem);
+  return myPermissions.includes('manage');
+};
 
 const getMyPermissions = (classItem: ClassData): string[] => {
-  if (!classItem.permissions || typeof classItem.permissions !== "object") return ["read"]
+  if (!classItem.permissions || typeof classItem.permissions !== 'object') return ['read'];
 
-  return classItem.permissions[currentTeacherId] || ["read"]
-}
+  return classItem.permissions[currentTeacherId] || ['read'];
+};
 
 const getTeacherPermissions = (classItem: ClassData | null, teacherId: string): string[] => {
-  if (!classItem?.permissions || typeof classItem.permissions !== "object") return ["read"]
+  if (!classItem?.permissions || typeof classItem.permissions !== 'object') return ['read'];
 
-  return classItem.permissions[teacherId] || ["read"]
-}
+  return classItem.permissions[teacherId] || ['read'];
+};
 
 const getPermissionText = (permissions: string[]): string => {
-  if (!permissions || permissions.length === 0) return "Sin permisos"
+  if (!permissions || permissions.length === 0) return 'Sin permisos';
 
-  if (permissions.includes("manage")) return "Administrador"
-  if (permissions.includes("write")) return "Editor"
-  if (permissions.includes("read")) return "Solo lectura"
+  if (permissions.includes('manage')) return 'Administrador';
+  if (permissions.includes('write')) return 'Editor';
+  if (permissions.includes('read')) return 'Solo lectura';
 
-  return "Permisos personalizados"
-}
+  return 'Permisos personalizados';
+};
 
 const getPermissionLevel = (classItem: ClassData | null, teacherId: string): string => {
-  const permissions = getTeacherPermissions(classItem, teacherId)
+  const permissions = getTeacherPermissions(classItem, teacherId);
 
-  if (permissions.includes("manage")) return "manage"
-  if (permissions.includes("write")) return "write"
-  return "read"
-}
+  if (permissions.includes('manage')) return 'manage';
+  if (permissions.includes('write')) return 'write';
+  return 'read';
+};
 
 const getSharedTeachers = (classItem: ClassData | null) => {
-  if (!classItem?.teachers || !Array.isArray(classItem.teachers)) return []
+  if (!classItem?.teachers || !Array.isArray(classItem.teachers)) return [];
 
   return classItem.teachers
     .filter((teacherItem) => {
-      const teacherId = typeof teacherItem === "string" ? teacherItem : teacherItem.teacherId
-      return teacherId !== classItem.teacherId // Exclude the owner
+      const teacherId = typeof teacherItem === 'string' ? teacherItem : teacherItem.teacherId;
+      return teacherId !== classItem.teacherId; // Exclude the owner
     })
     .map((teacherItem) => {
-      const teacherId = typeof teacherItem === "string" ? teacherItem : teacherItem.teacherId
-      const teacher = teachers.value?.find((t) => t.id === teacherId)
+      const teacherId = typeof teacherItem === 'string' ? teacherItem : teacherItem.teacherId;
+      const teacher = teachers.value?.find((t) => t.id === teacherId);
       return {
         id: teacherId,
         name: teacher?.name || `Maestro ${teacherId}`,
-      }
-    })
-}
+      };
+    });
+};
 
 // Permissions modal functions
 const openShareModal = (classItem: ClassData) => {
-  selectedClassForPermissions.value = classItem
-  tempPermissions.value = {...(classItem.permissions || {})}
-  showPermissionsModal.value = true
-}
+  selectedClassForPermissions.value = classItem;
+  tempPermissions.value = { ...(classItem.permissions || {}) };
+  showPermissionsModal.value = true;
+};
 
 const editClass = (classItem: ClassData) => {
   // Placeholder for navigation logic
-  console.log(`Navegar a la edición de la clase: ${classItem.id}`)
+  console.log(`Navegar a la edición de la clase: ${classItem.id}`);
   // Example with vue-router:
   // router.push({ name: 'admin-class-edit', params: { id: classItem.id } });
-}
+};
 
 const closePermissionsModal = () => {
-  showPermissionsModal.value = false
-  selectedClassForPermissions.value = null
-  tempPermissions.value = {}
-}
+  showPermissionsModal.value = false;
+  selectedClassForPermissions.value = null;
+  tempPermissions.value = {};
+};
 
 const updatePermission = (teacherId: string, level: string) => {
   switch (level) {
-    case "read":
-      tempPermissions.value[teacherId] = ["read"]
-      break
-    case "write":
-      tempPermissions.value[teacherId] = ["read", "write"]
-      break
-    case "manage":
-      tempPermissions.value[teacherId] = ["read", "write", "manage"]
-      break
-    default:
-      tempPermissions.value[teacherId] = ["read"]
+  case 'read':
+    tempPermissions.value[teacherId] = ['read'];
+    break;
+  case 'write':
+    tempPermissions.value[teacherId] = ['read', 'write'];
+    break;
+  case 'manage':
+    tempPermissions.value[teacherId] = ['read', 'write', 'manage'];
+    break;
+  default:
+    tempPermissions.value[teacherId] = ['read'];
   }
-}
+};
 
 const savePermissions = async () => {
-  if (!selectedClassForPermissions.value) return
+  if (!selectedClassForPermissions.value) return;
 
   try {
-    isLoading.value = true
-    loadingMessage.value = "Guardando permisos..."
+    isLoading.value = true;
+    loadingMessage.value = 'Guardando permisos...';
 
     // Update the class with new permissions
     const updatedClass = {
       ...selectedClassForPermissions.value,
       permissions: tempPermissions.value,
-    }
+    };
 
-    await classesStore.updateClass(updatedClass)
+    await classesStore.updateClass(updatedClass);
 
-    closePermissionsModal()
+    closePermissionsModal();
 
     // Refresh data to reflect changes
-    await refreshData()
+    await refreshData();
   } catch (error) {
-    console.error("Error al guardar permisos:", error)
+    console.error('Error al guardar permisos:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Methods
 const getWeekRange = () => {
-  const endDate = new Date(currentWeekStart.value)
-  endDate.setDate(currentWeekStart.value.getDate() + 5) // Saturday
+  const endDate = new Date(currentWeekStart.value);
+  endDate.setDate(currentWeekStart.value.getDate() + 5); // Saturday
 
-  const startStr = currentWeekStart.value.toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "short",
-  })
-  const endStr = endDate.toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "short",
-  })
+  const startStr = currentWeekStart.value.toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+  });
+  const endStr = endDate.toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+  });
 
-  return `${startStr} - ${endStr}`
-}
+  return `${startStr} - ${endStr}`;
+};
 
 const previousWeek = () => {
-  const newDate = new Date(currentWeekStart.value)
-  newDate.setDate(currentWeekStart.value.getDate() - 7)
-  currentWeekStart.value = newDate
-}
+  const newDate = new Date(currentWeekStart.value);
+  newDate.setDate(currentWeekStart.value.getDate() - 7);
+  currentWeekStart.value = newDate;
+};
 
 const nextWeek = () => {
-  const newDate = new Date(currentWeekStart.value)
-  newDate.setDate(currentWeekStart.value.getDate() + 7)
-  currentWeekStart.value = newDate
-}
+  const newDate = new Date(currentWeekStart.value);
+  newDate.setDate(currentWeekStart.value.getDate() + 7);
+  currentWeekStart.value = newDate;
+};
 
 const formatTimeSlot = (timeSlot: string) => {
-  const [hours, minutes] = timeSlot.split(":")
-  const hour = parseInt(hours)
-  const ampm = hour >= 12 ? "PM" : "AM"
-  const displayHour = hour % 12 || 12
-  return `${displayHour}:${minutes} ${ampm}`
-}
+  const [hours, minutes] = timeSlot.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minutes} ${ampm}`;
+};
 
 const formatTime = (time: string) => {
-  if (!time) return ""
-  const [hours, minutes] = time.split(":")
-  const hour = parseInt(hours)
-  const ampm = hour >= 12 ? "PM" : "AM"
-  const displayHour = hour % 12 || 12
-  return `${displayHour}:${minutes} ${ampm}`
-}
+  if (!time) return '';
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  return `${displayHour}:${minutes} ${ampm}`;
+};
 
 const getDayName = (day: string) => {
   const dayNames: Record<string, string> = {
-    monday: "Lunes",
-    tuesday: "Martes",
-    wednesday: "Miércoles",
-    thursday: "Jueves",
-    friday: "Viernes",
-    saturday: "Sábado",
-  }
-  return dayNames[day] || day
-}
+    monday: 'Lunes',
+    tuesday: 'Martes',
+    wednesday: 'Miércoles',
+    thursday: 'Jueves',
+    friday: 'Viernes',
+    saturday: 'Sábado',
+  };
+  return dayNames[day] || day;
+};
 
 const getProgramName = (level?: string) => {
-  if (!level) return "Sin programa"
+  if (!level) return 'Sin programa';
   const programs: Record<string, string> = {
-    preparatoria: "Preparatoria",
-    "teoria-musical": "Teoría Musical",
-    coro: "Coro",
-    orquesta: "Orquesta",
-    otros: "Otros",
-  }
-  return programs[level] || level
-}
+    preparatoria: 'Preparatoria',
+    'teoria-musical': 'Teoría Musical',
+    coro: 'Coro',
+    orquesta: 'Orquesta',
+    otros: 'Otros',
+  };
+  return programs[level] || level;
+};
 
 const getTeacherName = (teacherId?: string) => {
-  if (!teacherId) return "Sin asignar"
-  const teacher = teachers.value.find((t) => t.id === teacherId)
-  return teacher?.name || "Sin asignar"
-}
+  if (!teacherId) return 'Sin asignar';
+  const teacher = teachers.value.find((t) => t.id === teacherId);
+  return teacher?.name || 'Sin asignar';
+};
 
 const getStudentName = (studentId: string) => {
-  const student = students.value.find((s) => s.id === studentId)
-  return student ? `${student.nombre} ${student.apellido}` : "Estudiante no encontrado"
-}
+  const student = students.value.find((s) => s.id === studentId);
+  return student ? `${student.nombre} ${student.apellido}` : 'Estudiante no encontrado';
+};
 
 const getClassSchedules = (classItem: ClassData) => {
   if (!classItem.schedule) {
-    console.log(`Clase "${classItem.name}" no tiene horario definido`)
-    return []
+    console.log(`Clase "${classItem.name}" no tiene horario definido`);
+    return [];
   }
 
   // Manejar formato con slots múltiples
-  if ("slots" in classItem.schedule && Array.isArray(classItem.schedule.slots)) {
+  if ('slots' in classItem.schedule && Array.isArray(classItem.schedule.slots)) {
     // console.log(`Clase "${classItem.name}" tiene ${classItem.schedule.slots.length} slots de horario:`, classItem.schedule.slots);
-    return classItem.schedule.slots
+    return classItem.schedule.slots;
   }
 
   // Manejar formato directo (legacy)
-  if ("day" in classItem.schedule && classItem.schedule.day) {
+  if ('day' in classItem.schedule && classItem.schedule.day) {
     const singleSlot = {
       day: classItem.schedule.day,
-      startTime: classItem.schedule.startTime || "",
-      endTime: classItem.schedule.endTime || "",
-    }
-    console.log(`Clase "${classItem.name}" tiene formato directo de horario:`, singleSlot)
-    return [singleSlot]
+      startTime: classItem.schedule.startTime || '',
+      endTime: classItem.schedule.endTime || '',
+    };
+    console.log(`Clase "${classItem.name}" tiene formato directo de horario:`, singleSlot);
+    return [singleSlot];
   }
 
   console.log(
     `Clase "${classItem.name}" tiene horario en formato no reconocido:`,
-    classItem.schedule
-  )
-  return []
-}
+    classItem.schedule,
+  );
+  return [];
+};
 
 const getClassesForDay = (day: string) => {
   const classes = filteredClasses.value
     .filter((classItem) => {
-      const schedules = getClassSchedules(classItem)
+      const schedules = getClassSchedules(classItem);
       return schedules.some((schedule) => {
-        const normalizedScheduleDay = normalizeDayName(schedule.day)
-        const normalizedTargetDay = normalizeDayName(day)
-        return normalizedScheduleDay === normalizedTargetDay
-      })
+        const normalizedScheduleDay = normalizeDayName(schedule.day);
+        const normalizedTargetDay = normalizeDayName(day);
+        return normalizedScheduleDay === normalizedTargetDay;
+      });
     })
     .sort((a, b) => {
       const aSchedule = getClassSchedules(a).find(
-        (s) => normalizeDayName(s.day) === normalizeDayName(day)
-      )
+        (s) => normalizeDayName(s.day) === normalizeDayName(day),
+      );
       const bSchedule = getClassSchedules(b).find(
-        (s) => normalizeDayName(s.day) === normalizeDayName(day)
-      )
-      if (!aSchedule || !bSchedule) return 0
-      return aSchedule.startTime.localeCompare(bSchedule.startTime)
-    })
+        (s) => normalizeDayName(s.day) === normalizeDayName(day),
+      );
+      if (!aSchedule || !bSchedule) return 0;
+      return aSchedule.startTime.localeCompare(bSchedule.startTime);
+    });
 
   console.log(
     `Clases para ${day}:`,
-    classes.map((c) => c.name)
-  )
-  return classes
-}
+    classes.map((c) => c.name),
+  );
+  return classes;
+};
 
 const getClassesForTimeSlot = (day: string, timeSlot: string) => {
   const classes = filteredClasses.value.filter((classItem) => {
-    const schedules = getClassSchedules(classItem)
+    const schedules = getClassSchedules(classItem);
 
     return schedules.some((schedule) => {
       // Normalizar el día para comparación
-      const normalizedScheduleDay = normalizeDayName(schedule.day)
-      const normalizedTargetDay = normalizeDayName(day)
+      const normalizedScheduleDay = normalizeDayName(schedule.day);
+      const normalizedTargetDay = normalizeDayName(day);
 
-      if (normalizedScheduleDay !== normalizedTargetDay) return false
+      if (normalizedScheduleDay !== normalizedTargetDay) return false;
 
       // Convertir tiempos a minutos para comparación más precisa
-      const [slotHours, slotMinutes] = timeSlot.split(":").map(Number)
-      const slotTime = slotHours * 60 + slotMinutes
+      const [slotHours, slotMinutes] = timeSlot.split(':').map(Number);
+      const slotTime = slotHours * 60 + slotMinutes;
 
-      const [startHours, startMinutes] = schedule.startTime.split(":").map(Number)
-      const startTime = startHours * 60 + startMinutes
+      const [startHours, startMinutes] = schedule.startTime.split(':').map(Number);
+      const startTime = startHours * 60 + startMinutes;
 
-      const [endHours, endMinutes] = schedule.endTime.split(":").map(Number)
-      const endTime = endHours * 60 + endMinutes
+      const [endHours, endMinutes] = schedule.endTime.split(':').map(Number);
+      const endTime = endHours * 60 + endMinutes;
 
       // The class must be active during this time slot
-      const isActiveInSlot = slotTime >= startTime && slotTime < endTime
+      const isActiveInSlot = slotTime >= startTime && slotTime < endTime;
 
       //   if (isActiveInSlot) {
       //     console.log(`Clase "${classItem.name}" activa en ${day} ${timeSlot} (${schedule.startTime}-${schedule.endTime})`);
       //   }
 
-      return isActiveInSlot
-    })
-  })
+      return isActiveInSlot;
+    });
+  });
 
   // In standard mode, show only one class per slot
-  if (timeConfig.value.viewMode === "standard") {
-    return classes.slice(0, 1)
+  if (timeConfig.value.viewMode === 'standard') {
+    return classes.slice(0, 1);
   }
 
   // In overlap mode, show all classes
-  return classes
-}
+  return classes;
+};
 
 // Función auxiliar para normalizar nombres de días
 const normalizeDayName = (day: string): string => {
   const dayMapping: Record<string, string> = {
     // Días en español
-    lunes: "monday",
-    martes: "tuesday",
-    miércoles: "wednesday",
-    miercoles: "wednesday",
-    jueves: "thursday",
-    viernes: "friday",
-    sábado: "saturday",
-    sabado: "saturday",
-    domingo: "sunday",
+    lunes: 'monday',
+    martes: 'tuesday',
+    miércoles: 'wednesday',
+    miercoles: 'wednesday',
+    jueves: 'thursday',
+    viernes: 'friday',
+    sábado: 'saturday',
+    sabado: 'saturday',
+    domingo: 'sunday',
     // Días en inglés (ya normalizados)
-    monday: "monday",
-    tuesday: "tuesday",
-    wednesday: "wednesday",
-    thursday: "thursday",
-    friday: "friday",
-    saturday: "saturday",
-    sunday: "sunday",
-  }
+    monday: 'monday',
+    tuesday: 'tuesday',
+    wednesday: 'wednesday',
+    thursday: 'thursday',
+    friday: 'friday',
+    saturday: 'saturday',
+    sunday: 'sunday',
+  };
 
-  return dayMapping[day.toLowerCase()] || day.toLowerCase()
-}
+  return dayMapping[day.toLowerCase()] || day.toLowerCase();
+};
 
 const getClassTimeRange = (classItem: ClassData) => {
-  const schedules = getClassSchedules(classItem)
-  if (schedules.length === 0) return ""
-  const schedule = schedules[0] // For display, use first schedule
-  return `${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}`
-}
+  const schedules = getClassSchedules(classItem);
+  if (schedules.length === 0) return '';
+  const schedule = schedules[0]; // For display, use first schedule
+  return `${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}`;
+};
 
 const getClassColorByInstrument = (instrument?: string) => {
-  if (!instrument) return "bg-gray-500 text-white"
+  if (!instrument) return 'bg-gray-500 text-white';
   const colors: Record<string, string> = {
-    Piano: "bg-blue-500 text-white",
-    Guitarra: "bg-green-500 text-white",
-    Violín: "bg-purple-500 text-white",
-    Flauta: "bg-yellow-500 text-white",
-    Cello: "bg-red-500 text-white",
-    Batería: "bg-gray-700 text-white",
-    Canto: "bg-pink-500 text-white",
-  }
-  return colors[instrument] || "bg-indigo-500 text-white"
-}
+    Piano: 'bg-blue-500 text-white',
+    Guitarra: 'bg-green-500 text-white',
+    Violín: 'bg-purple-500 text-white',
+    Flauta: 'bg-yellow-500 text-white',
+    Cello: 'bg-red-500 text-white',
+    Batería: 'bg-gray-700 text-white',
+    Canto: 'bg-pink-500 text-white',
+  };
+  return colors[instrument] || 'bg-indigo-500 text-white';
+};
 
 const getClassBorderColor = (instrument?: string) => {
-  if (!instrument) return "border-gray-500 bg-gray-50 dark:bg-gray-900/20"
+  if (!instrument) return 'border-gray-500 bg-gray-50 dark:bg-gray-900/20';
   const colors: Record<string, string> = {
-    Piano: "border-blue-500 bg-blue-50 dark:bg-blue-900/20",
-    Guitarra: "border-green-500 bg-green-50 dark:bg-green-900/20",
-    Violín: "border-purple-500 bg-purple-50 dark:bg-purple-900/20",
-    Flauta: "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20",
-    Cello: "border-red-500 bg-red-50 dark:bg-red-900/20",
-    Batería: "border-gray-500 bg-gray-50 dark:bg-gray-900/20",
-    Canto: "border-pink-500 bg-pink-50 dark:bg-pink-900/20",
-  }
-  return colors[instrument] || "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
-}
+    Piano: 'border-blue-500 bg-blue-50 dark:bg-blue-900/20',
+    Guitarra: 'border-green-500 bg-green-50 dark:bg-green-900/20',
+    Violín: 'border-purple-500 bg-purple-50 dark:bg-purple-900/20',
+    Flauta: 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20',
+    Cello: 'border-red-500 bg-red-50 dark:bg-red-900/20',
+    Batería: 'border-gray-500 bg-gray-50 dark:bg-gray-900/20',
+    Canto: 'border-pink-500 bg-pink-50 dark:bg-pink-900/20',
+  };
+  return colors[instrument] || 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20';
+};
 
 const getStatusColor = (status?: string) => {
-  if (!status) return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
+  if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
   const colors: Record<string, string> = {
-    active: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400",
-    inactive: "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400",
-    suspended: "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
-  }
-  return colors[status] || "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
-}
+    active: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
+    inactive: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400',
+    suspended: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
+  };
+  return colors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+};
 
 const getStatusText = (status?: string) => {
-  if (!status) return "Sin estado"
+  if (!status) return 'Sin estado';
   const texts: Record<string, string> = {
-    active: "Activa",
-    inactive: "Inactiva",
-    suspended: "Suspendida",
-  }
-  return texts[status] || "Sin estado"
-}
+    active: 'Activa',
+    inactive: 'Inactiva',
+    suspended: 'Suspendida',
+  };
+  return texts[status] || 'Sin estado';
+};
 
 const openClassDetails = (classItem: ClassData) => {
-  selectedClass.value = classItem
-}
+  selectedClass.value = classItem;
+};
 
 const closeClassDetails = () => {
-  selectedClass.value = null
-}
+  selectedClass.value = null;
+};
 
 const resetAllFilters = async () => {
   // Resetear filtros de búsqueda
-  searchTerm.value = ""
-  selectedTeacher.value = ""
-  selectedInstrument.value = ""
-  selectedProgram.value = ""
-  filterType.value = "all"
+  searchTerm.value = '';
+  selectedTeacher.value = '';
+  selectedInstrument.value = '';
+  selectedProgram.value = '';
+  filterType.value = 'all';
 
   // Resetear configuración de tiempo a valores por defecto
   timeConfig.value = {
     esTemprano: true,
     esTarde: true,
     esNoche: true,
-    viewMode: "standard",
-  }
+    viewMode: 'standard',
+  };
 
-  await saveTimeConfig()
-}
+  await saveTimeConfig();
+};
 
 const showAllDay = async () => {
-  timeConfig.value.esTemprano = true
-  timeConfig.value.esTarde = true
-  timeConfig.value.esNoche = true
+  timeConfig.value.esTemprano = true;
+  timeConfig.value.esTarde = true;
+  timeConfig.value.esNoche = true;
 
-  await saveTimeConfig()
-}
+  await saveTimeConfig();
+};
 
 const exportSchedule = () => {
   // TODO: Implement PDF export functionality
-  console.log("Exporting schedule...")
-}
+  console.log('Exporting schedule...');
+};
 
 // Data refresh function
 const refreshData = async () => {
   try {
-    isLoading.value = true
-    loadingMessage.value = "Actualizando datos..."
+    isLoading.value = true;
+    loadingMessage.value = 'Actualizando datos...';
 
     // Reload all necessary data
     await Promise.all([
       classesStore.fetchClasses(),
       teachersStore.fetchTeachers(),
       studentsStore.fetchStudents(),
-    ])
+    ]);
   } catch (error) {
-    console.error("Error al actualizar datos:", error)
+    console.error('Error al actualizar datos:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  setCurrentWeekStart()
+  setCurrentWeekStart();
 
   try {
-    isLoading.value = true
-    loadingMessage.value = "Cargando configuración..."
+    isLoading.value = true;
+    loadingMessage.value = 'Cargando configuración...';
 
     // Cargar configuración de tiempo
-    await loadTimeConfig()
+    await loadTimeConfig();
 
-    loadingMessage.value = "Cargando clases..."
+    loadingMessage.value = 'Cargando clases...';
 
     // Cargar datos de las clases si no se proporcionaron como props
     if (!props.classes) {
-      await classesStore.fetchClasses()
+      await classesStore.fetchClasses();
     }
 
-    loadingMessage.value = "Cargando maestros y estudiantes..."
+    loadingMessage.value = 'Cargando maestros y estudiantes...';
 
     // Cargar maestros y estudiantes
-    await Promise.all([teachersStore.fetchTeachers(), studentsStore.fetchStudents()])
+    await Promise.all([teachersStore.fetchTeachers(), studentsStore.fetchStudents()]);
 
-    console.log("WeeklyScheduleView mounted with", allClasses.value.length, "classes")
-    console.log("Current teacher ID:", currentTeacherId)
+    console.log('WeeklyScheduleView mounted with', allClasses.value.length, 'classes');
+    console.log('Current teacher ID:', currentTeacherId);
 
     // Debug en desarrollo
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.NODE_ENV === 'development') {
       setTimeout(() => {
-        debugClasses()
-        loadDemoData()
-      }, 1000) // Esperar un segundo para que todo se cargue
+        debugClasses();
+        loadDemoData();
+      }, 1000); // Esperar un segundo para que todo se cargue
     }
   } catch (error) {
-    console.error("Error loading data:", error)
+    console.error('Error loading data:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-})
+});
 
 // Load demo data from external script
 const loadDemoData = () => {
   try {
     if (window.demoScheduleSystem) {
-      console.log("🎵 Sistema de demostración disponible!")
-      console.log("💡 Usa runFullDemo() en consola para ver ejemplos")
+      console.log('🎵 Sistema de demostración disponible!');
+      console.log('💡 Usa runFullDemo() en consola para ver ejemplos');
 
       // Check if we need to inject demo classes
       if (allClasses.value.length === 0) {
-        console.log("📝 No hay clases - considera usar createLocalStorageData() para pruebas")
+        console.log('📝 No hay clases - considera usar createLocalStorageData() para pruebas');
       }
     }
   } catch (error) {
-    console.log("Sistema de demo no cargado")
+    console.log('Sistema de demo no cargado');
   }
-}
+};
 
 // Debug function to log class information
 const debugClasses = () => {
@@ -1533,7 +1533,7 @@ const debugClasses = () => {
   //   });
   //   console.log('Configuración de tiempo:', timeConfig.value);
   //   console.log('========================');
-}
+};
 </script>
 
 <style scoped>

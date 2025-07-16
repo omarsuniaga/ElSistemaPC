@@ -1029,60 +1029,60 @@
 </template>
 
 <script setup lang="ts">
-import {ref, reactive, onMounted, computed} from "vue"
-import {PaperAirplaneIcon, CogIcon, ClockIcon, DocumentTextIcon} from "@heroicons/vue/24/outline"
+import { ref, reactive, onMounted, computed } from 'vue';
+import { PaperAirplaneIcon, CogIcon, ClockIcon, DocumentTextIcon } from '@heroicons/vue/24/outline';
 
 // Estado de conexión
-const connectionStatus = ref("checking")
-const isConnecting = ref(false)
-const qrCode = ref("")
+const connectionStatus = ref('checking');
+const isConnecting = ref(false);
+const qrCode = ref('');
 
 // Estado de tabs - Solo para usuarios conectados
-const activeTab = ref("messages")
+const activeTab = ref('messages');
 const businessTabs = [
-  {id: "messages", name: "Enviar Mensajes", icon: PaperAirplaneIcon},
-  {id: "bulk", name: "Envío Masivo", icon: DocumentTextIcon},
-  {id: "templates", name: "Plantillas", icon: DocumentTextIcon},
-  {id: "history", name: "Historial", icon: ClockIcon},
-  {id: "config", name: "Configuración", icon: CogIcon},
-]
+  { id: 'messages', name: 'Enviar Mensajes', icon: PaperAirplaneIcon },
+  { id: 'bulk', name: 'Envío Masivo', icon: DocumentTextIcon },
+  { id: 'templates', name: 'Plantillas', icon: DocumentTextIcon },
+  { id: 'history', name: 'Historial', icon: ClockIcon },
+  { id: 'config', name: 'Configuración', icon: CogIcon },
+];
 
 // Estado del formulario de mensajes
 const messageForm = reactive({
-  recipient: "",
-  content: "",
-})
+  recipient: '',
+  content: '',
+});
 
-const selectedTemplate = ref("")
-const sendingMessage = ref(false)
+const selectedTemplate = ref('');
+const sendingMessage = ref(false);
 
 // Estado del formulario de envío masivo
 const bulkForm = reactive({
-  recipients: "",
-  message: "",
-  selectedTemplate: "",
+  recipients: '',
+  message: '',
+  selectedTemplate: '',
   validateNumbers: true,
-})
+});
 
-const sendingBulk = ref(false)
-const bulkResults = ref(null)
+const sendingBulk = ref(false);
+const bulkResults = ref(null);
 const bulkProgress = reactive({
   current: 0,
   total: 0,
   successful: 0,
   failed: 0,
   remaining: 0,
-  currentRecipient: "",
+  currentRecipient: '',
   elapsedTime: 0,
   startTime: 0,
-})
+});
 
 // Plantillas de mensajes
 const messageTemplates = ref([
   {
-    id: "welcome",
-    name: "Bienvenida a nuevo estudiante",
-    category: "Bienvenida",
+    id: 'welcome',
+    name: 'Bienvenida a nuevo estudiante',
+    category: 'Bienvenida',
     content: `🎵 ¡Bienvenido/a a Music Academy!
 
 Nos alegra tenerte como parte de nuestra familia musical. 
@@ -1096,9 +1096,9 @@ Si tienes alguna pregunta, no dudes en contactarnos.
 ¡Esperamos verte pronto! 🎸🎹`,
   },
   {
-    id: "class_reminder",
-    name: "Recordatorio de clase",
-    category: "Recordatorios",
+    id: 'class_reminder',
+    name: 'Recordatorio de clase',
+    category: 'Recordatorios',
     content: `🎼 Recordatorio de clase - Music Academy
 
 Hola [NOMBRE], te recordamos que tienes clase mañana:
@@ -1113,9 +1113,9 @@ Por favor, no olvides traer tu material de estudio.
 ¡Te esperamos! 🎶`,
   },
   {
-    id: "payment_reminder",
-    name: "Recordatorio de pago",
-    category: "Pagos",
+    id: 'payment_reminder',
+    name: 'Recordatorio de pago',
+    category: 'Pagos',
     content: `💳 Recordatorio de Pago - Music Academy
 
 Estimado/a [NOMBRE],
@@ -1133,9 +1133,9 @@ Puedes realizar el pago mediante:
 ¡Gracias por confiar en nosotros! 🎵`,
   },
   {
-    id: "emergency_class",
-    name: "Clase de emergencia",
-    category: "Emergencia",
+    id: 'emergency_class',
+    name: 'Clase de emergencia',
+    category: 'Emergencia',
     content: `🚨 Clase de Emergencia Disponible
 
 Hola [NOMBRE],
@@ -1151,7 +1151,7 @@ Tenemos una clase de emergencia disponible:
 
 Music Academy 🎶`,
   },
-])
+]);
 
 // Configuración
 const notifications = reactive({
@@ -1159,242 +1159,242 @@ const notifications = reactive({
   classReminder: true,
   payment: true,
   emergencyClass: true,
-})
+});
 
 const schedules = reactive({
-  classReminder: "09:00",
-  paymentReminder: "18:00",
-  nightLimit: "21:00",
-  morningStart: "08:00",
-})
+  classReminder: '09:00',
+  paymentReminder: '18:00',
+  nightLimit: '21:00',
+  morningStart: '08:00',
+});
 
 const config = reactive({
   retryAttempts: 2,
   messageDelay: 5,
-})
+});
 
-const saving = ref(false)
+const saving = ref(false);
 
 // Estado del historial
 const messages = ref([
   {
     id: 1,
-    recipient: "+1809-555-0001",
-    content: "Recordatorio: Tienes clase de piano mañana a las 3:00 PM",
-    status: "sent",
-    template: "Recordatorio",
+    recipient: '+1809-555-0001',
+    content: 'Recordatorio: Tienes clase de piano mañana a las 3:00 PM',
+    status: 'sent',
+    template: 'Recordatorio',
     timestamp: new Date(Date.now() - 86400000),
   },
   {
     id: 2,
-    recipient: "+1809-555-0002",
-    content: "Bienvenido a la Academia Musical! Tu primera clase será el lunes.",
-    status: "sent",
-    template: "Bienvenida",
+    recipient: '+1809-555-0002',
+    content: 'Bienvenido a la Academia Musical! Tu primera clase será el lunes.',
+    status: 'sent',
+    template: 'Bienvenida',
     timestamp: new Date(Date.now() - 172800000),
   },
   {
     id: 3,
-    recipient: "+1809-555-0003",
-    content: "Recordatorio de pago: Tu mensualidad vence el 15 de este mes.",
-    status: "failed",
-    template: "Pagos",
-    error: "Número no válido",
+    recipient: '+1809-555-0003',
+    content: 'Recordatorio de pago: Tu mensualidad vence el 15 de este mes.',
+    status: 'failed',
+    template: 'Pagos',
+    error: 'Número no válido',
     timestamp: new Date(Date.now() - 259200000),
   },
-])
+]);
 
-const historyFilter = ref("all")
-const searchQuery = ref("")
-const currentPage = ref(1)
-const itemsPerPage = 10
+const historyFilter = ref('all');
+const searchQuery = ref('');
+const currentPage = ref(1);
+const itemsPerPage = 10;
 
 // Gestión de plantillas
-const showCreateTemplate = ref(false)
-const selectedCategory = ref("Todas")
-const templateCategories = ["Todas", "Bienvenida", "Recordatorios", "Pagos", "Emergencia"]
+const showCreateTemplate = ref(false);
+const selectedCategory = ref('Todas');
+const templateCategories = ['Todas', 'Bienvenida', 'Recordatorios', 'Pagos', 'Emergencia'];
 
 // Computed properties
 const messageStats = computed(() => {
   return {
     total: messages.value.length,
-    sent: messages.value.filter((m) => m.status === "sent").length,
-    failed: messages.value.filter((m) => m.status === "failed").length,
-    pending: messages.value.filter((m) => m.status === "pending").length,
-  }
-})
+    sent: messages.value.filter((m) => m.status === 'sent').length,
+    failed: messages.value.filter((m) => m.status === 'failed').length,
+    pending: messages.value.filter((m) => m.status === 'pending').length,
+  };
+});
 
 const filteredMessages = computed(() => {
-  let filtered = messages.value
+  let filtered = messages.value;
 
   // Filtrar por estado
-  if (historyFilter.value !== "all") {
-    filtered = filtered.filter((m) => m.status === historyFilter.value)
+  if (historyFilter.value !== 'all') {
+    filtered = filtered.filter((m) => m.status === historyFilter.value);
   }
 
   // Filtrar por búsqueda
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(
-      (m) => m.recipient.toLowerCase().includes(query) || m.content.toLowerCase().includes(query)
-    )
+      (m) => m.recipient.toLowerCase().includes(query) || m.content.toLowerCase().includes(query),
+    );
   }
 
-  return filtered
-})
+  return filtered;
+});
 
-const totalPages = computed(() => Math.ceil(filteredMessages.value.length / itemsPerPage))
+const totalPages = computed(() => Math.ceil(filteredMessages.value.length / itemsPerPage));
 
 const paginatedMessages = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return filteredMessages.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filteredMessages.value.slice(start, end);
+});
 
 const filteredTemplates = computed(() => {
-  if (selectedCategory.value === "Todas") {
-    return messageTemplates.value
+  if (selectedCategory.value === 'Todas') {
+    return messageTemplates.value;
   }
-  return messageTemplates.value.filter((t) => t.category === selectedCategory.value)
-})
+  return messageTemplates.value.filter((t) => t.category === selectedCategory.value);
+});
 
 // Métodos de conexión
 const checkConnectionStatus = async () => {
   try {
-    const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/status")
+    const response = await fetch('https://whatsappapi-4ffilcsmva-uc.a.run.app/status');
     if (response.ok) {
-      const data = await response.json()
-      console.log("📊 Estado WhatsApp:", data)
+      const data = await response.json();
+      console.log('📊 Estado WhatsApp:', data);
 
-      if (data.status === "connected" && data.isReady) {
-        connectionStatus.value = "connected"
-      } else if (data.status === "qr_ready" || data.status === "connecting") {
-        connectionStatus.value = "connecting"
+      if (data.status === 'connected' && data.isReady) {
+        connectionStatus.value = 'connected';
+      } else if (data.status === 'qr_ready' || data.status === 'connecting') {
+        connectionStatus.value = 'connecting';
         if (data.hasQR) {
-          await loadQRCode()
+          await loadQRCode();
         }
       } else {
-        connectionStatus.value = "disconnected"
+        connectionStatus.value = 'disconnected';
       }
     } else {
-      connectionStatus.value = "disconnected"
+      connectionStatus.value = 'disconnected';
     }
   } catch (error) {
-    console.error("❌ Error verificando estado:", error)
-    connectionStatus.value = "disconnected"
+    console.error('❌ Error verificando estado:', error);
+    connectionStatus.value = 'disconnected';
   }
-}
+};
 
 const initializeConnection = async () => {
-  isConnecting.value = true
+  isConnecting.value = true;
 
   try {
-    const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/init", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-    })
+    const response = await fetch('https://whatsappapi-4ffilcsmva-uc.a.run.app/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
     if (response.ok) {
-      const data = await response.json()
+      const data = await response.json();
       if (data.success) {
-        connectionStatus.value = "connecting"
+        connectionStatus.value = 'connecting';
         // Esperar un poco y luego cargar el QR
         setTimeout(async () => {
-          await loadQRCode()
+          await loadQRCode();
           // Verificar estado periódicamente
           const interval = setInterval(async () => {
-            await checkConnectionStatus()
-            if (connectionStatus.value === "connected") {
-              clearInterval(interval)
-              isConnecting.value = false
+            await checkConnectionStatus();
+            if (connectionStatus.value === 'connected') {
+              clearInterval(interval);
+              isConnecting.value = false;
             }
-          }, 3000)
-        }, 2000)
+          }, 3000);
+        }, 2000);
       }
     }
   } catch (error) {
-    console.error("❌ Error inicializando:", error)
-    connectionStatus.value = "disconnected"
+    console.error('❌ Error inicializando:', error);
+    connectionStatus.value = 'disconnected';
   }
-}
+};
 
 const loadQRCode = async () => {
   try {
-    const response = await fetch(`https://whatsappapi-4ffilcsmva-uc.a.run.app/qr?t=${Date.now()}`)
+    const response = await fetch(`https://whatsappapi-4ffilcsmva-uc.a.run.app/qr?t=${Date.now()}`);
 
     if (response.ok) {
-      const contentType = response.headers.get("content-type")
+      const contentType = response.headers.get('content-type');
 
-      if (contentType?.includes("image/png")) {
-        const blob = await response.blob()
-        qrCode.value = URL.createObjectURL(blob)
+      if (contentType?.includes('image/png')) {
+        const blob = await response.blob();
+        qrCode.value = URL.createObjectURL(blob);
       } else {
         // Si no es PNG, intentar nuevamente en unos segundos
-        setTimeout(loadQRCode, 3000)
+        setTimeout(loadQRCode, 3000);
       }
     }
   } catch (error) {
-    console.error("❌ Error cargando QR:", error)
+    console.error('❌ Error cargando QR:', error);
   }
-}
+};
 
 const disconnectWhatsApp = async () => {
-  if (!confirm("¿Estás seguro de que quieres desconectar WhatsApp?")) {
-    return
+  if (!confirm('¿Estás seguro de que quieres desconectar WhatsApp?')) {
+    return;
   }
 
   try {
-    const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/disconnect", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-    })
+    const response = await fetch('https://whatsappapi-4ffilcsmva-uc.a.run.app/disconnect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
     if (response.ok) {
-      connectionStatus.value = "disconnected"
-      qrCode.value = ""
-      alert("✅ WhatsApp desconectado correctamente")
+      connectionStatus.value = 'disconnected';
+      qrCode.value = '';
+      alert('✅ WhatsApp desconectado correctamente');
     }
   } catch (error) {
-    console.error("❌ Error desconectando:", error)
-    alert("❌ Error al desconectar WhatsApp")
+    console.error('❌ Error desconectando:', error);
+    alert('❌ Error al desconectar WhatsApp');
   }
-}
+};
 
 // Métodos de mensajes
 const applyTemplate = () => {
-  const template = messageTemplates.value.find((t) => t.id === selectedTemplate.value)
+  const template = messageTemplates.value.find((t) => t.id === selectedTemplate.value);
   if (template) {
-    messageForm.content = template.content
+    messageForm.content = template.content;
   }
-}
+};
 
 const selectTemplate = (template: any) => {
-  selectedTemplate.value = template.id
-  messageForm.content = template.content
-  activeTab.value = "messages"
-}
+  selectedTemplate.value = template.id;
+  messageForm.content = template.content;
+  activeTab.value = 'messages';
+};
 
 const useTemplate = (template: any) => {
-  selectTemplate(template)
-}
+  selectTemplate(template);
+};
 
 const sendMessage = async () => {
-  if (!messageForm.recipient || !messageForm.content) return
+  if (!messageForm.recipient || !messageForm.content) return;
 
-  sendingMessage.value = true
+  sendingMessage.value = true;
 
   try {
-    const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
+    const response = await fetch('https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         number: messageForm.recipient,
         message: messageForm.content,
         validateNumber: true,
       }),
-    })
+    });
 
-    const result = await response.json()
+    const result = await response.json();
 
     if (response.ok && result.success) {
       // Agregar al historial
@@ -1402,17 +1402,17 @@ const sendMessage = async () => {
         id: Date.now(),
         recipient: messageForm.recipient,
         content: messageForm.content,
-        status: "sent",
+        status: 'sent',
         template: selectedTemplate.value
           ? messageTemplates.value.find((t) => t.id === selectedTemplate.value)?.name
           : undefined,
         timestamp: new Date(),
-      })
+      });
 
-      alert("✅ Mensaje enviado correctamente!")
-      clearMessage()
+      alert('✅ Mensaje enviado correctamente!');
+      clearMessage();
     } else {
-      throw new Error(result.error || "Error al enviar mensaje")
+      throw new Error(result.error || 'Error al enviar mensaje');
     }
   } catch (error) {
     // Agregar al historial como fallido
@@ -1420,69 +1420,69 @@ const sendMessage = async () => {
       id: Date.now(),
       recipient: messageForm.recipient,
       content: messageForm.content,
-      status: "failed",
-      error: error instanceof Error ? error.message : "Error desconocido",
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Error desconocido',
       timestamp: new Date(),
-    })
+    });
 
     alert(
-      "❌ Error al enviar mensaje: " +
-        (error instanceof Error ? error.message : "Error desconocido")
-    )
+      '❌ Error al enviar mensaje: ' +
+        (error instanceof Error ? error.message : 'Error desconocido'),
+    );
   } finally {
-    sendingMessage.value = false
+    sendingMessage.value = false;
   }
-}
+};
 
 const clearMessage = () => {
-  messageForm.recipient = ""
-  messageForm.content = ""
-  selectedTemplate.value = ""
-}
+  messageForm.recipient = '';
+  messageForm.content = '';
+  selectedTemplate.value = '';
+};
 
 // Métodos de envío masivo
 // Función auxiliar para limpiar y validar números de teléfono
 const cleanPhoneNumbers = (input: string): string[] => {
-  if (!input?.trim()) return []
+  if (!input?.trim()) return [];
 
   return input
     .split(/[,\n;]/) // Separar por comas, nuevas líneas o punto y coma
-    .map((num: string) => num.trim().replace(/[^+\d]/g, "")) // Limpiar caracteres no válidos
+    .map((num: string) => num.trim().replace(/[^+\d]/g, '')) // Limpiar caracteres no válidos
     .filter((num: string) => num.length >= 10) // Filtrar números muy cortos
     .map((num: string) => {
       // Asegurar formato internacional
-      if (!num.startsWith("+")) {
+      if (!num.startsWith('+')) {
         if (num.length === 10) {
-          return "+1" + num // Asumir NANP para números de 10 dígitos
-        } else if (num.length === 11 && num.startsWith("1")) {
-          return "+" + num
+          return '+1' + num; // Asumir NANP para números de 10 dígitos
+        } else if (num.length === 11 && num.startsWith('1')) {
+          return '+' + num;
         }
-        return "+" + num
+        return '+' + num;
       }
-      return num
+      return num;
     })
-    .filter((num: string) => num.length > 5) // Filtro final
-}
+    .filter((num: string) => num.length > 5); // Filtro final
+};
 
 const getBulkRecipientCount = (): number => {
-  const cleanNumbers = cleanPhoneNumbers(bulkForm.recipients)
-  return cleanNumbers.length
-}
+  const cleanNumbers = cleanPhoneNumbers(bulkForm.recipients);
+  return cleanNumbers.length;
+};
 
 const getEstimatedTime = () => {
-  const count = getBulkRecipientCount()
-  if (count === 0) return "0 segundos"
+  const count = getBulkRecipientCount();
+  if (count === 0) return '0 segundos';
 
-  const avgDelay = 1000 // 1 segundo promedio entre mensajes
-  const totalMs = count * avgDelay
-  const minutes = Math.floor(totalMs / 60000)
-  const seconds = Math.floor((totalMs % 60000) / 1000)
+  const avgDelay = 1000; // 1 segundo promedio entre mensajes
+  const totalMs = count * avgDelay;
+  const minutes = Math.floor(totalMs / 60000);
+  const seconds = Math.floor((totalMs % 60000) / 1000);
 
   if (minutes > 0) {
-    return `${minutes}m ${seconds}s aproximadamente`
+    return `${minutes}m ${seconds}s aproximadamente`;
   }
-  return `${seconds}s aproximadamente`
-}
+  return `${seconds}s aproximadamente`;
+};
 
 const canSendBulk = () => {
   return (
@@ -1490,376 +1490,376 @@ const canSendBulk = () => {
     bulkForm.message.trim() &&
     getBulkRecipientCount() > 0 &&
     getBulkRecipientCount() <= 50 // Límite de seguridad
-  )
-}
+  );
+};
 
 const applyBulkTemplate = () => {
-  const template = messageTemplates.value.find((t) => t.id === bulkForm.selectedTemplate)
+  const template = messageTemplates.value.find((t) => t.id === bulkForm.selectedTemplate);
   if (template) {
-    bulkForm.message = template.content
+    bulkForm.message = template.content;
   }
-}
+};
 
 const getBulkProgressPercent = () => {
-  if (bulkProgress.total === 0) return 0
-  return Math.round((bulkProgress.current / bulkProgress.total) * 100)
-}
+  if (bulkProgress.total === 0) return 0;
+  return Math.round((bulkProgress.current / bulkProgress.total) * 100);
+};
 
 const formatTime = (milliseconds) => {
-  const seconds = Math.floor(milliseconds / 1000)
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
+  const seconds = Math.floor(milliseconds / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
 
   if (minutes > 0) {
-    return `${minutes}m ${remainingSeconds}s`
+    return `${minutes}m ${remainingSeconds}s`;
   }
-  return `${remainingSeconds}s`
-}
+  return `${remainingSeconds}s`;
+};
 
 const sendBulkMessage = async () => {
-  if (!canSendBulk()) return
+  if (!canSendBulk()) return;
 
   // Debug del estado del formulario
-  console.log("🔍 Estado del formulario al iniciar:")
-  console.log("  - bulkForm.recipients:", JSON.stringify(bulkForm.recipients))
-  console.log("  - bulkForm.message:", JSON.stringify(bulkForm.message))
-  console.log("  - bulkForm.selectedTemplate:", JSON.stringify(bulkForm.selectedTemplate))
+  console.log('🔍 Estado del formulario al iniciar:');
+  console.log('  - bulkForm.recipients:', JSON.stringify(bulkForm.recipients));
+  console.log('  - bulkForm.message:', JSON.stringify(bulkForm.message));
+  console.log('  - bulkForm.selectedTemplate:', JSON.stringify(bulkForm.selectedTemplate));
 
   // Verificar si el mensaje está vacío o es undefined
-  if (!bulkForm.message || bulkForm.message.trim() === "") {
-    alert("❌ Error: El mensaje está vacío. Por favor escribe un mensaje antes de enviar.")
-    console.error("❌ bulkForm.message está vacío:", bulkForm.message)
-    return
+  if (!bulkForm.message || bulkForm.message.trim() === '') {
+    alert('❌ Error: El mensaje está vacío. Por favor escribe un mensaje antes de enviar.');
+    console.error('❌ bulkForm.message está vacío:', bulkForm.message);
+    return;
   }
 
   // Usar la función centralizada para limpiar números
-  const recipients = cleanPhoneNumbers(bulkForm.recipients)
+  const recipients = cleanPhoneNumbers(bulkForm.recipients);
 
-  console.log("📋 Números procesados:", recipients)
+  console.log('📋 Números procesados:', recipients);
 
   if (recipients.length === 0) {
     alert(
-      "❌ No se encontraron números de teléfono válidos.\n\nFormato esperado:\n+1234567890 o 1234567890"
-    )
-    return
+      '❌ No se encontraron números de teléfono válidos.\n\nFormato esperado:\n+1234567890 o 1234567890',
+    );
+    return;
   }
 
   if (recipients.length > 50) {
     alert(
-      "⚠️ Máximo 50 destinatarios por lote para evitar bloqueos.\nDivide tu lista en lotes más pequeños."
-    )
-    return
+      '⚠️ Máximo 50 destinatarios por lote para evitar bloqueos.\nDivide tu lista en lotes más pequeños.',
+    );
+    return;
   }
 
   if (
     !confirm(
-      `¿Enviar mensaje a ${recipients.length} destinatarios?\n\nEsto puede tardar varios minutos.`
+      `¿Enviar mensaje a ${recipients.length} destinatarios?\n\nEsto puede tardar varios minutos.`,
     )
   ) {
-    return
+    return;
   }
 
-  sendingBulk.value = true
-  bulkResults.value = null
+  sendingBulk.value = true;
+  bulkResults.value = null;
 
   // Inicializar progreso
-  bulkProgress.current = 0
-  bulkProgress.total = recipients.length
-  bulkProgress.successful = 0
-  bulkProgress.failed = 0
-  bulkProgress.remaining = recipients.length
-  bulkProgress.startTime = Date.now()
-  bulkProgress.elapsedTime = 0
+  bulkProgress.current = 0;
+  bulkProgress.total = recipients.length;
+  bulkProgress.successful = 0;
+  bulkProgress.failed = 0;
+  bulkProgress.remaining = recipients.length;
+  bulkProgress.startTime = Date.now();
+  bulkProgress.elapsedTime = 0;
 
   // Actualizar tiempo transcurrido cada segundo
   const timeInterval = setInterval(() => {
-    bulkProgress.elapsedTime = Date.now() - bulkProgress.startTime
-  }, 1000)
+    bulkProgress.elapsedTime = Date.now() - bulkProgress.startTime;
+  }, 1000);
 
   try {
-    console.log("📢 Iniciando envío masivo a", recipients.length, "destinatarios")
+    console.log('📢 Iniciando envío masivo a', recipients.length, 'destinatarios');
 
     // Enviar mensajes uno por uno con seguimiento en tiempo real
     const results = {
       successful: 0,
       failed: 0,
       details: [],
-    }
+    };
 
     for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i]
-      bulkProgress.current = i + 1
-      bulkProgress.currentRecipient = recipient
-      bulkProgress.remaining = recipients.length - i - 1
+      const recipient = recipients[i];
+      bulkProgress.current = i + 1;
+      bulkProgress.currentRecipient = recipient;
+      bulkProgress.remaining = recipients.length - i - 1;
 
       try {
-        console.log(`📱 Enviando a ${recipient} (${i + 1}/${recipients.length})`)
+        console.log(`📱 Enviando a ${recipient} (${i + 1}/${recipients.length})`);
 
         // Validación adicional antes del envío
         if (!recipient || !bulkForm.message || recipient.length < 10) {
           throw new Error(
-            `Datos inválidos - Número: "${recipient}", Mensaje: "${bulkForm.message ? "OK" : "VACÍO"}"`
-          )
+            `Datos inválidos - Número: "${recipient}", Mensaje: "${bulkForm.message ? 'OK' : 'VACÍO'}"`,
+          );
         }
 
         const payload = {
           number: recipient.trim(),
           message: bulkForm.message.trim(),
           validateNumber: true,
-        }
+        };
 
         // Debugging más detallado
-        console.log("📦 Payload a enviar:")
-        console.log("  - number:", JSON.stringify(payload.number))
-        console.log("  - message:", JSON.stringify(payload.message))
-        console.log("  - payload completo:", JSON.stringify(payload))
+        console.log('📦 Payload a enviar:');
+        console.log('  - number:', JSON.stringify(payload.number));
+        console.log('  - message:', JSON.stringify(payload.message));
+        console.log('  - payload completo:', JSON.stringify(payload));
 
         // Validación final antes del envío
         if (!payload.number || !payload.message) {
           throw new Error(
-            `Payload inválido - number: "${payload.number}", message: "${payload.message}"`
-          )
+            `Payload inválido - number: "${payload.number}", message: "${payload.message}"`,
+          );
         }
 
-        const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
+        const response = await fetch('https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
-        })
+        });
 
-        const result = await response.json()
+        const result = await response.json();
 
         // Manejo específico de errores HTTP
         if (!response.ok) {
-          let errorMessage = "Error de servidor"
+          let errorMessage = 'Error de servidor';
 
           if (response.status === 400) {
-            errorMessage = `Error 400: ${result.message || result.error || "Número y mensaje son requeridos"}`
-            console.error("❌ Error 400 - Datos enviados:")
-            console.error("  - recipient:", JSON.stringify(recipient))
-            console.error("  - message:", JSON.stringify(bulkForm.message))
-            console.error("  - payload enviado:", JSON.stringify(payload))
-            console.error("  - respuesta del servidor:", JSON.stringify(result))
+            errorMessage = `Error 400: ${result.message || result.error || 'Número y mensaje son requeridos'}`;
+            console.error('❌ Error 400 - Datos enviados:');
+            console.error('  - recipient:', JSON.stringify(recipient));
+            console.error('  - message:', JSON.stringify(bulkForm.message));
+            console.error('  - payload enviado:', JSON.stringify(payload));
+            console.error('  - respuesta del servidor:', JSON.stringify(result));
           } else if (response.status === 401) {
-            errorMessage = "Error 401: No autorizado"
+            errorMessage = 'Error 401: No autorizado';
           } else if (response.status === 429) {
-            errorMessage = "Error 429: Demasiadas solicitudes"
+            errorMessage = 'Error 429: Demasiadas solicitudes';
           }
 
-          throw new Error(errorMessage)
+          throw new Error(errorMessage);
         }
 
         if (result.success) {
-          results.successful++
-          bulkProgress.successful++
+          results.successful++;
+          bulkProgress.successful++;
           results.details.push({
             recipient,
-            status: "success",
-            message: "Mensaje enviado correctamente",
-          })
+            status: 'success',
+            message: 'Mensaje enviado correctamente',
+          });
 
           // Agregar al historial
           messages.value.unshift({
             id: Date.now() + i,
             recipient,
             content: bulkForm.message,
-            status: "sent",
+            status: 'sent',
             template: bulkForm.selectedTemplate
               ? messageTemplates.value.find((t) => t.id === bulkForm.selectedTemplate)?.name
-              : "Envío Masivo",
+              : 'Envío Masivo',
             timestamp: new Date(),
-          })
+          });
         } else {
-          throw new Error(result.error || result.message || "Error desconocido")
+          throw new Error(result.error || result.message || 'Error desconocido');
         }
       } catch (error) {
-        console.error(`❌ Error enviando a ${recipient}:`, error)
-        results.failed++
-        bulkProgress.failed++
+        console.error(`❌ Error enviando a ${recipient}:`, error);
+        results.failed++;
+        bulkProgress.failed++;
         results.details.push({
           recipient,
-          status: "error",
-          message: error instanceof Error ? error.message : "Error desconocido",
-        })
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Error desconocido',
+        });
 
         // Agregar al historial como fallido
         messages.value.unshift({
           id: Date.now() + i,
           recipient,
           content: bulkForm.message,
-          status: "failed",
+          status: 'failed',
           template: bulkForm.selectedTemplate
             ? messageTemplates.value.find((t) => t.id === bulkForm.selectedTemplate)?.name
-            : "Envío Masivo",
+            : 'Envío Masivo',
           timestamp: new Date(),
-        })
+        });
       }
 
       // Delay humanizado entre mensajes (500ms - 1.5s)
       if (i < recipients.length - 1) {
-        const delay = 500 + Math.random() * 1000
-        await new Promise((resolve) => setTimeout(resolve, delay))
+        const delay = 500 + Math.random() * 1000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
 
-    bulkResults.value = results
-    bulkProgress.currentRecipient = ""
+    bulkResults.value = results;
+    bulkProgress.currentRecipient = '';
 
     alert(
-      `✅ Envío masivo completado!\n\n✅ Exitosos: ${results.successful}\n❌ Fallidos: ${results.failed}`
-    )
+      `✅ Envío masivo completado!\n\n✅ Exitosos: ${results.successful}\n❌ Fallidos: ${results.failed}`,
+    );
   } catch (error) {
-    console.error("❌ Error en envío masivo:", error)
+    console.error('❌ Error en envío masivo:', error);
     alert(
-      "❌ Error en envío masivo: " + (error instanceof Error ? error.message : "Error desconocido")
-    )
+      '❌ Error en envío masivo: ' + (error instanceof Error ? error.message : 'Error desconocido'),
+    );
   } finally {
-    clearInterval(timeInterval)
-    sendingBulk.value = false
+    clearInterval(timeInterval);
+    sendingBulk.value = false;
   }
-}
+};
 
 const clearBulkForm = () => {
-  bulkForm.recipients = ""
-  bulkForm.message = ""
-  bulkForm.selectedTemplate = ""
-  bulkForm.validateNumbers = true
-  bulkResults.value = null
+  bulkForm.recipients = '';
+  bulkForm.message = '';
+  bulkForm.selectedTemplate = '';
+  bulkForm.validateNumbers = true;
+  bulkResults.value = null;
   Object.assign(bulkProgress, {
     current: 0,
     total: 0,
     successful: 0,
     failed: 0,
     remaining: 0,
-    currentRecipient: "",
+    currentRecipient: '',
     elapsedTime: 0,
     startTime: 0,
-  })
-}
+  });
+};
 
 const resetBulkResults = () => {
-  bulkResults.value = null
-}
+  bulkResults.value = null;
+};
 
 // Métodos de historial
 const getStatusText = (status: string) => {
   const statusMap: Record<string, string> = {
-    sent: "Enviado",
-    failed: "Fallido",
-    pending: "Pendiente",
-  }
-  return statusMap[status] || status
-}
+    sent: 'Enviado',
+    failed: 'Fallido',
+    pending: 'Pendiente',
+  };
+  return statusMap[status] || status;
+};
 
 const retryMessage = async (message: any) => {
-  messageForm.recipient = message.recipient
-  messageForm.content = message.content
-  activeTab.value = "messages"
-}
+  messageForm.recipient = message.recipient;
+  messageForm.content = message.content;
+  activeTab.value = 'messages';
+};
 
 const duplicateMessage = (message: any) => {
-  messageForm.recipient = ""
-  messageForm.content = message.content
-  activeTab.value = "messages"
-}
+  messageForm.recipient = '';
+  messageForm.content = message.content;
+  activeTab.value = 'messages';
+};
 
 // Métodos de plantillas
 const editTemplate = (template: any) => {
   // Implementar edición de plantilla
-  console.log("Editar plantilla:", template)
-}
+  console.log('Editar plantilla:', template);
+};
 
 const deleteTemplate = (templateId: string) => {
-  if (confirm("¿Estás seguro de que quieres eliminar esta plantilla?")) {
-    const index = messageTemplates.value.findIndex((t) => t.id === templateId)
+  if (confirm('¿Estás seguro de que quieres eliminar esta plantilla?')) {
+    const index = messageTemplates.value.findIndex((t) => t.id === templateId);
     if (index > -1) {
-      messageTemplates.value.splice(index, 1)
+      messageTemplates.value.splice(index, 1);
     }
   }
-}
+};
 
 // Métodos de configuración
 const saveConfig = async () => {
-  saving.value = true
+  saving.value = true;
 
   try {
     // Simular guardado
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    console.log("Configuración guardada:", {notifications, schedules, config})
-    alert("✅ Configuración guardada correctamente")
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.log('Configuración guardada:', { notifications, schedules, config });
+    alert('✅ Configuración guardada correctamente');
   } catch (error) {
-    console.error("Error guardando configuración:", error)
-    alert("❌ Error al guardar la configuración")
+    console.error('Error guardando configuración:', error);
+    alert('❌ Error al guardar la configuración');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 // Métodos utilitarios
 const getStatusMessage = () => {
   switch (connectionStatus.value) {
-    case "connected":
-      return "Sistema activo y listo para enviar notificaciones automáticas"
-    case "connecting":
-      return "Estableciendo conexión... Escanea el código QR"
-    case "disconnected":
-      return "Desconectado. Necesitas vincular tu cuenta de WhatsApp"
-    case "checking":
-      return "Verificando estado de conexión..."
-    default:
-      return "Estado desconocido"
+  case 'connected':
+    return 'Sistema activo y listo para enviar notificaciones automáticas';
+  case 'connecting':
+    return 'Estableciendo conexión... Escanea el código QR';
+  case 'disconnected':
+    return 'Desconectado. Necesitas vincular tu cuenta de WhatsApp';
+  case 'checking':
+    return 'Verificando estado de conexión...';
+  default:
+    return 'Estado desconocido';
   }
-}
+};
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("es-ES", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
 
 // Función de test para la API de WhatsApp (disponible en window para debugging)
 window.testWhatsAppAPI = async (recipient, message) => {
-  console.log("🧪 Test de API WhatsApp:")
-  console.log("  - recipient:", JSON.stringify(recipient))
-  console.log("  - message:", JSON.stringify(message))
+  console.log('🧪 Test de API WhatsApp:');
+  console.log('  - recipient:', JSON.stringify(recipient));
+  console.log('  - message:', JSON.stringify(message));
 
-  const payload = {number: recipient, message, validateNumber: true}
-  console.log("  - payload:", JSON.stringify(payload))
+  const payload = { number: recipient, message, validateNumber: true };
+  console.log('  - payload:', JSON.stringify(payload));
 
   try {
-    const response = await fetch("https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
+    const response = await fetch('https://whatsappapi-4ffilcsmva-uc.a.run.app/send-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-    })
+    });
 
-    const result = await response.json()
-    console.log("  - response status:", response.status)
-    console.log("  - response result:", JSON.stringify(result))
+    const result = await response.json();
+    console.log('  - response status:', response.status);
+    console.log('  - response result:', JSON.stringify(result));
 
     if (!response.ok) {
-      console.error("❌ Error en API:", result)
+      console.error('❌ Error en API:', result);
     } else {
-      console.log("✅ API funcionó correctamente")
+      console.log('✅ API funcionó correctamente');
     }
 
-    return {response, result}
+    return { response, result };
   } catch (error) {
-    console.error("❌ Error en test:", error)
-    return {error}
+    console.error('❌ Error en test:', error);
+    return { error };
   }
-}
+};
 
 // Inicialización
 onMounted(() => {
-  checkConnectionStatus()
+  checkConnectionStatus();
   // Verificar estado cada 30 segundos
-  setInterval(checkConnectionStatus, 30000)
-})
+  setInterval(checkConnectionStatus, 30000);
+});
 </script>
 
 <style scoped>

@@ -1,443 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {format, subMonths, startOfMonth, endOfMonth} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAnalyticsStore} from "../store/analytics"
-import {useStudentsStore} from "../../Students/store/students"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useQualificationStore} from "../../Qualifications/store/qualification"
-import {Line, Radar, Bar} from "vue-chartjs"
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  RadialLinearScale,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from "chart.js"
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  RadialLinearScale,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-)
-
-const props = defineProps({
-  studentId: {
-    type: String,
-    default: "",
-  },
-  period: {
-    type: String,
-    default: "current-month", // 'current-month', 'last-month', 'last-3-months'
-  },
-  compact: {
-    type: Boolean,
-    default: false,
-  },
-})
-
-const analyticsStore = useAnalyticsStore()
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
-const qualificationStore = useQualificationStore()
-
-// Estado local
-const isLoading = ref(true)
-const error = ref("")
-const student = ref<any>(null)
-const performanceData = ref<any>(null)
-const attendanceData = ref<any>(null)
-const qualificationsData = ref<any>(null)
-
-// Periodo
-const periodStart = computed(() => {
-  switch (props.period) {
-    case "last-month":
-      return startOfMonth(subMonths(new Date(), 1))
-    case "last-3-months":
-      return startOfMonth(subMonths(new Date(), 3))
-    case "current-month":
-    default:
-      return startOfMonth(new Date())
-  }
-})
-
-const periodEnd = computed(() => {
-  switch (props.period) {
-    case "last-month":
-      return endOfMonth(subMonths(new Date(), 1))
-    default:
-      return new Date()
-  }
-})
-
-// Observar cambios en el ID del estudiante
-watch(
-  () => props.studentId,
-  (newStudentId) => {
-    if (newStudentId) {
-      loadStudentData()
-    }
-  }
-)
-
-// Observar cambios en el periodo
-watch(
-  () => props.period,
-  () => {
-    if (props.studentId) {
-      loadPerformanceData()
-    }
-  }
-)
-
-// Cargar datos del estudiante
-async function loadStudentData() {
-  if (!props.studentId) return
-
-  isLoading.value = true
-  error.value = ""
-
-  try {
-    // Cargar datos del estudiante
-    await studentsStore.fetchStudents()
-    student.value = studentsStore.students.find((s) => s.id === props.studentId)
-
-    if (!student.value) {
-      throw new Error("Estudiante no encontrado")
-    }
-
-    // Cargar datos de rendimiento
-    await loadPerformanceData()
-  } catch (err: any) {
-    console.error("Error al cargar datos del estudiante:", err)
-    error.value = err.message || "Error al cargar datos del estudiante"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Cargar datos de rendimiento
-async function loadPerformanceData() {
-  isLoading.value = true
-
-  try {
-    await Promise.all([
-      analyticsStore.fetchAnalytics(),
-      loadAttendanceData(),
-      loadQualificationsData(),
-    ])
-
-    // Identificar si el estudiante está en riesgo o es destacado
-    const atRiskStudents = analyticsStore.studentMetrics.atRiskStudents || []
-    const topStudents = analyticsStore.studentMetrics.topStudents || []
-
-    const isAtRisk = atRiskStudents.some((s) => s.id === props.studentId)
-    const isTopPerformer = topStudents.some((s) => s.id === props.studentId)
-
-    // Crear objeto de rendimiento
-    performanceData.value = {
-      attendanceRate: attendanceData.value?.attendanceRate || 0,
-      averageGrade: qualificationsData.value?.averageGrade || 0,
-      absences: attendanceData.value?.absences || 0,
-      evaluations: qualificationsData.value?.evaluations || [],
-      isAtRisk,
-      isTopPerformer,
-      status: isTopPerformer ? "Destacado" : isAtRisk ? "En riesgo" : "Regular",
-      trend: calculatePerformanceTrend(),
-    }
-  } catch (err: any) {
-    console.error("Error al cargar datos de rendimiento:", err)
-    error.value = err.message || "Error al cargar datos de rendimiento"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Cargar datos de asistencia
-async function loadAttendanceData() {
-  try {
-    await attendanceStore.fetchAttendance()
-
-    // Filtrar registros de asistencia del estudiante en el periodo seleccionado
-    const startDate = periodStart.value
-    const endDate = periodEnd.value
-
-    const records = attendanceStore.records.filter((record) => {
-      const recordDate = new Date(record.Fecha || record.fecha || record.date)
-      return (
-        record.studentId === props.studentId && recordDate >= startDate && recordDate <= endDate
-      )
-    })
-
-    // Calcular métricas
-    const total = records.length
-    const present = records.filter((r) => r.status === "presente" || r.status === "PRESENT").length
-    const absences = records.filter((r) => r.status === "ausente" || r.status === "ABSENT").length
-    const justified = records.filter(
-      (r) => r.status === "justificado" || r.status === "JUSTIFIED"
-    ).length
-    const delayed = records.filter((r) => r.status === "demorado" || r.status === "DELAYED").length
-
-    const attendanceRate = total > 0 ? Math.round(((present + justified) / total) * 100) : 0
-
-    attendanceData.value = {
-      total,
-      present,
-      absences,
-      justified,
-      delayed,
-      attendanceRate,
-      records,
-    }
-
-    return attendanceData.value
-  } catch (err: any) {
-    console.error("Error al cargar datos de asistencia:", err)
-    throw err
-  }
-}
-
-// Cargar calificaciones
-async function loadQualificationsData() {
-  try {
-    await qualificationStore.fetchQualifications()
-
-    // Filtrar calificaciones del estudiante en el periodo seleccionado
-    const startDate = periodStart.value
-    const endDate = periodEnd.value
-
-    const evaluations = qualificationStore.qualifications.filter((qual) => {
-      const evalDate = new Date(qual.fecha || qual.date)
-      return qual.studentId === props.studentId && evalDate >= startDate && evalDate <= endDate
-    })
-
-    // Calcular promedio
-    const total = evaluations.length
-    const sum = evaluations.reduce(
-      (acc, eval_) => acc + (eval_.calificacion || eval_.grade || 0),
-      0
-    )
-    const averageGrade = total > 0 ? Math.round((sum / total) * 10) / 10 : 0
-
-    // Organizar por tipo de evaluación
-    const byType: Record<string, number[]> = {}
-
-    evaluations.forEach((eval_) => {
-      const type = eval_.tipo || eval_.type || "General"
-      if (!byType[type]) {
-        byType[type] = []
-      }
-      byType[type].push(eval_.calificacion || eval_.grade || 0)
-    })
-
-    // Calcular promedio por tipo
-    const averageByType: Record<string, number> = {}
-
-    Object.entries(byType).forEach(([type, grades]) => {
-      const typeSum = grades.reduce((acc, grade) => acc + grade, 0)
-      averageByType[type] = Math.round((typeSum / grades.length) * 10) / 10
-    })
-
-    qualificationsData.value = {
-      total,
-      averageGrade,
-      evaluations,
-      byType,
-      averageByType,
-    }
-
-    return qualificationsData.value
-  } catch (err: any) {
-    console.error("Error al cargar calificaciones:", err)
-    throw err
-  }
-}
-
-// Calcular tendencia de rendimiento (esto sería idealmente con datos históricos)
-function calculatePerformanceTrend() {
-  // Por ahora usamos una simulación simple
-  const attendanceTrend = Math.random() > 0.5 ? 1 : -1
-  const gradeTrend = Math.random() > 0.5 ? 1 : -1
-
-  return {
-    attendance: attendanceTrend * (Math.random() * 5),
-    grade: gradeTrend * (Math.random() * 1),
-  }
-}
-
-// Datos para gráficos
-// Usar sólo datos reales de attendanceData
-const attendanceChartData = computed(() => {
-  if (!attendanceData.value) {
-    return {
-      labels: [],
-      datasets: [],
-    }
-  }
-
-  return {
-    labels: ["Presente", "Justificado", "Con retraso", "Ausente"],
-    datasets: [
-      {
-        label: "Registro de asistencia",
-        backgroundColor: [
-          "rgba(16, 185, 129, 0.7)", // Verde
-          "rgba(59, 130, 246, 0.7)", // Azul
-          "rgba(245, 158, 11, 0.7)", // Amarillo
-          "rgba(239, 68, 68, 0.7)", // Rojo
-        ],
-        borderColor: [
-          "rgb(16, 185, 129)",
-          "rgb(59, 130, 246)",
-          "rgb(245, 158, 11)",
-          "rgb(239, 68, 68)",
-        ],
-        borderWidth: 1,
-        data: [
-          attendanceData.value.present,
-          attendanceData.value.justified,
-          attendanceData.value.delayed,
-          attendanceData.value.absences,
-        ],
-      },
-    ],
-  }
-})
-
-// Datos para gráfico de calificaciones
-// Usar sólo datos reales de qualificationsData
-const gradesChartData = computed(() => {
-  if (!qualificationsData.value || !qualificationsData.value.evaluations.length) {
-    return {
-      labels: [],
-      datasets: [],
-    }
-  }
-
-  const evaluations = qualificationsData.value.evaluations
-    .sort((a: any, b: any) => {
-      const dateA = new Date(a.fecha || a.date)
-      const dateB = new Date(b.fecha || b.date)
-      return dateA.getTime() - dateB.getTime()
-    })
-    .slice(-10) // Tomar las últimas 10 evaluaciones
-
-  return {
-    labels: evaluations.map((e: any) => {
-      const date = new Date(e.fecha || e.date)
-      return format(date, "dd/MM", {locale: es})
-    }),
-    datasets: [
-      {
-        label: "Calificaciones",
-        data: evaluations.map((e: any) => e.calificacion || e.grade || 0),
-        fill: false,
-        borderColor: "rgb(99, 102, 241)",
-        tension: 0.1,
-      },
-    ],
-  }
-})
-
-// Datos para gráfico de habilidades
-// Usar sólo datos reales de qualificationsData
-const skillsChartData = computed(() => {
-  // En una app real, habría un modelo de habilidades con evaluciones específicas
-  // Aquí simulamos algunos datos según el promedio general
-  const averageGrade = qualificationsData.value?.averageGrade || 0
-
-  // Base para generar valores aleatorios en torno al promedio
-  function randomValue(base: number, variance: number = 10) {
-    const min = Math.max(0, base - variance)
-    const max = Math.min(100, base + variance)
-    return min + Math.random() * (max - min)
-  }
-
-  // Convertir calificación a percentil (asumiendo escala 0-10)
-  const basePercentile = averageGrade * 10
-
-  return {
-    labels: ["Técnica", "Teoría", "Expresividad", "Ritmo", "Lectura musical", "Interpretación"],
-    datasets: [
-      {
-        label: "Habilidades",
-        data: [
-          randomValue(basePercentile, 15),
-          randomValue(basePercentile, 15),
-          randomValue(basePercentile, 15),
-          randomValue(basePercentile, 15),
-          randomValue(basePercentile, 15),
-          randomValue(basePercentile, 15),
-        ],
-        fill: true,
-        backgroundColor: "rgba(99, 102, 241, 0.2)",
-        borderColor: "rgb(99, 102, 241)",
-        pointBackgroundColor: "rgb(99, 102, 241)",
-        pointBorderColor: "#fff",
-        pointHoverBackgroundColor: "#fff",
-        pointHoverBorderColor: "rgb(99, 102, 241)",
-      },
-    ],
-  }
-})
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "bottom" as const,
-    },
-    title: {
-      display: true,
-      text: "",
-    },
-  },
-  scales: {
-    r: {
-      min: 0,
-      max: 100,
-      ticks: {
-        stepSize: 20,
-      },
-    },
-  },
-}
-
-// Etiqueta de estado según rendimiento
-const statusClass = computed(() => {
-  if (!performanceData.value) return ""
-
-  if (performanceData.value.isTopPerformer) {
-    return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-  } else if (performanceData.value.isAtRisk) {
-    return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-  }
-  return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-})
-
-// Iniciar carga de datos
-onMounted(() => {
-  if (props.studentId) {
-    loadStudentData()
-  }
-})
-</script>
-
 <template>
   <div class="student-performance">
     <div v-if="isLoading" class="flex justify-center items-center py-8">
@@ -757,6 +317,446 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAnalyticsStore } from '../store/analytics';
+import { useStudentsStore } from '../../Students/store/students';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useQualificationStore } from '../../Qualifications/store/qualification';
+import { Line, Radar, Bar } from 'vue-chartjs';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  RadialLinearScale,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  RadialLinearScale,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+);
+
+const props = defineProps({
+  studentId: {
+    type: String,
+    default: '',
+  },
+  period: {
+    type: String,
+    default: 'current-month', // 'current-month', 'last-month', 'last-3-months'
+  },
+  compact: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const analyticsStore = useAnalyticsStore();
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
+const qualificationStore = useQualificationStore();
+
+// Estado local
+const isLoading = ref(true);
+const error = ref('');
+const student = ref<any>(null);
+const performanceData = ref<any>(null);
+const attendanceData = ref<any>(null);
+const qualificationsData = ref<any>(null);
+
+// Periodo
+const periodStart = computed(() => {
+  switch (props.period) {
+  case 'last-month':
+    return startOfMonth(subMonths(new Date(), 1));
+  case 'last-3-months':
+    return startOfMonth(subMonths(new Date(), 3));
+  case 'current-month':
+  default:
+    return startOfMonth(new Date());
+  }
+});
+
+const periodEnd = computed(() => {
+  switch (props.period) {
+  case 'last-month':
+    return endOfMonth(subMonths(new Date(), 1));
+  default:
+    return new Date();
+  }
+});
+
+// Observar cambios en el ID del estudiante
+watch(
+  () => props.studentId,
+  (newStudentId) => {
+    if (newStudentId) {
+      loadStudentData();
+    }
+  },
+);
+
+// Observar cambios en el periodo
+watch(
+  () => props.period,
+  () => {
+    if (props.studentId) {
+      loadPerformanceData();
+    }
+  },
+);
+
+// Cargar datos del estudiante
+async function loadStudentData() {
+  if (!props.studentId) return;
+
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    // Cargar datos del estudiante
+    await studentsStore.fetchStudents();
+    student.value = studentsStore.students.find((s) => s.id === props.studentId);
+
+    if (!student.value) {
+      throw new Error('Estudiante no encontrado');
+    }
+
+    // Cargar datos de rendimiento
+    await loadPerformanceData();
+  } catch (err: any) {
+    console.error('Error al cargar datos del estudiante:', err);
+    error.value = err.message || 'Error al cargar datos del estudiante';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Cargar datos de rendimiento
+async function loadPerformanceData() {
+  isLoading.value = true;
+
+  try {
+    await Promise.all([
+      analyticsStore.fetchAnalytics(),
+      loadAttendanceData(),
+      loadQualificationsData(),
+    ]);
+
+    // Identificar si el estudiante está en riesgo o es destacado
+    const atRiskStudents = analyticsStore.studentMetrics.atRiskStudents || [];
+    const topStudents = analyticsStore.studentMetrics.topStudents || [];
+
+    const isAtRisk = atRiskStudents.some((s) => s.id === props.studentId);
+    const isTopPerformer = topStudents.some((s) => s.id === props.studentId);
+
+    // Crear objeto de rendimiento
+    performanceData.value = {
+      attendanceRate: attendanceData.value?.attendanceRate || 0,
+      averageGrade: qualificationsData.value?.averageGrade || 0,
+      absences: attendanceData.value?.absences || 0,
+      evaluations: qualificationsData.value?.evaluations || [],
+      isAtRisk,
+      isTopPerformer,
+      status: isTopPerformer ? 'Destacado' : isAtRisk ? 'En riesgo' : 'Regular',
+      trend: calculatePerformanceTrend(),
+    };
+  } catch (err: any) {
+    console.error('Error al cargar datos de rendimiento:', err);
+    error.value = err.message || 'Error al cargar datos de rendimiento';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Cargar datos de asistencia
+async function loadAttendanceData() {
+  try {
+    await attendanceStore.fetchAttendance();
+
+    // Filtrar registros de asistencia del estudiante en el periodo seleccionado
+    const startDate = periodStart.value;
+    const endDate = periodEnd.value;
+
+    const records = attendanceStore.records.filter((record) => {
+      const recordDate = new Date(record.Fecha || record.fecha || record.date);
+      return (
+        record.studentId === props.studentId && recordDate >= startDate && recordDate <= endDate
+      );
+    });
+
+    // Calcular métricas
+    const total = records.length;
+    const present = records.filter((r) => r.status === 'presente' || r.status === 'PRESENT').length;
+    const absences = records.filter((r) => r.status === 'ausente' || r.status === 'ABSENT').length;
+    const justified = records.filter(
+      (r) => r.status === 'justificado' || r.status === 'JUSTIFIED',
+    ).length;
+    const delayed = records.filter((r) => r.status === 'demorado' || r.status === 'DELAYED').length;
+
+    const attendanceRate = total > 0 ? Math.round(((present + justified) / total) * 100) : 0;
+
+    attendanceData.value = {
+      total,
+      present,
+      absences,
+      justified,
+      delayed,
+      attendanceRate,
+      records,
+    };
+
+    return attendanceData.value;
+  } catch (err: any) {
+    console.error('Error al cargar datos de asistencia:', err);
+    throw err;
+  }
+}
+
+// Cargar calificaciones
+async function loadQualificationsData() {
+  try {
+    await qualificationStore.fetchQualifications();
+
+    // Filtrar calificaciones del estudiante en el periodo seleccionado
+    const startDate = periodStart.value;
+    const endDate = periodEnd.value;
+
+    const evaluations = qualificationStore.qualifications.filter((qual) => {
+      const evalDate = new Date(qual.fecha || qual.date);
+      return qual.studentId === props.studentId && evalDate >= startDate && evalDate <= endDate;
+    });
+
+    // Calcular promedio
+    const total = evaluations.length;
+    const sum = evaluations.reduce(
+      (acc, eval_) => acc + (eval_.calificacion || eval_.grade || 0),
+      0,
+    );
+    const averageGrade = total > 0 ? Math.round((sum / total) * 10) / 10 : 0;
+
+    // Organizar por tipo de evaluación
+    const byType: Record<string, number[]> = {};
+
+    evaluations.forEach((eval_) => {
+      const type = eval_.tipo || eval_.type || 'General';
+      if (!byType[type]) {
+        byType[type] = [];
+      }
+      byType[type].push(eval_.calificacion || eval_.grade || 0);
+    });
+
+    // Calcular promedio por tipo
+    const averageByType: Record<string, number> = {};
+
+    Object.entries(byType).forEach(([type, grades]) => {
+      const typeSum = grades.reduce((acc, grade) => acc + grade, 0);
+      averageByType[type] = Math.round((typeSum / grades.length) * 10) / 10;
+    });
+
+    qualificationsData.value = {
+      total,
+      averageGrade,
+      evaluations,
+      byType,
+      averageByType,
+    };
+
+    return qualificationsData.value;
+  } catch (err: any) {
+    console.error('Error al cargar calificaciones:', err);
+    throw err;
+  }
+}
+
+// Calcular tendencia de rendimiento (esto sería idealmente con datos históricos)
+function calculatePerformanceTrend() {
+  // Por ahora usamos una simulación simple
+  const attendanceTrend = Math.random() > 0.5 ? 1 : -1;
+  const gradeTrend = Math.random() > 0.5 ? 1 : -1;
+
+  return {
+    attendance: attendanceTrend * (Math.random() * 5),
+    grade: gradeTrend * (Math.random() * 1),
+  };
+}
+
+// Datos para gráficos
+// Usar sólo datos reales de attendanceData
+const attendanceChartData = computed(() => {
+  if (!attendanceData.value) {
+    return {
+      labels: [],
+      datasets: [],
+    };
+  }
+
+  return {
+    labels: ['Presente', 'Justificado', 'Con retraso', 'Ausente'],
+    datasets: [
+      {
+        label: 'Registro de asistencia',
+        backgroundColor: [
+          'rgba(16, 185, 129, 0.7)', // Verde
+          'rgba(59, 130, 246, 0.7)', // Azul
+          'rgba(245, 158, 11, 0.7)', // Amarillo
+          'rgba(239, 68, 68, 0.7)', // Rojo
+        ],
+        borderColor: [
+          'rgb(16, 185, 129)',
+          'rgb(59, 130, 246)',
+          'rgb(245, 158, 11)',
+          'rgb(239, 68, 68)',
+        ],
+        borderWidth: 1,
+        data: [
+          attendanceData.value.present,
+          attendanceData.value.justified,
+          attendanceData.value.delayed,
+          attendanceData.value.absences,
+        ],
+      },
+    ],
+  };
+});
+
+// Datos para gráfico de calificaciones
+// Usar sólo datos reales de qualificationsData
+const gradesChartData = computed(() => {
+  if (!qualificationsData.value || !qualificationsData.value.evaluations.length) {
+    return {
+      labels: [],
+      datasets: [],
+    };
+  }
+
+  const evaluations = qualificationsData.value.evaluations
+    .sort((a: any, b: any) => {
+      const dateA = new Date(a.fecha || a.date);
+      const dateB = new Date(b.fecha || b.date);
+      return dateA.getTime() - dateB.getTime();
+    })
+    .slice(-10); // Tomar las últimas 10 evaluaciones
+
+  return {
+    labels: evaluations.map((e: any) => {
+      const date = new Date(e.fecha || e.date);
+      return format(date, 'dd/MM', { locale: es });
+    }),
+    datasets: [
+      {
+        label: 'Calificaciones',
+        data: evaluations.map((e: any) => e.calificacion || e.grade || 0),
+        fill: false,
+        borderColor: 'rgb(99, 102, 241)',
+        tension: 0.1,
+      },
+    ],
+  };
+});
+
+// Datos para gráfico de habilidades
+// Usar sólo datos reales de qualificationsData
+const skillsChartData = computed(() => {
+  // En una app real, habría un modelo de habilidades con evaluciones específicas
+  // Aquí simulamos algunos datos según el promedio general
+  const averageGrade = qualificationsData.value?.averageGrade || 0;
+
+  // Base para generar valores aleatorios en torno al promedio
+  function randomValue(base: number, variance: number = 10) {
+    const min = Math.max(0, base - variance);
+    const max = Math.min(100, base + variance);
+    return min + Math.random() * (max - min);
+  }
+
+  // Convertir calificación a percentil (asumiendo escala 0-10)
+  const basePercentile = averageGrade * 10;
+
+  return {
+    labels: ['Técnica', 'Teoría', 'Expresividad', 'Ritmo', 'Lectura musical', 'Interpretación'],
+    datasets: [
+      {
+        label: 'Habilidades',
+        data: [
+          randomValue(basePercentile, 15),
+          randomValue(basePercentile, 15),
+          randomValue(basePercentile, 15),
+          randomValue(basePercentile, 15),
+          randomValue(basePercentile, 15),
+          randomValue(basePercentile, 15),
+        ],
+        fill: true,
+        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+        borderColor: 'rgb(99, 102, 241)',
+        pointBackgroundColor: 'rgb(99, 102, 241)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgb(99, 102, 241)',
+      },
+    ],
+  };
+});
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+    },
+    title: {
+      display: true,
+      text: '',
+    },
+  },
+  scales: {
+    r: {
+      min: 0,
+      max: 100,
+      ticks: {
+        stepSize: 20,
+      },
+    },
+  },
+};
+
+// Etiqueta de estado según rendimiento
+const statusClass = computed(() => {
+  if (!performanceData.value) return '';
+
+  if (performanceData.value.isTopPerformer) {
+    return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+  } else if (performanceData.value.isAtRisk) {
+    return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+  }
+  return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+});
+
+// Iniciar carga de datos
+onMounted(() => {
+  if (props.studentId) {
+    loadStudentData();
+  }
+});
+</script>
 
 <style scoped>
 .student-performance {

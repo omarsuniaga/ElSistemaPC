@@ -1,176 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, watch, nextTick} from "vue"
-import {useRoute} from "vue-router"
-import {useTeachersStore} from "../../store/teachers"
-import {useClassesStore} from "../../../Classes/store/classes"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import TeacherWeeklySchedule from "../../components/TeacherWeeklySchedule.vue"
-import WeeklySchedulePrint from "../../components/WeeklySchedulePrint.vue"
-import html2pdf from "html2pdf.js"
-import {getAuth} from "firebase/auth"
-import {CalendarIcon, DocumentArrowDownIcon, ShareIcon, UserIcon} from "@heroicons/vue/24/outline"
-
-// Tipos para mejorar el tipado de maestro
-interface Teacher {
-  id: string
-  name: string
-  photoURL?: string
-  specialties?: string[]
-  experiencia?: string
-  phone?: string
-  email?: string
-}
-
-const route = useRoute()
-const auth = getAuth()
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-
-// Obtenemos el teacherId: si hay usuario autenticado lo usamos, si no, usamos el ID de la ruta
-const teacherId = computed(() => {
-  return auth.currentUser?.uid || (route.params.id as string)
-})
-
-// Propiedad para almacenar la información del maestro
-const teacher = ref<Teacher | null>(null)
-
-// Computed para obtener las clases del maestro a partir del store de clases
-const teacherClasses = computed(() => {
-  if (!teacherId.value) return []
-  return classesStore.classes.filter((classItem) => classItem.teacherId === teacherId.value)
-})
-
-const viewMode = ref<"interactive" | "print">("interactive")
-
-// Computed para calcular las horas semanales
-const getWeeklyHours = computed(() => {
-  let total = 0
-  const weekDays = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
-
-  weekDays.forEach((day) => {
-    const dayClasses = classesStore.getClassByDaysAndTeacher(teacherId.value, day)
-    dayClasses.forEach((classItem) => {
-      const scheduleForDay = classItem.schedule?.slots.find((slot) => slot.day === day)
-      if (scheduleForDay) {
-        const [startHour, startMinute] = scheduleForDay.startTime.split(":").map(Number)
-        const [endHour, endMinute] = scheduleForDay.endTime.split(":").map(Number)
-        const duration = endHour - startHour + (endMinute - startMinute) / 60
-        total += duration
-      }
-    })
-  })
-
-  return total
-})
-
-// PDF y compartir (sin cambios significativos)
-const downloadPDF = (): void => {
-  const element = document.getElementById("schedule-pdf")
-  if (!element || !teacher.value) return
-
-  const options = {
-    margin: 10,
-    filename: `horario_${teacher.value.name}.pdf`,
-    image: {type: "jpeg", quality: 0.98},
-    html2canvas: {scale: 2, useCORS: true},
-    jsPDF: {unit: "mm", format: "a4", orientation: "portrait"},
-  }
-
-  html2pdf().from(element).set(options).save()
-}
-
-const shareSchedule = async (): Promise<void> => {
-  if (!teacher.value) return
-
-  try {
-    const element = document.getElementById("schedule-pdf")
-    if (!element) return
-
-    const options = {
-      margin: 10,
-      image: {type: "jpeg", quality: 0.98},
-      html2canvas: {scale: 2, useCORS: true},
-      jsPDF: {unit: "mm", format: "a4", orientation: "portrait"},
-    }
-    const pdfBlob = await html2pdf().from(element).set(options).outputPdf("blob")
-    const file = new File([pdfBlob], `horario_${teacher.value.name}.pdf`, {type: "application/pdf"})
-
-    if (navigator.share && navigator.canShare({files: [file]})) {
-      await navigator.share({
-        files: [file],
-        title: `Horario de ${teacher.value.name}`,
-        text: "Aquí está el horario de clases",
-      })
-    } else {
-      const fileURL = URL.createObjectURL(file)
-      window.open(fileURL, "_blank")
-    }
-  } catch (error) {
-    console.error("Error al compartir:", error)
-  }
-}
-
-const getCurrentFormattedDate = (): string => {
-  return format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", {locale: es})
-}
-
-const formatHours = (hours: number): string => {
-  return `${Math.floor(hours)} h ${Math.round((hours % 1) * 60)} min`
-}
-
-// Cargar datos del maestro, clases y schedules
-const loadData = async () => {
-  try {
-    isLoading.value = true
-    error.value = null
-
-    await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()])
-
-    const fetchedTeacher = teachersStore.getTeacherById(teacherId.value)
-    if (fetchedTeacher) {
-      teacher.value = {
-        id: fetchedTeacher.id,
-        name: fetchedTeacher.name,
-        photoURL: fetchedTeacher.photoURL,
-        specialties: fetchedTeacher.specialties,
-        experiencia: fetchedTeacher.experiencia,
-        phone: fetchedTeacher.phone,
-        email: fetchedTeacher.email,
-      }
-    } else {
-      teacher.value = null
-      throw new Error("Maestro no encontrado")
-    }
-  } catch (err: any) {
-    console.error("Error cargando datos:", err)
-    error.value = err.message || "Error cargando datos"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(async () => {
-  await loadData()
-})
-
-// Watch para recargar datos si cambia el teacherId
-watch(teacherId, async () => {
-  await loadData()
-})
-
-const printSchedule = () => {
-  viewMode.value = "print"
-  nextTick(() => {
-    window.print()
-    viewMode.value = "interactive"
-  })
-}
-</script>
-
 <template>
   <div class="p-4 max-w-5xl mx-auto">
     <!-- Header con título y botones -->
@@ -339,6 +166,179 @@ const printSchedule = () => {
     <div v-else class="text-center py-12 text-gray-500">No se encontró información del maestro</div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { useRoute } from 'vue-router';
+import { useTeachersStore } from '../../store/teachers';
+import { useClassesStore } from '../../../Classes/store/classes';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import TeacherWeeklySchedule from '../../components/TeacherWeeklySchedule.vue';
+import WeeklySchedulePrint from '../../components/WeeklySchedulePrint.vue';
+import html2pdf from 'html2pdf.js';
+import { getAuth } from 'firebase/auth';
+import { CalendarIcon, DocumentArrowDownIcon, ShareIcon, UserIcon } from '@heroicons/vue/24/outline';
+
+// Tipos para mejorar el tipado de maestro
+interface Teacher {
+  id: string
+  name: string
+  photoURL?: string
+  specialties?: string[]
+  experiencia?: string
+  phone?: string
+  email?: string
+}
+
+const route = useRoute();
+const auth = getAuth();
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+
+// Obtenemos el teacherId: si hay usuario autenticado lo usamos, si no, usamos el ID de la ruta
+const teacherId = computed(() => {
+  return auth.currentUser?.uid || (route.params.id as string);
+});
+
+// Propiedad para almacenar la información del maestro
+const teacher = ref<Teacher | null>(null);
+
+// Computed para obtener las clases del maestro a partir del store de clases
+const teacherClasses = computed(() => {
+  if (!teacherId.value) return [];
+  return classesStore.classes.filter((classItem) => classItem.teacherId === teacherId.value);
+});
+
+const viewMode = ref<'interactive' | 'print'>('interactive');
+
+// Computed para calcular las horas semanales
+const getWeeklyHours = computed(() => {
+  let total = 0;
+  const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+  weekDays.forEach((day) => {
+    const dayClasses = classesStore.getClassByDaysAndTeacher(teacherId.value, day);
+    dayClasses.forEach((classItem) => {
+      const scheduleForDay = classItem.schedule?.slots.find((slot) => slot.day === day);
+      if (scheduleForDay) {
+        const [startHour, startMinute] = scheduleForDay.startTime.split(':').map(Number);
+        const [endHour, endMinute] = scheduleForDay.endTime.split(':').map(Number);
+        const duration = endHour - startHour + (endMinute - startMinute) / 60;
+        total += duration;
+      }
+    });
+  });
+
+  return total;
+});
+
+// PDF y compartir (sin cambios significativos)
+const downloadPDF = (): void => {
+  const element = document.getElementById('schedule-pdf');
+  if (!element || !teacher.value) return;
+
+  const options = {
+    margin: 10,
+    filename: `horario_${teacher.value.name}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  };
+
+  html2pdf().from(element).set(options).save();
+};
+
+const shareSchedule = async (): Promise<void> => {
+  if (!teacher.value) return;
+
+  try {
+    const element = document.getElementById('schedule-pdf');
+    if (!element) return;
+
+    const options = {
+      margin: 10,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    };
+    const pdfBlob = await html2pdf().from(element).set(options).outputPdf('blob');
+    const file = new File([pdfBlob], `horario_${teacher.value.name}.pdf`, { type: 'application/pdf' });
+
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: `Horario de ${teacher.value.name}`,
+        text: 'Aquí está el horario de clases',
+      });
+    } else {
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, '_blank');
+    }
+  } catch (error) {
+    console.error('Error al compartir:', error);
+  }
+};
+
+const getCurrentFormattedDate = (): string => {
+  return format(new Date(), 'EEEE, d \'de\' MMMM \'de\' yyyy', { locale: es });
+};
+
+const formatHours = (hours: number): string => {
+  return `${Math.floor(hours)} h ${Math.round((hours % 1) * 60)} min`;
+};
+
+// Cargar datos del maestro, clases y schedules
+const loadData = async () => {
+  try {
+    isLoading.value = true;
+    error.value = null;
+
+    await Promise.all([teachersStore.fetchTeachers(), classesStore.fetchClasses()]);
+
+    const fetchedTeacher = teachersStore.getTeacherById(teacherId.value);
+    if (fetchedTeacher) {
+      teacher.value = {
+        id: fetchedTeacher.id,
+        name: fetchedTeacher.name,
+        photoURL: fetchedTeacher.photoURL,
+        specialties: fetchedTeacher.specialties,
+        experiencia: fetchedTeacher.experiencia,
+        phone: fetchedTeacher.phone,
+        email: fetchedTeacher.email,
+      };
+    } else {
+      teacher.value = null;
+      throw new Error('Maestro no encontrado');
+    }
+  } catch (err: any) {
+    console.error('Error cargando datos:', err);
+    error.value = err.message || 'Error cargando datos';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(async () => {
+  await loadData();
+});
+
+// Watch para recargar datos si cambia el teacherId
+watch(teacherId, async () => {
+  await loadData();
+});
+
+const printSchedule = () => {
+  viewMode.value = 'print';
+  nextTick(() => {
+    window.print();
+    viewMode.value = 'interactive';
+  });
+};
+</script>
 
 <style scoped>
 @media print {

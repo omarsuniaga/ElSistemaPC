@@ -1,200 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, inject, type Ref} from "vue"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {fetchUnifiedObservationsForClass} from "../../../composables/useUnifiedObservations"
-import {
-  ChevronDownIcon,
-  ChevronRightIcon,
-  EllipsisVerticalIcon,
-  EyeIcon,
-  CalendarIcon,
-  UserIcon,
-  ClockIcon,
-  DocumentTextIcon,
-  MusicalNoteIcon,
-} from "@heroicons/vue/24/outline"
-import {Menu, MenuButton, MenuItems, MenuItem} from "@headlessui/vue"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-
-// Props del componente
-const props = defineProps<{
-  classes: Array<any>
-}>()
-
-// Stores
-const attendanceStore = useAttendanceStore()
-
-// Obtener el teacherId del componente padre
-const currentTeacherId = inject<Ref<string>>("currentTeacherId")
-
-// Estado local
-const expandedClasses = ref<Set<string>>(new Set())
-const classObservations = ref<Record<string, any[]>>({})
-const loadingObservations = ref<Record<string, boolean>>({})
-
-// Computed para filtrar clases del maestro actual
-const teacherClasses = computed(() => {
-  if (!currentTeacherId?.value) return props.classes
-  return props.classes.filter(
-    (cls) =>
-      cls.teacherId === currentTeacherId.value ||
-      cls.assistantTeachers?.includes(currentTeacherId.value)
-  )
-})
-
-// Función para alternar expansión de clase
-const toggleClassExpansion = async (classId: string) => {
-  if (expandedClasses.value.has(classId)) {
-    expandedClasses.value.delete(classId)
-  } else {
-    expandedClasses.value.add(classId)
-    // Cargar observaciones si no están cargadas
-    if (!classObservations.value[classId]) {
-      await loadClassObservations(classId)
-    }
-  }
-}
-
-// Función para cargar observaciones de una clase
-const loadClassObservations = async (classId: string) => {
-  try {
-    loadingObservations.value[classId] = true
-
-    // Usar la nueva función de observaciones unificadas
-    console.log(`[ObservacionesSection] Loading unified observations for class: ${classId}`)
-    const observations = await fetchUnifiedObservationsForClass(classId)
-    classObservations.value[classId] = observations || []
-
-    console.log(
-      `[ObservacionesSection] Loaded ${observations.length} unified observations for class ${classId}`
-    )
-  } catch (error) {
-    console.error("Error loading unified observations for class:", classId, error)
-
-    // Fallback al método anterior si falla
-    try {
-      console.log(`[ObservacionesSection] Falling back to old method for class: ${classId}`)
-      const fallbackObservations = await attendanceStore.fetchObservationsForClass(classId)
-      classObservations.value[classId] = fallbackObservations || []
-    } catch (fallbackError) {
-      console.error("Fallback method also failed:", fallbackError)
-      classObservations.value[classId] = []
-    }
-  } finally {
-    loadingObservations.value[classId] = false
-  }
-}
-
-// Función para formatear fecha
-const formatDate = (dateString: string) => {
-  try {
-    const date = new Date(dateString)
-    return format(date, "dd/MM/yyyy HH:mm", {locale: es})
-  } catch {
-    return dateString
-  }
-}
-
-// Función para formatear el horario/slots con iconos
-const formatScheduleWithIcons = (schedule: string | undefined, slots: any) => {
-  if (!schedule && !slots) return "Horario no definido"
-
-  // Si slots es un array de objetos
-  if (Array.isArray(slots)) {
-    return slots
-      .map((slot) => {
-        const day = slot.day || slot.dia || ""
-        const time = slot.time || slot.hora || ""
-        return `${day} ${time}`
-      })
-      .join(", ")
-  }
-
-  // Si slots es un objeto
-  if (slots && typeof slots === "object") {
-    const day = slots.day || slots.dia || ""
-    const time = slots.time || slots.hora || ""
-    return `${day} ${time}`
-  }
-
-  // Si slots es un string
-  if (typeof slots === "string") {
-    return slots
-  }
-
-  // Fallback al schedule original
-  return schedule || "Horario no definido"
-}
-
-// Función para obtener los días de la semana en formato legible
-const formatDaysOfWeek = (slots: any) => {
-  if (!slots) return []
-
-  const daysMap: Record<string, string> = {
-    monday: "Lunes",
-    tuesday: "Martes",
-    wednesday: "Miércoles",
-    thursday: "Jueves",
-    friday: "Viernes",
-    saturday: "Sábado",
-    sunday: "Domingo",
-    lunes: "Lunes",
-    martes: "Martes",
-    miercoles: "Miércoles",
-    miércoles: "Miércoles",
-    jueves: "Jueves",
-    viernes: "Viernes",
-    sabado: "Sábado",
-    sábado: "Sábado",
-    domingo: "Domingo",
-  }
-
-  if (Array.isArray(slots)) {
-    return slots.map((slot) => {
-      const day = slot.day || slot.dia || ""
-      const time = slot.time || slot.hora || ""
-      return {
-        day: daysMap[day.toLowerCase()] || day,
-        time,
-      }
-    })
-  }
-
-  if (typeof slots === "object" && slots !== null) {
-    const day = slots.day || slots.dia || ""
-    const time = slots.time || slots.hora || ""
-    return [
-      {
-        day: daysMap[day.toLowerCase()] || day,
-        time,
-      },
-    ]
-  }
-  return []
-}
-
-// Función para obtener el nombre del autor de la observación
-const getAuthorName = (observation: any) => {
-  return observation.authorName || observation.teacherName || "Autor desconocido"
-}
-
-// Función para obtener el color del tipo de observación
-const getObservationTypeColor = (type: string) => {
-  const colors = {
-    positive: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    negative: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    neutral: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    general: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-  }
-  return colors[type as keyof typeof colors] || colors.general
-}
-
-onMounted(() => {
-  console.log("ObservacionesSection mounted with classes:", teacherClasses.value.length)
-})
-</script>
-
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 md:p-4">
     <div class="flex items-center justify-between mb-4">
@@ -389,6 +192,203 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, inject, type Ref } from 'vue';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { fetchUnifiedObservationsForClass } from '../../../composables/useUnifiedObservations';
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  EllipsisVerticalIcon,
+  EyeIcon,
+  CalendarIcon,
+  UserIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  MusicalNoteIcon,
+} from '@heroicons/vue/24/outline';
+import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+// Props del componente
+const props = defineProps<{
+  classes: Array<any>
+}>();
+
+// Stores
+const attendanceStore = useAttendanceStore();
+
+// Obtener el teacherId del componente padre
+const currentTeacherId = inject<Ref<string>>('currentTeacherId');
+
+// Estado local
+const expandedClasses = ref<Set<string>>(new Set());
+const classObservations = ref<Record<string, any[]>>({});
+const loadingObservations = ref<Record<string, boolean>>({});
+
+// Computed para filtrar clases del maestro actual
+const teacherClasses = computed(() => {
+  if (!currentTeacherId?.value) return props.classes;
+  return props.classes.filter(
+    (cls) =>
+      cls.teacherId === currentTeacherId.value ||
+      cls.assistantTeachers?.includes(currentTeacherId.value),
+  );
+});
+
+// Función para alternar expansión de clase
+const toggleClassExpansion = async (classId: string) => {
+  if (expandedClasses.value.has(classId)) {
+    expandedClasses.value.delete(classId);
+  } else {
+    expandedClasses.value.add(classId);
+    // Cargar observaciones si no están cargadas
+    if (!classObservations.value[classId]) {
+      await loadClassObservations(classId);
+    }
+  }
+};
+
+// Función para cargar observaciones de una clase
+const loadClassObservations = async (classId: string) => {
+  try {
+    loadingObservations.value[classId] = true;
+
+    // Usar la nueva función de observaciones unificadas
+    console.log(`[ObservacionesSection] Loading unified observations for class: ${classId}`);
+    const observations = await fetchUnifiedObservationsForClass(classId);
+    classObservations.value[classId] = observations || [];
+
+    console.log(
+      `[ObservacionesSection] Loaded ${observations.length} unified observations for class ${classId}`,
+    );
+  } catch (error) {
+    console.error('Error loading unified observations for class:', classId, error);
+
+    // Fallback al método anterior si falla
+    try {
+      console.log(`[ObservacionesSection] Falling back to old method for class: ${classId}`);
+      const fallbackObservations = await attendanceStore.fetchObservationsForClass(classId);
+      classObservations.value[classId] = fallbackObservations || [];
+    } catch (fallbackError) {
+      console.error('Fallback method also failed:', fallbackError);
+      classObservations.value[classId] = [];
+    }
+  } finally {
+    loadingObservations.value[classId] = false;
+  }
+};
+
+// Función para formatear fecha
+const formatDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    return format(date, 'dd/MM/yyyy HH:mm', { locale: es });
+  } catch {
+    return dateString;
+  }
+};
+
+// Función para formatear el horario/slots con iconos
+const formatScheduleWithIcons = (schedule: string | undefined, slots: any) => {
+  if (!schedule && !slots) return 'Horario no definido';
+
+  // Si slots es un array de objetos
+  if (Array.isArray(slots)) {
+    return slots
+      .map((slot) => {
+        const day = slot.day || slot.dia || '';
+        const time = slot.time || slot.hora || '';
+        return `${day} ${time}`;
+      })
+      .join(', ');
+  }
+
+  // Si slots es un objeto
+  if (slots && typeof slots === 'object') {
+    const day = slots.day || slots.dia || '';
+    const time = slots.time || slots.hora || '';
+    return `${day} ${time}`;
+  }
+
+  // Si slots es un string
+  if (typeof slots === 'string') {
+    return slots;
+  }
+
+  // Fallback al schedule original
+  return schedule || 'Horario no definido';
+};
+
+// Función para obtener los días de la semana en formato legible
+const formatDaysOfWeek = (slots: any) => {
+  if (!slots) return [];
+
+  const daysMap: Record<string, string> = {
+    monday: 'Lunes',
+    tuesday: 'Martes',
+    wednesday: 'Miércoles',
+    thursday: 'Jueves',
+    friday: 'Viernes',
+    saturday: 'Sábado',
+    sunday: 'Domingo',
+    lunes: 'Lunes',
+    martes: 'Martes',
+    miercoles: 'Miércoles',
+    miércoles: 'Miércoles',
+    jueves: 'Jueves',
+    viernes: 'Viernes',
+    sabado: 'Sábado',
+    sábado: 'Sábado',
+    domingo: 'Domingo',
+  };
+
+  if (Array.isArray(slots)) {
+    return slots.map((slot) => {
+      const day = slot.day || slot.dia || '';
+      const time = slot.time || slot.hora || '';
+      return {
+        day: daysMap[day.toLowerCase()] || day,
+        time,
+      };
+    });
+  }
+
+  if (typeof slots === 'object' && slots !== null) {
+    const day = slots.day || slots.dia || '';
+    const time = slots.time || slots.hora || '';
+    return [
+      {
+        day: daysMap[day.toLowerCase()] || day,
+        time,
+      },
+    ];
+  }
+  return [];
+};
+
+// Función para obtener el nombre del autor de la observación
+const getAuthorName = (observation: any) => {
+  return observation.authorName || observation.teacherName || 'Autor desconocido';
+};
+
+// Función para obtener el color del tipo de observación
+const getObservationTypeColor = (type: string) => {
+  const colors = {
+    positive: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+    negative: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+    neutral: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    general: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+  };
+  return colors[type as keyof typeof colors] || colors.general;
+};
+
+onMounted(() => {
+  console.log('ObservacionesSection mounted with classes:', teacherClasses.value.length);
+});
+</script>
 
 <style scoped>
 /* Estilos adicionales si es necesario */

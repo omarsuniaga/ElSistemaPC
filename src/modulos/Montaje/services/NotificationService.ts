@@ -1,4 +1,4 @@
-import { firebaseService } from './FirebaseService'
+import { firebaseService } from './FirebaseService';
 
 export interface PushNotification {
   title: string
@@ -20,60 +20,60 @@ export interface NotificationAction {
 }
 
 class NotificationService {
-  private isSupported: boolean
-  private permission: NotificationPermission = 'default'
-  private fcmToken: string | null = null
+  private isSupported: boolean;
+  private permission: NotificationPermission = 'default';
+  private fcmToken: string | null = null;
 
   constructor() {
-    this.isSupported = 'Notification' in window && 'serviceWorker' in navigator
-    this.permission = this.isSupported ? Notification.permission : 'denied'
+    this.isSupported = 'Notification' in window && 'serviceWorker' in navigator;
+    this.permission = this.isSupported ? Notification.permission : 'denied';
   }
 
   async initialize() {
     if (!this.isSupported) {
-      console.warn('Notifications not supported in this browser')
-      return false
+      console.warn('Notifications not supported in this browser');
+      return false;
     }
 
     try {
       // Request permission
-      await this.requestPermission()
+      await this.requestPermission();
       
       // Get FCM token
-      this.fcmToken = await firebaseService.requestNotificationPermission()
+      this.fcmToken = await firebaseService.requestNotificationPermission();
       
       // Listen for foreground messages
       firebaseService.onMessage((payload) => {
         this.showNotification(payload.notification.title, {
           body: payload.notification.body,
           icon: payload.notification.icon,
-          data: payload.data
-        })
-      })
+          data: payload.data,
+        });
+      });
 
-      return true
+      return true;
     } catch (error) {
-      console.error('Notification initialization error:', error)
-      return false
+      console.error('Notification initialization error:', error);
+      return false;
     }
   }
 
   async requestPermission(): Promise<boolean> {
-    if (!this.isSupported) return false
+    if (!this.isSupported) return false;
 
     try {
-      this.permission = await Notification.requestPermission()
-      return this.permission === 'granted'
+      this.permission = await Notification.requestPermission();
+      return this.permission === 'granted';
     } catch (error) {
-      console.error('Permission request error:', error)
-      return false
+      console.error('Permission request error:', error);
+      return false;
     }
   }
 
   async showNotification(title: string, options: PushNotification = {}) {
     if (!this.isSupported || this.permission !== 'granted') {
-      console.warn('Notifications not permitted')
-      return
+      console.warn('Notifications not permitted');
+      return;
     }
 
     try {
@@ -85,31 +85,31 @@ class NotificationService {
         requireInteraction: options.requireInteraction || false,
         silent: options.silent || false,
         tag: options.tag,
-        timestamp: options.timestamp || Date.now()
-      })
+        timestamp: options.timestamp || Date.now(),
+      });
 
       // Handle notification click
       notification.onclick = (event) => {
-        event.preventDefault()
-        window.focus()
+        event.preventDefault();
+        window.focus();
         
         if (options.data?.url) {
-          window.open(options.data.url, '_blank')
+          window.open(options.data.url, '_blank');
         }
         
-        notification.close()
-      }
+        notification.close();
+      };
 
       // Auto close after 5 seconds if not requiring interaction
       if (!options.requireInteraction) {
         setTimeout(() => {
-          notification.close()
-        }, 5000)
+          notification.close();
+        }, 5000);
       }
 
-      return notification
+      return notification;
     } catch (error) {
-      console.error('Show notification error:', error)
+      console.error('Show notification error:', error);
     }
   }
 
@@ -123,9 +123,9 @@ class NotificationService {
       data: {
         type: 'evaluation_reminder',
         workName,
-        instrumentName
-      }
-    })
+        instrumentName,
+      },
+    });
   }
 
   async showSessionReminder(sessionTitle: string, startTime: string) {
@@ -137,9 +137,9 @@ class NotificationService {
       data: {
         type: 'session_reminder',
         sessionTitle,
-        startTime
-      }
-    })
+        startTime,
+      },
+    });
   }
 
   async showMilestoneAchieved(workName: string, milestone: string) {
@@ -150,16 +150,16 @@ class NotificationService {
       data: {
         type: 'milestone_achieved',
         workName,
-        milestone
-      }
-    })
+        milestone,
+      },
+    });
   }
 
   async showProgressAlert(instrumentName: string, alertType: 'improvement' | 'decline') {
-    const emoji = alertType === 'improvement' ? '📈' : '📉'
+    const emoji = alertType === 'improvement' ? '📈' : '📉';
     const message = alertType === 'improvement' 
       ? `¡Excelente progreso en ${instrumentName}!`
-      : `${instrumentName} necesita atención`
+      : `${instrumentName} necesita atención`;
 
     return this.showNotification(`${emoji} Alerta de Progreso`, {
       body: message,
@@ -168,22 +168,22 @@ class NotificationService {
       data: {
         type: 'progress_alert',
         instrumentName,
-        alertType
-      }
-    })
+        alertType,
+      },
+    });
   }
 
   // Schedule notifications
   async scheduleNotification(
     title: string, 
     options: PushNotification, 
-    delay: number
+    delay: number,
   ) {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve(this.showNotification(title, options))
-      }, delay)
-    })
+        resolve(this.showNotification(title, options));
+      }, delay);
+    });
   }
 
   // Batch notifications
@@ -193,37 +193,37 @@ class NotificationService {
     delay?: number
   }>) {
     const promises = notifications.map((notif, index) => {
-      const delay = notif.delay || (index * 1000) // 1 second between notifications
-      return this.scheduleNotification(notif.title, notif.options, delay)
-    })
+      const delay = notif.delay || (index * 1000); // 1 second between notifications
+      return this.scheduleNotification(notif.title, notif.options, delay);
+    });
 
-    return Promise.all(promises)
+    return Promise.all(promises);
   }
 
   // Clear notifications
   clearNotificationsByTag(tag: string) {
     // This would require service worker implementation for full functionality
-    console.log(`Clearing notifications with tag: ${tag}`)
+    console.log(`Clearing notifications with tag: ${tag}`);
   }
 
   clearAllNotifications() {
     // This would require service worker implementation for full functionality
-    console.log('Clearing all notifications')
+    console.log('Clearing all notifications');
   }
 
   // Getters
   get isPermissionGranted() {
-    return this.permission === 'granted'
+    return this.permission === 'granted';
   }
 
   get token() {
-    return this.fcmToken
+    return this.fcmToken;
   }
 
   get supported() {
-    return this.isSupported
+    return this.isSupported;
   }
 }
 
-export const notificationService = new NotificationService()
-export default notificationService
+export const notificationService = new NotificationService();
+export default notificationService;

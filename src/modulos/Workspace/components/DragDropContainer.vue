@@ -1,55 +1,4 @@
 ```vue
-<script setup lang="ts">
-import {ref, computed} from "vue"
-import {VueDraggableNext} from "vue-draggable-plus"
-import type {WorkspaceElement} from "../modelos/types"
-
-const props = defineProps<{
-  elements: WorkspaceElement[]
-  group?: string
-  animation?: number
-  ghostClass?: string
-  dragClass?: string
-  dropClass?: string
-}>()
-
-const emit = defineEmits<{
-  (e: "update:elements", elements: WorkspaceElement[]): void
-  (e: "add", element: WorkspaceElement): void
-  (e: "remove", element: WorkspaceElement): void
-  (e: "start", event: any): void
-  (e: "end", event: any): void
-}>()
-
-const dragOptions = computed(() => ({
-  animation: props.animation || 200,
-  group: props.group || "workspace",
-  ghostClass: props.ghostClass || "ghost",
-  dragClass: props.dragClass || "dragging",
-  dropClass: props.dropClass || "drop-zone",
-}))
-
-const handleChange = (event: any) => {
-  emit("update:elements", event.target.value)
-}
-
-const handleAdd = (event: any) => {
-  emit("add", event.item)
-}
-
-const handleRemove = (event: any) => {
-  emit("remove", event.item)
-}
-
-const handleStart = (event: any) => {
-  emit("start", event)
-}
-
-const handleEnd = (event: any) => {
-  emit("end", event)
-}
-</script>
-
 <template>
   <VueDraggableNext
     v-model="elements"
@@ -94,6 +43,57 @@ const handleEnd = (event: any) => {
     </template>
   </VueDraggableNext>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { VueDraggableNext } from 'vue-draggable-plus';
+import type { WorkspaceElement } from '../modelos/types';
+
+const props = defineProps<{
+  elements: WorkspaceElement[]
+  group?: string
+  animation?: number
+  ghostClass?: string
+  dragClass?: string
+  dropClass?: string
+}>();
+
+const emit = defineEmits<{
+  (e: 'update:elements', elements: WorkspaceElement[]): void
+  (e: 'add', element: WorkspaceElement): void
+  (e: 'remove', element: WorkspaceElement): void
+  (e: 'start', event: any): void
+  (e: 'end', event: any): void
+}>();
+
+const dragOptions = computed(() => ({
+  animation: props.animation || 200,
+  group: props.group || 'workspace',
+  ghostClass: props.ghostClass || 'ghost',
+  dragClass: props.dragClass || 'dragging',
+  dropClass: props.dropClass || 'drop-zone',
+}));
+
+const handleChange = (event: any) => {
+  emit('update:elements', event.target.value);
+};
+
+const handleAdd = (event: any) => {
+  emit('add', event.item);
+};
+
+const handleRemove = (event: any) => {
+  emit('remove', event.item);
+};
+
+const handleStart = (event: any) => {
+  emit('start', event);
+};
+
+const handleEnd = (event: any) => {
+  emit('end', event);
+};
+</script>
 
 <style scoped>
 .ghost {

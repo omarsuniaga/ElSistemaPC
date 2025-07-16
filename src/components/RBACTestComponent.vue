@@ -129,83 +129,83 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
-import {RBACPersistenceService} from "../services/rbac/rbacPersistenceService"
+import { ref } from 'vue';
+import { RBACPersistenceService } from '../services/rbac/rbacPersistenceService';
 
-const loading = ref(false)
-const testResults = ref<Array<{message: string; type: string; timestamp: string}>>([])
+const loading = ref(false);
+const testResults = ref<Array<{message: string; type: string; timestamp: string}>>([]);
 const status = ref<{rolesCount: number; permissionsCount: number; navigationCount: number} | null>(
-  null
-)
-const dataDetails = ref<any>(null)
+  null,
+);
+const dataDetails = ref<any>(null);
 
-const addResult = (message: string, type: "success" | "error" | "warning" | "info" = "info") => {
+const addResult = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
   testResults.value.push({
     message,
     type,
     timestamp: new Date().toLocaleTimeString(),
-  })
-}
+  });
+};
 
 const runFullTest = async () => {
-  loading.value = true
-  testResults.value = []
-  dataDetails.value = null
+  loading.value = true;
+  testResults.value = [];
+  dataDetails.value = null;
 
   try {
-    addResult("🚀 Iniciando test completo de comunicación RBAC...", "info")
+    addResult('🚀 Iniciando test completo de comunicación RBAC...', 'info');
 
     // Test 1: Leer roles
-    addResult("📖 Test 1: Leyendo roles desde Firestore...", "info")
-    const roles = await RBACPersistenceService.getRoles()
-    addResult(`✅ Roles obtenidos: ${roles.length}`, "success")
+    addResult('📖 Test 1: Leyendo roles desde Firestore...', 'info');
+    const roles = await RBACPersistenceService.getRoles();
+    addResult(`✅ Roles obtenidos: ${roles.length}`, 'success');
 
     // Test 2: Leer permisos
-    addResult("📖 Test 2: Leyendo permisos desde Firestore...", "info")
-    const permissions = await RBACPersistenceService.getPermissions()
-    addResult(`✅ Permisos obtenidos: ${permissions.length}`, "success")
+    addResult('📖 Test 2: Leyendo permisos desde Firestore...', 'info');
+    const permissions = await RBACPersistenceService.getPermissions();
+    addResult(`✅ Permisos obtenidos: ${permissions.length}`, 'success');
 
     // Test 3: Leer navegación
-    addResult("📖 Test 3: Leyendo configuración de navegación...", "info")
-    const navigation = await RBACPersistenceService.getNavigationConfig()
-    addResult(`✅ Elementos de navegación obtenidos: ${navigation.length}`, "success")
+    addResult('📖 Test 3: Leyendo configuración de navegación...', 'info');
+    const navigation = await RBACPersistenceService.getNavigationConfig();
+    addResult(`✅ Elementos de navegación obtenidos: ${navigation.length}`, 'success');
 
     // Test 4: Verificar si necesita inicialización
     if (roles.length === 0 || permissions.length === 0) {
-      addResult("⚠️ No hay datos, se requiere inicialización", "warning")
+      addResult('⚠️ No hay datos, se requiere inicialización', 'warning');
     } else {
-      addResult("✅ Datos RBAC ya están inicializados", "success")
+      addResult('✅ Datos RBAC ya están inicializados', 'success');
     }
 
     // Test 5: Probar escritura (crear rol temporal)
-    addResult("💾 Test 5: Probando escritura con rol temporal...", "info")
+    addResult('💾 Test 5: Probando escritura con rol temporal...', 'info');
     const testRole = {
       id: `test-${Date.now()}`,
-      name: "Test Role",
-      description: "Rol temporal para test",
-      permissions: ["Ver Asistencia"],
+      name: 'Test Role',
+      description: 'Rol temporal para test',
+      permissions: ['Ver Asistencia'],
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
-    }
+    };
 
-    const testRoles = [...roles, testRole]
-    await RBACPersistenceService.saveRoles(testRoles, "test-user")
-    addResult("✅ Rol temporal creado exitosamente", "success")
+    const testRoles = [...roles, testRole];
+    await RBACPersistenceService.saveRoles(testRoles, 'test-user');
+    addResult('✅ Rol temporal creado exitosamente', 'success');
 
     // Verificar escritura
-    const updatedRoles = await RBACPersistenceService.getRoles()
-    const foundTestRole = updatedRoles.find((r) => r.id === testRole.id)
+    const updatedRoles = await RBACPersistenceService.getRoles();
+    const foundTestRole = updatedRoles.find((r) => r.id === testRole.id);
 
     if (foundTestRole) {
-      addResult("✅ Escritura verificada - rol encontrado en Firestore", "success")
+      addResult('✅ Escritura verificada - rol encontrado en Firestore', 'success');
 
       // Limpiar rol temporal
-      const cleanRoles = updatedRoles.filter((r) => r.id !== testRole.id)
-      await RBACPersistenceService.saveRoles(cleanRoles, "test-user")
-      addResult("🧹 Rol temporal eliminado", "info")
+      const cleanRoles = updatedRoles.filter((r) => r.id !== testRole.id);
+      await RBACPersistenceService.saveRoles(cleanRoles, 'test-user');
+      addResult('🧹 Rol temporal eliminado', 'info');
     } else {
-      addResult("❌ Error: No se pudo verificar la escritura", "error")
+      addResult('❌ Error: No se pudo verificar la escritura', 'error');
     }
 
     // Actualizar status
@@ -213,80 +213,80 @@ const runFullTest = async () => {
       rolesCount: roles.length,
       permissionsCount: permissions.length,
       navigationCount: navigation.length,
-    }
+    };
 
     // Actualizar detalles
-    const permissionsByModule: Record<string, number> = {}
+    const permissionsByModule: Record<string, number> = {};
     permissions.forEach((p) => {
-      const module = p.module || "sin-modulo"
-      permissionsByModule[module] = (permissionsByModule[module] || 0) + 1
-    })
+      const module = p.module || 'sin-modulo';
+      permissionsByModule[module] = (permissionsByModule[module] || 0) + 1;
+    });
 
     dataDetails.value = {
       roles,
       permissionsByModule,
-    }
+    };
 
-    addResult("🎉 ¡Test completo finalizado exitosamente!", "success")
+    addResult('🎉 ¡Test completo finalizado exitosamente!', 'success');
   } catch (error: any) {
-    addResult(`❌ Error en el test: ${error.message}`, "error")
-    console.error("Error en test RBAC:", error)
+    addResult(`❌ Error en el test: ${error.message}`, 'error');
+    console.error('Error en test RBAC:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const showStatus = async () => {
-  loading.value = true
+  loading.value = true;
 
   try {
-    addResult("📊 Obteniendo estado actual del sistema...", "info")
+    addResult('📊 Obteniendo estado actual del sistema...', 'info');
 
-    const roles = await RBACPersistenceService.getRoles()
-    const permissions = await RBACPersistenceService.getPermissions()
-    const navigation = await RBACPersistenceService.getNavigationConfig()
+    const roles = await RBACPersistenceService.getRoles();
+    const permissions = await RBACPersistenceService.getPermissions();
+    const navigation = await RBACPersistenceService.getNavigationConfig();
 
     status.value = {
       rolesCount: roles.length,
       permissionsCount: permissions.length,
       navigationCount: navigation.length,
-    }
+    };
 
     addResult(
       `📊 Estado: ${roles.length} roles, ${permissions.length} permisos, ${navigation.length} navegación`,
-      "info"
-    )
+      'info',
+    );
   } catch (error: any) {
-    addResult(`❌ Error obteniendo estado: ${error.message}`, "error")
+    addResult(`❌ Error obteniendo estado: ${error.message}`, 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const initializeData = async () => {
-  loading.value = true
+  loading.value = true;
 
   try {
-    addResult("🔄 Inicializando datos por defecto...", "info")
+    addResult('🔄 Inicializando datos por defecto...', 'info');
 
-    await RBACPersistenceService.initializeDefaultConfig("test-initialization")
+    await RBACPersistenceService.initializeDefaultConfig('test-initialization');
 
-    addResult("✅ Datos inicializados correctamente", "success")
+    addResult('✅ Datos inicializados correctamente', 'success');
 
     // Actualizar estado después de inicialización
-    await showStatus()
+    await showStatus();
   } catch (error: any) {
-    addResult(`❌ Error en inicialización: ${error.message}`, "error")
+    addResult(`❌ Error en inicialización: ${error.message}`, 'error');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const clearResults = () => {
-  testResults.value = []
-  status.value = null
-  dataDetails.value = null
-}
+  testResults.value = [];
+  status.value = null;
+  dataDetails.value = null;
+};
 </script>
 
 <style scoped>

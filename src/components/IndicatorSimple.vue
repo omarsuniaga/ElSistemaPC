@@ -11,7 +11,7 @@
 defineProps<{
   label: string
   value: string | number
-}>()
+}>();
 </script>
 
 <style scoped>

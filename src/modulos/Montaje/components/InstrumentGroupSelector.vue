@@ -86,9 +86,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, PropType, watch} from "vue"
-import {TipoInstrumento, INSTRUMENT_FAMILIES, INSTRUMENT_DISPLAY_NAMES} from "../types"
-import {useClassesStore} from "@/modulos/Classes/store/classes"
+import { ref, computed, PropType, watch } from 'vue';
+import { TipoInstrumento, INSTRUMENT_FAMILIES, INSTRUMENT_DISPLAY_NAMES } from '../types';
+import { useClassesStore } from '@/modulos/Classes/store/classes';
 
 const props = defineProps({
   // Valores inicialmente seleccionados
@@ -106,135 +106,135 @@ const props = defineProps({
   // ID de la clase actual (para integración con módulo Classes)
   classId: {
     type: String,
-    default: "",
+    default: '',
   },
-})
+});
 
-const emit = defineEmits(["update:modelValue", "selection-change"])
+const emit = defineEmits(['update:modelValue', 'selection-change']);
 
 // Estado local
-const selectedFamily = ref<string>("all")
-const selectedInstruments = ref<TipoInstrumento[]>(props.modelValue)
-const selectedRows = ref<string[]>([])
-const classStore = useClassesStore()
+const selectedFamily = ref<string>('all');
+const selectedInstruments = ref<TipoInstrumento[]>(props.modelValue);
+const selectedRows = ref<string[]>([]);
+const classStore = useClassesStore();
 
 // Familias de instrumentos
 const instrumentFamilies = [
-  {key: "all", label: "Todos"},
-  {key: "STRINGS", label: "Cuerdas"},
-  {key: "WOODWINDS", label: "Vientos Madera"},
-  {key: "BRASS", label: "Vientos Metal"},
-  {key: "PERCUSSION", label: "Percusión"},
-  {key: "KEYBOARD", label: "Teclados"},
-  {key: "OTHER", label: "Otros"},
-]
+  { key: 'all', label: 'Todos' },
+  { key: 'STRINGS', label: 'Cuerdas' },
+  { key: 'WOODWINDS', label: 'Vientos Madera' },
+  { key: 'BRASS', label: 'Vientos Metal' },
+  { key: 'PERCUSSION', label: 'Percusión' },
+  { key: 'KEYBOARD', label: 'Teclados' },
+  { key: 'OTHER', label: 'Otros' },
+];
 
 // Lista completa de instrumentos con etiquetas legibles
 const allInstruments = computed(() => {
-  const result = []
+  const result = [];
   for (const [id, label] of Object.entries(INSTRUMENT_DISPLAY_NAMES)) {
     result.push({
       id: id as TipoInstrumento,
       label,
-    })
+    });
   }
-  return result
-})
+  return result;
+});
 
 // Instrumentos filtrados por familia seleccionada
 const filteredInstruments = computed(() => {
-  if (selectedFamily.value === "all") {
-    return allInstruments.value
+  if (selectedFamily.value === 'all') {
+    return allInstruments.value;
   }
 
-  const familyKey = selectedFamily.value as keyof typeof INSTRUMENT_FAMILIES
-  const familyInstruments = INSTRUMENT_FAMILIES[familyKey] || []
+  const familyKey = selectedFamily.value as keyof typeof INSTRUMENT_FAMILIES;
+  const familyInstruments = INSTRUMENT_FAMILIES[familyKey] || [];
 
-  return allInstruments.value.filter((instr) => familyInstruments.includes(instr.id))
-})
+  return allInstruments.value.filter((instr) => familyInstruments.includes(instr.id));
+});
 
 // Clase actual (integración con módulo Classes)
 const currentClass = computed(() => {
-  if (!props.classId) return null
-  return classStore.getClassById(props.classId)
-})
+  if (!props.classId) return null;
+  return classStore.getClassById(props.classId);
+});
 
 // Métodos
 const selectFamily = (family: string) => {
-  selectedFamily.value = family
-}
+  selectedFamily.value = family;
+};
 
 const toggleInstrument = (instrumentId: TipoInstrumento) => {
-  const index = selectedInstruments.value.indexOf(instrumentId)
+  const index = selectedInstruments.value.indexOf(instrumentId);
   if (index === -1) {
-    selectedInstruments.value.push(instrumentId)
+    selectedInstruments.value.push(instrumentId);
   } else {
-    selectedInstruments.value.splice(index, 1)
+    selectedInstruments.value.splice(index, 1);
   }
 
-  emitUpdate()
-}
+  emitUpdate();
+};
 
 const toggleRow = (rowId: string) => {
-  const index = selectedRows.value.indexOf(rowId)
+  const index = selectedRows.value.indexOf(rowId);
   if (index === -1) {
-    selectedRows.value.push(rowId)
+    selectedRows.value.push(rowId);
 
     // Añadir automáticamente los instrumentos de esta fila
     if (currentClass.value) {
-      const row = currentClass.value.filas.find((f) => f.id === rowId)
+      const row = currentClass.value.filas.find((f) => f.id === rowId);
       if (row?.instrumentos) {
         row.instrumentos.forEach((instr) => {
           if (!selectedInstruments.value.includes(instr)) {
-            selectedInstruments.value.push(instr)
+            selectedInstruments.value.push(instr);
           }
-        })
+        });
       }
     }
   } else {
-    selectedRows.value.splice(index, 1)
+    selectedRows.value.splice(index, 1);
 
     // Opcional: Quitar automáticamente los instrumentos de esta fila
     // (dependiendo del comportamiento deseado)
   }
 
-  emitUpdate()
-}
+  emitUpdate();
+};
 
 const clearSelection = () => {
-  selectedInstruments.value = []
-  selectedRows.value = []
-  emitUpdate()
-}
+  selectedInstruments.value = [];
+  selectedRows.value = [];
+  emitUpdate();
+};
 
 const emitUpdate = () => {
-  emit("update:modelValue", selectedInstruments.value)
-  emit("selection-change", {
+  emit('update:modelValue', selectedInstruments.value);
+  emit('selection-change', {
     instrumentos: selectedInstruments.value,
     filas: selectedRows.value,
-  })
-}
+  });
+};
 
 // Cargar clase si se proporciona classId
 watch(
   () => props.classId,
   async (newId) => {
     if (newId && !currentClass.value) {
-      await classStore.fetchClassById(newId)
+      await classStore.fetchClassById(newId);
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 // Sincronizar con prop modelValue
 watch(
   () => props.modelValue,
   (newVal) => {
     if (JSON.stringify(newVal) !== JSON.stringify(selectedInstruments.value)) {
-      selectedInstruments.value = [...newVal]
+      selectedInstruments.value = [...newVal];
     }
-  }
-)
+  },
+);
 </script>
 
 <style scoped>

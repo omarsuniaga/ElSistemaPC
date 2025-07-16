@@ -183,7 +183,7 @@
 </template>
 
 <script setup>
-import {computed} from "vue"
+import { computed } from 'vue';
 import {
   LockClosedIcon,
   LockOpenIcon,
@@ -192,44 +192,44 @@ import {
   PencilIcon,
   CheckIcon,
   TrashIcon,
-} from "@heroicons/vue/20/solid"
+} from '@heroicons/vue/20/solid';
 
 const props = defineProps({
   card: {
     type: Object,
     required: true,
   },
-})
+});
 
-defineEmits(["toggle-progress", "toggle-edit", "delete", "remove-student", "show-extra-students"])
+defineEmits(['toggle-progress', 'toggle-edit', 'delete', 'remove-student', 'show-extra-students']);
 
 const sortedStudents = computed(() => {
   return [...props.card.group].sort((a, b) => {
-    const nameA = a.nombre || a.name || ""
-    const nameB = b.nombre || b.name || ""
-    return nameA.localeCompare(nameB)
-  })
-})
+    const nameA = a.nombre || a.name || '';
+    const nameB = b.nombre || b.name || '';
+    return nameA.localeCompare(nameB);
+  });
+});
 
 const average = computed(() => {
-  if (!props.card.indicators.length) return 0
-  const total = props.card.indicators.reduce((sum, indicator) => sum + indicator.score, 0)
-  return Math.round(total / props.card.indicators.length)
-})
+  if (!props.card.indicators.length) return 0;
+  const total = props.card.indicators.reduce((sum, indicator) => sum + indicator.score, 0);
+  return Math.round(total / props.card.indicators.length);
+});
 
-const getScoreColorClass = (score, type = "bar") => {
-  if (type === "bar") {
-    if (score >= 90) return "bg-green-500"
-    if (score >= 75) return "bg-blue-500"
-    if (score >= 60) return "bg-yellow-500"
-    return "bg-red-500"
-  } else if (type === "badge") {
-    if (score >= 90) return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-    if (score >= 75) return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-    if (score >= 60) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-    return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+const getScoreColorClass = (score, type = 'bar') => {
+  if (type === 'bar') {
+    if (score >= 90) return 'bg-green-500';
+    if (score >= 75) return 'bg-blue-500';
+    if (score >= 60) return 'bg-yellow-500';
+    return 'bg-red-500';
+  } else if (type === 'badge') {
+    if (score >= 90) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    if (score >= 75) return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+    if (score >= 60) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
   }
-}
+};
 </script>
 
 <style scoped>

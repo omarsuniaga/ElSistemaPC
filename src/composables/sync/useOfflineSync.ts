@@ -4,79 +4,79 @@
  * Fase 1 - Iniciativa 2: Sincronización en Background
  */
 
-import {ref, computed, watch} from "vue"
-import {defineStore} from "pinia"
+import { ref, computed, watch } from 'vue';
+import { defineStore } from 'pinia';
 
 // ==================== COMPOSABLE DE ESTADO OFFLINE ====================
 
 export function useOfflineSync() {
   // Estados reactivos
-  const isOnline = ref(navigator.onLine)
-  const syncStatus = ref<"idle" | "syncing" | "error">("idle")
-  const pendingOperations = ref(0)
-  const lastSyncTime = ref<Date | null>(null)
-  const syncErrors = ref<string[]>([])
+  const isOnline = ref(navigator.onLine);
+  const syncStatus = ref<'idle' | 'syncing' | 'error'>('idle');
+  const pendingOperations = ref(0);
+  const lastSyncTime = ref<Date | null>(null);
+  const syncErrors = ref<string[]>([]);
 
   // Estados PWA
-  const needRefresh = ref(false)
-  const offlineReady = ref(false)
+  const needRefresh = ref(false);
+  const offlineReady = ref(false);
 
   // Service Worker registration manually
-  let swRegistration: ServiceWorkerRegistration | null = null
+  let swRegistration: ServiceWorkerRegistration | null = null;
 
   // ==================== PWA REGISTRATION ====================
 
   async function registerSW() {
-    if ("serviceWorker" in navigator) {
+    if ('serviceWorker' in navigator) {
       try {
         // Registrar el Service Worker
-        swRegistration = await navigator.serviceWorker.register("/sw.js")
-        console.log("🎯 Service Worker registrado")
+        swRegistration = await navigator.serviceWorker.register('/sw.js');
+        console.log('🎯 Service Worker registrado');
 
-        swRegistration.addEventListener("updatefound", () => {
-          const newWorker = swRegistration?.installing
+        swRegistration.addEventListener('updatefound', () => {
+          const newWorker = swRegistration?.installing;
           if (newWorker) {
-            newWorker.addEventListener("statechange", () => {
-              if (newWorker.state === "installed") {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed') {
                 if (navigator.serviceWorker.controller) {
-                  needRefresh.value = true
+                  needRefresh.value = true;
                 } else {
-                  offlineReady.value = true
+                  offlineReady.value = true;
                 }
               }
-            })
+            });
           }
-        })
+        });
 
         // Esperar a que el Service Worker esté activo antes de intentar registrar la sincronización
-        if (swRegistration && "sync" in swRegistration) {
+        if (swRegistration && 'sync' in swRegistration) {
           // Verificar si hay un worker activo o esperar a que se active
           if (navigator.serviceWorker.controller) {
             try {
-              await swRegistration.sync.register("background-sync")
-              console.log("✅ Background sync registrada correctamente")
+              await swRegistration.sync.register('background-sync');
+              console.log('✅ Background sync registrada correctamente');
             } catch (syncError) {
-              console.warn("⚠️ No se pudo registrar la sincronización:", syncError)
+              console.warn('⚠️ No se pudo registrar la sincronización:', syncError);
             }
           } else {
             // Si no hay controller, esperar a que el Service Worker se active
-            console.log("⏳ Esperando a que el Service Worker se active...")
+            console.log('⏳ Esperando a que el Service Worker se active...');
             
             // Intentar nuevamente después de un tiempo para permitir la activación
             setTimeout(async () => {
               try {
-                if (swRegistration && "sync" in swRegistration) {
-                  await swRegistration.sync.register("background-sync")
-                  console.log("✅ Background sync registrada con retraso")
+                if (swRegistration && 'sync' in swRegistration) {
+                  await swRegistration.sync.register('background-sync');
+                  console.log('✅ Background sync registrada con retraso');
                 }
               } catch (delayedError) {
-                console.error("❌ Error al registrar sync con retraso:", delayedError)
+                console.error('❌ Error al registrar sync con retraso:', delayedError);
               }
             }, 3000); // Esperar 3 segundos
           }
         }
       } catch (error) {
-        console.error("❌ Error registrando Service Worker:", error)
+        console.error('❌ Error registrando Service Worker:', error);
       }
     }
   }
@@ -85,19 +85,19 @@ export function useOfflineSync() {
 
   // Escuchar cambios en el estado de conexión
   const handleOnline = () => {
-    isOnline.value = true
-    console.log("🌐 Conexión restaurada - Iniciando sincronización")
-    forceSyncPendingOperations()
-  }
+    isOnline.value = true;
+    console.log('🌐 Conexión restaurada - Iniciando sincronización');
+    forceSyncPendingOperations();
+  };
 
   const handleOffline = () => {
-    isOnline.value = false
-    console.log("📱 Modo offline activado")
-  }
+    isOnline.value = false;
+    console.log('📱 Modo offline activado');
+  };
 
   // Registrar listeners
-  window.addEventListener("online", handleOnline)
-  window.addEventListener("offline", handleOffline)
+  window.addEventListener('online', handleOnline);
+  window.addEventListener('offline', handleOffline);
 
   // ==================== FUNCIONES DE SINCRONIZACIÓN ====================
 
@@ -106,43 +106,43 @@ export function useOfflineSync() {
    */
   async function forceSyncPendingOperations(): Promise<boolean> {
     if (!isOnline.value) {
-      console.log("⚠️ No hay conexión - Sincronización cancelada")
-      return false
+      console.log('⚠️ No hay conexión - Sincronización cancelada');
+      return false;
     }
 
-    syncStatus.value = "syncing"
-    syncErrors.value = []
+    syncStatus.value = 'syncing';
+    syncErrors.value = [];
 
     try {
       // Comunicarse con el Service Worker para obtener estado
-      const syncStatus = await getServiceWorkerSyncStatus()
-      pendingOperations.value = syncStatus.total
+      const syncStatus = await getServiceWorkerSyncStatus();
+      pendingOperations.value = syncStatus.total;
 
       if (syncStatus.total === 0) {
-        console.log("✅ No hay operaciones pendientes")
-        syncStatus.value = "idle"
-        return true
+        console.log('✅ No hay operaciones pendientes');
+        syncStatus.value = 'idle';
+        return true;
       }
 
-      console.log(`🔄 Sincronizando ${syncStatus.total} operaciones pendientes...`)
+      console.log(`🔄 Sincronizando ${syncStatus.total} operaciones pendientes...`);
 
       // Solicitar sincronización forzada al Service Worker
-      const result = await requestServiceWorkerSync()
+      const result = await requestServiceWorkerSync();
 
       if (result.success) {
-        console.log("✅ Sincronización completada exitosamente")
-        pendingOperations.value = 0
-        lastSyncTime.value = new Date()
-        syncStatus.value = "idle"
-        return true
+        console.log('✅ Sincronización completada exitosamente');
+        pendingOperations.value = 0;
+        lastSyncTime.value = new Date();
+        syncStatus.value = 'idle';
+        return true;
       } else {
-        throw new Error(result.error || "Error desconocido en sincronización")
+        throw new Error(result.error || 'Error desconocido en sincronización');
       }
     } catch (error: any) {
-      console.error("❌ Error en sincronización:", error)
-      syncErrors.value.push(error.message)
-      syncStatus.value = "error"
-      return false
+      console.error('❌ Error en sincronización:', error);
+      syncErrors.value.push(error.message);
+      syncStatus.value = 'error';
+      return false;
     }
   }
 
@@ -155,97 +155,97 @@ export function useOfflineSync() {
     observationsQueue: number
     total: number
   }> {
-    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) {
-      return {attendanceQueue: 0, teachersQueue: 0, observationsQueue: 0, total: 0}
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+      return { attendanceQueue: 0, teachersQueue: 0, observationsQueue: 0, total: 0 };
     }
 
     return new Promise((resolve) => {
-      const messageChannel = new MessageChannel()
+      const messageChannel = new MessageChannel();
 
       messageChannel.port1.onmessage = (event) => {
-        const data = event.data
+        const data = event.data;
         resolve({
           attendanceQueue: data.attendanceQueue || 0,
           teachersQueue: data.teachersQueue || 0,
           observationsQueue: data.observationsQueue || 0,
           total:
             (data.attendanceQueue || 0) + (data.teachersQueue || 0) + (data.observationsQueue || 0),
-        })
-      }
+        });
+      };
 
-      navigator.serviceWorker.controller.postMessage({type: "GET_SYNC_STATUS"}, [
+      navigator.serviceWorker.controller.postMessage({ type: 'GET_SYNC_STATUS' }, [
         messageChannel.port2,
-      ])
-    })
+      ]);
+    });
   }
 
   /**
    * Solicita sincronización forzada al Service Worker
    */
   async function requestServiceWorkerSync(): Promise<{success: boolean; error?: string}> {
-    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) {
-      return {success: false, error: "Service Worker no disponible"}
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+      return { success: false, error: 'Service Worker no disponible' };
     }
 
     return new Promise((resolve) => {
-      const messageChannel = new MessageChannel()
+      const messageChannel = new MessageChannel();
 
       messageChannel.port1.onmessage = (event) => {
-        resolve(event.data)
-      }
+        resolve(event.data);
+      };
 
-      navigator.serviceWorker.controller.postMessage({type: "FORCE_SYNC"}, [messageChannel.port2])
-    })
+      navigator.serviceWorker.controller.postMessage({ type: 'FORCE_SYNC' }, [messageChannel.port2]);
+    });
   }
 
   /**
    * Actualiza el contador de operaciones pendientes
    */
   async function updatePendingOperationsCount() {
-    const status = await getServiceWorkerSyncStatus()
-    pendingOperations.value = status.total
+    const status = await getServiceWorkerSyncStatus();
+    pendingOperations.value = status.total;
   }
 
   // ==================== COMPUTED PROPERTIES ====================
 
   const connectionStatus = computed(() => {
     if (isOnline.value) {
-      return syncStatus.value === "syncing" ? "syncing" : "online"
+      return syncStatus.value === 'syncing' ? 'syncing' : 'online';
     }
-    return "offline"
-  })
+    return 'offline';
+  });
 
   const connectionIcon = computed(() => {
     switch (connectionStatus.value) {
-      case "online":
-        return "🌐"
-      case "offline":
-        return "📱"
-      case "syncing":
-        return "🔄"
-      default:
-        return "❓"
+    case 'online':
+      return '🌐';
+    case 'offline':
+      return '📱';
+    case 'syncing':
+      return '🔄';
+    default:
+      return '❓';
     }
-  })
+  });
 
   const connectionText = computed(() => {
     switch (connectionStatus.value) {
-      case "online":
-        return "En línea"
-      case "offline":
-        return `Offline${pendingOperations.value > 0 ? ` (${pendingOperations.value} pendientes)` : ""}`
-      case "syncing":
-        return "Sincronizando..."
-      default:
-        return "Desconocido"
+    case 'online':
+      return 'En línea';
+    case 'offline':
+      return `Offline${pendingOperations.value > 0 ? ` (${pendingOperations.value} pendientes)` : ''}`;
+    case 'syncing':
+      return 'Sincronizando...';
+    default:
+      return 'Desconocido';
     }
-  })
+  });
 
-  const hasPendingOperations = computed(() => pendingOperations.value > 0)
+  const hasPendingOperations = computed(() => pendingOperations.value > 0);
 
   const canSync = computed(
-    () => isOnline.value && hasPendingOperations.value && syncStatus.value !== "syncing"
-  )
+    () => isOnline.value && hasPendingOperations.value && syncStatus.value !== 'syncing',
+  );
 
   // ==================== WATCHERS ====================
 
@@ -254,29 +254,29 @@ export function useOfflineSync() {
     if (newValue) {
       // Esperar un momento para que la conexión se estabilice
       setTimeout(() => {
-        updatePendingOperationsCount()
-      }, 1000)
+        updatePendingOperationsCount();
+      }, 1000);
     }
-  })
+  });
 
   // Actualizar contador periódicamente
-  setInterval(updatePendingOperationsCount, 30000) // Cada 30 segundos
+  setInterval(updatePendingOperationsCount, 30000); // Cada 30 segundos
 
   // ==================== FUNCIONES DE UTILIDAD ====================
 
   /**
    * Simula una operación offline
    */
-  function simulateOfflineOperation(type: "attendance" | "teachers" | "observations") {
-    pendingOperations.value++
-    console.log(`📝 Operación ${type} agregada a cola offline`)
+  function simulateOfflineOperation(type: 'attendance' | 'teachers' | 'observations') {
+    pendingOperations.value++;
+    console.log(`📝 Operación ${type} agregada a cola offline`);
   }
 
   /**
    * Limpia errores de sincronización
    */
   function clearSyncErrors() {
-    syncErrors.value = []
+    syncErrors.value = [];
   }
 
   /**
@@ -284,10 +284,10 @@ export function useOfflineSync() {
    */
   async function updatePWA() {
     if (swRegistration) {
-      const newWorker = swRegistration.waiting
+      const newWorker = swRegistration.waiting;
       if (newWorker) {
-        newWorker.postMessage({type: "SKIP_WAITING"})
-        window.location.reload()
+        newWorker.postMessage({ type: 'SKIP_WAITING' });
+        window.location.reload();
       }
     }
   }
@@ -295,15 +295,15 @@ export function useOfflineSync() {
   // ==================== INICIALIZACIÓN ====================
 
   // Auto-registrar SW al cargar
-  if (typeof window !== "undefined") {
-    registerSW()
+  if (typeof window !== 'undefined') {
+    registerSW();
   }
 
   // ==================== CLEANUP ====================
 
   function cleanup() {
-    window.removeEventListener("online", handleOnline)
-    window.removeEventListener("offline", handleOffline)
+    window.removeEventListener('online', handleOnline);
+    window.removeEventListener('offline', handleOffline);
   }
 
   // ==================== RETURN ====================
@@ -332,7 +332,7 @@ export function useOfflineSync() {
     clearSyncErrors,
     updatePWA,
     cleanup,
-  }
+  };
 }
 
 // ==================== COMPONENTE GLOBAL DE ESTADO ====================
@@ -340,19 +340,19 @@ export function useOfflineSync() {
 /**
  * Composable singleton para estado global de sincronización
  */
-let globalOfflineSync: ReturnType<typeof useOfflineSync> | null = null
+let globalOfflineSync: ReturnType<typeof useOfflineSync> | null = null;
 
 export function useGlobalOfflineSync() {
   if (!globalOfflineSync) {
-    globalOfflineSync = useOfflineSync()
+    globalOfflineSync = useOfflineSync();
   }
-  return globalOfflineSync
+  return globalOfflineSync;
 }
 
 // ==================== STORE DE SINCRONIZACIÓN ====================
 
-export const useSyncStore = defineStore("sync", () => {
-  const offlineSync = useGlobalOfflineSync()
+export const useSyncStore = defineStore('sync', () => {
+  const offlineSync = useGlobalOfflineSync();
 
   // Re-exportar todo del composable
   return {
@@ -360,44 +360,44 @@ export const useSyncStore = defineStore("sync", () => {
 
     // Métodos adicionales del store
     async initializePWA() {
-      console.log("🚀 Inicializando PWA...")
-      await offlineSync.updatePendingOperationsCount()
+      console.log('🚀 Inicializando PWA...');
+      await offlineSync.updatePendingOperationsCount();
 
       // Registrar para sincronización en background si es compatible
-      if ("serviceWorker" in navigator && "sync" in window.ServiceWorkerRegistration.prototype) {
-        console.log("✅ Background Sync soportado")
+      if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+        console.log('✅ Background Sync soportado');
       } else {
-        console.log("⚠️ Background Sync no soportado - Usando polling")
+        console.log('⚠️ Background Sync no soportado - Usando polling');
       }
     },
 
     async handleAppVisibilityChange() {
-      if (document.visibilityState === "visible" && offlineSync.isOnline.value) {
-        await offlineSync.updatePendingOperationsCount()
+      if (document.visibilityState === 'visible' && offlineSync.isOnline.value) {
+        await offlineSync.updatePendingOperationsCount();
       }
     },
-  }
-})
+  };
+});
 
 /**
  * Inicializa los listeners de sincronización de manera segura.
  * Debe ser llamado desde un contexto donde Pinia esté activo (ej. onMounted en App.vue).
  */
 export function initializeSyncManager() {
-  if (typeof window === "undefined") {
-    return () => {}
+  if (typeof window === 'undefined') {
+    return () => {};
   }
 
-  const syncStore = useSyncStore()
+  const syncStore = useSyncStore();
 
   const handleVisibilityChange = () => {
-    syncStore.handleAppVisibilityChange()
-  }
+    syncStore.handleAppVisibilityChange();
+  };
 
-  document.addEventListener("visibilitychange", handleVisibilityChange)
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 
   // Devuelve una función de limpieza para ser usada en onUnmounted
   return () => {
-    document.removeEventListener("visibilitychange", handleVisibilityChange)
-  }
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
 }

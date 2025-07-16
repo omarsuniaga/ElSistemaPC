@@ -1,10 +1,3 @@
-<script setup lang="ts">
-import {ScheduleNavigation} from "../../Schedules/components/ScheduleNavigation.vue"
-import {useClassesStore} from "../store/classes"
-
-const classesStore = useClassesStore()
-</script>
-
 <template>
   <div>
     <h1 class="text-2xl font-bold mb-4">Gestión de Horarios</h1>
@@ -40,3 +33,10 @@ const classesStore = useClassesStore()
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ScheduleNavigation } from '../../Schedules/components/ScheduleNavigation.vue';
+import { useClassesStore } from '../store/classes';
+
+const classesStore = useClassesStore();
+</script>

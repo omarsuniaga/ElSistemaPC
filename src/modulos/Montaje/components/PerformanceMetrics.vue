@@ -278,67 +278,67 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import type {MontajeAnalytics} from "../types"
-import {formatDate} from "../utils"
+import { computed } from 'vue';
+import type { MontajeAnalytics } from '../types';
+import { formatDate } from '../utils';
 
 interface Props {
   analytics: MontajeAnalytics
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const getScoreLabel = (score: number) => {
-  if (score >= 9) return "Excelente"
-  if (score >= 7) return "Bueno"
-  if (score >= 5) return "Regular"
-  return "Necesita Mejora"
-}
+  if (score >= 9) return 'Excelente';
+  if (score >= 7) return 'Bueno';
+  if (score >= 5) return 'Regular';
+  return 'Necesita Mejora';
+};
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case "no_iniciado":
-      return "No Iniciado"
-    case "en_proceso":
-      return "En Proceso"
-    case "en_revision":
-      return "En Revisión"
-    case "completado":
-      return "Completado"
-    case "necesita_trabajo":
-      return "Necesita Trabajo"
-    default:
-      return status
+  case 'no_iniciado':
+    return 'No Iniciado';
+  case 'en_proceso':
+    return 'En Proceso';
+  case 'en_revision':
+    return 'En Revisión';
+  case 'completado':
+    return 'Completado';
+  case 'necesita_trabajo':
+    return 'Necesita Trabajo';
+  default:
+    return status;
   }
-}
+};
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "no_iniciado":
-      return "bg-gray-400"
-    case "en_proceso":
-      return "bg-blue-400"
-    case "en_revision":
-      return "bg-yellow-400"
-    case "completado":
-      return "bg-green-400"
-    case "necesita_trabajo":
-      return "bg-red-400"
-    default:
-      return "bg-gray-400"
+  case 'no_iniciado':
+    return 'bg-gray-400';
+  case 'en_proceso':
+    return 'bg-blue-400';
+  case 'en_revision':
+    return 'bg-yellow-400';
+  case 'completado':
+    return 'bg-green-400';
+  case 'necesita_trabajo':
+    return 'bg-red-400';
+  default:
+    return 'bg-gray-400';
   }
-}
+};
 
 const getActivityTypeColor = (type: string) => {
   switch (type) {
-    case "evaluation":
-      return "bg-green-100 text-green-600"
-    case "creation":
-      return "bg-blue-100 text-blue-600"
-    case "update":
-      return "bg-yellow-100 text-yellow-600"
-    default:
-      return "bg-gray-100 text-gray-600"
+  case 'evaluation':
+    return 'bg-green-100 text-green-600';
+  case 'creation':
+    return 'bg-blue-100 text-blue-600';
+  case 'update':
+    return 'bg-yellow-100 text-yellow-600';
+  default:
+    return 'bg-gray-100 text-gray-600';
   }
-}
+};
 </script>

@@ -347,9 +347,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import {useAttendanceOptimizedSimple} from "../composables/useAttendanceOptimizedSimple"
-import type {AttendanceStatus} from "../types/attendance"
+import { ref, computed, watch, onMounted } from 'vue';
+import { useAttendanceOptimizedSimple } from '../composables/useAttendanceOptimizedSimple';
+import type { AttendanceStatus } from '../types/attendance';
 
 // Props
 const props = defineProps<{
@@ -357,14 +357,14 @@ const props = defineProps<{
   selectedClass: string
   selectedClassName?: string
   showDebugInfo?: boolean
-}>()
+}>();
 
 // Emits
 const emit = defineEmits<{
-  "status-updated": [studentId: string, status: AttendanceStatus]
+  'status-updated': [studentId: string, status: AttendanceStatus]
   saved: []
   error: [error: string]
-}>()
+}>();
 
 // 🚀 Composable optimizado
 const {
@@ -377,135 +377,135 @@ const {
   saveAttendanceDocument,
   getClassStudents,
   isUpdating,
-} = useAttendanceOptimizedSimple()
+} = useAttendanceOptimizedSimple();
 
 // 👥 Estudiantes de la clase
-const students = ref<any[]>([])
+const students = ref<any[]>([]);
 
 /**
  * 🎨 Funciones de UI
  */
 const getStatusColor = (status: AttendanceStatus) => {
   const colors = {
-    Presente: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400",
-    Ausente: "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
-    Tardanza: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
-    Justificado: "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
-  }
-  return colors[status] || colors.Ausente
-}
+    Presente: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
+    Ausente: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
+    Tardanza: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
+    Justificado: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
+  };
+  return colors[status] || colors.Ausente;
+};
 
 const getStatusText = (status: AttendanceStatus) => {
   const texts = {
-    Presente: "Presente",
-    Ausente: "Ausente",
-    Tardanza: "Tardanza",
-    Justificado: "Justificado",
-  }
-  return texts[status] || "Ausente"
-}
+    Presente: 'Presente',
+    Ausente: 'Ausente',
+    Tardanza: 'Tardanza',
+    Justificado: 'Justificado',
+  };
+  return texts[status] || 'Ausente';
+};
 
 const getStudentAvatarColor = (studentId: string) => {
   const colors = [
-    "bg-red-500",
-    "bg-yellow-500",
-    "bg-green-500",
-    "bg-blue-500",
-    "bg-indigo-500",
-    "bg-purple-500",
-    "bg-pink-500",
-  ]
-  const index = studentId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  return colors[index % colors.length]
-}
+    'bg-red-500',
+    'bg-yellow-500',
+    'bg-green-500',
+    'bg-blue-500',
+    'bg-indigo-500',
+    'bg-purple-500',
+    'bg-pink-500',
+  ];
+  const index = studentId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[index % colors.length];
+};
 
 const getStudentInitials = (student: any) => {
-  const first = student.nombre?.charAt(0) || ""
-  const last = student.apellido?.charAt(0) || ""
-  return (first + last).toUpperCase()
-}
+  const first = student.nombre?.charAt(0) || '';
+  const last = student.apellido?.charAt(0) || '';
+  return (first + last).toUpperCase();
+};
 
 /**
  * ⚡ Acciones principales
  */
 const updateStatus = async (studentId: string, status: AttendanceStatus) => {
   try {
-    await updateStudentStatus(studentId, status, props.selectedDate, props.selectedClass)
-    emit("status-updated", studentId, status)
+    await updateStudentStatus(studentId, status, props.selectedDate, props.selectedClass);
+    emit('status-updated', studentId, status);
   } catch (error) {
-    console.error("Error updating status:", error)
-    emit("error", "Error al actualizar estado")
+    console.error('Error updating status:', error);
+    emit('error', 'Error al actualizar estado');
   }
-}
+};
 
 const markAllPresent = async () => {
   try {
     for (const student of students.value) {
-      await updateStudentStatus(student.id, "Presente", props.selectedDate, props.selectedClass)
+      await updateStudentStatus(student.id, 'Presente', props.selectedDate, props.selectedClass);
     }
   } catch (error) {
-    console.error("Error marking all present:", error)
-    emit("error", "Error al marcar todos presentes")
+    console.error('Error marking all present:', error);
+    emit('error', 'Error al marcar todos presentes');
   }
-}
+};
 
 const clearAll = async () => {
   try {
     for (const student of students.value) {
-      await updateStudentStatus(student.id, "Ausente", props.selectedDate, props.selectedClass)
+      await updateStudentStatus(student.id, 'Ausente', props.selectedDate, props.selectedClass);
     }
   } catch (error) {
-    console.error("Error clearing all:", error)
-    emit("error", "Error al limpiar asistencia")
+    console.error('Error clearing all:', error);
+    emit('error', 'Error al limpiar asistencia');
   }
-}
+};
 
 const saveChanges = async () => {
   try {
-    await saveAttendanceDocument(props.selectedDate, props.selectedClass)
-    emit("saved")
+    await saveAttendanceDocument(props.selectedDate, props.selectedClass);
+    emit('saved');
   } catch (error) {
-    console.error("Error saving changes:", error)
-    emit("error", "Error al guardar cambios")
+    console.error('Error saving changes:', error);
+    emit('error', 'Error al guardar cambios');
   }
-}
+};
 
 const retryLoad = async () => {
-  state.error = null
-  await loadData()
-}
+  state.error = null;
+  await loadData();
+};
 
 /**
  * 🔄 Carga de datos
  */
 const loadData = async () => {
-  if (!props.selectedDate || !props.selectedClass) return
+  if (!props.selectedDate || !props.selectedClass) return;
 
   try {
     // Cargar estudiantes
-    students.value = await getClassStudents(props.selectedClass)
+    students.value = await getClassStudents(props.selectedClass);
 
     // Cargar asistencia
-    await loadAttendance(props.selectedDate, props.selectedClass)
+    await loadAttendance(props.selectedDate, props.selectedClass);
 
-    console.log("✅ [AttendanceListOptimized] Data loaded successfully")
+    console.log('✅ [AttendanceListOptimized] Data loaded successfully');
   } catch (error) {
-    console.error("❌ [AttendanceListOptimized] Error loading data:", error)
-    state.error = "Error al cargar datos"
+    console.error('❌ [AttendanceListOptimized] Error loading data:', error);
+    state.error = 'Error al cargar datos';
   }
-}
+};
 
 // 👀 Watchers
 watch(
   () => [props.selectedDate, props.selectedClass],
   () => loadData(),
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 // 🚀 Lifecycle
 onMounted(() => {
-  loadData()
-})
+  loadData();
+});
 </script>
 
 <style scoped>

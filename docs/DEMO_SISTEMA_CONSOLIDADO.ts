@@ -26,212 +26,212 @@ const badTeacher = { name: "", email: "invalid" } // ❌ Se guarda sin validar
 */
 
 // ✅ DESPUÉS - Sistema unificado y robusto:
-import {useTeachersStore} from "@/stores/teachersUnified"
-import {attendanceService} from "@/services/attendanceUnified"
+import { useTeachersStore } from '@/stores/teachersUnified';
+import { attendanceService } from '@/services/attendanceUnified';
 
 export function demonstrateNewSystem() {
-  console.log("🎯 DEMOSTRACIÓN DEL SISTEMA CONSOLIDADO")
+  console.log('🎯 DEMOSTRACIÓN DEL SISTEMA CONSOLIDADO');
 
   return {
     // ==================== TEACHERS STORE UNIFICADO ====================
 
     async demoTeachersStore() {
-      console.log("\n📚 1. TEACHERS STORE UNIFICADO")
+      console.log('\n📚 1. TEACHERS STORE UNIFICADO');
 
-      const teachersStore = useTeachersStore()
+      const teachersStore = useTeachersStore();
 
       // ✅ Permisos automáticos integrados
       if (teachersStore.canCreate) {
-        console.log("✅ Usuario puede crear maestros")
+        console.log('✅ Usuario puede crear maestros');
 
         try {
           // ✅ Validación automática con Zod
           const teacherId = await teachersStore.createTeacher({
-            name: "Prof. Juan Pérez",
-            email: "juan.perez@academia.com",
-            specialties: ["Piano", "Teoría Musical"],
-            status: "activo",
-          })
+            name: 'Prof. Juan Pérez',
+            email: 'juan.perez@academia.com',
+            specialties: ['Piano', 'Teoría Musical'],
+            status: 'activo',
+          });
 
-          console.log(`✅ Maestro creado con ID: ${teacherId}`)
+          console.log(`✅ Maestro creado con ID: ${teacherId}`);
         } catch (error) {
-          console.log(`❌ Error validado por Zod: ${error.message}`)
+          console.log(`❌ Error validado por Zod: ${error.message}`);
         }
       } else {
-        console.log("❌ Usuario no tiene permisos para crear maestros")
+        console.log('❌ Usuario no tiene permisos para crear maestros');
       }
 
       // ✅ Estadísticas consolidadas
-      console.log("📊 Estadísticas:", teachersStore.stats)
+      console.log('📊 Estadísticas:', teachersStore.stats);
 
       // ✅ Búsquedas optimizadas
-      const activeTeachers = teachersStore.activeTeachers
-      const pianoTeachers = teachersStore.getTeachersBySpecialty("piano")
+      const activeTeachers = teachersStore.activeTeachers;
+      const pianoTeachers = teachersStore.getTeachersBySpecialty('piano');
 
-      console.log(`👥 Maestros activos: ${activeTeachers.length}`)
-      console.log(`🎹 Maestros de piano: ${pianoTeachers.length}`)
+      console.log(`👥 Maestros activos: ${activeTeachers.length}`);
+      console.log(`🎹 Maestros de piano: ${pianoTeachers.length}`);
     },
 
     // ==================== ATTENDANCE SERVICE UNIFICADO ====================
 
     async demoAttendanceService() {
-      console.log("\n📋 2. ATTENDANCE SERVICE UNIFICADO")
+      console.log('\n📋 2. ATTENDANCE SERVICE UNIFICADO');
 
       // ✅ API única para todas las operaciones de asistencia
       const result = await attendanceService.recordAttendance({
-        studentId: "student_123",
-        classId: "class_456",
-        teacherId: "teacher_789",
-        date: "2025-01-03",
-        status: "presente",
-        notes: "Excelente participación",
-      })
+        studentId: 'student_123',
+        classId: 'class_456',
+        teacherId: 'teacher_789',
+        date: '2025-01-03',
+        status: 'presente',
+        notes: 'Excelente participación',
+      });
 
       if (result.success) {
-        console.log("✅ Asistencia registrada:", result.message)
-        console.log("📄 Datos validados:", result.data)
+        console.log('✅ Asistencia registrada:', result.message);
+        console.log('📄 Datos validados:', result.data);
       } else {
-        console.log("❌ Error de permisos:", result.message)
+        console.log('❌ Error de permisos:', result.message);
       }
 
       // ✅ Operaciones en lote con validación
       const bulkResult = await attendanceService.recordBulkAttendance([
         {
-          studentId: "student_001",
-          classId: "class_456",
-          teacherId: "teacher_789",
-          date: "2025-01-03",
-          status: "presente",
+          studentId: 'student_001',
+          classId: 'class_456',
+          teacherId: 'teacher_789',
+          date: '2025-01-03',
+          status: 'presente',
         },
         {
-          studentId: "student_002",
-          classId: "class_456",
-          teacherId: "teacher_789",
-          date: "2025-01-03",
-          status: "ausente",
-          justification: "Enfermedad",
+          studentId: 'student_002',
+          classId: 'class_456',
+          teacherId: 'teacher_789',
+          date: '2025-01-03',
+          status: 'ausente',
+          justification: 'Enfermedad',
         },
-      ])
+      ]);
 
-      console.log(`✅ Registros exitosos: ${bulkResult.success.length}`)
-      console.log(`❌ Registros con error: ${bulkResult.errors.length}`)
+      console.log(`✅ Registros exitosos: ${bulkResult.success.length}`);
+      console.log(`❌ Registros con error: ${bulkResult.errors.length}`);
 
       // ✅ Estadísticas automáticas
       const stats = await attendanceService.generateAttendanceStats(
-        "class_456",
-        "2025-01-01",
-        "2025-01-31"
-      )
+        'class_456',
+        '2025-01-01',
+        '2025-01-31',
+      );
 
       if (stats) {
-        console.log("📈 Estadísticas de asistencia:")
-        console.log(`   - Tasa de asistencia: ${stats.attendanceRate}%`)
-        console.log(`   - Total presente: ${stats.presentCount}`)
-        console.log(`   - Total ausente: ${stats.absentCount}`)
+        console.log('📈 Estadísticas de asistencia:');
+        console.log(`   - Tasa de asistencia: ${stats.attendanceRate}%`);
+        console.log(`   - Total presente: ${stats.presentCount}`);
+        console.log(`   - Total ausente: ${stats.absentCount}`);
       }
     },
 
     // ==================== VALIDACIÓN CON ZOD ====================
 
     demoValidationSystem() {
-      console.log("\n🔒 3. SISTEMA DE VALIDACIÓN ZOD")
+      console.log('\n🔒 3. SISTEMA DE VALIDACIÓN ZOD');
 
       // ✅ Validación automática protege contra datos corruptos
       try {
         // Datos válidos
         const validTeacher = {
-          name: "Prof. María García",
-          email: "maria@academia.com",
-          specialties: ["Violín", "Viola"],
-          status: "activo",
-        }
-        console.log("✅ Datos válidos aceptados")
+          name: 'Prof. María García',
+          email: 'maria@academia.com',
+          specialties: ['Violín', 'Viola'],
+          status: 'activo',
+        };
+        console.log('✅ Datos válidos aceptados');
 
         // Datos inválidos - Zod los rechaza automáticamente
         const invalidTeacher = {
-          name: "A", // ❌ Muy corto
-          email: "invalid-email", // ❌ Email inválido
-          specialties: "Piano", // ❌ Debe ser array
-          status: "unknown", // ❌ Estado inválido
-        }
+          name: 'A', // ❌ Muy corto
+          email: 'invalid-email', // ❌ Email inválido
+          specialties: 'Piano', // ❌ Debe ser array
+          status: 'unknown', // ❌ Estado inválido
+        };
 
         // Este código lanzaría errores de validación:
         // validateAndTransform(TeacherCreateSchema, invalidTeacher)
       } catch (error) {
-        console.log(`❌ Validación Zod previno error: ${error.message}`)
+        console.log(`❌ Validación Zod previno error: ${error.message}`);
       }
     },
 
     // ==================== COMPARACIÓN DE RENDIMIENTO ====================
 
     performanceComparison() {
-      console.log("\n⚡ 4. COMPARACIÓN DE RENDIMIENTO")
+      console.log('\n⚡ 4. COMPARACIÓN DE RENDIMIENTO');
 
       const metrics = {
         antes: {
           archivos: 6, // teachers.ts + adminTeachers.ts + attendance services
           lineasCodigo: 1200,
-          duplicacion: "35%",
-          tiempoDesarrollo: "Alto - Buscar en múltiples archivos",
-          mantenimiento: "Complejo - Sincronizar cambios",
-          testing: "Fragmentado - Múltiples suites",
+          duplicacion: '35%',
+          tiempoDesarrollo: 'Alto - Buscar en múltiples archivos',
+          mantenimiento: 'Complejo - Sincronizar cambios',
+          testing: 'Fragmentado - Múltiples suites',
         },
 
         despues: {
           archivos: 3, // teachersUnified.ts + attendanceUnified.ts + schemas
           lineasCodigo: 800,
-          duplicacion: "0%",
-          tiempoDesarrollo: "Bajo - API única y clara",
-          mantenimiento: "Simple - Cambios centralizados",
-          testing: "Unificado - Suite coherente",
+          duplicacion: '0%',
+          tiempoDesarrollo: 'Bajo - API única y clara',
+          mantenimiento: 'Simple - Cambios centralizados',
+          testing: 'Unificado - Suite coherente',
         },
-      }
+      };
 
-      console.log("📊 MÉTRICAS DE MEJORA:")
-      console.log(`   📁 Archivos: ${metrics.antes.archivos} → ${metrics.despues.archivos} (-50%)`)
+      console.log('📊 MÉTRICAS DE MEJORA:');
+      console.log(`   📁 Archivos: ${metrics.antes.archivos} → ${metrics.despues.archivos} (-50%)`);
       console.log(
-        `   📝 Líneas: ${metrics.antes.lineasCodigo} → ${metrics.despues.lineasCodigo} (-33%)`
-      )
+        `   📝 Líneas: ${metrics.antes.lineasCodigo} → ${metrics.despues.lineasCodigo} (-33%)`,
+      );
       console.log(
-        `   🔄 Duplicación: ${metrics.antes.duplicacion} → ${metrics.despues.duplicacion}`
-      )
+        `   🔄 Duplicación: ${metrics.antes.duplicacion} → ${metrics.despues.duplicacion}`,
+      );
       console.log(
-        `   ⏱️ Desarrollo: ${metrics.antes.tiempoDesarrollo} → ${metrics.despues.tiempoDesarrollo}`
-      )
+        `   ⏱️ Desarrollo: ${metrics.antes.tiempoDesarrollo} → ${metrics.despues.tiempoDesarrollo}`,
+      );
       console.log(
-        `   🔧 Mantenimiento: ${metrics.antes.mantenimiento} → ${metrics.despues.mantenimiento}`
-      )
+        `   🔧 Mantenimiento: ${metrics.antes.mantenimiento} → ${metrics.despues.mantenimiento}`,
+      );
     },
 
     // ==================== PREPARACIÓN PARA FASE 1 ====================
 
     phase1Readiness() {
-      console.log("\n🚀 5. PREPARACIÓN PARA FASE 1 (PWA OFFLINE)")
+      console.log('\n🚀 5. PREPARACIÓN PARA FASE 1 (PWA OFFLINE)');
 
       const readinessChecklist = {
-        "✅ Stores centralizados": "teachersUnified listo para cache offline",
-        "✅ Servicios unificados": "attendanceService listo para Background Sync",
-        "✅ Validación robusta": "Zod validará datos offline y online",
-        "✅ Permisos integrados": "RBAC funciona con/sin conexión",
-        "✅ API consistente": "Misma interfaz para cache y Firebase",
-        "⏳ VitePWA": "Por configurar",
-        "⏳ IndexedDB": "Por implementar",
-        "⏳ Background Sync": "Por implementar",
-      }
+        '✅ Stores centralizados': 'teachersUnified listo para cache offline',
+        '✅ Servicios unificados': 'attendanceService listo para Background Sync',
+        '✅ Validación robusta': 'Zod validará datos offline y online',
+        '✅ Permisos integrados': 'RBAC funciona con/sin conexión',
+        '✅ API consistente': 'Misma interfaz para cache y Firebase',
+        '⏳ VitePWA': 'Por configurar',
+        '⏳ IndexedDB': 'Por implementar',
+        '⏳ Background Sync': 'Por implementar',
+      };
 
-      console.log("🎯 CHECKLIST FASE 1:")
+      console.log('🎯 CHECKLIST FASE 1:');
       Object.entries(readinessChecklist).forEach(([item, status]) => {
-        console.log(`   ${item}: ${status}`)
-      })
+        console.log(`   ${item}: ${status}`);
+      });
 
-      console.log("\n💡 BENEFICIOS ESPERADOS FASE 1:")
-      console.log("   📱 App funciona 100% offline")
-      console.log("   ⚡ Carga instantánea (< 1s)")
-      console.log("   🔄 Sincronización automática en background")
-      console.log("   💾 Datos persistentes en dispositivo")
-      console.log("   🎯 UX nativa en PWA")
+      console.log('\n💡 BENEFICIOS ESPERADOS FASE 1:');
+      console.log('   📱 App funciona 100% offline');
+      console.log('   ⚡ Carga instantánea (< 1s)');
+      console.log('   🔄 Sincronización automática en background');
+      console.log('   💾 Datos persistentes en dispositivo');
+      console.log('   🎯 UX nativa en PWA');
     },
-  }
+  };
 }
 
 // ==================== CÓDIGO DE EJEMPLO PARA DESARROLLADORES ====================
@@ -285,6 +285,6 @@ export const developerExamples = {
       console.error('Datos inválidos:', error.message)
     }
   `,
-}
+};
 
-console.log("🎉 FASE 0 COMPLETADA - Sistema consolidado y listo para Fase 1!")
+console.log('🎉 FASE 0 COMPLETADA - Sistema consolidado y listo para Fase 1!');

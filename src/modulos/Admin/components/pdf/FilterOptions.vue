@@ -202,8 +202,8 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {FunnelIcon} from "@heroicons/vue/24/outline"
+import { computed } from 'vue';
+import { FunnelIcon } from '@heroicons/vue/24/outline';
 
 // Props
 interface Props {
@@ -223,50 +223,50 @@ interface Props {
   classStats: any
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
-  "update:classId": [value: string]
-  "update:teacherId": [value: string]
-  "update:instrumentId": [value: string]
-  "update:ageRange": [value: {min: number; max: number}]
-  "update:enrollmentDate": [value: {start: string; end: string}]
-  "update:status": [value: string]
-}>()
+  'update:classId': [value: string]
+  'update:teacherId': [value: string]
+  'update:instrumentId': [value: string]
+  'update:ageRange': [value: {min: number; max: number}]
+  'update:enrollmentDate': [value: {start: string; end: string}]
+  'update:status': [value: string]
+}>();
 
 // Computed
 const showClassFilter = computed(() => {
-  return ["students", "classes", "attendance"].includes(props.selectedReportType)
-})
+  return ['students', 'classes', 'attendance'].includes(props.selectedReportType);
+});
 
 const showTeacherFilter = computed(() => {
-  return ["students", "classes", "attendance"].includes(props.selectedReportType)
-})
+  return ['students', 'classes', 'attendance'].includes(props.selectedReportType);
+});
 
 const showInstrumentFilter = computed(() => {
-  return ["students", "classes", "teachers"].includes(props.selectedReportType)
-})
+  return ['students', 'classes', 'teachers'].includes(props.selectedReportType);
+});
 
 const showAgeFilter = computed(() => {
-  return ["students"].includes(props.selectedReportType)
-})
+  return ['students'].includes(props.selectedReportType);
+});
 
 const showEnrollmentFilter = computed(() => {
-  return ["students"].includes(props.selectedReportType)
-})
+  return ['students'].includes(props.selectedReportType);
+});
 
 const showStatusFilter = computed(() => {
-  return ["students", "teachers", "classes"].includes(props.selectedReportType)
-})
+  return ['students', 'teachers', 'classes'].includes(props.selectedReportType);
+});
 
 // Funciones
 const resetFilters = () => {
-  emit("update:classId", "")
-  emit("update:teacherId", "")
-  emit("update:instrumentId", "")
-  emit("update:ageRange", {min: 0, max: 100})
-  emit("update:enrollmentDate", {start: "", end: ""})
-  emit("update:status", "all")
-}
+  emit('update:classId', '');
+  emit('update:teacherId', '');
+  emit('update:instrumentId', '');
+  emit('update:ageRange', { min: 0, max: 100 });
+  emit('update:enrollmentDate', { start: '', end: '' });
+  emit('update:status', 'all');
+};
 </script>

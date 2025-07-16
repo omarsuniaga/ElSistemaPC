@@ -159,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 
 interface Work {
   id: string
@@ -172,28 +172,28 @@ interface Props {
   works: Work[]
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const stats = computed(() => {
-  const totalWorks = props.works.length
+  const totalWorks = props.works.length;
   const activeWorks = props.works.filter(
-    (w) => w.status === "en_montaje" || w.status === "en_estudio" || w.status === "en_pulimiento"
-  ).length
+    (w) => w.status === 'en_montaje' || w.status === 'en_estudio' || w.status === 'en_pulimiento',
+  ).length;
   const completedWorks = props.works.filter(
-    (w) => w.status === "presentada" || w.status === "lista"
-  ).length
+    (w) => w.status === 'presentada' || w.status === 'lista',
+  ).length;
   const averageProgress =
     totalWorks > 0
       ? Math.round(props.works.reduce((sum, w) => sum + w.progress, 0) / totalWorks)
-      : 0
+      : 0;
 
   return {
     totalWorks,
     activeWorks,
     completedWorks,
     averageProgress,
-  }
-})
+  };
+});
 
 const worksProgress = computed(() =>
   props.works
@@ -202,6 +202,6 @@ const worksProgress = computed(() =>
       id: work.id,
       title: work.title,
       progress: work.progress || 0,
-    }))
-)
+    })),
+);
 </script>

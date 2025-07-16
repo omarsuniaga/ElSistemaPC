@@ -533,118 +533,118 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useAdminNotifications} from "@/composables/useAdminNotifications"
-import AdminNotificationsPanel from "@/components/AdminNotificationsPanel.vue"
+import { ref, computed, onMounted } from 'vue';
+import { useAdminNotifications } from '@/composables/useAdminNotifications';
+import AdminNotificationsPanel from '@/components/AdminNotificationsPanel.vue';
 
 // Composable
-const {state, markAllAsRead, clearAllNotifications, loadNotifications} = useAdminNotifications()
+const { state, markAllAsRead, clearAllNotifications, loadNotifications } = useAdminNotifications();
 
 // Estado local
-const selectedType = ref("")
-const selectedUrgency = ref("")
-const onlyUnread = ref(false)
-const showCleanupDialog = ref(false)
-const showClearAllDialog = ref(false)
-const cleanupPeriod = ref(30)
-const cleanupLoading = ref(false)
-const clearAllLoading = ref(false)
-const confirmationText = ref("")
-const lastUpdate = ref(new Date().toLocaleString())
+const selectedType = ref('');
+const selectedUrgency = ref('');
+const onlyUnread = ref(false);
+const showCleanupDialog = ref(false);
+const showClearAllDialog = ref(false);
+const cleanupPeriod = ref(30);
+const cleanupLoading = ref(false);
+const clearAllLoading = ref(false);
+const confirmationText = ref('');
+const lastUpdate = ref(new Date().toLocaleString());
 
 // Opciones para filtros
 const notificationTypes = [
-  {value: "teacher_login", title: "Login de Profesor"},
-  {value: "attendance_report", title: "Reporte de Asistencia"},
-  {value: "student_observation", title: "Observación de Estudiante"},
-  {value: "system_notification", title: "Notificación del Sistema"},
-]
+  { value: 'teacher_login', title: 'Login de Profesor' },
+  { value: 'attendance_report', title: 'Reporte de Asistencia' },
+  { value: 'student_observation', title: 'Observación de Estudiante' },
+  { value: 'system_notification', title: 'Notificación del Sistema' },
+];
 
 const urgencyLevels = [
-  {value: "high", title: "Alta"},
-  {value: "medium", title: "Media"},
-  {value: "low", title: "Baja"},
-]
+  { value: 'high', title: 'Alta' },
+  { value: 'medium', title: 'Media' },
+  { value: 'low', title: 'Baja' },
+];
 
 const cleanupOptions = [
-  {value: 7, title: "7 días"},
-  {value: 30, title: "30 días"},
-  {value: 60, title: "60 días"},
-  {value: 90, title: "90 días"},
-]
+  { value: 7, title: '7 días' },
+  { value: 30, title: '30 días' },
+  { value: 60, title: '60 días' },
+  { value: 90, title: '90 días' },
+];
 
 // Computed
 const systemStatus = computed(() => {
   if (state.error) {
     return {
-      text: "Error",
-      classes: "bg-red-100 text-red-800",
-    }
+      text: 'Error',
+      classes: 'bg-red-100 text-red-800',
+    };
   } else if (state.isLoading) {
     return {
-      text: "Cargando",
-      classes: "bg-yellow-100 text-yellow-800",
-    }
+      text: 'Cargando',
+      classes: 'bg-yellow-100 text-yellow-800',
+    };
   } else {
     return {
-      text: "Activo",
-      classes: "bg-green-100 text-green-800",
-    }
+      text: 'Activo',
+      classes: 'bg-green-100 text-green-800',
+    };
   }
-})
+});
 
 // Métodos
 const refreshData = async () => {
-  await loadNotifications()
-  lastUpdate.value = new Date().toLocaleString()
-}
+  await loadNotifications();
+  lastUpdate.value = new Date().toLocaleString();
+};
 
 const getTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
-    teacher_login: "Login Profesor",
-    attendance_report: "Asistencia",
-    student_observation: "Observación",
-    system_notification: "Sistema",
-  }
-  return labels[type] || type
-}
+    teacher_login: 'Login Profesor',
+    attendance_report: 'Asistencia',
+    student_observation: 'Observación',
+    system_notification: 'Sistema',
+  };
+  return labels[type] || type;
+};
 
 const cleanupOldNotifications = async () => {
-  cleanupLoading.value = true
+  cleanupLoading.value = true;
   try {
     // Aquí implementarías la lógica para limpiar notificaciones antiguas
     // Por ahora, simularemos la operación
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    showCleanupDialog.value = false
-    await refreshData()
+    showCleanupDialog.value = false;
+    await refreshData();
 
-    console.log(`Notificaciones más antiguas que ${cleanupPeriod.value} días eliminadas`)
+    console.log(`Notificaciones más antiguas que ${cleanupPeriod.value} días eliminadas`);
   } catch (error) {
-    console.error("Error limpiando notificaciones antiguas:", error)
+    console.error('Error limpiando notificaciones antiguas:', error);
   } finally {
-    cleanupLoading.value = false
+    cleanupLoading.value = false;
   }
-}
+};
 
 const handleClearAll = async () => {
-  clearAllLoading.value = true
+  clearAllLoading.value = true;
   try {
-    await clearAllNotifications()
-    showClearAllDialog.value = false
-    confirmationText.value = ""
-    await refreshData()
+    await clearAllNotifications();
+    showClearAllDialog.value = false;
+    confirmationText.value = '';
+    await refreshData();
   } catch (error) {
-    console.error("Error eliminando todas las notificaciones:", error)
+    console.error('Error eliminando todas las notificaciones:', error);
   } finally {
-    clearAllLoading.value = false
+    clearAllLoading.value = false;
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  refreshData()
-})
+  refreshData();
+});
 </script>
 
 <style scoped>

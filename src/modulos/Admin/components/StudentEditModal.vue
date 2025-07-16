@@ -213,8 +213,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, reactive, onMounted} from "vue"
-import {XMarkIcon} from "@heroicons/vue/24/outline"
+import { ref, reactive, onMounted } from 'vue';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
 
 // Props
 interface Props {
@@ -223,95 +223,95 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   student: null,
-})
+});
 
 // Emits
 const emit = defineEmits<{
   cancel: []
   submit: [data: any]
-}>()
+}>();
 
 // Form data
 const formData = reactive({
-  name: "",
-  email: "",
-  phone: "",
+  name: '',
+  email: '',
+  phone: '',
   age: null as number | null,
-  status: "active",
-  enrollmentDate: "",
-  notes: "",
-})
+  status: 'active',
+  enrollmentDate: '',
+  notes: '',
+});
 
 // Form state
-const isSubmitting = ref(false)
+const isSubmitting = ref(false);
 const errors = reactive({
-  name: "",
-  email: "",
-})
+  name: '',
+  email: '',
+});
 
 // Initialize form data when editing
 onMounted(() => {
   if (props.student) {
     Object.assign(formData, {
-      name: props.student.name || "",
-      email: props.student.email || "",
-      phone: props.student.phone || "",
+      name: props.student.name || '',
+      email: props.student.email || '',
+      phone: props.student.phone || '',
       age: props.student.age || null,
-      status: props.student.status || "active",
-      enrollmentDate: props.student.enrollmentDate || "",
-      notes: props.student.notes || "",
-    })
+      status: props.student.status || 'active',
+      enrollmentDate: props.student.enrollmentDate || '',
+      notes: props.student.notes || '',
+    });
   }
-})
+});
 
 // Validate form
 const validateForm = () => {
-  errors.name = ""
-  errors.email = ""
+  errors.name = '';
+  errors.email = '';
 
-  let isValid = true
+  let isValid = true;
 
   if (!formData.name.trim()) {
-    errors.name = "El nombre es requerido"
-    isValid = false
+    errors.name = 'El nombre es requerido';
+    isValid = false;
   }
 
   if (!formData.email.trim()) {
-    errors.email = "El email es requerido"
-    isValid = false
+    errors.email = 'El email es requerido';
+    isValid = false;
   } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-    errors.email = "El email no tiene un formato válido"
-    isValid = false
+    errors.email = 'El email no tiene un formato válido';
+    isValid = false;
   }
 
-  return isValid
-}
+  return isValid;
+};
 
 // Handle form submission
 const handleSubmit = async () => {
   if (!validateForm()) {
-    return
+    return;
   }
 
-  isSubmitting.value = true
+  isSubmitting.value = true;
 
   try {
     // Prepare data for submission
     const submitData = {
       ...formData,
       id: props.student?.id || null,
-    }
+    };
 
-    emit("submit", submitData)
+    emit('submit', submitData);
   } catch (error) {
-    console.error("Error al enviar el formulario:", error)
+    console.error('Error al enviar el formulario:', error);
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 
 // Handle cancel
 const handleCancel = () => {
-  emit("cancel")
-}
+  emit('cancel');
+};
 </script>

@@ -508,48 +508,48 @@ if (canCreate(PermissionResource.ATTENDANCE)) {
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {CheckIcon, XMarkIcon} from "@heroicons/vue/24/outline"
-import {useAuthStore} from "@/stores/auth"
-import {usePermissions} from "@/modulos/Auth/composables/usePermissions"
-import PermissionGuard from "@/modulos/Auth/components/PermissionGuard.vue"
-import {PermissionResource, PermissionAction} from "@/modulos/Auth/types/permissions"
+import { computed } from 'vue';
+import { CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { useAuthStore } from '@/stores/auth';
+import { usePermissions } from '@/modulos/Auth/composables/usePermissions';
+import PermissionGuard from '@/modulos/Auth/components/PermissionGuard.vue';
+import { PermissionResource, PermissionAction } from '@/modulos/Auth/types/permissions';
 
-const authStore = useAuthStore()
-const {hasPermission} = usePermissions()
+const authStore = useAuthStore();
+const { hasPermission } = usePermissions();
 
 // User info
-const userRole = computed(() => authStore.user?.role || "No autenticado")
-const userEmail = computed(() => authStore.user?.email || "No disponible")
-const isSuperuser = computed(() => authStore.isSuperusuario)
+const userRole = computed(() => authStore.user?.role || 'No autenticado');
+const userEmail = computed(() => authStore.user?.email || 'No disponible');
+const isSuperuser = computed(() => authStore.isSuperusuario);
 
 // Permission checks
 const canReadStudents = computed(() =>
-  hasPermission(PermissionResource.STUDENTS, PermissionAction.READ)
-)
+  hasPermission(PermissionResource.STUDENTS, PermissionAction.READ),
+);
 const canReadAttendance = computed(() =>
-  hasPermission(PermissionResource.ATTENDANCE, PermissionAction.READ)
-)
+  hasPermission(PermissionResource.ATTENDANCE, PermissionAction.READ),
+);
 const canReadClasses = computed(() =>
-  hasPermission(PermissionResource.CLASSES, PermissionAction.READ)
-)
+  hasPermission(PermissionResource.CLASSES, PermissionAction.READ),
+);
 const canReadReports = computed(() =>
-  hasPermission(PermissionResource.REPORTS, PermissionAction.READ)
-)
+  hasPermission(PermissionResource.REPORTS, PermissionAction.READ),
+);
 
 const canCreateStudents = computed(() =>
-  hasPermission(PermissionResource.STUDENTS, PermissionAction.CREATE)
-)
+  hasPermission(PermissionResource.STUDENTS, PermissionAction.CREATE),
+);
 const canCreateAttendance = computed(() =>
-  hasPermission(PermissionResource.ATTENDANCE, PermissionAction.CREATE)
-)
+  hasPermission(PermissionResource.ATTENDANCE, PermissionAction.CREATE),
+);
 const canCreateClasses = computed(() =>
-  hasPermission(PermissionResource.CLASSES, PermissionAction.CREATE)
-)
+  hasPermission(PermissionResource.CLASSES, PermissionAction.CREATE),
+);
 const canDeleteData = computed(
   () =>
     hasPermission(PermissionResource.STUDENTS, PermissionAction.DELETE) ||
     hasPermission(PermissionResource.ATTENDANCE, PermissionAction.DELETE) ||
-    hasPermission(PermissionResource.CLASSES, PermissionAction.DELETE)
-)
+    hasPermission(PermissionResource.CLASSES, PermissionAction.DELETE),
+);
 </script>

@@ -1,12 +1,3 @@
-<script setup lang="ts">
-import type {Notification} from "../../../types/notifications" // Assuming types are moved
-import {NotificationType} from "../../../types/notifications" // Import the enum
-
-const props = defineProps<{
-  notifications: Notification[]
-}>()
-</script>
-
 <template>
   <div class="space-y-6">
     <!-- Notifications -->
@@ -40,3 +31,12 @@ const props = defineProps<{
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import type { Notification } from '../../../types/notifications'; // Assuming types are moved
+import { NotificationType } from '../../../types/notifications'; // Import the enum
+
+const props = defineProps<{
+  notifications: Notification[]
+}>();
+</script>

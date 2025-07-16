@@ -1,84 +1,3 @@
-<script setup lang="ts">
-import {computed, ref, PropType} from "vue"
-import KpiCard from "./KpiCard.vue"
-
-interface Teacher {
-  id?: string | number
-  photoURL?: string
-  nombre?: string
-  apellido?: string
-  email?: string
-  phone?: string
-  instrument?: string
-  classes?: Array<{
-    name: string
-    time?: string
-  }>
-}
-
-const props = defineProps({
-  activeTeachers: {
-    type: Number,
-    required: true,
-  },
-  teacherAttendancePercentage: {
-    type: Number,
-    required: true,
-  },
-  totalTeachers: {
-    type: Number,
-    default: 0,
-  },
-  activeTeachersData: {
-    type: Array as PropType<Teacher[]>,
-    default: () => [],
-  },
-})
-
-// State for modal
-const showModal = ref(false)
-const selectedTeacher = ref(null)
-
-// Determine color based on percentage
-const attendanceColor = computed(() => {
-  if (props.teacherAttendancePercentage >= 90) return "green"
-  if (props.teacherAttendancePercentage >= 70) return "blue"
-  if (props.teacherAttendancePercentage >= 50) return "yellow"
-  return "red"
-})
-
-// Calculate how many avatars to show directly
-const visibleAvatars = computed(() => {
-  return props.activeTeachersData.slice(0, 5) // Show first 5 teachers
-})
-
-// Calculate if there are more teachers to show
-const hasMoreTeachers = computed(() => {
-  return props.activeTeachersData.length > 5
-})
-
-// Calculate how many more teachers there are
-const moreTeachersCount = computed(() => {
-  return props.activeTeachersData.length - 5
-})
-
-const totalTeachersDisplay = computed(() => {
-  return props.totalTeachers || props.activeTeachers
-})
-
-// Open modal with teacher details
-const openTeacherModal = (teacher) => {
-  selectedTeacher.value = teacher
-  showModal.value = true
-}
-
-// Open modal with all teachers
-const viewAllTeachers = () => {
-  selectedTeacher.value = null
-  showModal.value = true
-}
-</script>
-
 <template>
   <KpiCard
     title="Maestros activos"
@@ -318,6 +237,87 @@ const viewAllTeachers = () => {
     </div>
   </KpiCard>
 </template>
+
+<script setup lang="ts">
+import { computed, ref, PropType } from 'vue';
+import KpiCard from './KpiCard.vue';
+
+interface Teacher {
+  id?: string | number
+  photoURL?: string
+  nombre?: string
+  apellido?: string
+  email?: string
+  phone?: string
+  instrument?: string
+  classes?: Array<{
+    name: string
+    time?: string
+  }>
+}
+
+const props = defineProps({
+  activeTeachers: {
+    type: Number,
+    required: true,
+  },
+  teacherAttendancePercentage: {
+    type: Number,
+    required: true,
+  },
+  totalTeachers: {
+    type: Number,
+    default: 0,
+  },
+  activeTeachersData: {
+    type: Array as PropType<Teacher[]>,
+    default: () => [],
+  },
+});
+
+// State for modal
+const showModal = ref(false);
+const selectedTeacher = ref(null);
+
+// Determine color based on percentage
+const attendanceColor = computed(() => {
+  if (props.teacherAttendancePercentage >= 90) return 'green';
+  if (props.teacherAttendancePercentage >= 70) return 'blue';
+  if (props.teacherAttendancePercentage >= 50) return 'yellow';
+  return 'red';
+});
+
+// Calculate how many avatars to show directly
+const visibleAvatars = computed(() => {
+  return props.activeTeachersData.slice(0, 5); // Show first 5 teachers
+});
+
+// Calculate if there are more teachers to show
+const hasMoreTeachers = computed(() => {
+  return props.activeTeachersData.length > 5;
+});
+
+// Calculate how many more teachers there are
+const moreTeachersCount = computed(() => {
+  return props.activeTeachersData.length - 5;
+});
+
+const totalTeachersDisplay = computed(() => {
+  return props.totalTeachers || props.activeTeachers;
+});
+
+// Open modal with teacher details
+const openTeacherModal = (teacher) => {
+  selectedTeacher.value = teacher;
+  showModal.value = true;
+};
+
+// Open modal with all teachers
+const viewAllTeachers = () => {
+  selectedTeacher.value = null;
+  showModal.value = true;
+};
+</script>
 
 <style scoped>
 .teacher-avatar:hover {

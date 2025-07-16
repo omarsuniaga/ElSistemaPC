@@ -416,7 +416,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 
 interface SystemConfig {
   general: {
@@ -459,29 +459,29 @@ const emit = defineEmits<{
   configurationSaved: [config: SystemConfig]
   backupCreated: []
   backupRestored: []
-}>()
+}>();
 
 // State
-const activeTab = ref("general")
-const saving = ref(false)
-const creatingBackup = ref(false)
-const showSaveMessage = ref(false)
-const saveMessage = ref("")
-const saveMessageType = ref<"success" | "error">("success")
+const activeTab = ref('general');
+const saving = ref(false);
+const creatingBackup = ref(false);
+const showSaveMessage = ref(false);
+const saveMessage = ref('');
+const saveMessageType = ref<'success' | 'error'>('success');
 
 const tabs = [
-  {id: "general", name: "General"},
-  {id: "security", name: "Seguridad"},
-  {id: "notifications", name: "Notificaciones"},
-  {id: "backup", name: "Backup"},
-]
+  { id: 'general', name: 'General' },
+  { id: 'security', name: 'Seguridad' },
+  { id: 'notifications', name: 'Notificaciones' },
+  { id: 'backup', name: 'Backup' },
+];
 
 const config = ref<SystemConfig>({
   general: {
-    academyName: "Academia de Música",
-    timezone: "America/Mexico_City",
-    defaultLanguage: "es",
-    currency: "MXN",
+    academyName: 'Academia de Música',
+    timezone: 'America/Mexico_City',
+    defaultLanguage: 'es',
+    currency: 'MXN',
     maintenanceMode: false,
   },
   security: {
@@ -494,113 +494,113 @@ const config = ref<SystemConfig>({
     logSecurityEvents: true,
   },
   notifications: {
-    adminEmail: "admin@academia.com",
-    smtpHost: "smtp.gmail.com",
+    adminEmail: 'admin@academia.com',
+    smtpHost: 'smtp.gmail.com',
     smtpPort: 587,
-    smtpUser: "",
+    smtpUser: '',
     enableEmail: true,
     enableSMS: false,
     enablePush: true,
   },
   backup: {
-    frequency: "daily",
-    time: "02:00",
+    frequency: 'daily',
+    time: '02:00',
     retentionDays: 30,
-    location: "cloud",
+    location: 'cloud',
     autoBackup: true,
     compress: true,
     encrypt: true,
   },
-})
+});
 
 // Computed
 const saveMessageClass = computed(() => {
-  return saveMessageType.value === "success"
-    ? "bg-green-50 text-green-800"
-    : "bg-red-50 text-red-800"
-})
+  return saveMessageType.value === 'success'
+    ? 'bg-green-50 text-green-800'
+    : 'bg-red-50 text-red-800';
+});
 
 // Methods
 const saveConfiguration = async () => {
-  saving.value = true
+  saving.value = true;
   try {
     // Simular guardado de configuración
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    emit("configurationSaved", config.value)
-    showSuccessMessage("Configuración guardada exitosamente")
+    emit('configurationSaved', config.value);
+    showSuccessMessage('Configuración guardada exitosamente');
   } catch (error) {
-    showErrorMessage("Error al guardar la configuración")
+    showErrorMessage('Error al guardar la configuración');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const resetToDefaults = () => {
   if (
-    confirm("¿Está seguro de que desea restablecer la configuración a los valores por defecto?")
+    confirm('¿Está seguro de que desea restablecer la configuración a los valores por defecto?')
   ) {
-    loadDefaultConfig()
-    showSuccessMessage("Configuración restablecida a valores por defecto")
+    loadDefaultConfig();
+    showSuccessMessage('Configuración restablecida a valores por defecto');
   }
-}
+};
 
 const createManualBackup = async () => {
-  creatingBackup.value = true
+  creatingBackup.value = true;
   try {
     // Simular creación de backup
-    await new Promise((resolve) => setTimeout(resolve, 3000))
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    emit("backupCreated")
-    showSuccessMessage("Backup creado exitosamente")
+    emit('backupCreated');
+    showSuccessMessage('Backup creado exitosamente');
   } catch (error) {
-    showErrorMessage("Error al crear el backup")
+    showErrorMessage('Error al crear el backup');
   } finally {
-    creatingBackup.value = false
+    creatingBackup.value = false;
   }
-}
+};
 
 const testBackupSystem = () => {
   // Simular prueba del sistema de backup
-  showSuccessMessage("Sistema de backup funcionando correctamente")
-}
+  showSuccessMessage('Sistema de backup funcionando correctamente');
+};
 
 const restoreFromBackup = () => {
   if (
     confirm(
-      "¿Está seguro de que desea restaurar desde un backup? Esta acción no se puede deshacer."
+      '¿Está seguro de que desea restaurar desde un backup? Esta acción no se puede deshacer.',
     )
   ) {
-    emit("backupRestored")
-    showSuccessMessage("Restauración iniciada. El sistema se reiniciará.")
+    emit('backupRestored');
+    showSuccessMessage('Restauración iniciada. El sistema se reiniciará.');
   }
-}
+};
 
 const showSuccessMessage = (message: string) => {
-  saveMessage.value = message
-  saveMessageType.value = "success"
-  showSaveMessage.value = true
+  saveMessage.value = message;
+  saveMessageType.value = 'success';
+  showSaveMessage.value = true;
   setTimeout(() => {
-    showSaveMessage.value = false
-  }, 3000)
-}
+    showSaveMessage.value = false;
+  }, 3000);
+};
 
 const showErrorMessage = (message: string) => {
-  saveMessage.value = message
-  saveMessageType.value = "error"
-  showSaveMessage.value = true
+  saveMessage.value = message;
+  saveMessageType.value = 'error';
+  showSaveMessage.value = true;
   setTimeout(() => {
-    showSaveMessage.value = false
-  }, 5000)
-}
+    showSaveMessage.value = false;
+  }, 5000);
+};
 
 const loadDefaultConfig = () => {
   config.value = {
     general: {
-      academyName: "Academia de Música",
-      timezone: "America/Mexico_City",
-      defaultLanguage: "es",
-      currency: "MXN",
+      academyName: 'Academia de Música',
+      timezone: 'America/Mexico_City',
+      defaultLanguage: 'es',
+      currency: 'MXN',
       maintenanceMode: false,
     },
     security: {
@@ -613,33 +613,33 @@ const loadDefaultConfig = () => {
       logSecurityEvents: true,
     },
     notifications: {
-      adminEmail: "admin@academia.com",
-      smtpHost: "smtp.gmail.com",
+      adminEmail: 'admin@academia.com',
+      smtpHost: 'smtp.gmail.com',
       smtpPort: 587,
-      smtpUser: "",
+      smtpUser: '',
       enableEmail: true,
       enableSMS: false,
       enablePush: true,
     },
     backup: {
-      frequency: "daily",
-      time: "02:00",
+      frequency: 'daily',
+      time: '02:00',
       retentionDays: 30,
-      location: "cloud",
+      location: 'cloud',
       autoBackup: true,
       compress: true,
       encrypt: true,
     },
-  }
-}
+  };
+};
 
 const loadConfiguration = () => {
   // En una aplicación real, esto cargaría la configuración desde la API
-  console.log("Loading system configuration...")
-}
+  console.log('Loading system configuration...');
+};
 
 // Lifecycle
 onMounted(() => {
-  loadConfiguration()
-})
+  loadConfiguration();
+});
 </script>

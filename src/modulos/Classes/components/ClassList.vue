@@ -415,9 +415,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from "vue"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import type {ClassData} from "../types/class"
+import { computed, ref } from 'vue';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import type { ClassData } from '../types/class';
 import {
   MagnifyingGlassIcon,
   AcademicCapIcon,
@@ -430,95 +430,95 @@ import {
   TrashIcon,
   ShareIcon,
   XMarkIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 const props = defineProps<{
   classes: ClassData[]
   loading?: boolean
-}>()
+}>();
 
 defineEmits<{
-  (e: "edit", classItem: ClassData): void
-  (e: "delete", classItem: ClassData): void
-  (e: "view-schedule", classItem: ClassData): void
-  (e: "manage-sharing", classItem: ClassData): void
-}>()
+  (e: 'edit', classItem: ClassData): void
+  (e: 'delete', classItem: ClassData): void
+  (e: 'view-schedule', classItem: ClassData): void
+  (e: 'manage-sharing', classItem: ClassData): void
+}>();
 
-const search = ref("")
-const teachersStore = useTeachersStore()
+const search = ref('');
+const teachersStore = useTeachersStore();
 
 const filteredClasses = computed(() => {
   if (!search.value.trim()) {
-    return props.classes
+    return props.classes;
   }
 
-  const searchTerm = search.value.toLowerCase()
+  const searchTerm = search.value.toLowerCase();
   return props.classes.filter(
     (cls) =>
       cls.name?.toLowerCase().includes(searchTerm) ||
       cls.level?.toLowerCase().includes(searchTerm) ||
       cls.instrument?.toLowerCase().includes(searchTerm) ||
-      getTeacherName(cls.teacherId).toLowerCase().includes(searchTerm)
-  )
-})
+      getTeacherName(cls.teacherId).toLowerCase().includes(searchTerm),
+  );
+});
 
 function getTeacherName(teacherId?: string): string {
-  if (!teacherId) return "Sin asignar"
-  const teacher = teachersStore.teachers.find((t) => t.id === teacherId)
-  return teacher ? teacher.name : "Maestro no encontrado"
+  if (!teacherId) return 'Sin asignar';
+  const teacher = teachersStore.teachers.find((t) => t.id === teacherId);
+  return teacher ? teacher.name : 'Maestro no encontrado';
 }
 
 function formatSchedule(schedule: any): string {
-  if (!schedule) return "Sin horario"
+  if (!schedule) return 'Sin horario';
 
   // Helper function to format time in 12-hour format
   const formatTime = (time: string): string => {
-    if (!time) return ""
+    if (!time) return '';
 
     // Handle both HH:mm and HH:mm:ss formats
-    const [hours, minutes] = time.split(":").map(Number)
-    if (isNaN(hours) || isNaN(minutes)) return time
+    const [hours, minutes] = time.split(':').map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return time;
 
-    const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
-    const ampm = hours >= 12 ? "pm" : "am"
-    const minutesStr = minutes.toString().padStart(2, "0")
+    const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    const minutesStr = minutes.toString().padStart(2, '0');
 
-    return `${hour12}:${minutesStr} ${ampm}`
-  }
+    return `${hour12}:${minutesStr} ${ampm}`;
+  };
 
   // Helper function to translate day names to Spanish
   const translateDay = (day: string): string => {
     const dayTranslations: Record<string, string> = {
-      Monday: "Lunes",
-      Tuesday: "Martes",
-      Wednesday: "Miércoles",
-      Thursday: "Jueves",
-      Friday: "Viernes",
-      Saturday: "Sábado",
-      Sunday: "Domingo",
-      Lunes: "Lunes",
-      Martes: "Martes",
-      Miércoles: "Miércoles",
-      Jueves: "Jueves",
-      Viernes: "Viernes",
-      Sábado: "Sábado",
-      Domingo: "Domingo",
-    }
-    return dayTranslations[day] || day
-  }
+      Monday: 'Lunes',
+      Tuesday: 'Martes',
+      Wednesday: 'Miércoles',
+      Thursday: 'Jueves',
+      Friday: 'Viernes',
+      Saturday: 'Sábado',
+      Sunday: 'Domingo',
+      Lunes: 'Lunes',
+      Martes: 'Martes',
+      Miércoles: 'Miércoles',
+      Jueves: 'Jueves',
+      Viernes: 'Viernes',
+      Sábado: 'Sábado',
+      Domingo: 'Domingo',
+    };
+    return dayTranslations[day] || day;
+  };
 
   // Handle array of schedules (multiple time slots)
   if (Array.isArray(schedule)) {
     const formattedSlots = schedule
       .filter((slot) => slot.day && slot.startTime && slot.endTime)
       .map((slot) => {
-        const day = translateDay(slot.day)
-        const startTime = formatTime(slot.startTime)
-        const endTime = formatTime(slot.endTime)
-        return `${day} ${startTime} a ${endTime}`
-      })
+        const day = translateDay(slot.day);
+        const startTime = formatTime(slot.startTime);
+        const endTime = formatTime(slot.endTime);
+        return `${day} ${startTime} a ${endTime}`;
+      });
 
-    return formattedSlots.length > 0 ? formattedSlots.join(" y ") : "Sin horario válido"
+    return formattedSlots.length > 0 ? formattedSlots.join(' y ') : 'Sin horario válido';
   }
 
   // Handle schedule with slots property
@@ -526,99 +526,99 @@ function formatSchedule(schedule: any): string {
     const formattedSlots = schedule.slots
       .filter((slot: any) => slot.day && slot.startTime && slot.endTime)
       .map((slot: any) => {
-        const day = translateDay(slot.day)
-        const startTime = formatTime(slot.startTime)
-        const endTime = formatTime(slot.endTime)
-        return `${day} ${startTime} a ${endTime}`
-      })
+        const day = translateDay(slot.day);
+        const startTime = formatTime(slot.startTime);
+        const endTime = formatTime(slot.endTime);
+        return `${day} ${startTime} a ${endTime}`;
+      });
 
-    return formattedSlots.length > 0 ? formattedSlots.join(" y ") : "Sin horario válido"
+    return formattedSlots.length > 0 ? formattedSlots.join(' y ') : 'Sin horario válido';
   }
 
   // Handle single schedule object
   if (schedule.day && schedule.startTime && schedule.endTime) {
-    const day = translateDay(schedule.day)
-    const startTime = formatTime(schedule.startTime)
-    const endTime = formatTime(schedule.endTime)
-    return `${day} ${startTime} a ${endTime}`
+    const day = translateDay(schedule.day);
+    const startTime = formatTime(schedule.startTime);
+    const endTime = formatTime(schedule.endTime);
+    return `${day} ${startTime} a ${endTime}`;
   }
 
-  return "Sin horario válido"
+  return 'Sin horario válido';
 }
 
 function getInstrumentBgColor(instrument?: string): string {
-  if (!instrument) return "bg-gray-100 dark:bg-gray-700"
+  if (!instrument) return 'bg-gray-100 dark:bg-gray-700';
 
   const colors: Record<string, string> = {
-    Piano: "bg-blue-100 dark:bg-blue-900",
-    piano: "bg-blue-100 dark:bg-blue-900",
-    Guitarra: "bg-green-100 dark:bg-green-900",
-    guitarra: "bg-green-100 dark:bg-green-900",
-    Violín: "bg-purple-100 dark:bg-purple-900",
-    violin: "bg-purple-100 dark:bg-purple-900",
-    Batería: "bg-red-100 dark:bg-red-900",
-    bateria: "bg-red-100 dark:bg-red-900",
-    Canto: "bg-yellow-100 dark:bg-yellow-900",
-    canto: "bg-yellow-100 dark:bg-yellow-900",
-    Saxofón: "bg-indigo-100 dark:bg-indigo-900",
-    Trompeta: "bg-orange-100 dark:bg-orange-900",
-    Flauta: "bg-pink-100 dark:bg-pink-900",
-    flauta: "bg-pink-100 dark:bg-pink-900",
-    Bajo: "bg-gray-100 dark:bg-gray-700",
-  }
-  return colors[instrument] || "bg-gray-100 dark:bg-gray-700"
+    Piano: 'bg-blue-100 dark:bg-blue-900',
+    piano: 'bg-blue-100 dark:bg-blue-900',
+    Guitarra: 'bg-green-100 dark:bg-green-900',
+    guitarra: 'bg-green-100 dark:bg-green-900',
+    Violín: 'bg-purple-100 dark:bg-purple-900',
+    violin: 'bg-purple-100 dark:bg-purple-900',
+    Batería: 'bg-red-100 dark:bg-red-900',
+    bateria: 'bg-red-100 dark:bg-red-900',
+    Canto: 'bg-yellow-100 dark:bg-yellow-900',
+    canto: 'bg-yellow-100 dark:bg-yellow-900',
+    Saxofón: 'bg-indigo-100 dark:bg-indigo-900',
+    Trompeta: 'bg-orange-100 dark:bg-orange-900',
+    Flauta: 'bg-pink-100 dark:bg-pink-900',
+    flauta: 'bg-pink-100 dark:bg-pink-900',
+    Bajo: 'bg-gray-100 dark:bg-gray-700',
+  };
+  return colors[instrument] || 'bg-gray-100 dark:bg-gray-700';
 }
 
 function getInstrumentTextColor(instrument?: string): string {
-  if (!instrument) return "text-gray-600 dark:text-gray-400"
+  if (!instrument) return 'text-gray-600 dark:text-gray-400';
 
   const colors: Record<string, string> = {
-    Piano: "text-blue-600 dark:text-blue-400",
-    piano: "text-blue-600 dark:text-blue-400",
-    Guitarra: "text-green-600 dark:text-green-400",
-    guitarra: "text-green-600 dark:text-green-400",
-    Violín: "text-purple-600 dark:text-purple-400",
-    violin: "text-purple-600 dark:text-purple-400",
-    Batería: "text-red-600 dark:text-red-400",
-    bateria: "text-red-600 dark:text-red-400",
-    Canto: "text-yellow-600 dark:text-yellow-400",
-    canto: "text-yellow-600 dark:text-yellow-400",
-    Saxofón: "text-indigo-600 dark:text-indigo-400",
-    Trompeta: "text-orange-600 dark:text-orange-400",
-    Flauta: "text-pink-600 dark:text-pink-400",
-    flauta: "text-pink-600 dark:text-pink-400",
-    Bajo: "text-gray-600 dark:text-gray-400",
-  }
-  return colors[instrument] || "text-gray-600 dark:text-gray-400"
+    Piano: 'text-blue-600 dark:text-blue-400',
+    piano: 'text-blue-600 dark:text-blue-400',
+    Guitarra: 'text-green-600 dark:text-green-400',
+    guitarra: 'text-green-600 dark:text-green-400',
+    Violín: 'text-purple-600 dark:text-purple-400',
+    violin: 'text-purple-600 dark:text-purple-400',
+    Batería: 'text-red-600 dark:text-red-400',
+    bateria: 'text-red-600 dark:text-red-400',
+    Canto: 'text-yellow-600 dark:text-yellow-400',
+    canto: 'text-yellow-600 dark:text-yellow-400',
+    Saxofón: 'text-indigo-600 dark:text-indigo-400',
+    Trompeta: 'text-orange-600 dark:text-orange-400',
+    Flauta: 'text-pink-600 dark:text-pink-400',
+    flauta: 'text-pink-600 dark:text-pink-400',
+    Bajo: 'text-gray-600 dark:text-gray-400',
+  };
+  return colors[instrument] || 'text-gray-600 dark:text-gray-400';
 }
 
 function getStatusBadgeClass(status?: string): string {
-  if (!status) return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+  if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
 
   switch (status) {
-    case "active":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-    case "inactive":
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-    case "suspended":
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-    default:
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+  case 'active':
+    return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+  case 'inactive':
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  case 'suspended':
+    return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+  default:
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
   }
 }
 
 function getStatusText(status?: string): string {
-  if (!status) return "Sin estado"
+  if (!status) return 'Sin estado';
 
   switch (status) {
-    case "active":
-      return "Activa"
-    case "inactive":
-      return "Inactiva"
-    case "suspended":
-      return "Suspendida"
-    default:
-      return "Sin estado"
+  case 'active':
+    return 'Activa';
+  case 'inactive':
+    return 'Inactiva';
+  case 'suspended':
+    return 'Suspendida';
+  default:
+    return 'Sin estado';
   }
 }
 </script>

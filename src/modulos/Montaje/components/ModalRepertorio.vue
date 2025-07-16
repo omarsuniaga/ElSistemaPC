@@ -29,15 +29,15 @@ interface Props {
   repertorio?: any
   obra?: any
   plan?: any
-  "repertorio-id"?: string
+  'repertorio-id'?: string
 }
 
 withDefaults(defineProps<Props>(), {
-  title: "Modal",
-})
+  title: 'Modal',
+});
 
 defineEmits<{
-  (e: "close"): void
-  (e: "guardar", data: any): void
-}>()
+  (e: 'close'): void
+  (e: 'guardar', data: any): void
+}>();
 </script>

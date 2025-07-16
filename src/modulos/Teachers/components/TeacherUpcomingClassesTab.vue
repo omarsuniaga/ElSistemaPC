@@ -1,63 +1,3 @@
-<script setup lang="ts">
-import {
-  PencilIcon,
-  UserGroupIcon,
-  ClockIcon,
-  MapPinIcon,
-  CalendarIcon,
-} from "@heroicons/vue/24/outline"
-import type {Class} from "@/modulos/Classes/models/Class" // Asegúrate de que la ruta y el tipo sean correctos
-
-// Definir las props que recibirá el componente
-const props = defineProps<{
-  upcomingClasses: (Class & {nextSessionDate: Date})[] // Clases con la fecha de la próxima sesión añadida
-  formatDateTime: (date: Date) => string // Función para formatear fechas
-  getNextSession: (classItem: Class) => Date // Función para obtener la próxima sesión
-}>()
-
-// Funciones para emitir eventos al componente padre
-const handleEditClass = (classId: string) => emit("edit-class", classId)
-const handleManageStudents = (classId: string) => emit("manage-students", classId)
-const handleViewClass = (classId: string) => emit("view-class", classId)
-
-// Función para determinar el color de la tarjeta según la proximidad de la clase
-const getCardColor = (date: Date): string => {
-  const now = new Date()
-  const hoursDiff = (date.getTime() - now.getTime()) / (1000 * 60 * 60)
-
-  if (hoursDiff <= 1) return "border-red-500 dark:border-red-400" // Menos de 1 hora
-  if (hoursDiff <= 3) return "border-orange-500 dark:border-orange-400" // Menos de 3 horas
-  if (hoursDiff <= 6) return "border-yellow-500 dark:border-yellow-400" // Menos de 6 horas
-  return "border-blue-500 dark:border-blue-400" // Más de 6 horas
-}
-
-// Función para formatear la hora en formato 12h
-const formatTime = (date: Date): string => {
-  return date.toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  })
-}
-
-// Función para obtener el tiempo restante hasta la clase
-const getTimeRemaining = (date: Date): string => {
-  const now = new Date()
-  const diffMs = date.getTime() - now.getTime()
-
-  if (diffMs <= 0) return "En curso"
-
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-
-  if (diffHours === 0) {
-    return `En ${diffMinutes} min`
-  }
-
-  return `En ${diffHours}h ${diffMinutes}m`
-}
-</script>
-
 <template>
   <div class="space-y-6">
     <h2
@@ -157,6 +97,66 @@ const getTimeRemaining = (date: Date): string => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import {
+  PencilIcon,
+  UserGroupIcon,
+  ClockIcon,
+  MapPinIcon,
+  CalendarIcon,
+} from '@heroicons/vue/24/outline';
+import type { Class } from '@/modulos/Classes/models/Class'; // Asegúrate de que la ruta y el tipo sean correctos
+
+// Definir las props que recibirá el componente
+const props = defineProps<{
+  upcomingClasses: (Class & {nextSessionDate: Date})[] // Clases con la fecha de la próxima sesión añadida
+  formatDateTime: (date: Date) => string // Función para formatear fechas
+  getNextSession: (classItem: Class) => Date // Función para obtener la próxima sesión
+}>();
+
+// Funciones para emitir eventos al componente padre
+const handleEditClass = (classId: string) => emit('edit-class', classId);
+const handleManageStudents = (classId: string) => emit('manage-students', classId);
+const handleViewClass = (classId: string) => emit('view-class', classId);
+
+// Función para determinar el color de la tarjeta según la proximidad de la clase
+const getCardColor = (date: Date): string => {
+  const now = new Date();
+  const hoursDiff = (date.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+  if (hoursDiff <= 1) return 'border-red-500 dark:border-red-400'; // Menos de 1 hora
+  if (hoursDiff <= 3) return 'border-orange-500 dark:border-orange-400'; // Menos de 3 horas
+  if (hoursDiff <= 6) return 'border-yellow-500 dark:border-yellow-400'; // Menos de 6 horas
+  return 'border-blue-500 dark:border-blue-400'; // Más de 6 horas
+};
+
+// Función para formatear la hora en formato 12h
+const formatTime = (date: Date): string => {
+  return date.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+// Función para obtener el tiempo restante hasta la clase
+const getTimeRemaining = (date: Date): string => {
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+
+  if (diffMs <= 0) return 'En curso';
+
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (diffHours === 0) {
+    return `En ${diffMinutes} min`;
+  }
+
+  return `En ${diffHours}h ${diffMinutes}m`;
+};
+</script>
 
 <style scoped>
 /* Animación sutil para las tarjetas */

@@ -523,8 +523,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted} from "vue"
-import {useRouter} from "vue-router"
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   CogIcon,
   UsersIcon,
@@ -552,36 +552,36 @@ import {
   ChevronRightIcon,
   ServerIcon,
   ChatBubbleLeftRightIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Components
-import SuperActionCard from "../components/SuperActionCard.vue"
-import ManagementSuperCard from "../components/ManagementSuperCard.vue"
-import AnalyticsCard from "../components/AnalyticsCard.vue"
-import RecentActivityFeed from "../components/RecentActivityFeed.vue"
-import QuickAccessButton from "../components/QuickAccessButton.vue"
-import AlertsList from "../components/AlertsList.vue"
-import CreateUserModal from "../components/CreateUserModal.vue"
-import GlobalViewModal from "../components/GlobalViewModal.vue"
-import SystemConfigModal from "../components/SystemConfigModal.vue"
-import PDFGeneratorModal from "../components/PDFGeneratorModal.vue"
+import SuperActionCard from '../components/SuperActionCard.vue';
+import ManagementSuperCard from '../components/ManagementSuperCard.vue';
+import AnalyticsCard from '../components/AnalyticsCard.vue';
+import RecentActivityFeed from '../components/RecentActivityFeed.vue';
+import QuickAccessButton from '../components/QuickAccessButton.vue';
+import AlertsList from '../components/AlertsList.vue';
+import CreateUserModal from '../components/CreateUserModal.vue';
+import GlobalViewModal from '../components/GlobalViewModal.vue';
+import SystemConfigModal from '../components/SystemConfigModal.vue';
+import PDFGeneratorModal from '../components/PDFGeneratorModal.vue';
 
 // Stores
-import {useAdminStudentsStore} from "../store/adminStudents"
-import {useAdminTeachersStore} from "../store/teachers"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useAuthStore} from "../../../stores/auth"
-import {useTheme} from "../../../composables/useTheme"
-import {useRealTimeNotifications} from "../composables/useRealTimeNotifications"
-import ReporteAsistenciaDiaria from "../../Attendance/views/ReporteAsistenciaDiaria.vue"
+import { useAdminStudentsStore } from '../store/adminStudents';
+import { useAdminTeachersStore } from '../store/teachers';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useAuthStore } from '../../../stores/auth';
+import { useTheme } from '../../../composables/useTheme';
+import { useRealTimeNotifications } from '../composables/useRealTimeNotifications';
+import ReporteAsistenciaDiaria from '../../Attendance/views/ReporteAsistenciaDiaria.vue';
 
 // Setup
-const router = useRouter()
-const authStore = useAuthStore()
-const studentsStore = useAdminStudentsStore()
-const teachersStore = useAdminTeachersStore()
-const classesStore = useClassesStore()
-const {isDarkMode, toggleTheme: switchTheme} = useTheme()
+const router = useRouter();
+const authStore = useAuthStore();
+const studentsStore = useAdminStudentsStore();
+const teachersStore = useAdminTeachersStore();
+const classesStore = useClassesStore();
+const { isDarkMode, toggleTheme: switchTheme } = useTheme();
 
 // Real-time notifications setup
 const {
@@ -591,43 +591,43 @@ const {
   unreadCount,
   markAsRead,
   dismissNotification,
-} = useRealTimeNotifications()
+} = useRealTimeNotifications();
 
 // State
-const showCreateUserModal = ref(false)
-const showGlobalViewModal = ref(false)
-const showSystemConfigModal = ref(false)
-const showPDFGeneratorModal = ref(false)
-const showNotifications = ref(false)
+const showCreateUserModal = ref(false);
+const showGlobalViewModal = ref(false);
+const showSystemConfigModal = ref(false);
+const showPDFGeneratorModal = ref(false);
+const showNotifications = ref(false);
 
 // Computed
 const currentDate = computed(() => {
-  return new Date().toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-})
+  return new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+});
 
 const stats = computed(() => {
-  const studentStats = studentsStore.studentStats
-  const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const studentStats = studentsStore.studentStats;
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const recentStudents = studentsStore.students.filter(
-    (student) => new Date(student.enrollmentDate) >= startOfMonth
-  ).length
+    (student) => new Date(student.enrollmentDate) >= startOfMonth,
+  ).length;
 
   const recentTeachers = teachersStore.teachers.filter(
-    (teacher) => new Date(teacher.createdAt || new Date()) >= startOfMonth
-  ).length
+    (teacher) => new Date(teacher.createdAt || new Date()) >= startOfMonth,
+  ).length;
 
   const recentClasses = classesStore.classes.filter(
-    (classItem) => new Date(classItem.createdAt || new Date()) >= startOfMonth
-  ).length
+    (classItem) => new Date(classItem.createdAt || new Date()) >= startOfMonth,
+  ).length;
 
-  const activeUsers = studentStats.active + teachersStore.activeTeachers
+  const activeUsers = studentStats.active + teachersStore.activeTeachers;
 
   return {
     totalStudents: studentStats.total,
@@ -637,84 +637,84 @@ const stats = computed(() => {
     recentStudents,
     recentTeachers,
     recentClasses,
-  }
-})
+  };
+});
 
 // Analytics computed properties
 const activeClassesCount = computed(() => {
-  return classesStore.classes.filter((c) => c.status === "active").length
-})
+  return classesStore.classes.filter((c) => c.status === 'active').length;
+});
 
 const attendancePercentage = computed(() => {
-  const totalStudents = studentsStore.studentStats.total
-  const activeStudents = studentsStore.studentStats.active
-  if (totalStudents === 0) return "0%"
-  return `${Math.floor((activeStudents / totalStudents) * 100)}%`
-})
+  const totalStudents = studentsStore.studentStats.total;
+  const activeStudents = studentsStore.studentStats.active;
+  if (totalStudents === 0) return '0%';
+  return `${Math.floor((activeStudents / totalStudents) * 100)}%`;
+});
 
 const attendanceTrend = computed(() => {
   // TODO: Calcular tendencia real comparando con semana/mes anterior
   // Requerirá datos históricos de asistencia
-  return "+0%" // Neutro hasta tener datos reales
-})
+  return '+0%'; // Neutro hasta tener datos reales
+});
 
 const classesTrend = computed(() => {
-  const newClassesThisMonth = stats.value.recentClasses
-  return newClassesThisMonth > 0 ? `+${newClassesThisMonth}` : "0"
-})
+  const newClassesThisMonth = stats.value.recentClasses;
+  return newClassesThisMonth > 0 ? `+${newClassesThisMonth}` : '0';
+});
 
 const observationsTrend = computed(() => {
   // TODO: Calcular tendencia real de observaciones
-  return "+0" // Neutro hasta tener datos reales
-})
+  return '+0'; // Neutro hasta tener datos reales
+});
 
 const performanceTrend = computed(() => {
   // TODO: Calcular tendencia real de rendimiento académico
-  return "+0%" // Neutro hasta tener datos reales
-})
+  return '+0%'; // Neutro hasta tener datos reales
+});
 
 const currentObservations = computed(() => {
   // TODO: Obtener el número real de observaciones activas o pendientes del store de observaciones
   // Por ahora, se mantiene un valor estimado o se retorna 0 si no hay datos.
-  const totalStudents = studentsStore.studentStats.total
-  return Math.floor(totalStudents * 0.03) // Mantener estimación hasta tener datos reales
-})
+  const totalStudents = studentsStore.studentStats.total;
+  return Math.floor(totalStudents * 0.03); // Mantener estimación hasta tener datos reales
+});
 
 const performancePercentage = computed(() => {
   // TODO: Obtener el porcentaje de rendimiento real del sistema o de los estudiantes
-  return "N/A" // Valor neutro hasta tener datos reales
-})
+  return 'N/A'; // Valor neutro hasta tener datos reales
+});
 
 // Analytics data - Preparado para datos reales de los stores
 const attendanceData = computed(() => {
   // TODO: Implementar studentsStore.getAttendanceHistoryData() para datos reales
   // Por ahora retornamos array vacío hasta que los stores expongan datos históricos
-  return []
-})
+  return [];
+});
 
 const classesData = computed(() => {
   // TODO: Implementar classesStore.getClassesHistoryData() para datos reales
   // Por ahora retornamos array vacío hasta que los stores expongan datos históricos
-  return []
-})
+  return [];
+});
 
 const observationsData = computed(() => {
   // TODO: Implementar observationsStore.getObservationsHistoryData() para datos reales
   // Por ahora retornamos array vacío hasta que los stores expongan datos históricos
-  return []
-})
+  return [];
+});
 
 const performanceData = computed(() => {
   // TODO: Implementar performanceStore.getPerformanceHistoryData() para datos reales
   // Por ahora retornamos array vacío hasta que los stores expongan datos históricos
-  return []
-})
+  return [];
+});
 
 // Recent activities
 const recentActivities = computed(() => {
   // TODO: Obtener actividades recientes reales del sistema (ej. de un store de actividades o logs)
-  return []
-})
+  return [];
+});
 
 // System alerts - ahora se obtienen directamente de criticalNotifications
 const systemAlerts = computed(() => {
@@ -722,13 +722,13 @@ const systemAlerts = computed(() => {
   return criticalNotifications.value
     .map((notification) => ({
       id: notification.id,
-      type: notification.type as "warning" | "info" | "error" | "success",
+      type: notification.type as 'warning' | 'info' | 'error' | 'success',
       title: notification.title,
       description: notification.message,
       time: formatTimeAgo(notification.timestamp),
     }))
-    .slice(0, 3)
-})
+    .slice(0, 3);
+});
 
 // Methods
 const loadData = async () => {
@@ -737,176 +737,176 @@ const loadData = async () => {
       studentsStore.loadStudents(),
       teachersStore.loadTeachers(),
       classesStore.fetchClasses(),
-    ])
+    ]);
 
-    console.log("Datos cargados exitosamente:", {
+    console.log('Datos cargados exitosamente:', {
       students: studentsStore.studentStats.total,
       teachers: teachersStore.totalTeachers,
       classes: classesStore.classes.length,
-    })
+    });
   } catch (error) {
-    console.error("Error loading data:", error)
+    console.error('Error loading data:', error);
   }
-}
+};
 
 // Super Action Handlers
 const handleCreateUser = () => {
-  showCreateUserModal.value = true
-}
+  showCreateUserModal.value = true;
+};
 
 const handleGlobalView = () => {
-  showGlobalViewModal.value = true
-}
+  showGlobalViewModal.value = true;
+};
 
 const handleAdvancedReports = () => {
-  router.push("/admin/reports/advanced")
-}
+  router.push('/admin/reports/advanced');
+};
 
 const handleSystemConfig = () => {
-  showSystemConfigModal.value = true
-}
+  showSystemConfigModal.value = true;
+};
 
 const handleThemeManager = () => {
-  switchTheme()
-}
+  switchTheme();
+};
 
 const handlePDFGenerator = () => {
-  showPDFGeneratorModal.value = true
-}
+  showPDFGeneratorModal.value = true;
+};
 
 const handleWhatsAppPanel = () => {
-  router.push("/admin/whatsapp")
-}
+  router.push('/admin/whatsapp');
+};
 
 // Management Action Handlers
 const handleStudentsAction = (action: string) => {
   switch (action) {
-    case "view":
-      router.push("/admin/students")
-      break
-    case "create":
-      router.push("/admin/students/create")
-      break
-    case "export":
-      console.log("Export students")
-      break
+  case 'view':
+    router.push('/admin/students');
+    break;
+  case 'create':
+    router.push('/admin/students/create');
+    break;
+  case 'export':
+    console.log('Export students');
+    break;
   }
-}
+};
 
 const handleTeachersAction = (action: string) => {
   switch (action) {
-    case "view":
-      router.push("/admin/teachers")
-      break
-    case "create":
-      router.push("/admin/teachers/create")
-      break
-    case "permissions":
-      router.push("/admin/permissions")
-      break
+  case 'view':
+    router.push('/admin/teachers');
+    break;
+  case 'create':
+    router.push('/admin/teachers/create');
+    break;
+  case 'permissions':
+    router.push('/admin/permissions');
+    break;
   }
-}
+};
 
 const handleClassesAction = (action: string) => {
   switch (action) {
-    case "view":
-      router.push("/admin/classes")
-      break
-    case "create":
-      router.push("/admin/classes/create")
-      break
-    case "schedule":
-      router.push("/admin/schedules")
-      break
+  case 'view':
+    router.push('/admin/classes');
+    break;
+  case 'create':
+    router.push('/admin/classes/create');
+    break;
+  case 'schedule':
+    router.push('/admin/schedules');
+    break;
   }
-}
+};
 
 // Quick Access Handlers
 const handleUrgentClass = () => {
-  router.push("/admin/classes/create?urgent=true")
-}
+  router.push('/admin/classes/create?urgent=true');
+};
 
 const handleGlobalMessage = () => {
-  console.log("Send global message")
-}
+  console.log('Send global message');
+};
 
 const handleExportData = () => {
-  console.log("Export data")
-}
+  console.log('Export data');
+};
 
 const handleNotificationConfig = () => {
-  router.push("/admin/notifications/config")
-}
+  router.push('/admin/notifications/config');
+};
 
 // Other Handlers
 const handleDismissAlert = (alertId: string | number) => {
-  console.log("Alert dismissed:", alertId)
-}
+  console.log('Alert dismissed:', alertId);
+};
 
 const handleUserCreated = (user: any) => {
-  console.log("User created:", user)
-  loadData()
-}
+  console.log('User created:', user);
+  loadData();
+};
 
 const handleSystemConfigUpdated = (config: any) => {
-  console.log("System config updated:", config)
-}
+  console.log('System config updated:', config);
+};
 
 const handlePDFGeneration = (options: any) => {
-  console.log("Generating PDF with options:", options)
-}
+  console.log('Generating PDF with options:', options);
+};
 
 // Notification Methods
 const toggleNotifications = () => {
-  showNotifications.value = !showNotifications.value
-}
+  showNotifications.value = !showNotifications.value;
+};
 
 const markAllAsRead = async () => {
   try {
-    await Promise.all(recentNotifications.value.filter((n) => !n.read).map((n) => markAsRead(n.id)))
+    await Promise.all(recentNotifications.value.filter((n) => !n.read).map((n) => markAsRead(n.id)));
   } catch (error) {
-    console.error("Error marking notifications as read:", error)
+    console.error('Error marking notifications as read:', error);
   }
-}
+};
 
 const goToNotifications = () => {
-  showNotifications.value = false
-  router.push("/admin/notifications")
-}
+  showNotifications.value = false;
+  router.push('/admin/notifications');
+};
 
 const formatTimeAgo = (timestamp: any) => {
-  const now = new Date()
-  const time = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp)
-  const diff = now.getTime() - time.getTime()
+  const now = new Date();
+  const time = timestamp?.toDate ? timestamp.toDate() : new Date(timestamp);
+  const diff = now.getTime() - time.getTime();
 
-  const minutes = Math.floor(diff / (1000 * 60))
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-  if (minutes < 1) return "Ahora mismo"
-  if (minutes < 60) return `${minutes} min`
-  if (hours < 24) return `${hours} h`
-  return `${days} días`
-}
+  if (minutes < 1) return 'Ahora mismo';
+  if (minutes < 60) return `${minutes} min`;
+  if (hours < 24) return `${hours} h`;
+  return `${days} días`;
+};
 
 // Close notifications when clicking outside
 const handleClickOutside = (event: Event) => {
-  const target = event.target as Element
-  if (showNotifications.value && !target.closest(".notifications-container")) {
-    showNotifications.value = false
+  const target = event.target as Element;
+  if (showNotifications.value && !target.closest('.notifications-container')) {
+    showNotifications.value = false;
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  await loadData()
+  await loadData();
   // Ya no necesitamos generar notificaciones demo - usamos las reales del sistema
-  document.addEventListener("click", handleClickOutside)
-})
+  document.addEventListener('click', handleClickOutside);
+});
 
 onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside)
-})
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style scoped>

@@ -152,9 +152,9 @@ import {
   CalendarIcon,
   ClockIcon,
   ArrowTrendingUpIcon,
-} from "@heroicons/vue/24/outline"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
+} from '@heroicons/vue/24/outline';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface RepertoireAnalysisData {
   piecesLearned: number
@@ -165,85 +165,85 @@ interface RepertoireAnalysisData {
 defineProps<{
   studentId: string
   data?: RepertoireAnalysisData
-}>()
+}>();
 
 // Mock data
 const currentPieces = [
   {
     id: 1,
-    title: "Für Elise",
-    composer: "L. van Beethoven",
-    status: "completed",
+    title: 'Für Elise',
+    composer: 'L. van Beethoven',
+    status: 'completed',
     progress: 100,
-    startDate: new Date("2024-01-15"),
-    estimatedTime: "6 semanas",
+    startDate: new Date('2024-01-15'),
+    estimatedTime: '6 semanas',
   },
   {
     id: 2,
-    title: "Moonlight Sonata (1er mov.)",
-    composer: "L. van Beethoven",
-    status: "in-progress",
+    title: 'Moonlight Sonata (1er mov.)',
+    composer: 'L. van Beethoven',
+    status: 'in-progress',
     progress: 75,
-    startDate: new Date("2024-02-01"),
-    estimatedTime: "8 semanas",
+    startDate: new Date('2024-02-01'),
+    estimatedTime: '8 semanas',
   },
   {
     id: 3,
-    title: "Canon en Re",
-    composer: "J. Pachelbel",
-    status: "pending",
+    title: 'Canon en Re',
+    composer: 'J. Pachelbel',
+    status: 'pending',
     progress: 25,
-    startDate: new Date("2024-03-01"),
-    estimatedTime: "4 semanas",
+    startDate: new Date('2024-03-01'),
+    estimatedTime: '4 semanas',
   },
-]
+];
 
 const skills = [
   {
-    name: "Técnica",
+    name: 'Técnica',
     score: 7,
-    note: "Buen control de digitación, trabajar en velocidad",
+    note: 'Buen control de digitación, trabajar en velocidad',
   },
   {
-    name: "Interpretación",
+    name: 'Interpretación',
     score: 8,
-    note: "Excelente expresión musical",
+    note: 'Excelente expresión musical',
   },
   {
-    name: "Lectura",
+    name: 'Lectura',
     score: 6,
-    note: "Mejorar lectura a primera vista",
+    note: 'Mejorar lectura a primera vista',
   },
   {
-    name: "Ritmo",
+    name: 'Ritmo',
     score: 9,
-    note: "Excelente sentido rítmico",
+    note: 'Excelente sentido rítmico',
   },
-]
+];
 
 const getStatusLabel = (status: string): string => {
   switch (status) {
-    case "completed":
-      return "Completado"
-    case "in-progress":
-      return "En Progreso"
-    case "pending":
-      return "Pendiente"
-    default:
-      return status
+  case 'completed':
+    return 'Completado';
+  case 'in-progress':
+    return 'En Progreso';
+  case 'pending':
+    return 'Pendiente';
+  default:
+    return status;
   }
-}
+};
 
 const getSkillColor = (score: number): string => {
-  if (score >= 8) return "#10b981" // green-500
-  if (score >= 6) return "#f59e0b" // amber-500
-  if (score >= 4) return "#f97316" // orange-500
-  return "#ef4444" // red-500
-}
+  if (score >= 8) return '#10b981'; // green-500
+  if (score >= 6) return '#f59e0b'; // amber-500
+  if (score >= 4) return '#f97316'; // orange-500
+  return '#ef4444'; // red-500
+};
 
 const formatDate = (date: Date): string => {
-  return format(date, "dd MMM yyyy", {locale: es})
-}
+  return format(date, 'dd MMM yyyy', { locale: es });
+};
 </script>
 
 <style scoped>

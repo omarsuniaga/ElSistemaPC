@@ -1,4 +1,4 @@
-import {defineStore} from "pinia"
+import { defineStore } from 'pinia';
 
 interface InstrumentState {
   instruments: string[]
@@ -7,14 +7,14 @@ interface InstrumentState {
   error: string | null
 }
 
-export const useInstrumentoStore = defineStore("instrumento", {
+export const useInstrumentoStore = defineStore('instrumento', {
   state: (): InstrumentState => ({
     instruments: [],
     instrumentsByFamily: {
-      cuerdas: ["Violín", "Viola", "Violonchelo", "Contrabajo", "Guitarra", "Arpa"],
-      "viento madera": ["Flauta", "Clarinete", "Oboe", "Fagot", "Saxofón"],
-      "viento metal": ["Trompeta", "Trombón", "Trompa", "Tuba"],
-      percusión: ["Piano", "Batería", "Xilófono", "Timbales", "Marimba"],
+      cuerdas: ['Violín', 'Viola', 'Violonchelo', 'Contrabajo', 'Guitarra', 'Arpa'],
+      'viento madera': ['Flauta', 'Clarinete', 'Oboe', 'Fagot', 'Saxofón'],
+      'viento metal': ['Trompeta', 'Trombón', 'Trompa', 'Tuba'],
+      percusión: ['Piano', 'Batería', 'Xilófono', 'Timbales', 'Marimba'],
     },
     isLoading: false,
     error: null,
@@ -22,24 +22,24 @@ export const useInstrumentoStore = defineStore("instrumento", {
 
   actions: {
     async fetchInstrumentos() {
-      this.isLoading = true
+      this.isLoading = true;
       try {
         // Create full instruments list from instrumentsByFamily
         this.instruments = Object.values(this.instrumentsByFamily)
           .flat()
-          .sort((a, b) => a.localeCompare(b))
+          .sort((a, b) => a.localeCompare(b));
       } catch (error) {
-        console.error("Error fetching instruments:", error)
-        this.error = "Error al cargar los instrumentos"
+        console.error('Error fetching instruments:', error);
+        this.error = 'Error al cargar los instrumentos';
       } finally {
-        this.isLoading = false
+        this.isLoading = false;
       }
     },
   },
-})
+});
 
 // Nueva función para obtener los instrumentos del store
 export const getInstruments = (): string[] => {
-  const instrumentoStore = useInstrumentoStore()
-  return instrumentoStore.instruments
-}
+  const instrumentoStore = useInstrumentoStore();
+  return instrumentoStore.instruments;
+};

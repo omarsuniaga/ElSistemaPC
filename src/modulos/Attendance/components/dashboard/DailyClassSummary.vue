@@ -3,185 +3,6 @@
 Resumen optimizado de las clases del día seleccionado
 -->
 
-<script setup lang="ts">
-import {computed} from "vue"
-import {format, parseISO} from "date-fns"
-import {es} from "date-fns/locale"
-
-// Tipos
-interface ClassItem {
-  id: string
-  name: string
-  time?: string
-  students?: number
-  studentIds?: string[]
-  hasAttendance: boolean
-  classroom?: string
-  teacher?: string
-  schedule?: {
-    slots: Array<{
-      id: string
-      startTime: string
-      endTime: string
-    }>
-  }
-  // Propiedades de clases compartidas
-  isSharedClass?: boolean
-  isPrimaryTeacher?: boolean
-  isCollaboratingTeacher?: boolean
-  participationType?: string
-  userRole?: string
-  canTakeAttendance?: boolean
-}
-
-// Props
-const props = defineProps<{
-  classes: ClassItem[]
-  selectedDate: string
-  isLoading?: boolean
-}>()
-
-// Emits
-const emit = defineEmits<{
-  "select-class": [classId: string]
-  "create-emergency": []
-  "batch-review": []
-}>()
-
-/**
- * 🎯 COMPUTED PROPERTIES
- */
-
-// Fecha formateada
-const formattedDate = computed(() => {
-  if (!props.selectedDate) return ""
-
-  const date = parseISO(props.selectedDate)
-  return format(date, "d 'de' MMMM", {locale: es})
-})
-
-// Estadísticas del día
-const dayStats = computed(() => {
-  console.log("📋 [DailyClassSummary] Props received:", {
-    classesCount: props.classes.length,
-    selectedDate: props.selectedDate,
-    classes: props.classes,
-  })
-  
-  const total = props.classes.length
-  const completed = props.classes.filter((c) => c.hasAttendance).length
-  const pending = total - completed
-  const totalStudents = props.classes.reduce(
-    (sum, cls) => sum + (cls.studentIds?.length || cls.students || 0),
-    0
-  )
-
-  return {
-    total,
-    completed,
-    pending,
-    totalStudents,
-    completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-  }
-})
-
-// Clases agrupadas por estado
-const groupedClasses = computed(() => {
-  const completed = props.classes.filter((c) => c.hasAttendance)
-  const pending = props.classes.filter((c) => !c.hasAttendance)
-
-  return {completed, pending}
-})
-
-/**
- * 🎯 MÉTODOS
- */
-
-// Formatear horario de clase
-const formatClassTime = (classItem: ClassItem): string => {
-  if (classItem.schedule?.slots?.length) {
-    const slots = classItem.schedule.slots
-    if (slots.length === 1) {
-      return `${formatTime(slots[0].startTime)} - ${formatTime(slots[0].endTime)}`
-    } else {
-      return `${slots.length} horarios`
-    }
-  }
-  return classItem.time || "Horario no definido"
-}
-
-// Formatear hora individual
-const formatTime = (timeStr: string): string => {
-  if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) return timeStr
-
-  const [hours, minutes] = timeStr.split(":")
-  const date = new Date()
-  date.setHours(parseInt(hours, 10))
-  date.setMinutes(parseInt(minutes, 10))
-
-  return format(date, "h:mm a", {locale: es})
-}
-
-// Obtener icono de estado para una clase
-const getStatusIcon = (classItem: ClassItem) => {
-  if (classItem.hasAttendance) {
-    return {
-      icon: "check-circle",
-      color: "text-green-500",
-      bgColor: "bg-green-100 dark:bg-green-900/20",
-    }
-  } else {
-    return {
-      icon: "clock",
-      color: "text-yellow-500",
-      bgColor: "bg-yellow-100 dark:bg-yellow-900/20",
-    }
-  }
-}
-
-// Obtener información de rol para clases compartidas
-const getRoleInfo = (classItem: ClassItem) => {
-  if (!classItem.isSharedClass) return null
-
-  if (classItem.isPrimaryTeacher) {
-    return {
-      label: "Principal",
-      color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400",
-    }
-  } else if (classItem.isCollaboratingTeacher) {
-    return {
-      label: classItem.userRole === "assistant" ? "Asistente" : "Colaborador",
-      color: "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400",
-    }
-  }
-
-  return null
-}
-
-// Manejar selección de clase
-const handleClassSelect = (classItem: ClassItem) => {
-  if (!classItem.canTakeAttendance) {
-    console.warn("⚠️ [DailyClassSummary] Sin permisos para tomar asistencia:", classItem.name)
-    return
-  }
-
-  console.log("📋 [DailyClassSummary] Class selected:", classItem.id)
-  emit("select-class", classItem.id)
-}
-
-// Crear clase emergente
-const handleCreateEmergency = () => {
-  console.log("🚨 [DailyClassSummary] Creating emergency class")
-  emit("create-emergency")
-}
-
-// Revisar clases en lote
-const handleBatchReview = () => {
-  console.log("📋 [DailyClassSummary] Initiating batch review")
-  emit("batch-review")
-}
-</script>
-
 <template>
   <div class="space-y-4">
     <!-- 📊 ESTADÍSTICAS DEL DÍA -->
@@ -554,6 +375,185 @@ const handleBatchReview = () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+// Tipos
+interface ClassItem {
+  id: string
+  name: string
+  time?: string
+  students?: number
+  studentIds?: string[]
+  hasAttendance: boolean
+  classroom?: string
+  teacher?: string
+  schedule?: {
+    slots: Array<{
+      id: string
+      startTime: string
+      endTime: string
+    }>
+  }
+  // Propiedades de clases compartidas
+  isSharedClass?: boolean
+  isPrimaryTeacher?: boolean
+  isCollaboratingTeacher?: boolean
+  participationType?: string
+  userRole?: string
+  canTakeAttendance?: boolean
+}
+
+// Props
+const props = defineProps<{
+  classes: ClassItem[]
+  selectedDate: string
+  isLoading?: boolean
+}>();
+
+// Emits
+const emit = defineEmits<{
+  'select-class': [classId: string]
+  'create-emergency': []
+  'batch-review': []
+}>();
+
+/**
+ * 🎯 COMPUTED PROPERTIES
+ */
+
+// Fecha formateada
+const formattedDate = computed(() => {
+  if (!props.selectedDate) return '';
+
+  const date = parseISO(props.selectedDate);
+  return format(date, 'd \'de\' MMMM', { locale: es });
+});
+
+// Estadísticas del día
+const dayStats = computed(() => {
+  console.log('📋 [DailyClassSummary] Props received:', {
+    classesCount: props.classes.length,
+    selectedDate: props.selectedDate,
+    classes: props.classes,
+  });
+  
+  const total = props.classes.length;
+  const completed = props.classes.filter((c) => c.hasAttendance).length;
+  const pending = total - completed;
+  const totalStudents = props.classes.reduce(
+    (sum, cls) => sum + (cls.studentIds?.length || cls.students || 0),
+    0,
+  );
+
+  return {
+    total,
+    completed,
+    pending,
+    totalStudents,
+    completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+  };
+});
+
+// Clases agrupadas por estado
+const groupedClasses = computed(() => {
+  const completed = props.classes.filter((c) => c.hasAttendance);
+  const pending = props.classes.filter((c) => !c.hasAttendance);
+
+  return { completed, pending };
+});
+
+/**
+ * 🎯 MÉTODOS
+ */
+
+// Formatear horario de clase
+const formatClassTime = (classItem: ClassItem): string => {
+  if (classItem.schedule?.slots?.length) {
+    const slots = classItem.schedule.slots;
+    if (slots.length === 1) {
+      return `${formatTime(slots[0].startTime)} - ${formatTime(slots[0].endTime)}`;
+    } else {
+      return `${slots.length} horarios`;
+    }
+  }
+  return classItem.time || 'Horario no definido';
+};
+
+// Formatear hora individual
+const formatTime = (timeStr: string): string => {
+  if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+
+  const [hours, minutes] = timeStr.split(':');
+  const date = new Date();
+  date.setHours(parseInt(hours, 10));
+  date.setMinutes(parseInt(minutes, 10));
+
+  return format(date, 'h:mm a', { locale: es });
+};
+
+// Obtener icono de estado para una clase
+const getStatusIcon = (classItem: ClassItem) => {
+  if (classItem.hasAttendance) {
+    return {
+      icon: 'check-circle',
+      color: 'text-green-500',
+      bgColor: 'bg-green-100 dark:bg-green-900/20',
+    };
+  } else {
+    return {
+      icon: 'clock',
+      color: 'text-yellow-500',
+      bgColor: 'bg-yellow-100 dark:bg-yellow-900/20',
+    };
+  }
+};
+
+// Obtener información de rol para clases compartidas
+const getRoleInfo = (classItem: ClassItem) => {
+  if (!classItem.isSharedClass) return null;
+
+  if (classItem.isPrimaryTeacher) {
+    return {
+      label: 'Principal',
+      color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400',
+    };
+  } else if (classItem.isCollaboratingTeacher) {
+    return {
+      label: classItem.userRole === 'assistant' ? 'Asistente' : 'Colaborador',
+      color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
+    };
+  }
+
+  return null;
+};
+
+// Manejar selección de clase
+const handleClassSelect = (classItem: ClassItem) => {
+  if (!classItem.canTakeAttendance) {
+    console.warn('⚠️ [DailyClassSummary] Sin permisos para tomar asistencia:', classItem.name);
+    return;
+  }
+
+  console.log('📋 [DailyClassSummary] Class selected:', classItem.id);
+  emit('select-class', classItem.id);
+};
+
+// Crear clase emergente
+const handleCreateEmergency = () => {
+  console.log('🚨 [DailyClassSummary] Creating emergency class');
+  emit('create-emergency');
+};
+
+// Revisar clases en lote
+const handleBatchReview = () => {
+  console.log('📋 [DailyClassSummary] Initiating batch review');
+  emit('batch-review');
+};
+</script>
 
 <style scoped>
 /* Efectos de hover mejorados */

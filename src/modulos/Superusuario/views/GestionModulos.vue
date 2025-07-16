@@ -286,119 +286,119 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useSuperusuario} from "../composables/useSuperusuario"
+import { ref, computed, onMounted } from 'vue';
+import { useSuperusuario } from '../composables/useSuperusuario';
 
 // Composable
-const {systemModules, loading, error, loadSystemModules, toggleModule} = useSuperusuario()
+const { systemModules, loading, error, loadSystemModules, toggleModule } = useSuperusuario();
 
 // State
-const statusFilter = ref("")
-const categoryFilter = ref("")
-const showCreateModuleModal = ref(false)
-const operationInProgress = ref(false)
-const creatingModule = ref(false)
+const statusFilter = ref('');
+const categoryFilter = ref('');
+const showCreateModuleModal = ref(false);
+const operationInProgress = ref(false);
+const creatingModule = ref(false);
 
 const newModule = ref({
-  name: "",
-  description: "",
-  category: "",
-  icon: "📦",
-})
+  name: '',
+  description: '',
+  category: '',
+  icon: '📦',
+});
 
 // Computed
 const filteredModules = computed(() => {
-  if (!systemModules.value) return []
+  if (!systemModules.value) return [];
 
   return systemModules.value.filter((module) => {
     const matchesStatus =
       !statusFilter.value ||
-      (statusFilter.value === "active" && module.enabled) ||
-      (statusFilter.value === "inactive" && !module.enabled)
+      (statusFilter.value === 'active' && module.enabled) ||
+      (statusFilter.value === 'inactive' && !module.enabled);
 
-    const matchesCategory = !categoryFilter.value || module.category === categoryFilter.value
+    const matchesCategory = !categoryFilter.value || module.category === categoryFilter.value;
 
-    return matchesStatus && matchesCategory
-  })
-})
+    return matchesStatus && matchesCategory;
+  });
+});
 
-const activeModules = computed(() => systemModules.value?.filter((m) => m.enabled).length || 0)
+const activeModules = computed(() => systemModules.value?.filter((m) => m.enabled).length || 0);
 
-const inactiveModules = computed(() => systemModules.value?.filter((m) => !m.enabled).length || 0)
+const inactiveModules = computed(() => systemModules.value?.filter((m) => !m.enabled).length || 0);
 
-const totalModules = computed(() => systemModules.value?.length || 0)
+const totalModules = computed(() => systemModules.value?.length || 0);
 
 // Methods
 const getCategoryLabel = (category: string) => {
   const labels = {
-    core: "Core",
-    admin: "Administrativo",
-    academic: "Académico",
-    tools: "Herramientas",
-  }
-  return labels[category as keyof typeof labels] || category
-}
+    core: 'Core',
+    admin: 'Administrativo',
+    academic: 'Académico',
+    tools: 'Herramientas',
+  };
+  return labels[category as keyof typeof labels] || category;
+};
 
 const formatDate = (date: Date | string) => {
-  const d = typeof date === "string" ? new Date(date) : date
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d)
-}
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d);
+};
 
 const refreshModules = async () => {
-  await loadSystemModules()
-}
+  await loadSystemModules();
+};
 
 const configureModule = (module: any) => {
-  console.log("Configurando módulo:", module.id)
+  console.log('Configurando módulo:', module.id);
   // TODO: Implementar configuración específica del módulo
-  alert(`Configurando módulo: ${module.name}`)
-}
+  alert(`Configurando módulo: ${module.name}`);
+};
 
 const viewModuleDetails = (module: any) => {
-  console.log("Viendo detalles del módulo:", module.id)
+  console.log('Viendo detalles del módulo:', module.id);
   // TODO: Implementar modal de detalles
   alert(
-    `Detalles del módulo: ${module.name}\n\nEstado: ${module.enabled ? "Activo" : "Inactivo"}\nCategoría: ${getCategoryLabel(module.category)}\nRutas: ${module.routes?.join(", ") || "N/A"}`
-  )
-}
+    `Detalles del módulo: ${module.name}\n\nEstado: ${module.enabled ? 'Activo' : 'Inactivo'}\nCategoría: ${getCategoryLabel(module.category)}\nRutas: ${module.routes?.join(', ') || 'N/A'}`,
+  );
+};
 
 const createNewModule = async () => {
   if (!newModule.value.name || !newModule.value.category) {
-    alert("Nombre y categoría son requeridos")
-    return
+    alert('Nombre y categoría son requeridos');
+    return;
   }
 
-  creatingModule.value = true
+  creatingModule.value = true;
   try {
     // TODO: Implementar creación de módulo
-    console.log("Creando módulo:", newModule.value)
+    console.log('Creando módulo:', newModule.value);
 
     // Simular creación
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    showCreateModuleModal.value = false
-    newModule.value = {name: "", description: "", category: "", icon: "📦"}
+    showCreateModuleModal.value = false;
+    newModule.value = { name: '', description: '', category: '', icon: '📦' };
 
-    alert("Módulo creado exitosamente")
-    await refreshModules()
+    alert('Módulo creado exitosamente');
+    await refreshModules();
   } catch (err) {
-    console.error("Error creating module:", err)
-    alert("Error al crear módulo: " + (err as Error).message)
+    console.error('Error creating module:', err);
+    alert('Error al crear módulo: ' + (err as Error).message);
   } finally {
-    creatingModule.value = false
+    creatingModule.value = false;
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadSystemModules()
-})
+  loadSystemModules();
+});
 </script>
 
 <style scoped>

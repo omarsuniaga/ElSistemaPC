@@ -1,5 +1,5 @@
 // src/utils/safeAccess.ts
-import {warn, error} from "./debug"
+import { warn, error } from './debug';
 
 /**
  * Utilidades para acceso seguro a propiedades de objetos
@@ -14,34 +14,34 @@ import {warn, error} from "./debug"
 export function safeGet<T = any>(
   obj: any,
   path: string | number,
-  defaultValue: T = undefined as T
+  defaultValue: T = undefined as T,
 ): T {
   try {
     // Si el objeto es null o undefined, devolver valor por defecto
     if (obj == null) {
-      return defaultValue
+      return defaultValue;
     }
 
     // Si es un índice numérico, acceso directo para arrays/objetos
-    if (typeof path === "number") {
-      return obj[path] !== undefined ? obj[path] : defaultValue
+    if (typeof path === 'number') {
+      return obj[path] !== undefined ? obj[path] : defaultValue;
     }
 
     // Si es un path simple (sin puntos), acceso directo
-    if (!path.includes(".")) {
-      return obj[path] !== undefined ? obj[path] : defaultValue
+    if (!path.includes('.')) {
+      return obj[path] !== undefined ? obj[path] : defaultValue;
     }
 
     // Para paths anidados
     return (
-      path.split(".").reduce((current, key) => {
-        return current?.[key]
+      path.split('.').reduce((current, key) => {
+        return current?.[key];
       }, obj) ?? defaultValue
-    )
+    );
   } catch (err) {
     // Log error for debugging
-    warn("SafeAccess: Error accessing path", {path, error: err})
-    return defaultValue
+    warn('SafeAccess: Error accessing path', { path, error: err });
+    return defaultValue;
   }
 }
 
@@ -50,7 +50,7 @@ export function safeGet<T = any>(
  * @param arr - Array a verificar
  */
 export function isValidArray(arr: any): arr is any[] {
-  return Array.isArray(arr) && arr.length > 0
+  return Array.isArray(arr) && arr.length > 0;
 }
 
 /**
@@ -58,7 +58,7 @@ export function isValidArray(arr: any): arr is any[] {
  * @param obj - Objeto a verificar
  */
 export function isValidObject(obj: any): boolean {
-  return obj !== null && obj !== undefined && typeof obj === "object" && !Array.isArray(obj)
+  return obj !== null && obj !== undefined && typeof obj === 'object' && !Array.isArray(obj);
 }
 
 /**
@@ -67,7 +67,7 @@ export function isValidObject(obj: any): boolean {
  * @param defaultLength - Longitud por defecto
  */
 export function safeArrayLength(arr: any, defaultLength: number = 0): number {
-  return Array.isArray(arr) ? arr.length : defaultLength
+  return Array.isArray(arr) ? arr.length : defaultLength;
 }
 
 /**
@@ -78,10 +78,10 @@ export function safeArrayLength(arr: any, defaultLength: number = 0): number {
  */
 export function safeExecute<T>(fn: () => T, defaultValue: T, errorMessage?: string): T {
   try {
-    return fn()
+    return fn();
   } catch (err) {
-    error(errorMessage || "SafeAccess: Error executing function", err)
-    return defaultValue
+    error(errorMessage || 'SafeAccess: Error executing function', err);
+    return defaultValue;
   }
 }
 
@@ -94,18 +94,18 @@ export function safeExecute<T>(fn: () => T, defaultValue: T, errorMessage?: stri
 export function safeFilter<T>(
   arr: any,
   filterFn: (item: T) => boolean,
-  defaultArray: T[] = []
+  defaultArray: T[] = [],
 ): T[] {
   if (!Array.isArray(arr)) {
-    warn("SafeAccess: Attempted to filter non-array", {arr})
-    return defaultArray
+    warn('SafeAccess: Attempted to filter non-array', { arr });
+    return defaultArray;
   }
 
   try {
-    return arr.filter(filterFn)
+    return arr.filter(filterFn);
   } catch (err) {
-    error("SafeAccess: Error filtering array", err)
-    return defaultArray
+    error('SafeAccess: Error filtering array', err);
+    return defaultArray;
   }
 }
 
@@ -118,18 +118,18 @@ export function safeFilter<T>(
 export function safeMap<T, R>(
   arr: any,
   mapFn: (item: T, index: number) => R,
-  defaultArray: R[] = []
+  defaultArray: R[] = [],
 ): R[] {
   if (!Array.isArray(arr)) {
-    warn("SafeAccess: Attempted to map non-array", {arr})
-    return defaultArray
+    warn('SafeAccess: Attempted to map non-array', { arr });
+    return defaultArray;
   }
 
   try {
-    return arr.map(mapFn)
+    return arr.map(mapFn);
   } catch (err) {
-    error("SafeAccess: Error mapping array", err)
-    return defaultArray
+    error('SafeAccess: Error mapping array', err);
+    return defaultArray;
   }
 }
 
@@ -142,18 +142,18 @@ export function safeMap<T, R>(
 export function safeFind<T>(
   arr: any,
   findFn: (item: T) => boolean,
-  defaultValue: T | null = null
+  defaultValue: T | null = null,
 ): T | null {
   if (!Array.isArray(arr)) {
-    warn("SafeAccess: Attempted to find in non-array", {arr})
-    return defaultValue
+    warn('SafeAccess: Attempted to find in non-array', { arr });
+    return defaultValue;
   }
 
   try {
-    return arr.find(findFn) ?? defaultValue
+    return arr.find(findFn) ?? defaultValue;
   } catch (err) {
-    error("SafeAccess: Error finding in array", err)
-    return defaultValue
+    error('SafeAccess: Error finding in array', err);
+    return defaultValue;
   }
 }
 
@@ -165,11 +165,11 @@ export function safeFind<T>(
  */
 export function safeStoreAccess<T>(store: any, property: string, defaultValue: T): T {
   if (!store || !isValidObject(store)) {
-    warn("SafeAccess: Invalid store provided", {store})
-    return defaultValue
+    warn('SafeAccess: Invalid store provided', { store });
+    return defaultValue;
   }
 
-  return safeGet(store, property, defaultValue)
+  return safeGet(store, property, defaultValue);
 }
 
 /**
@@ -179,10 +179,10 @@ export function safeStoreAccess<T>(store: any, property: string, defaultValue: T
  */
 export function safeMath(operation: () => number, defaultValue: number = 0): number {
   try {
-    const result = operation()
-    return isNaN(result) || !isFinite(result) ? defaultValue : result
+    const result = operation();
+    return isNaN(result) || !isFinite(result) ? defaultValue : result;
   } catch (err) {
-    error("SafeAccess: Error in mathematical operation", err)
-    return defaultValue
+    error('SafeAccess: Error in mathematical operation', err);
+    return defaultValue;
   }
 }

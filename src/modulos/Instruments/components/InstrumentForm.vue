@@ -1,120 +1,4 @@
 // Instruments/components/InstrumentForm.vue
-<script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import type {Instrument} from "../types/instrumentsTypes"
-
-// Props y Emits
-const props = defineProps<{
-  instrument?: Instrument
-  isCreating?: boolean
-}>()
-
-// Estados locales
-const instrumentForm = ref<Partial<Instrument>>({
-  nombre: "",
-  familia: "",
-  tamaño: "",
-  marca: "",
-  modelo: "",
-  serial: "",
-  fechaIngreso: new Date().toISOString().split("T")[0],
-  estado: "bueno",
-  detallesEstado: "",
-  ubicacion: "",
-  accesorios: [],
-  estuche: {
-    tiene: false,
-    estado: "bueno",
-  },
-  observaciones: "",
-  activo: true,
-})
-
-// Accesorio temporal
-const newAccessory = ref({
-  nombre: "",
-  estado: "bueno" as const,
-  observacion: "",
-})
-
-// Controles de acordeón
-const accordionOpen = ref({
-  info: true,
-  details: false,
-  status: false,
-  accessories: false,
-})
-
-// Si se está editando un instrumento, cargar los datos
-watch(
-  () => props.instrument,
-  (newInstrument) => {
-    if (newInstrument) {
-      instrumentForm.value = {...newInstrument}
-
-      // Asegurar que la estructura es correcta
-      if (!instrumentForm.value.accesorios) instrumentForm.value.accesorios = []
-      if (!instrumentForm.value.estuche) {
-        instrumentForm.value.estuche = {
-          tiene: false,
-          estado: "bueno",
-        }
-      }
-    }
-  },
-  {immediate: true}
-)
-
-// Métodos
-const guardar = () => {
-  // Implementar la lógica para guardar el instrumento
-}
-
-const cancelar = () => {
-  // Implementar la lógica para cancelar la operación
-}
-
-const addAccessory = () => {
-  if (!newAccessory.value.nombre) return
-
-  if (!instrumentForm.value.accesorios) {
-    instrumentForm.value.accesorios = []
-  }
-
-  instrumentForm.value.accesorios.push({
-    nombre: newAccessory.value.nombre,
-    estado: newAccessory.value.estado,
-    observacion: newAccessory.value.observacion || "",
-  })
-
-  // Resetear formulario de accesorio
-  newAccessory.value.nombre = ""
-  newAccessory.value.estado = "bueno"
-  newAccessory.value.observacion = ""
-}
-
-const removeAccessory = (index: number) => {
-  if (instrumentForm.value.accesorios) {
-    instrumentForm.value.accesorios.splice(index, 1)
-  }
-}
-
-// Obtener clase CSS según el estado
-const getStatusClass = (status: string | undefined): string => {
-  const statusMap: Record<string, string> = {
-    excelente: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200",
-    bueno: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200",
-    regular: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200",
-    funcional: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200",
-    necesitaReparacion: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200",
-    malo: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200",
-    faltante: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200",
-  }
-
-  return statusMap[status || ""] || "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-}
-</script>
-
 <template>
   <form class="space-y-4" @submit.prevent="guardar">
     <!-- Acordeón: Información Básica -->
@@ -510,3 +394,119 @@ const getStatusClass = (status: string | undefined): string => {
     </div>
   </form>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import type { Instrument } from '../types/instrumentsTypes';
+
+// Props y Emits
+const props = defineProps<{
+  instrument?: Instrument
+  isCreating?: boolean
+}>();
+
+// Estados locales
+const instrumentForm = ref<Partial<Instrument>>({
+  nombre: '',
+  familia: '',
+  tamaño: '',
+  marca: '',
+  modelo: '',
+  serial: '',
+  fechaIngreso: new Date().toISOString().split('T')[0],
+  estado: 'bueno',
+  detallesEstado: '',
+  ubicacion: '',
+  accesorios: [],
+  estuche: {
+    tiene: false,
+    estado: 'bueno',
+  },
+  observaciones: '',
+  activo: true,
+});
+
+// Accesorio temporal
+const newAccessory = ref({
+  nombre: '',
+  estado: 'bueno' as const,
+  observacion: '',
+});
+
+// Controles de acordeón
+const accordionOpen = ref({
+  info: true,
+  details: false,
+  status: false,
+  accessories: false,
+});
+
+// Si se está editando un instrumento, cargar los datos
+watch(
+  () => props.instrument,
+  (newInstrument) => {
+    if (newInstrument) {
+      instrumentForm.value = { ...newInstrument };
+
+      // Asegurar que la estructura es correcta
+      if (!instrumentForm.value.accesorios) instrumentForm.value.accesorios = [];
+      if (!instrumentForm.value.estuche) {
+        instrumentForm.value.estuche = {
+          tiene: false,
+          estado: 'bueno',
+        };
+      }
+    }
+  },
+  { immediate: true },
+);
+
+// Métodos
+const guardar = () => {
+  // Implementar la lógica para guardar el instrumento
+};
+
+const cancelar = () => {
+  // Implementar la lógica para cancelar la operación
+};
+
+const addAccessory = () => {
+  if (!newAccessory.value.nombre) return;
+
+  if (!instrumentForm.value.accesorios) {
+    instrumentForm.value.accesorios = [];
+  }
+
+  instrumentForm.value.accesorios.push({
+    nombre: newAccessory.value.nombre,
+    estado: newAccessory.value.estado,
+    observacion: newAccessory.value.observacion || '',
+  });
+
+  // Resetear formulario de accesorio
+  newAccessory.value.nombre = '';
+  newAccessory.value.estado = 'bueno';
+  newAccessory.value.observacion = '';
+};
+
+const removeAccessory = (index: number) => {
+  if (instrumentForm.value.accesorios) {
+    instrumentForm.value.accesorios.splice(index, 1);
+  }
+};
+
+// Obtener clase CSS según el estado
+const getStatusClass = (status: string | undefined): string => {
+  const statusMap: Record<string, string> = {
+    excelente: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200',
+    bueno: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200',
+    regular: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200',
+    funcional: 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200',
+    necesitaReparacion: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200',
+    malo: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200',
+    faltante: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200',
+  };
+
+  return statusMap[status || ''] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
+};
+</script>

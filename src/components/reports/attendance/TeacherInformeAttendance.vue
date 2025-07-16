@@ -374,7 +374,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 import {
   InformationCircleIcon,
   ChevronRightIcon,
@@ -384,37 +384,37 @@ import {
   ClockIcon,
   DocumentTextIcon,
   UserGroupIcon,
-} from "@heroicons/vue/24/outline"
-import {useAuthStore} from "../../../stores/auth"
-import {useRoute} from "vue-router"
-import {useAttendanceStore} from "../../../modulos/Attendance/store/attendance"
-import {useClassesStore} from "../../../modulos/Classes/store/classes"
-import {useStudentsStore} from "../../../modulos/Students/store/students"
-import {useTeachersStore} from "../../../modulos/Teachers/store/teachers"
-import {useObservationsStore} from "../../../stores/observations"
+} from '@heroicons/vue/24/outline';
+import { useAuthStore } from '../../../stores/auth';
+import { useRoute } from 'vue-router';
+import { useAttendanceStore } from '../../../modulos/Attendance/store/attendance';
+import { useClassesStore } from '../../../modulos/Classes/store/classes';
+import { useStudentsStore } from '../../../modulos/Students/store/students';
+import { useTeachersStore } from '../../../modulos/Teachers/store/teachers';
+import { useObservationsStore } from '../../../stores/observations';
 
 // Props
 const props = defineProps({
   teacherId: {
     type: String,
-    default: "",
+    default: '',
   },
-})
+});
 
 // Stores
-const authStore = useAuthStore()
-const route = useRoute()
-const attendanceStore = useAttendanceStore()
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-const teachersStore = useTeachersStore()
-const observationsStore = useObservationsStore()
+const authStore = useAuthStore();
+const route = useRoute();
+const attendanceStore = useAttendanceStore();
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+const teachersStore = useTeachersStore();
+const observationsStore = useObservationsStore();
 
 // Estado reactivo
-const loading = ref(false)
-const error = ref<string | null>(null)
-const from = ref("")
-const to = ref("")
+const loading = ref(false);
+const error = ref<string | null>(null);
+const from = ref('');
+const to = ref('');
 
 // Datos del informe
 const classReports = ref<
@@ -428,293 +428,293 @@ const classReports = ref<
     }>
     relevantDates: string[]
   }>
->([])
+>([]);
 
 // Estado de seleccion
-const selectedClassData = ref<any>(null)
-const selectedStudent = ref<any>(null)
+const selectedClassData = ref<any>(null);
+const selectedStudent = ref<any>(null);
 
 // Get teacher ID based on user role
 const currentTeacherId = computed(() => {
-  const userRole = authStore.user?.role
+  const userRole = authStore.user?.role;
 
   // For Director or Admin roles, prioritize the query parameter
-  if (userRole === "Director" || userRole === "Admin") {
+  if (userRole === 'Director' || userRole === 'Admin') {
     if (route.query.teacherId) {
-      return route.query.teacherId as string
+      return route.query.teacherId as string;
     }
   }
 
   // For teachers or as fallback, use the user's own ID
-  return props.teacherId || authStore.user?.uid
-})
+  return props.teacherId || authStore.user?.uid;
+});
 
 // Flag to show admin indicator
 const isViewingOtherTeacher = computed(() => {
   return (
-    (authStore.user?.role === "Director" || authStore.user?.role === "Admin") &&
+    (authStore.user?.role === 'Director' || authStore.user?.role === 'Admin') &&
     route.query.teacherId &&
     route.query.teacherId !== authStore.user?.uid
-  )
-})
+  );
+});
 
 // Get teacher name from the store
 const teacherName = computed(() => {
-  if (!currentTeacherId.value) return authStore.user?.email || "Profesor"
+  if (!currentTeacherId.value) return authStore.user?.email || 'Profesor';
 
-  const teacher = teachersStore.teachers.find((t) => t.id === currentTeacherId.value)
-  return teacher ? teacher.name : authStore.user?.email || "Profesor"
-})
+  const teacher = teachersStore.teachers.find((t) => t.id === currentTeacherId.value);
+  return teacher ? teacher.name : authStore.user?.email || 'Profesor';
+});
 
 // Contadores para estadisticas
 const totalPresentes = computed(() => {
-  let total = 0
+  let total = 0;
   classReports.value.forEach((classData) => {
     classData.students.forEach((student) => {
       Object.entries(student.attendance).forEach(([date, status]) => {
         // Si hay justificación, no contar como presente
-        const justification = getJustificationText(student.id, date)
-        if (status === "P" && (!justification || justification === "Sin justificacion")) total++
-      })
-    })
-  })
-  return total
-})
+        const justification = getJustificationText(student.id, date);
+        if (status === 'P' && (!justification || justification === 'Sin justificacion')) total++;
+      });
+    });
+  });
+  return total;
+});
 
 const totalAusentes = computed(() => {
-  let total = 0
+  let total = 0;
   classReports.value.forEach((classData) => {
     classData.students.forEach((student) => {
       Object.entries(student.attendance).forEach(([date, status]) => {
         // Si hay justificación, no contar como ausente
-        const justification = getJustificationText(student.id, date)
-        if (status === "A" && (!justification || justification === "Sin justificacion")) total++
-      })
-    })
-  })
-  return total
-})
+        const justification = getJustificationText(student.id, date);
+        if (status === 'A' && (!justification || justification === 'Sin justificacion')) total++;
+      });
+    });
+  });
+  return total;
+});
 
 const totalTardes = computed(() => {
-  let total = 0
+  let total = 0;
   classReports.value.forEach((classData) => {
     classData.students.forEach((student) => {
       Object.entries(student.attendance).forEach(([date, status]) => {
         // Si hay justificación, no contar como tarde
-        const justification = getJustificationText(student.id, date)
-        if (status === "T" && (!justification || justification === "Sin justificacion")) total++
-      })
-    })
-  })
-  return total
-})
+        const justification = getJustificationText(student.id, date);
+        if (status === 'T' && (!justification || justification === 'Sin justificacion')) total++;
+      });
+    });
+  });
+  return total;
+});
 
 const totalJustificados = computed(() => {
-  let total = 0
+  let total = 0;
   classReports.value.forEach((classData) => {
     classData.students.forEach((student) => {
       Object.entries(student.attendance).forEach(([date, status]) => {
-        const justification = getJustificationText(student.id, date)
-        if (justification && justification !== "Sin justificacion") total++
-      })
-    })
-  })
-  return total
-})
+        const justification = getJustificationText(student.id, date);
+        if (justification && justification !== 'Sin justificacion') total++;
+      });
+    });
+  });
+  return total;
+});
 
 // Porcentaje promedio de asistencia
 const averageAttendancePercentage = computed(() => {
-  if (classReports.value.length === 0) return 0
-  let totalPercentage = 0
-  let classCount = 0
+  if (classReports.value.length === 0) return 0;
+  let totalPercentage = 0;
+  let classCount = 0;
   classReports.value.forEach((classData) => {
     if (classData.relevantDates && classData.relevantDates.length > 0) {
-      const classPercentage = calculateAttendancePercentage(classData)
-      totalPercentage += classPercentage
-      classCount++
+      const classPercentage = calculateAttendancePercentage(classData);
+      totalPercentage += classPercentage;
+      classCount++;
     }
-  })
-  return classCount > 0 ? Math.round(totalPercentage / classCount) : 0
-})
+  });
+  return classCount > 0 ? Math.round(totalPercentage / classCount) : 0;
+});
 
 // Dia con mejor asistencia
 const bestAttendanceDay = computed(() => {
-  const attendanceByDay = [0, 0, 0, 0, 0, 0, 0]
-  const countByDay = [0, 0, 0, 0, 0, 0, 0]
+  const attendanceByDay = [0, 0, 0, 0, 0, 0, 0];
+  const countByDay = [0, 0, 0, 0, 0, 0, 0];
 
   classReports.value.forEach((classData) => {
     classData.students.forEach((student) => {
       Object.entries(student.attendance).forEach(([date, status]) => {
-        const dayOfWeek = new Date(date).getDay()
-        if (status === "P" || status === "J") {
-          attendanceByDay[dayOfWeek]++
+        const dayOfWeek = new Date(date).getDay();
+        if (status === 'P' || status === 'J') {
+          attendanceByDay[dayOfWeek]++;
         }
-        countByDay[dayOfWeek]++
-      })
-    })
-  })
+        countByDay[dayOfWeek]++;
+      });
+    });
+  });
 
   const percentageByDay = attendanceByDay.map((count, idx) => ({
     day: idx,
     percentage: countByDay[idx] > 0 ? (count / countByDay[idx]) * 100 : 0,
-  }))
+  }));
 
-  percentageByDay.sort((a, b) => b.percentage - a.percentage)
+  percentageByDay.sort((a, b) => b.percentage - a.percentage);
 
   if (percentageByDay.length === 0 || percentageByDay[0].percentage === 0) {
-    return "No hay datos suficientes"
+    return 'No hay datos suficientes';
   }
 
-  const dayNames = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"]
-  return `${dayNames[percentageByDay[0].day]} (${Math.round(percentageByDay[0].percentage)}%)`
-})
+  const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+  return `${dayNames[percentageByDay[0].day]} (${Math.round(percentageByDay[0].percentage)}%)`;
+});
 
 // Metodos
-const setRange = (range: "week" | "month" | "quarter") => {
-  const today = new Date()
-  const start = new Date()
+const setRange = (range: 'week' | 'month' | 'quarter') => {
+  const today = new Date();
+  const start = new Date();
 
   switch (range) {
-    case "week":
-      start.setDate(today.getDate() - 7)
-      break
-    case "month":
-      start.setMonth(today.getMonth() - 1)
-      break
-    case "quarter":
-      start.setMonth(today.getMonth() - 3)
-      break
+  case 'week':
+    start.setDate(today.getDate() - 7);
+    break;
+  case 'month':
+    start.setMonth(today.getMonth() - 1);
+    break;
+  case 'quarter':
+    start.setMonth(today.getMonth() - 3);
+    break;
   }
 
-  from.value = start.toISOString().split("T")[0]
-  to.value = today.toISOString().split("T")[0]
-}
+  from.value = start.toISOString().split('T')[0];
+  to.value = today.toISOString().split('T')[0];
+};
 
 const calculateAttendancePercentage = (classData: any) => {
-  if (!classData.relevantDates || classData.relevantDates.length === 0) return 0
-  let totalPresent = 0
-  let totalPossible = 0
+  if (!classData.relevantDates || classData.relevantDates.length === 0) return 0;
+  let totalPresent = 0;
+  let totalPossible = 0;
   classData.students.forEach((student: any) => {
     classData.relevantDates.forEach((date: string) => {
-      const status = student.attendance[date]
-      const justification = getJustificationText(student.id, date)
-      if (status === "P" && (!justification || justification === "Sin justificacion")) {
-        totalPresent++
+      const status = student.attendance[date];
+      const justification = getJustificationText(student.id, date);
+      if (status === 'P' && (!justification || justification === 'Sin justificacion')) {
+        totalPresent++;
       }
       // Solo contar como posible si no es justificado
-      if (!justification || justification === "Sin justificacion") {
+      if (!justification || justification === 'Sin justificacion') {
         if (status) {
-          totalPossible++
+          totalPossible++;
         }
       }
-    })
-  })
-  return totalPossible > 0 ? Math.round((totalPresent / totalPossible) * 100) : 0
-}
+    });
+  });
+  return totalPossible > 0 ? Math.round((totalPresent / totalPossible) * 100) : 0;
+};
 
 const calculateStudentAttendancePercentage = (student: any, relevantDates: string[]) => {
-  if (!relevantDates || relevantDates.length === 0) return 0
-  let present = 0
-  let total = 0
+  if (!relevantDates || relevantDates.length === 0) return 0;
+  let present = 0;
+  let total = 0;
   relevantDates.forEach((date) => {
-    const status = student.attendance[date]
-    const justification = getJustificationText(student.id, date)
-    if (status === "P" && (!justification || justification === "Sin justificacion")) {
-      present++
+    const status = student.attendance[date];
+    const justification = getJustificationText(student.id, date);
+    if (status === 'P' && (!justification || justification === 'Sin justificacion')) {
+      present++;
     }
-    if (!justification || justification === "Sin justificacion") {
+    if (!justification || justification === 'Sin justificacion') {
       if (status) {
-        total++
+        total++;
       }
     }
-  })
-  return total > 0 ? Math.round((present / total) * 100) : 0
-}
+  });
+  return total > 0 ? Math.round((present / total) * 100) : 0;
+};
 
 const getStatusSymbol = (status: string) => {
   switch (status) {
-    case "P":
-      return "✓"
-    case "A":
-      return "✗"
-    case "T":
-      return "⏰"
-    case "J":
-      return "📄"
-    default:
-      return "-"
+  case 'P':
+    return '✓';
+  case 'A':
+    return '✗';
+  case 'T':
+    return '⏰';
+  case 'J':
+    return '📄';
+  default:
+    return '-';
   }
-}
+};
 
 const getStatusClass = (status: string) => {
   switch (status) {
-    case "P":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-    case "A":
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-    case "T":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-    case "J":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
+  case 'P':
+    return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+  case 'A':
+    return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+  case 'T':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+  case 'J':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
   }
-}
+};
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
+  return new Date(date).toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
 
 const getJustificationText = (studentId: string, date: string) => {
   // Buscar justificacion en los documentos de asistencia
   const attendanceDoc = attendanceStore.attendanceDocuments.find(
-    (doc) => doc.fecha === date && doc.classId === selectedClassData.value?.classId
-  )
+    (doc) => doc.fecha === date && doc.classId === selectedClassData.value?.classId,
+  );
   if (attendanceDoc?.data?.justificacion) {
-    const justification = attendanceDoc.data.justificacion.find((j: any) => j.id === studentId)
-    return justification?.reason || "Sin justificacion"
+    const justification = attendanceDoc.data.justificacion.find((j: any) => j.id === studentId);
+    return justification?.reason || 'Sin justificacion';
   }
-  return "Sin justificacion"
-}
+  return 'Sin justificacion';
+};
 
 const getObservationText = (classId: string, date: string) => {
   // Buscar observaciones en los documentos de asistencia
   const attendanceDoc = attendanceStore.attendanceDocuments.find(
-    (doc) => doc.fecha === date && doc.classId === classId
-  )
+    (doc) => doc.fecha === date && doc.classId === classId,
+  );
 
-  return attendanceDoc?.data?.observations || "Sin observaciones"
-}
+  return attendanceDoc?.data?.observations || 'Sin observaciones';
+};
 
 const selectClass = (classData: any) => {
-  selectedClassData.value = classData
-  selectedStudent.value = null
-}
+  selectedClassData.value = classData;
+  selectedStudent.value = null;
+};
 
 const selectStudent = (student: any) => {
-  selectedStudent.value = student
-}
+  selectedStudent.value = student;
+};
 
 const fetchReport = async () => {
   try {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
 
     if (!currentTeacherId.value) {
-      throw new Error("No se pudo determinar el ID del profesor")
+      throw new Error('No se pudo determinar el ID del profesor');
     }
 
     if (!from.value || !to.value) {
-      throw new Error("Debe seleccionar un rango de fechas")
+      throw new Error('Debe seleccionar un rango de fechas');
     }
 
-    console.log("🔍 Generando informe para profesor:", currentTeacherId.value)
-    console.log("📅 Rango de fechas:", from.value, "a", to.value)
+    console.log('🔍 Generando informe para profesor:', currentTeacherId.value);
+    console.log('📅 Rango de fechas:', from.value, 'a', to.value);
 
     // Cargar datos necesarios
     await Promise.all([
@@ -724,135 +724,135 @@ const fetchReport = async () => {
       attendanceStore.fetchAttendanceDocumentsByTeacher(
         currentTeacherId.value,
         from.value,
-        to.value
+        to.value,
       ),
-    ])
+    ]);
 
     // Obtener clases del profesor
     const teacherClasses = classesStore.classes.filter((c) => {
       // Clases donde es el profesor titular
-      if (c.teacherId === currentTeacherId.value) return true
+      if (c.teacherId === currentTeacherId.value) return true;
 
       // Clases compartidas donde aparece en teachers[]
       if (c.teachers && Array.isArray(c.teachers)) {
         return c.teachers.some((teacher: any) => {
-          const tId = teacher.teacherId || teacher.id || teacher.uid
-          return tId === currentTeacherId.value
-        })
+          const tId = teacher.teacherId || teacher.id || teacher.uid;
+          return tId === currentTeacherId.value;
+        });
       }
 
-      return false
-    })
+      return false;
+    });
 
-    console.log("📚 Clases encontradas:", teacherClasses.length)
+    console.log('📚 Clases encontradas:', teacherClasses.length);
 
     // Generar reporte por clase
     classReports.value = await Promise.all(
       teacherClasses.map(async (classObj) => {
         // Obtener documentos de asistencia para esta clase
         const classAttendance = attendanceStore.attendanceDocuments.filter(
-          (doc) => doc.classId === classObj.id
-        )
+          (doc) => doc.classId === classObj.id,
+        );
 
         // Obtener estudiantes de esta clase
-        let students: any[] = []
+        let students: any[] = [];
         if (classObj.studentIds && Array.isArray(classObj.studentIds)) {
           students = await Promise.all(
             classObj.studentIds.map(async (studentId) => {
               const studentData = studentsStore.students.find((s) => s.id === studentId) || {
                 id: studentId,
-                nombre: "Estudiante",
-                apellido: "Desconocido",
-              }
+                nombre: 'Estudiante',
+                apellido: 'Desconocido',
+              };
 
               // Preparar registro de asistencia para este estudiante
-              const attendance: Record<string, string> = {}
+              const attendance: Record<string, string> = {};
 
               // Inicializar asistencia como vacia
               if (classAttendance.length > 0) {
                 // Para cada documento de asistencia, verificar si el estudiante estuvo presente/ausente/etc
                 classAttendance.forEach((doc) => {
-                  const date = doc.fecha || ""
-                  if (!date) return
+                  const date = doc.fecha || '';
+                  if (!date) return;
 
                   // Determinar estado
-                  let status = "-"
+                  let status = '-';
                   if (doc.data?.presentes?.includes(studentId)) {
-                    status = "P"
+                    status = 'P';
                   } else if (doc.data?.ausentes?.includes(studentId)) {
-                    status = "A"
+                    status = 'A';
                   } else if (doc.data?.tarde?.includes(studentId)) {
-                    status = "T"
+                    status = 'T';
                   } else if (doc.data?.justificacion?.some((j: any) => j.id === studentId)) {
-                    status = "J"
+                    status = 'J';
                   }
 
-                  attendance[date] = status
-                })
+                  attendance[date] = status;
+                });
               }
 
               return {
                 id: studentId,
                 name: `${studentData.nombre} ${studentData.apellido}`,
                 attendance,
-              }
-            })
-          )
+              };
+            }),
+          );
         }
 
         // Obtener fechas relevantes (todas las fechas en el rango donde hay asistencia)
-        const relevantDates = classAttendance.map((doc) => doc.fecha).filter(Boolean)
+        const relevantDates = classAttendance.map((doc) => doc.fecha).filter(Boolean);
 
         return {
           classId: classObj.id,
           className: classObj.name,
           students,
           relevantDates,
-        }
-      })
-    )
+        };
+      }),
+    );
 
-    console.log("✅ Informe generado exitosamente")
+    console.log('✅ Informe generado exitosamente');
   } catch (err) {
-    console.error("❌ Error generando informe:", err)
-    error.value = err instanceof Error ? err.message : "Error al generar el informe"
+    console.error('❌ Error generando informe:', err);
+    error.value = err instanceof Error ? err.message : 'Error al generar el informe';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Agregar función auxiliar para obtener el objeto de justificación
 function getJustificationTextObj(studentId: string, date: string) {
   const attendanceDoc = attendanceStore.attendanceDocuments.find(
-    (doc) => doc.fecha === date && doc.classId === selectedClassData.value?.classId
-  )
+    (doc) => doc.fecha === date && doc.classId === selectedClassData.value?.classId,
+  );
   if (attendanceDoc?.data?.justificacion) {
-    return attendanceDoc.data.justificacion.find((j: any) => j.id === studentId)
+    return attendanceDoc.data.justificacion.find((j: any) => j.id === studentId);
   }
-  return null
+  return null;
 }
 
 // Inicializacion
 onMounted(async () => {
   try {
-    console.log("🚀 Inicializando componente TeacherInformeAttendance...")
-    console.log("👤 Usuario actual:", currentTeacherId.value)
+    console.log('🚀 Inicializando componente TeacherInformeAttendance...');
+    console.log('👤 Usuario actual:', currentTeacherId.value);
 
     if (!currentTeacherId.value) {
-      console.warn("⚠️ No se pudo determinar el ID del profesor actual")
-      return
+      console.warn('⚠️ No se pudo determinar el ID del profesor actual');
+      return;
     }
 
     // Establecer rango por defecto (ultimo mes)
-    setRange("month")
+    setRange('month');
 
-    console.log("📊 Generando informe inicial...")
-    await fetchReport()
-    console.log("✅ Componente inicializado correctamente")
+    console.log('📊 Generando informe inicial...');
+    await fetchReport();
+    console.log('✅ Componente inicializado correctamente');
   } catch (err) {
-    console.error("❌ Error al inicializar componente:", err)
+    console.error('❌ Error al inicializar componente:', err);
   }
-})
+});
 </script>
 
 <style scoped>

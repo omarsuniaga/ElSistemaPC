@@ -593,7 +593,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 import {
   XMarkIcon,
   CheckIcon,
@@ -602,244 +602,244 @@ import {
   MagnifyingGlassIcon,
   AcademicCapIcon,
   UserIcon,
-} from "@heroicons/vue/24/outline"
-import {useClassesStore} from "../../../stores/classes"
-import {useTeachersStore} from "../../../stores/teachers"
+} from '@heroicons/vue/24/outline';
+import { useClassesStore } from '../../../stores/classes';
+import { useTeachersStore } from '../../../stores/teachers';
 
 const emit = defineEmits<{
   close: []
   assigned: [assignmentData: any]
-}>()
+}>();
 
 // Stores
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore()
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore();
 
 // Form state
-const currentStep = ref(0)
-const isSubmitting = ref(false)
+const currentStep = ref(0);
+const isSubmitting = ref(false);
 
 // Search and filter states
-const classSearch = ref("")
-const teacherSearch = ref("")
+const classSearch = ref('');
+const teacherSearch = ref('');
 const filters = ref({
-  category: "",
-  level: "",
-  status: "",
-})
+  category: '',
+  level: '',
+  status: '',
+});
 const teacherFilters = ref({
-  specialty: "",
-  availability: "",
-})
+  specialty: '',
+  availability: '',
+});
 
 // Selection states
-const selectedClass = ref<any>(null)
-const selectedTeacher = ref<any>(null)
+const selectedClass = ref<any>(null);
+const selectedTeacher = ref<any>(null);
 
 // Assignment configuration
 const assignmentData = ref({
-  startDate: "",
-  type: "permanent",
-  endDate: "",
-  notes: "",
+  startDate: '',
+  type: 'permanent',
+  endDate: '',
+  notes: '',
   notifyTeacher: true,
   notifyStudents: true,
-})
+});
 
 // Static data
 const steps = [
-  {id: "class", title: "Clase"},
-  {id: "teacher", title: "Maestro"},
-  {id: "config", title: "Configuración"},
-]
+  { id: 'class', title: 'Clase' },
+  { id: 'teacher', title: 'Maestro' },
+  { id: 'config', title: 'Configuración' },
+];
 
 // Real data from stores
-const classes = computed(() => classesStore.classes)
-const teachers = computed(() => teachersStore.teachers)
+const classes = computed(() => classesStore.classes);
+const teachers = computed(() => teachersStore.teachers);
 
 // Computed properties
 const minDate = computed(() => {
-  const today = new Date()
-  return today.toISOString().split("T")[0]
-})
+  const today = new Date();
+  return today.toISOString().split('T')[0];
+});
 
 const filteredClasses = computed(() => {
-  let filtered = classes.value
+  let filtered = classes.value;
 
   if (classSearch.value) {
     filtered = filtered.filter((c) =>
-      c.name.toLowerCase().includes(classSearch.value.toLowerCase())
-    )
+      c.name.toLowerCase().includes(classSearch.value.toLowerCase()),
+    );
   }
 
   if (filters.value.category) {
-    filtered = filtered.filter((c) => c.category === filters.value.category)
+    filtered = filtered.filter((c) => c.category === filters.value.category);
   }
 
   if (filters.value.level) {
-    filtered = filtered.filter((c) => c.level === filters.value.level)
+    filtered = filtered.filter((c) => c.level === filters.value.level);
   }
 
-  if (filters.value.status === "without-teacher") {
-    filtered = filtered.filter((c) => !c.currentTeacher)
-  } else if (filters.value.status === "with-teacher") {
-    filtered = filtered.filter((c) => c.currentTeacher)
+  if (filters.value.status === 'without-teacher') {
+    filtered = filtered.filter((c) => !c.currentTeacher);
+  } else if (filters.value.status === 'with-teacher') {
+    filtered = filtered.filter((c) => c.currentTeacher);
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 const filteredTeachers = computed(() => {
-  let filtered = teachers.value
+  let filtered = teachers.value;
 
   if (teacherSearch.value) {
     filtered = filtered.filter(
       (t) =>
         t.name.toLowerCase().includes(teacherSearch.value.toLowerCase()) ||
-        t.email.toLowerCase().includes(teacherSearch.value.toLowerCase())
-    )
+        t.email.toLowerCase().includes(teacherSearch.value.toLowerCase()),
+    );
   }
 
   if (teacherFilters.value.specialty) {
-    filtered = filtered.filter((t) => t.specialties.includes(teacherFilters.value.specialty))
+    filtered = filtered.filter((t) => t.specialties.includes(teacherFilters.value.specialty));
   }
 
   if (teacherFilters.value.availability) {
-    filtered = filtered.filter((t) => t.availability === teacherFilters.value.availability)
+    filtered = filtered.filter((t) => t.availability === teacherFilters.value.availability);
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 const canProceed = computed(() => {
   switch (currentStep.value) {
-    case 0:
-      return selectedClass.value !== null
-    case 1:
-      return selectedTeacher.value !== null
-    case 2:
-      return (
-        assignmentData.value.startDate &&
-        (assignmentData.value.type !== "temporary" || assignmentData.value.endDate)
-      )
-    default:
-      return false
+  case 0:
+    return selectedClass.value !== null;
+  case 1:
+    return selectedTeacher.value !== null;
+  case 2:
+    return (
+      assignmentData.value.startDate &&
+        (assignmentData.value.type !== 'temporary' || assignmentData.value.endDate)
+    );
+  default:
+    return false;
   }
-})
+});
 
 // Methods
 const getStepClasses = (index: number) => {
   if (currentStep.value > index) {
-    return "bg-green-500 text-white"
+    return 'bg-green-500 text-white';
   } else if (currentStep.value === index) {
-    return "bg-blue-500 text-white"
+    return 'bg-blue-500 text-white';
   } else {
-    return "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400"
+    return 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400';
   }
-}
+};
 
 const nextStep = () => {
   if (currentStep.value < steps.length - 1) {
-    currentStep.value++
+    currentStep.value++;
   }
-}
+};
 
 const previousStep = () => {
   if (currentStep.value > 0) {
-    currentStep.value--
+    currentStep.value--;
   }
-}
+};
 
 const selectClass = (classItem: any) => {
-  selectedClass.value = classItem
-}
+  selectedClass.value = classItem;
+};
 
 const selectTeacher = (teacher: any) => {
-  selectedTeacher.value = teacher
-}
+  selectedTeacher.value = teacher;
+};
 
 const handleSubmit = async () => {
-  isSubmitting.value = true
+  isSubmitting.value = true;
 
   try {
     // TODO: Implementar la lógica real de asignación de maestro a clase
     // Esto probablemente implicaría una llamada a un servicio o store de clases
-    console.log("Asignando maestro a clase:", {
+    console.log('Asignando maestro a clase:', {
       class: selectedClass.value,
       teacher: selectedTeacher.value,
       assignment: assignmentData.value,
-    })
+    });
 
     // Emit the assignment event
-    emit("assigned", {
+    emit('assigned', {
       class: selectedClass.value,
       teacher: selectedTeacher.value,
       assignment: assignmentData.value,
-    })
+    });
   } catch (error) {
-    console.error("Error assigning teacher:", error)
+    console.error('Error assigning teacher:', error);
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 
 const handleBackdropClick = (event: MouseEvent) => {
   if (event.target === event.currentTarget) {
-    emit("close")
+    emit('close');
   }
-}
+};
 
 // Helper methods
 const getCategoryLabel = (category: string) => {
   const labels: Record<string, string> = {
-    piano: "Piano",
-    violin: "Violín",
-    guitar: "Guitarra",
-    voice: "Canto",
-    drums: "Batería",
-    theory: "Teoría Musical",
-  }
-  return labels[category] || category
-}
+    piano: 'Piano',
+    violin: 'Violín',
+    guitar: 'Guitarra',
+    voice: 'Canto',
+    drums: 'Batería',
+    theory: 'Teoría Musical',
+  };
+  return labels[category] || category;
+};
 
 const getLevelLabel = (level: string) => {
   const labels: Record<string, string> = {
-    beginner: "Principiante",
-    intermediate: "Intermedio",
-    advanced: "Avanzado",
-    professional: "Profesional",
-  }
-  return labels[level] || level
-}
+    beginner: 'Principiante',
+    intermediate: 'Intermedio',
+    advanced: 'Avanzado',
+    professional: 'Profesional',
+  };
+  return labels[level] || level;
+};
 
 const getAvailabilityClasses = (availability: string) => {
   const classes = {
-    available: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    partial: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
-    unavailable: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-  }
-  return classes[availability as keyof typeof classes] || classes.unavailable
-}
+    available: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    partial: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+    unavailable: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  };
+  return classes[availability as keyof typeof classes] || classes.unavailable;
+};
 
 const getAvailabilityLabel = (availability: string) => {
   const labels = {
-    available: "Disponible",
-    partial: "Parcial",
-    unavailable: "No disponible",
-  }
-  return labels[availability as keyof typeof labels] || "Desconocido"
-}
+    available: 'Disponible',
+    partial: 'Parcial',
+    unavailable: 'No disponible',
+  };
+  return labels[availability as keyof typeof labels] || 'Desconocido';
+};
 
 // Lifecycle
 onMounted(async () => {
   // Load data from stores
-  await Promise.all([classesStore.fetchClasses(), teachersStore.loadTeachers()])
+  await Promise.all([classesStore.fetchClasses(), teachersStore.loadTeachers()]);
 
   // Set default start date to tomorrow
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  assignmentData.value.startDate = tomorrow.toISOString().split("T")[0]
-})
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  assignmentData.value.startDate = tomorrow.toISOString().split('T')[0];
+});
 </script>
 
 <style scoped>

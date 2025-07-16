@@ -1,191 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, reactive} from "vue"
-import {useStudentsStore} from "../store/students"
-import {useAttendanceStore} from "../../../stores/attendance"
-import {useAnalyticsStore} from "../../Analytics/store/analytics"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import {
-  ExclamationTriangleIcon,
-  CalendarIcon,
-  MusicalNoteIcon,
-  BookOpenIcon,
-  ClockIcon,
-} from "@heroicons/vue/24/outline"
-
-// Define la interfaz del estudiante
-interface Student {
-  id: string
-  name: string
-  performance: number
-  instrument: string
-  attendance: number
-  lastAccess: string
-  riskFactors: string[]
-  recommendedActions: string[]
-  hasInstrument?: boolean
-  musicalLanguage?: number
-  basicConcepts?: number
-  weeklyActivities?: number
-  instrumentMastery?: number
-  repertoireMastery?: number
-}
-
-// Stores
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
-const analyticsStore = useAnalyticsStore()
-
-// Estado de la UI
-const isLoading = ref(true)
-const atRiskStudents = computed<Student[]>(() => {
-  const students = analyticsStore.studentMetrics.atRiskStudents || []
-  return students.map((student: any) => ({
-    id: student.id,
-    name: student.name,
-    performance: student.performance,
-    instrument: student.instrument,
-    attendance: (student.attendance || 0) as number,
-    lastAccess: student.lastAccess || ("" as string),
-    riskFactors: student.riskFactors || [],
-    recommendedActions: student.recommendedActions || [],
-    hasInstrument: student.hasInstrument !== undefined ? student.hasInstrument : false,
-    musicalLanguage: student.musicalLanguage || 0,
-    basicConcepts: student.basicConcepts || 0,
-    weeklyActivities: student.weeklyActivities || 0,
-    instrumentMastery: student.instrumentMastery || 0,
-    repertoireMastery: student.repertoireMastery || 0,
-  }))
-})
-
-// Factores de riesgo y sus pesos
-const riskFactors = reactive({
-  attendance: {
-    weight: 30,
-    threshold: 75,
-    label: "Asistencia",
-  },
-  musicalLanguage: {
-    weight: 20,
-    threshold: 70,
-    label: "Lenguaje Musical",
-  },
-  basicConcepts: {
-    weight: 15,
-    threshold: 70,
-    label: "Conceptos Básicos",
-  },
-  weeklyActivities: {
-    weight: 10,
-    threshold: 2,
-    label: "Actividades Semanales",
-  },
-  instrumentMastery: {
-    weight: 15,
-    threshold: 65,
-    label: "Dominio del Instrumento",
-  },
-  repertoireMastery: {
-    weight: 10,
-    threshold: 60,
-    label: "Dominio del Repertorio",
-  },
-})
-
-// Método para calcular el nivel de riesgo
-const calculateRiskLevel = (performance: number, attendance: number) => {
-  if (performance < 60 || attendance < 70) return "Alto"
-  if (performance < 75 || attendance < 85) return "Medio"
-  return "Bajo"
-}
-
-// Cargar los datos de análisis
-onMounted(async () => {
-  try {
-    await analyticsStore.fetchAnalytics()
-    isLoading.value = false
-  } catch (error) {
-    console.error("Error al cargar los datos:", error)
-  }
-})
-
-// Identificar factores de riesgo específicos para un estudiante
-const identifyRiskFactors = (student) => {
-  const factors = []
-
-  // Verificar asistencia
-  if (student.attendance < riskFactors.attendance.threshold) {
-    factors.push({
-      factor: "Baja asistencia",
-      value: `${student.attendance}%`,
-      threshold: `${riskFactors.attendance.threshold}%`,
-      icon: CalendarIcon,
-      suggestion: "Programar reunión para discutir dificultades de asistencia",
-    })
-  }
-
-  // Verificar lenguaje musical
-  if (student.musicalLanguage < riskFactors.musicalLanguage.threshold) {
-    factors.push({
-      factor: "Bajo nivel en lenguaje musical",
-      value: `${student.musicalLanguage}%`,
-      threshold: `${riskFactors.musicalLanguage.threshold}%`,
-      icon: MusicalNoteIcon,
-      suggestion: "Ofrecer material complementario y clases de refuerzo",
-    })
-  }
-
-  // Verificar conceptos básicos
-  if (student.basicConcepts < riskFactors.basicConcepts.threshold) {
-    factors.push({
-      factor: "Debilidad en conceptos básicos",
-      value: `${student.basicConcepts}%`,
-      threshold: `${riskFactors.basicConcepts.threshold}%`,
-      icon: BookOpenIcon,
-      suggestion: "Asignar tutor para nivelación en conceptos fundamentales",
-    })
-  }
-
-  // Verificar factores específicos para estudiantes con instrumento
-  if (student.hasInstrument) {
-    // Verificar actividades semanales
-    if (student.weeklyActivities < riskFactors.weeklyActivities.threshold) {
-      factors.push({
-        factor: "Pocas actividades semanales",
-        value: `${student.weeklyActivities}`,
-        threshold: `${riskFactors.weeklyActivities.threshold}`,
-        icon: ClockIcon,
-        suggestion: "Incrementar actividades prácticas y seguimiento de horario",
-      })
-    }
-
-    // Verificar dominio del instrumento
-    if (student.instrumentMastery < riskFactors.instrumentMastery.threshold) {
-      factors.push({
-        factor: "Bajo dominio del instrumento",
-        value: `${student.instrumentMastery}%`,
-        threshold: `${riskFactors.instrumentMastery.threshold}%`,
-        icon: MusicalNoteIcon,
-        suggestion: "Evaluar dificultades técnicas específicas y adaptar ejercicios",
-      })
-    }
-
-    // Verificar dominio del repertorio
-    if (student.repertoireMastery < riskFactors.repertoireMastery.threshold) {
-      factors.push({
-        factor: "Bajo dominio del repertorio",
-        value: `${student.repertoireMastery}%`,
-        threshold: `${riskFactors.repertoireMastery.threshold}%`,
-        icon: BookOpenIcon,
-        suggestion: "Ajustar repertorio al nivel actual y establecer plan progresivo",
-      })
-    }
-  }
-
-  return factors
-}
-</script>
-
 <template>
   <div class="p-6">
     <div class="mb-6">
@@ -264,6 +76,194 @@ const identifyRiskFactors = (student) => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, reactive } from 'vue';
+import { useStudentsStore } from '../store/students';
+import { useAttendanceStore } from '../../../stores/attendance';
+import { useAnalyticsStore } from '../../Analytics/store/analytics';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import {
+  ExclamationTriangleIcon,
+  CalendarIcon,
+  MusicalNoteIcon,
+  BookOpenIcon,
+  ClockIcon,
+} from '@heroicons/vue/24/outline';
+
+// Define la interfaz del estudiante
+interface Student {
+  id: string
+  name: string
+  performance: number
+  instrument: string
+  attendance: number
+  lastAccess: string
+  riskFactors: string[]
+  recommendedActions: string[]
+  hasInstrument?: boolean
+  musicalLanguage?: number
+  basicConcepts?: number
+  weeklyActivities?: number
+  instrumentMastery?: number
+  repertoireMastery?: number
+}
+
+// Stores
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
+const analyticsStore = useAnalyticsStore();
+
+// Estado de la UI
+const isLoading = ref(true);
+const atRiskStudents = computed<Student[]>(() => {
+  const students = analyticsStore.studentMetrics.atRiskStudents || [];
+  return students.map((student: any) => ({
+    id: student.id,
+    name: student.name,
+    performance: student.performance,
+    instrument: student.instrument,
+    attendance: (student.attendance || 0) as number,
+    lastAccess: student.lastAccess || ('' as string),
+    riskFactors: student.riskFactors || [],
+    recommendedActions: student.recommendedActions || [],
+    hasInstrument: student.hasInstrument !== undefined ? student.hasInstrument : false,
+    musicalLanguage: student.musicalLanguage || 0,
+    basicConcepts: student.basicConcepts || 0,
+    weeklyActivities: student.weeklyActivities || 0,
+    instrumentMastery: student.instrumentMastery || 0,
+    repertoireMastery: student.repertoireMastery || 0,
+  }));
+});
+
+// Factores de riesgo y sus pesos
+const riskFactors = reactive({
+  attendance: {
+    weight: 30,
+    threshold: 75,
+    label: 'Asistencia',
+  },
+  musicalLanguage: {
+    weight: 20,
+    threshold: 70,
+    label: 'Lenguaje Musical',
+  },
+  basicConcepts: {
+    weight: 15,
+    threshold: 70,
+    label: 'Conceptos Básicos',
+  },
+  weeklyActivities: {
+    weight: 10,
+    threshold: 2,
+    label: 'Actividades Semanales',
+  },
+  instrumentMastery: {
+    weight: 15,
+    threshold: 65,
+    label: 'Dominio del Instrumento',
+  },
+  repertoireMastery: {
+    weight: 10,
+    threshold: 60,
+    label: 'Dominio del Repertorio',
+  },
+});
+
+// Método para calcular el nivel de riesgo
+const calculateRiskLevel = (performance: number, attendance: number) => {
+  if (performance < 60 || attendance < 70) return 'Alto';
+  if (performance < 75 || attendance < 85) return 'Medio';
+  return 'Bajo';
+};
+
+// Cargar los datos de análisis
+onMounted(async () => {
+  try {
+    await analyticsStore.fetchAnalytics();
+    isLoading.value = false;
+  } catch (error) {
+    console.error('Error al cargar los datos:', error);
+  }
+});
+
+// Identificar factores de riesgo específicos para un estudiante
+const identifyRiskFactors = (student) => {
+  const factors = [];
+
+  // Verificar asistencia
+  if (student.attendance < riskFactors.attendance.threshold) {
+    factors.push({
+      factor: 'Baja asistencia',
+      value: `${student.attendance}%`,
+      threshold: `${riskFactors.attendance.threshold}%`,
+      icon: CalendarIcon,
+      suggestion: 'Programar reunión para discutir dificultades de asistencia',
+    });
+  }
+
+  // Verificar lenguaje musical
+  if (student.musicalLanguage < riskFactors.musicalLanguage.threshold) {
+    factors.push({
+      factor: 'Bajo nivel en lenguaje musical',
+      value: `${student.musicalLanguage}%`,
+      threshold: `${riskFactors.musicalLanguage.threshold}%`,
+      icon: MusicalNoteIcon,
+      suggestion: 'Ofrecer material complementario y clases de refuerzo',
+    });
+  }
+
+  // Verificar conceptos básicos
+  if (student.basicConcepts < riskFactors.basicConcepts.threshold) {
+    factors.push({
+      factor: 'Debilidad en conceptos básicos',
+      value: `${student.basicConcepts}%`,
+      threshold: `${riskFactors.basicConcepts.threshold}%`,
+      icon: BookOpenIcon,
+      suggestion: 'Asignar tutor para nivelación en conceptos fundamentales',
+    });
+  }
+
+  // Verificar factores específicos para estudiantes con instrumento
+  if (student.hasInstrument) {
+    // Verificar actividades semanales
+    if (student.weeklyActivities < riskFactors.weeklyActivities.threshold) {
+      factors.push({
+        factor: 'Pocas actividades semanales',
+        value: `${student.weeklyActivities}`,
+        threshold: `${riskFactors.weeklyActivities.threshold}`,
+        icon: ClockIcon,
+        suggestion: 'Incrementar actividades prácticas y seguimiento de horario',
+      });
+    }
+
+    // Verificar dominio del instrumento
+    if (student.instrumentMastery < riskFactors.instrumentMastery.threshold) {
+      factors.push({
+        factor: 'Bajo dominio del instrumento',
+        value: `${student.instrumentMastery}%`,
+        threshold: `${riskFactors.instrumentMastery.threshold}%`,
+        icon: MusicalNoteIcon,
+        suggestion: 'Evaluar dificultades técnicas específicas y adaptar ejercicios',
+      });
+    }
+
+    // Verificar dominio del repertorio
+    if (student.repertoireMastery < riskFactors.repertoireMastery.threshold) {
+      factors.push({
+        factor: 'Bajo dominio del repertorio',
+        value: `${student.repertoireMastery}%`,
+        threshold: `${riskFactors.repertoireMastery.threshold}%`,
+        icon: BookOpenIcon,
+        suggestion: 'Ajustar repertorio al nivel actual y establecer plan progresivo',
+      });
+    }
+  }
+
+  return factors;
+};
+</script>
 
 <style scoped>
 /* Estilos específicos del componente si son necesarios */

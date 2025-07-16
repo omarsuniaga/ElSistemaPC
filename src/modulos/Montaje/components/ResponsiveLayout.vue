@@ -1,5 +1,6 @@
 <template>
-  <div :class="[
+  <div
+:class="[
     'min-h-screen transition-colors duration-200',
     themeClasses.background
   ]">
@@ -16,12 +17,12 @@
       <div class="flex items-center justify-between h-full px-4">
         <div class="flex items-center gap-3">
           <button
-            @click="toggleMobileSidebar"
             :class="[
               'p-2 rounded-lg',
               themeClasses.hover,
               themeClasses.text.primary
             ]"
+            @click="toggleMobileSidebar"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -73,12 +74,13 @@
       >
         <!-- Backdrop -->
         <div 
-          @click="closeMobileSidebar"
           class="fixed inset-0 bg-black bg-opacity-50"
+          @click="closeMobileSidebar"
         ></div>
         
         <!-- Sidebar -->
-        <aside :class="[
+        <aside
+:class="[
           'relative w-80 max-w-[80vw] h-full border-r',
           themeClasses.surface,
           themeClasses.border
@@ -90,12 +92,12 @@
                 {{ title }}
               </h1>
               <button
-                @click="closeMobileSidebar"
                 :class="[
                   'p-2 rounded-lg',
                   themeClasses.hover,
                   themeClasses.text.primary
                 ]"
+                @click="closeMobileSidebar"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -112,7 +114,8 @@
       </div>
 
       <!-- Main Content -->
-      <main :class="[
+      <main
+:class="[
         'flex-1 min-h-screen',
         navigationClasses.content,
         isMobile ? 'pt-0' : 'pt-0'
@@ -142,10 +145,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useTheme } from '../composables/useTheme'
-import { useResponsive } from '../composables/useResponsive'
-import ThemeSelector from './ThemeSelector.vue'
+import { ref } from 'vue';
+import { useTheme } from '../composables/useTheme';
+import { useResponsive } from '../composables/useResponsive';
+import ThemeSelector from './ThemeSelector.vue';
 
 interface Props {
   title?: string
@@ -154,25 +157,25 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   title: 'Montaje',
-  showBottomNav: false
-})
+  showBottomNav: false,
+});
 
-const { themeClasses } = useTheme()
+const { themeClasses } = useTheme();
 const { 
   isMobile, 
   isDesktop, 
   containerClasses, 
   navigationClasses, 
-  cardClasses 
-} = useResponsive()
+  cardClasses, 
+} = useResponsive();
 
-const showMobileSidebar = ref(false)
+const showMobileSidebar = ref(false);
 
 const toggleMobileSidebar = () => {
-  showMobileSidebar.value = !showMobileSidebar.value
-}
+  showMobileSidebar.value = !showMobileSidebar.value;
+};
 
 const closeMobileSidebar = () => {
-  showMobileSidebar.value = false
-}
+  showMobileSidebar.value = false;
+};
 </script>

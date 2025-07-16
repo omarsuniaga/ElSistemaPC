@@ -150,7 +150,7 @@ export const permissionsService = {
    */
   async canViewAggregatedReports(): Promise<boolean> {
     return this.hasPermission(MontajePermission.VIEW_AGGREGATED_REPORTS);
-  }
+  },
 };
 
 export default permissionsService;

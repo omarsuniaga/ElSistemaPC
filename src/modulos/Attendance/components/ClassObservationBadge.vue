@@ -26,7 +26,7 @@
 <script setup lang="ts">
 defineProps<{
   observations: string | null | undefined
-}>()
+}>();
 
-defineEmits(["click"])
+defineEmits(['click']);
 </script>

@@ -400,9 +400,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useTeacherObservations} from "../../composables/useObservationManagement"
-import type {ObservationData} from "../../stores/observations"
+import { ref, computed, onMounted } from 'vue';
+import { useTeacherObservations } from '../../composables/useObservationManagement';
+import type { ObservationData } from '../../stores/observations';
 
 // Composables
 const {
@@ -415,82 +415,82 @@ const {
   createMyObservation,
   updateMyObservation,
   deleteMyObservation,
-} = useTeacherObservations()
+} = useTeacherObservations();
 
 // Estado reactivo
-const observations = ref<ObservationData[]>([])
-const selectedClassId = ref("")
-const dateFrom = ref("")
-const dateTo = ref("")
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
+const observations = ref<ObservationData[]>([]);
+const selectedClassId = ref('');
+const dateFrom = ref('');
+const dateTo = ref('');
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
 
 // Modales
-const showCreateModal = ref(false)
-const editingObservation = ref<ObservationData | null>(null)
-const observationToDelete = ref<ObservationData | null>(null)
-const saving = ref(false)
-const deleting = ref(false)
+const showCreateModal = ref(false);
+const editingObservation = ref<ObservationData | null>(null);
+const observationToDelete = ref<ObservationData | null>(null);
+const saving = ref(false);
+const deleting = ref(false);
 
 // Formulario
 const observationForm = ref({
-  classId: "",
-  date: new Date().toISOString().split("T")[0],
-  type: "general",
-  priority: "media",
-  text: "",
+  classId: '',
+  date: new Date().toISOString().split('T')[0],
+  type: 'general',
+  priority: 'media',
+  text: '',
   requiresFollowUp: false,
-})
+});
 
 // Computed properties
-const myStats = computed(() => myObservationStats.value)
+const myStats = computed(() => myObservationStats.value);
 
 const availableClasses = computed(() => {
-  const classes = new Set(observations.value.map((obs) => obs.classId))
-  return Array.from(classes)
-})
+  const classes = new Set(observations.value.map((obs) => obs.classId));
+  return Array.from(classes);
+});
 
-const filteredObservations = computed(() => observations.value)
+const filteredObservations = computed(() => observations.value);
 
-const totalPages = computed(() => Math.ceil(filteredObservations.value.length / itemsPerPage.value))
+const totalPages = computed(() => Math.ceil(filteredObservations.value.length / itemsPerPage.value));
 
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
-const endIndex = computed(() => startIndex.value + itemsPerPage.value)
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
+const endIndex = computed(() => startIndex.value + itemsPerPage.value);
 
 const paginatedObservations = computed(() =>
-  filteredObservations.value.slice(startIndex.value, endIndex.value)
-)
+  filteredObservations.value.slice(startIndex.value, endIndex.value),
+);
 
 // Métodos
 const loadObservations = async () => {
   try {
-    let result: ObservationData[] = []
+    let result: ObservationData[] = [];
 
     if (selectedClassId.value) {
-      result = await fetchMyClassObservations(selectedClassId.value)
+      result = await fetchMyClassObservations(selectedClassId.value);
     } else if (dateFrom.value && dateTo.value) {
-      result = await fetchMyObservationsByDateRange(dateFrom.value, dateTo.value)
+      result = await fetchMyObservationsByDateRange(dateFrom.value, dateTo.value);
     } else {
-      result = await fetchMyObservations()
+      result = await fetchMyObservations();
     }
 
-    observations.value = result || []
-    currentPage.value = 1
+    observations.value = result || [];
+    currentPage.value = 1;
   } catch (err) {
-    console.error("Error loading observations:", err)
-    observations.value = []
+    console.error('Error loading observations:', err);
+    observations.value = [];
   }
-}
+};
 
 const clearFilters = () => {
-  selectedClassId.value = ""
-  dateFrom.value = ""
-  dateTo.value = ""
-  loadObservations()
-}
+  selectedClassId.value = '';
+  dateFrom.value = '';
+  dateTo.value = '';
+  loadObservations();
+};
 
 const editObservation = (observation: ObservationData) => {
-  editingObservation.value = observation
+  editingObservation.value = observation;
   observationForm.value = {
     classId: observation.classId,
     date: observation.date,
@@ -498,148 +498,148 @@ const editObservation = (observation: ObservationData) => {
     priority: observation.priority,
     text: observation.text,
     requiresFollowUp: observation.requiresFollowUp,
-  }
-}
+  };
+};
 
 const cancelEdit = () => {
-  showCreateModal.value = false
-  editingObservation.value = null
+  showCreateModal.value = false;
+  editingObservation.value = null;
   observationForm.value = {
-    classId: "",
-    date: new Date().toISOString().split("T")[0],
-    type: "general",
-    priority: "media",
-    text: "",
+    classId: '',
+    date: new Date().toISOString().split('T')[0],
+    type: 'general',
+    priority: 'media',
+    text: '',
     requiresFollowUp: false,
-  }
-}
+  };
+};
 
 const saveObservation = async () => {
   try {
-    saving.value = true
+    saving.value = true;
 
     if (editingObservation.value) {
-      await updateMyObservation(editingObservation.value.id, observationForm.value)
+      await updateMyObservation(editingObservation.value.id, observationForm.value);
     } else {
-      await createMyObservation(observationForm.value)
+      await createMyObservation(observationForm.value);
     }
 
-    await loadObservations()
-    cancelEdit()
+    await loadObservations();
+    cancelEdit();
   } catch (err) {
-    console.error("Error saving observation:", err)
+    console.error('Error saving observation:', err);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const deleteObservation = (observation: ObservationData) => {
-  observationToDelete.value = observation
-}
+  observationToDelete.value = observation;
+};
 
 const confirmDelete = async () => {
-  if (!observationToDelete.value) return
+  if (!observationToDelete.value) return;
 
   try {
-    deleting.value = true
-    await deleteMyObservation(observationToDelete.value.id)
-    await loadObservations()
-    observationToDelete.value = null
+    deleting.value = true;
+    await deleteMyObservation(observationToDelete.value.id);
+    await loadObservations();
+    observationToDelete.value = null;
   } catch (err) {
-    console.error("Error deleting observation:", err)
+    console.error('Error deleting observation:', err);
   } finally {
-    deleting.value = false
+    deleting.value = false;
   }
-}
+};
 
 const formatDate = (dateString: string | null) => {
-  if (!dateString) return "N/A"
-  return new Date(dateString).toLocaleDateString("es-ES")
-}
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('es-ES');
+};
 
 const getClassDisplayName = (classId: string) => {
   // Aquí podrías integrar con un store de clases para obtener nombres reales
-  return `Clase ${classId.substring(0, 8)}...`
-}
+  return `Clase ${classId.substring(0, 8)}...`;
+};
 
 const getTypeIcon = (type: string) => {
   const icons = {
-    general: "📝",
-    comportamiento: "👥",
-    academico: "📚",
-    asistencia: "📅",
-    evaluacion: "📊",
-  }
-  return icons[type as keyof typeof icons] || "📝"
-}
+    general: '📝',
+    comportamiento: '👥',
+    academico: '📚',
+    asistencia: '📅',
+    evaluacion: '📊',
+  };
+  return icons[type as keyof typeof icons] || '📝';
+};
 
 const getTypeBackgroundClass = (type: string) => {
   const classes = {
-    general: "bg-gray-100",
-    comportamiento: "bg-red-100",
-    academico: "bg-blue-100",
-    asistencia: "bg-yellow-100",
-    evaluacion: "bg-green-100",
-  }
-  return classes[type as keyof typeof classes] || "bg-gray-100"
-}
+    general: 'bg-gray-100',
+    comportamiento: 'bg-red-100',
+    academico: 'bg-blue-100',
+    asistencia: 'bg-yellow-100',
+    evaluacion: 'bg-green-100',
+  };
+  return classes[type as keyof typeof classes] || 'bg-gray-100';
+};
 
 const getTypeClass = (type: string) => {
   const classes = {
-    general: "bg-gray-100 text-gray-800",
-    comportamiento: "bg-red-100 text-red-800",
-    academico: "bg-blue-100 text-blue-800",
-    asistencia: "bg-yellow-100 text-yellow-800",
-    evaluacion: "bg-green-100 text-green-800",
-  }
-  return classes[type as keyof typeof classes] || classes.general
-}
+    general: 'bg-gray-100 text-gray-800',
+    comportamiento: 'bg-red-100 text-red-800',
+    academico: 'bg-blue-100 text-blue-800',
+    asistencia: 'bg-yellow-100 text-yellow-800',
+    evaluacion: 'bg-green-100 text-green-800',
+  };
+  return classes[type as keyof typeof classes] || classes.general;
+};
 
 const getTypeLabel = (type: string) => {
   const labels = {
-    general: "General",
-    comportamiento: "Comportamiento",
-    academico: "Académico",
-    asistencia: "Asistencia",
-    evaluacion: "Evaluación",
-  }
-  return labels[type as keyof typeof labels] || type
-}
+    general: 'General',
+    comportamiento: 'Comportamiento',
+    academico: 'Académico',
+    asistencia: 'Asistencia',
+    evaluacion: 'Evaluación',
+  };
+  return labels[type as keyof typeof labels] || type;
+};
 
 const getPriorityClass = (priority: string) => {
   const classes = {
-    baja: "bg-green-100 text-green-800",
-    media: "bg-yellow-100 text-yellow-800",
-    alta: "bg-orange-100 text-orange-800",
-    critica: "bg-red-100 text-red-800",
-  }
-  return classes[priority as keyof typeof classes] || classes.media
-}
+    baja: 'bg-green-100 text-green-800',
+    media: 'bg-yellow-100 text-yellow-800',
+    alta: 'bg-orange-100 text-orange-800',
+    critica: 'bg-red-100 text-red-800',
+  };
+  return classes[priority as keyof typeof classes] || classes.media;
+};
 
 const getPriorityLabel = (priority: string) => {
   const labels = {
-    baja: "Baja",
-    media: "Media",
-    alta: "Alta",
-    critica: "Crítica",
-  }
-  return labels[priority as keyof typeof labels] || priority
-}
+    baja: 'Baja',
+    media: 'Media',
+    alta: 'Alta',
+    critica: 'Crítica',
+  };
+  return labels[priority as keyof typeof labels] || priority;
+};
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
-    currentPage.value++
+    currentPage.value++;
   }
-}
+};
 
 const previousPage = () => {
   if (currentPage.value > 1) {
-    currentPage.value--
+    currentPage.value--;
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadObservations()
-})
+  loadObservations();
+});
 </script>

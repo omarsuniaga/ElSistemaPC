@@ -80,22 +80,22 @@
 </template>
 
 <script setup lang="ts">
-import {Dialog, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild} from "@headlessui/vue"
+import { Dialog, DialogOverlay, DialogTitle, TransitionRoot, TransitionChild } from '@headlessui/vue';
 
 defineProps<{
   show: boolean
   title: string
-}>()
+}>();
 
 defineEmits<{
-  (e: "close"): void
-}>()
+  (e: 'close'): void
+}>();
 </script>
 
 <script lang="ts">
 export default {
-  name: "Modal",
-}
+  name: 'Modal',
+};
 </script>
 
 <style scoped>

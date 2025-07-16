@@ -1,6 +1,6 @@
 export interface WorkspaceElement {
   id: number
-  type: "student" | "theme" | "indicator"
+  type: 'student' | 'theme' | 'indicator'
   title: string
   description?: string
   weight: number

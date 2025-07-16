@@ -132,87 +132,87 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {XMarkIcon, AcademicCapIcon} from "@heroicons/vue/24/outline"
+import { ref, computed, watch } from 'vue';
+import { XMarkIcon, AcademicCapIcon } from '@heroicons/vue/24/outline';
 
 // Props
 const props = defineProps<{
   isVisible: boolean
   teacher?: any
   availableClasses?: any[]
-}>()
+}>();
 
 // Emits
 const emit = defineEmits<{
   close: []
   assign: [{teacherId: string; classIds: string[]}]
-}>()
+}>();
 
 // State
-const loading = ref(false)
-const searchQuery = ref("")
-const filterType = ref("all")
-const selectedClasses = ref<string[]>([])
+const loading = ref(false);
+const searchQuery = ref('');
+const filterType = ref('all');
+const selectedClasses = ref<string[]>([]);
 
 // Get current teacher's assigned classes
 const currentAssignedClasses = computed(() => {
-  return props.teacher?.assignedClasses || props.teacher?.clases || []
-})
+  return props.teacher?.assignedClasses || props.teacher?.clases || [];
+});
 
 // Reset when modal opens/closes
 watch(
   () => props.isVisible,
   (newValue) => {
     if (newValue && props.teacher) {
-      selectedClasses.value = [...currentAssignedClasses.value]
+      selectedClasses.value = [...currentAssignedClasses.value];
     } else {
-      selectedClasses.value = []
-      searchQuery.value = ""
-      filterType.value = "all"
+      selectedClasses.value = [];
+      searchQuery.value = '';
+      filterType.value = 'all';
     }
-  }
-)
+  },
+);
 
 // Filter classes based on search and filter type
 const filteredClasses = computed(() => {
-  let classes = props.availableClasses || []
+  let classes = props.availableClasses || [];
 
   // Apply search filter
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     classes = classes.filter(
-      (c) => c.name?.toLowerCase().includes(query) || c.description?.toLowerCase().includes(query)
-    )
+      (c) => c.name?.toLowerCase().includes(query) || c.description?.toLowerCase().includes(query),
+    );
   }
 
   // Apply type filter
-  if (filterType.value === "assigned") {
-    classes = classes.filter((c) => isClassAssigned(c.id))
-  } else if (filterType.value === "available") {
-    classes = classes.filter((c) => !isClassAssigned(c.id))
+  if (filterType.value === 'assigned') {
+    classes = classes.filter((c) => isClassAssigned(c.id));
+  } else if (filterType.value === 'available') {
+    classes = classes.filter((c) => !isClassAssigned(c.id));
   }
 
-  return classes
-})
+  return classes;
+});
 
 // Check if a class is currently assigned to the teacher
 const isClassAssigned = (classId: string) => {
-  return currentAssignedClasses.value.includes(classId)
-}
+  return currentAssignedClasses.value.includes(classId);
+};
 
 // Handle class assignment
 const handleAssignment = async () => {
   try {
-    loading.value = true
+    loading.value = true;
 
-    emit("assign", {
+    emit('assign', {
       teacherId: props.teacher.id,
       classIds: selectedClasses.value,
-    })
+    });
   } catch (error) {
-    console.error("Error assigning classes:", error)
+    console.error('Error assigning classes:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>

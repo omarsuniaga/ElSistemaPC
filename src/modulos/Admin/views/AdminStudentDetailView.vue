@@ -435,10 +435,10 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import {useRBACStore} from "../../../stores/rbacStore"
-import {useAdminStudentsStore} from "../store/adminStudents"
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useRBACStore } from '../../../stores/rbacStore';
+import { useAdminStudentsStore } from '../store/adminStudents';
 import {
   HomeIcon,
   ChevronRightIcon,
@@ -452,156 +452,156 @@ import {
   ChartBarIcon,
   PlayIcon,
   PauseIcon,
-} from "@heroicons/vue/24/outline"
-import type {Student} from "../store/adminStudents"
+} from '@heroicons/vue/24/outline';
+import type { Student } from '../store/adminStudents';
 
 // Router and stores
-const route = useRoute()
-const router = useRouter()
-const rbacStore = useRBACStore()
-const studentsStore = useAdminStudentsStore()
+const route = useRoute();
+const router = useRouter();
+const rbacStore = useRBACStore();
+const studentsStore = useAdminStudentsStore();
 
 // State
-const student = ref<Student | null>(null)
-const isLoading = ref(true)
+const student = ref<Student | null>(null);
+const isLoading = ref(true);
 
 // Computed
-const canEditStudent = computed(() => rbacStore.canAccess("students", "edit"))
+const canEditStudent = computed(() => rbacStore.canAccess('students', 'edit'));
 
 // Colors and styling
 const statusColors = {
-  active: "bg-green-500",
-  inactive: "bg-red-500",
-  pending: "bg-yellow-500",
-}
+  active: 'bg-green-500',
+  inactive: 'bg-red-500',
+  pending: 'bg-yellow-500',
+};
 
 const statusBadgeColors = {
-  active: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  inactive: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-}
+  active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  inactive: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+};
 
 const gradeColors = {
-  beginner: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  intermediate: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-  advanced: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-}
+  beginner: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  intermediate: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  advanced: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+};
 
 // Methods
 const getInitials = (name: string): string => {
   return name
-    .split(" ")
+    .split(' ')
     .map((word) => word.charAt(0))
-    .join("")
+    .join('')
     .substring(0, 2)
-    .toUpperCase()
-}
+    .toUpperCase();
+};
 
 const formatPhone = (phone: string): string => {
-  return phone.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3")
-}
+  return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+};
 
 const formatDate = (date: Date): string => {
-  return date.toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
 
 const getInstrumentName = (instrument: string): string => {
   const instruments: Record<string, string> = {
-    piano: "Piano",
-    guitar: "Guitarra",
-    violin: "Violín",
-    drums: "Batería",
-    voice: "Canto",
-    bass: "Bajo",
-    flute: "Flauta",
-    saxophone: "Saxofón",
-    trumpet: "Trompeta",
-    cello: "Violonchelo",
-  }
-  return instruments[instrument] || instrument
-}
+    piano: 'Piano',
+    guitar: 'Guitarra',
+    violin: 'Violín',
+    drums: 'Batería',
+    voice: 'Canto',
+    bass: 'Bajo',
+    flute: 'Flauta',
+    saxophone: 'Saxofón',
+    trumpet: 'Trompeta',
+    cello: 'Violonchelo',
+  };
+  return instruments[instrument] || instrument;
+};
 
 const getGradeName = (grade: string): string => {
   const grades: Record<string, string> = {
-    beginner: "Principiante",
-    intermediate: "Intermedio",
-    advanced: "Avanzado",
-  }
-  return grades[grade] || grade
-}
+    beginner: 'Principiante',
+    intermediate: 'Intermedio',
+    advanced: 'Avanzado',
+  };
+  return grades[grade] || grade;
+};
 
 const getStatusName = (status: string): string => {
   const statuses: Record<string, string> = {
-    active: "Activo",
-    inactive: "Inactivo",
-    pending: "Pendiente",
-  }
-  return statuses[status] || status
-}
+    active: 'Activo',
+    inactive: 'Inactivo',
+    pending: 'Pendiente',
+  };
+  return statuses[status] || status;
+};
 
 const getTimeEnrolled = (enrollmentDate: Date): string => {
-  const now = new Date()
-  const diffTime = Math.abs(now.getTime() - enrollmentDate.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - enrollmentDate.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays < 30) {
-    return `${diffDays} días`
+    return `${diffDays} días`;
   } else if (diffDays < 365) {
-    const months = Math.floor(diffDays / 30)
-    return `${months} mes${months !== 1 ? "es" : ""}`
+    const months = Math.floor(diffDays / 30);
+    return `${months} mes${months !== 1 ? 'es' : ''}`;
   } else {
-    const years = Math.floor(diffDays / 365)
-    return `${years} año${years !== 1 ? "s" : ""}`
+    const years = Math.floor(diffDays / 365);
+    return `${years} año${years !== 1 ? 's' : ''}`;
   }
-}
+};
 
 // Event handlers
 const editStudent = () => {
   // Open edit modal or navigate to edit page
-  console.log("Edit student:", student.value?.id)
-}
+  console.log('Edit student:', student.value?.id);
+};
 
 const toggleStatus = async () => {
   if (student.value) {
-    const newStatus = student.value.status === "active" ? "inactive" : "active"
-    await studentsStore.updateStudentStatus(student.value.id, newStatus)
-    student.value.status = newStatus
+    const newStatus = student.value.status === 'active' ? 'inactive' : 'active';
+    await studentsStore.updateStudentStatus(student.value.id, newStatus);
+    student.value.status = newStatus;
   }
-}
+};
 
 const assignToClass = () => {
-  console.log("Assign to class:", student.value?.id)
-}
+  console.log('Assign to class:', student.value?.id);
+};
 
 const viewAttendance = () => {
-  console.log("View attendance:", student.value?.id)
-}
+  console.log('View attendance:', student.value?.id);
+};
 
 const viewProgress = () => {
-  console.log("View progress:", student.value?.id)
-}
+  console.log('View progress:', student.value?.id);
+};
 
 // Load student data
 const loadStudent = async () => {
   try {
-    isLoading.value = true
-    const studentId = route.params.id as string
-    student.value = await studentsStore.getStudent(studentId)
+    isLoading.value = true;
+    const studentId = route.params.id as string;
+    student.value = await studentsStore.getStudent(studentId);
   } catch (error) {
-    console.error("Error loading student:", error)
+    console.error('Error loading student:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadStudent()
-})
+  loadStudent();
+});
 </script>
 
 <style scoped>

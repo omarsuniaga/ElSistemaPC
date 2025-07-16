@@ -61,7 +61,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   InformationCircleIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface Activity {
   id: string
@@ -77,7 +77,7 @@ interface Props {
   activities: Activity[]
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 const getActivityIcon = (type: string) => {
   const icons = {
@@ -87,39 +87,39 @@ const getActivityIcon = (type: string) => {
     error: ExclamationTriangleIcon,
     success: CheckCircleIcon,
     info: InformationCircleIcon,
-  }
-  return icons[type] || InformationCircleIcon
-}
+  };
+  return icons[type] || InformationCircleIcon;
+};
 
 const getActivityColor = (type: string) => {
   const colors = {
-    student_created: "bg-blue-500",
-    class_created: "bg-purple-500",
-    system_update: "bg-gray-500",
-    error: "bg-red-500",
-    success: "bg-green-500",
-    info: "bg-blue-500",
-  }
-  return colors[type] || "bg-gray-500"
-}
+    student_created: 'bg-blue-500',
+    class_created: 'bg-purple-500',
+    system_update: 'bg-gray-500',
+    error: 'bg-red-500',
+    success: 'bg-green-500',
+    info: 'bg-blue-500',
+  };
+  return colors[type] || 'bg-gray-500';
+};
 
 const formatTime = (time: string) => {
-  if (!time) return ""
+  if (!time) return '';
 
-  const date = new Date(time)
-  const now = new Date()
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+  const date = new Date(time);
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 
   if (diffInMinutes < 1) {
-    return "Ahora"
+    return 'Ahora';
   } else if (diffInMinutes < 60) {
-    return `${diffInMinutes}m`
+    return `${diffInMinutes}m`;
   } else if (diffInMinutes < 1440) {
-    const hours = Math.floor(diffInMinutes / 60)
-    return `${hours}h`
+    const hours = Math.floor(diffInMinutes / 60);
+    return `${hours}h`;
   } else {
-    const days = Math.floor(diffInMinutes / 1440)
-    return `${days}d`
+    const days = Math.floor(diffInMinutes / 1440);
+    return `${days}d`;
   }
-}
+};
 </script>

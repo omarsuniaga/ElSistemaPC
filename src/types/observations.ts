@@ -5,49 +5,49 @@
  */
 export enum ObservationType {
   // Tipos generales
-  GENERAL = "general",
+  GENERAL = 'general',
 
   // Tipos de comportamiento
-  BEHAVIOR = "comportamiento",
-  ACHIEVEMENT = "logro",
+  BEHAVIOR = 'comportamiento',
+  ACHIEVEMENT = 'logro',
 
   // Tipos de clase
-  CONTENT = "contenido",
-  DYNAMICS = "dinamica",
-  PERFORMANCE = "performance",
-  PROGRESS = "progreso",
-  TECHNIQUE = "tecnica",
+  CONTENT = 'contenido',
+  DYNAMICS = 'dinamica',
+  PERFORMANCE = 'performance',
+  PROGRESS = 'progreso',
+  TECHNIQUE = 'tecnica',
 
   // Otros
-  OTHER = "otro",
+  OTHER = 'otro',
 }
 
 /**
  * Estado de una observación
  */
 export enum ObservationStatus {
-  ACTIVE = "active",
-  RESOLVED = "resolved",
-  ARCHIVED = "archived",
-  PENDING_FOLLOWUP = "pending_followup",
+  ACTIVE = 'active',
+  RESOLVED = 'resolved',
+  ARCHIVED = 'archived',
+  PENDING_FOLLOWUP = 'pending_followup',
 }
 
 /**
  * Categorías principales de observaciones para agruparlas
  */
 export enum ObservationCategory {
-  GENERAL = "general",
-  ATTENDANCE = "attendance", // Relacionada a asistencia
-  CLASS = "class", // Relacionada a una clase específica
-  STUDENT = "student", // Relacionada a un estudiante específico
-  TEACHER = "teacher", // Relacionada a un profesor
-  PERFORMANCE = "performance", // Relacionada a una presentación
+  GENERAL = 'general',
+  ATTENDANCE = 'attendance', // Relacionada a asistencia
+  CLASS = 'class', // Relacionada a una clase específica
+  STUDENT = 'student', // Relacionada a un estudiante específico
+  TEACHER = 'teacher', // Relacionada a un profesor
+  PERFORMANCE = 'performance', // Relacionada a una presentación
 }
 
 /**
  * Niveles de prioridad para las observaciones
  */
-export type ObservationPriority = "alta" | "media" | "baja"
+export type ObservationPriority = 'alta' | 'media' | 'baja'
 
 /**
  * Estructura para archivos adjuntos a una observación
@@ -154,7 +154,7 @@ export interface ClassObservationData {
   id: string
   classId: string
   fecha: string
-  type: "general" | "comportamiento" | "logro" | "contenido" | "dinamica"
+  type: 'general' | 'comportamiento' | 'logro' | 'contenido' | 'dinamica'
   content: {
     text: string
     bulletPoints?: string[]
@@ -167,13 +167,13 @@ export interface ClassObservationData {
     classDynamics?: Array<{
       type: string
       description: string
-      effectiveness?: "alta" | "media" | "baja"
+      effectiveness?: 'alta' | 'media' | 'baja'
     }>
   }
   author: string
   createdAt: Date
   updatedAt?: Date
-  priority: "alta" | "media" | "baja"
+  priority: 'alta' | 'media' | 'baja'
   requiresFollowUp: boolean
 }
 
@@ -246,7 +246,7 @@ export interface LegacyObservationRecord {
   id?: string
   classId: string
   date: string
-  type: "general" | "comportamiento" | "logro"
+  type: 'general' | 'comportamiento' | 'logro'
   content: string
   createdBy: string
   createdAt: Date
@@ -258,7 +258,7 @@ export interface LegacyClassObservation {
   id: string
   classId: string
   fecha: string
-  type: "general" | "comportamiento" | "logro" | "contenido" | "dinamica"
+  type: 'general' | 'comportamiento' | 'logro' | 'contenido' | 'dinamica'
   content: {
     text: string
     bulletPoints?: string[]
@@ -271,13 +271,13 @@ export interface LegacyClassObservation {
     classDynamics?: Array<{
       type: string
       description: string
-      effectiveness?: "alta" | "media" | "baja"
+      effectiveness?: 'alta' | 'media' | 'baja'
     }>
   }
   author: string
   createdAt: Date
   updatedAt?: Date
-  priority: "alta" | "media" | "baja"
+  priority: 'alta' | 'media' | 'baja'
   requiresFollowUp: boolean
 }
 
@@ -299,13 +299,13 @@ export function convertLegacyObservationToNew(legacy: LegacyObservation): Observ
     updatedAt: legacy.updatedAt,
     type: legacy.category as unknown as ObservationType, // Convertir entre enums
     category: ObservationCategory.STUDENT,
-    priority: "media",
+    priority: 'media',
     studentId: legacy.studentId,
     teacherId: legacy.teacherId,
-    date: legacy.date.toISOString().split("T")[0],
+    date: legacy.date.toISOString().split('T')[0],
     status: legacy.status as unknown as ObservationStatus,
     requiresFollowUp: false,
-  }
+  };
 }
 
 /**
@@ -331,5 +331,5 @@ export function convertLegacyClassObservationToNew(legacy: LegacyClassObservatio
     date: legacy.fecha,
     status: legacy.requiresFollowUp ? ObservationStatus.PENDING_FOLLOWUP : ObservationStatus.ACTIVE,
     requiresFollowUp: legacy.requiresFollowUp,
-  }
+  };
 }

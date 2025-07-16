@@ -10,9 +10,9 @@ export interface Content {
   authorId?: string
   authorName?: string
   tags?: string[]
-  level?: "básico" | "intermedio" | "avanzado" | string
-  contentType?: "texto" | "video" | "audio" | "documento" | "partitura" | string
-  status?: "publicado" | "borrador" | "archivado" | string
+  level?: 'básico' | 'intermedio' | 'avanzado' | string
+  contentType?: 'texto' | 'video' | 'audio' | 'documento' | 'partitura' | string
+  status?: 'publicado' | 'borrador' | 'archivado' | string
   mediaUrl?: string
   attachments?: Array<{
     name: string

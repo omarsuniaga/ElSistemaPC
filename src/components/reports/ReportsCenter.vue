@@ -507,14 +507,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {format as formatDate} from "date-fns"
-import {es} from "date-fns/locale"
-import {reportGenerator} from "../../services/reports/reportGenerator"
-import {excelExporter} from "../../services/reports/excelExporter"
-import {analyticsEngine} from "../../services/reports/analyticsEngine"
-import dailyAttendanceService from "../../services/dailyAttendanceService"
-import ReportWizardModal from "./ReportWizardModal.vue"
+import { ref, computed, onMounted } from 'vue';
+import { format as formatDate } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { reportGenerator } from '../../services/reports/reportGenerator';
+import { excelExporter } from '../../services/reports/excelExporter';
+import { analyticsEngine } from '../../services/reports/analyticsEngine';
+import dailyAttendanceService from '../../services/dailyAttendanceService';
+import ReportWizardModal from './ReportWizardModal.vue';
 
 // Interfaces
 interface ReportItem {
@@ -522,7 +522,7 @@ interface ReportItem {
   name: string
   description: string
   type: string
-  format: "pdf" | "excel"
+  format: 'pdf' | 'excel'
   status: string
   createdAt: Date
 }
@@ -531,7 +531,7 @@ interface PatternData {
   id: number
   title: string
   description: string
-  severity: "low" | "medium" | "high" | "critical"
+  severity: 'low' | 'medium' | 'high' | 'critical'
   confidence: number
   recommendations: string[]
 }
@@ -545,208 +545,208 @@ interface InsightData {
 }
 
 // Estado reactivo
-const showReportWizard = ref(false)
-const showAnalyticsPanel = ref(true)
-const generatingReport = ref(false)
-const generationStatus = ref("Inicializando...")
-const generationProgress = ref(0)
+const showReportWizard = ref(false);
+const showAnalyticsPanel = ref(true);
+const generatingReport = ref(false);
+const generationStatus = ref('Inicializando...');
+const generationProgress = ref(0);
 
 // Métricas del dashboard
-const totalReportsGenerated = ref(0)
-const averageAttendanceRate = ref(0)
-const studentsAtRisk = ref(0)
-const totalExports = ref(0)
+const totalReportsGenerated = ref(0);
+const averageAttendanceRate = ref(0);
+const studentsAtRisk = ref(0);
+const totalExports = ref(0);
 
 // Datos de analytics
-const detectedPatterns = ref<PatternData[]>([])
-const predictiveInsights = ref<InsightData[]>([])
-const recentReports = ref<ReportItem[]>([])
+const detectedPatterns = ref<PatternData[]>([]);
+const predictiveInsights = ref<InsightData[]>([]);
+const recentReports = ref<ReportItem[]>([]);
 
 // Computed
 const reportHistory = computed(() => {
   return recentReports.value.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
-})
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+});
 
 // Métodos principales
-const generateAttendanceReport = async (format: "pdf" | "excel"): Promise<void> => {
-  generatingReport.value = true
-  generationStatus.value = "Obteniendo datos de asistencia..."
-  generationProgress.value = 10
+const generateAttendanceReport = async (format: 'pdf' | 'excel'): Promise<void> => {
+  generatingReport.value = true;
+  generationStatus.value = 'Obteniendo datos de asistencia...';
+  generationProgress.value = 10;
 
   try {
     // Obtener datos de asistencia
     const attendanceReport = await dailyAttendanceService.getDailyAttendanceReport(
-      new Date().toISOString().split("T")[0]
-    )
-    const attendanceData = attendanceReport.records || []
-    generationProgress.value = 30
-    generationStatus.value = "Procesando estadísticas..."
+      new Date().toISOString().split('T')[0],
+    );
+    const attendanceData = attendanceReport.records || [];
+    generationProgress.value = 30;
+    generationStatus.value = 'Procesando estadísticas...';
 
-    if (format === "pdf") {
-      generationStatus.value = "Generando PDF profesional..."
-      generationProgress.value = 60
+    if (format === 'pdf') {
+      generationStatus.value = 'Generando PDF profesional...';
+      generationProgress.value = 60;
 
       const pdfBlob = await reportGenerator.generateAttendanceReport(
         attendanceData,
         {
-          generatedBy: "Sistema de Reportes",
+          generatedBy: 'Sistema de Reportes',
           generatedAt: new Date(),
-          academyName: "Academia Musical El Sistema Punta Cana",
+          academyName: 'Academia Musical El Sistema Punta Cana',
           academyLogo: undefined,
         },
         {
           includeCharts: true,
           includeStatistics: true,
           includeTrends: true,
-          groupBy: "student",
-        }
-      )
+          groupBy: 'student',
+        },
+      );
 
-      generationProgress.value = 90
-      generationStatus.value = "Finalizando..."
+      generationProgress.value = 90;
+      generationStatus.value = 'Finalizando...';
 
       // Descargar PDF
-      const url = URL.createObjectURL(pdfBlob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `reporte-asistencia-${formatDate(new Date(), "yyyy-MM-dd")}.pdf`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    } else if (format === "excel") {
-      generationStatus.value = "Generando Excel con múltiples hojas..."
-      generationProgress.value = 60
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reporte-asistencia-${formatDate(new Date(), 'yyyy-MM-dd')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else if (format === 'excel') {
+      generationStatus.value = 'Generando Excel con múltiples hojas...';
+      generationProgress.value = 60;
 
       const excelBlob = await excelExporter.exportAttendanceData(
         attendanceData,
         [], // TODO: Obtener estadísticas calculadas
         {
-          filename: `reporte-asistencia-${formatDate(new Date(), "yyyy-MM-dd")}.xlsx`,
+          filename: `reporte-asistencia-${formatDate(new Date(), 'yyyy-MM-dd')}.xlsx`,
           includeCharts: true,
           includePivot: true,
-        }
-      )
+        },
+      );
 
-      generationProgress.value = 90
-      generationStatus.value = "Finalizando..."
+      generationProgress.value = 90;
+      generationStatus.value = 'Finalizando...';
 
       // Descargar Excel
-      const url = URL.createObjectURL(excelBlob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `reporte-asistencia-${formatDate(new Date(), "yyyy-MM-dd")}.xlsx`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      const url = URL.createObjectURL(excelBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reporte-asistencia-${formatDate(new Date(), 'yyyy-MM-dd')}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
-    generationProgress.value = 100
-    totalReportsGenerated.value++
-    totalExports.value++
+    generationProgress.value = 100;
+    totalReportsGenerated.value++;
+    totalExports.value++;
 
     // Registrar en historial
     recentReports.value.unshift({
       id: Date.now().toString(),
-      name: `Reporte de Asistencia ${formatDate(new Date(), "dd/MM/yyyy")}`,
+      name: `Reporte de Asistencia ${formatDate(new Date(), 'dd/MM/yyyy')}`,
       description: `Reporte completo de asistencia en formato ${format.toUpperCase()}`,
-      type: "attendance",
+      type: 'attendance',
       format,
-      status: "completed",
+      status: 'completed',
       createdAt: new Date(),
-    })
+    });
   } catch (error) {
-    console.error("Error generando reporte:", error)
-    alert("❌ Error generando el reporte. Por favor intenta nuevamente.")
+    console.error('Error generando reporte:', error);
+    alert('❌ Error generando el reporte. Por favor intenta nuevamente.');
   } finally {
     setTimeout(() => {
-      generatingReport.value = false
-      generationProgress.value = 0
-    }, 1000)
+      generatingReport.value = false;
+      generationProgress.value = 0;
+    }, 1000);
   }
-}
+};
 
-const generateRiskReport = async (format: "pdf" | "excel"): Promise<void> => {
-  generatingReport.value = true
-  generationStatus.value = "Analizando estudiantes en riesgo..."
-  generationProgress.value = 15
+const generateRiskReport = async (format: 'pdf' | 'excel'): Promise<void> => {
+  generatingReport.value = true;
+  generationStatus.value = 'Analizando estudiantes en riesgo...';
+  generationProgress.value = 15;
 
   try {
     // Obtener datos y calcular riesgo
     const attendanceReport = await dailyAttendanceService.getDailyAttendanceReport(
-      new Date().toISOString().split("T")[0]
-    )
-    const attendanceData = attendanceReport.records || []
-    const riskStudents = await calculateStudentsAtRisk(attendanceData)
+      new Date().toISOString().split('T')[0],
+    );
+    const attendanceData = attendanceReport.records || [];
+    const riskStudents = await calculateStudentsAtRisk(attendanceData);
 
-    generationProgress.value = 50
-    generationStatus.value = `Generando reporte para ${riskStudents.length} estudiantes en riesgo...`
+    generationProgress.value = 50;
+    generationStatus.value = `Generando reporte para ${riskStudents.length} estudiantes en riesgo...`;
 
-    if (format === "pdf") {
+    if (format === 'pdf') {
       const pdfBlob = await reportGenerator.generateRiskStudentsReport(riskStudents, {
-        generatedBy: "Sistema de Reportes",
+        generatedBy: 'Sistema de Reportes',
         generatedAt: new Date(),
-        academyName: "Academia Musical El Sistema Punta Cana",
-      })
+        academyName: 'Academia Musical El Sistema Punta Cana',
+      });
 
-      downloadFile(pdfBlob, `estudiantes-riesgo-${formatDate(new Date(), "yyyy-MM-dd")}.pdf`)
+      downloadFile(pdfBlob, `estudiantes-riesgo-${formatDate(new Date(), 'yyyy-MM-dd')}.pdf`);
     } else {
       const excelBlob = await excelExporter.exportRiskStudentsReport(riskStudents, {
-        filename: `estudiantes-riesgo-${formatDate(new Date(), "yyyy-MM-dd")}.xlsx`,
-      })
+        filename: `estudiantes-riesgo-${formatDate(new Date(), 'yyyy-MM-dd')}.xlsx`,
+      });
 
-      downloadFile(excelBlob, `estudiantes-riesgo-${formatDate(new Date(), "yyyy-MM-dd")}.xlsx`)
+      downloadFile(excelBlob, `estudiantes-riesgo-${formatDate(new Date(), 'yyyy-MM-dd')}.xlsx`);
     }
 
-    generationProgress.value = 100
-    totalReportsGenerated.value++
+    generationProgress.value = 100;
+    totalReportsGenerated.value++;
   } catch (error) {
-    console.error("Error generando reporte de riesgo:", error)
-    alert("❌ Error generando el reporte de estudiantes en riesgo.")
+    console.error('Error generando reporte de riesgo:', error);
+    alert('❌ Error generando el reporte de estudiantes en riesgo.');
   } finally {
     setTimeout(() => {
-      generatingReport.value = false
-      generationProgress.value = 0
-    }, 1000)
+      generatingReport.value = false;
+      generationProgress.value = 0;
+    }, 1000);
   }
-}
+};
 
-const generateClassReport = async (format: "pdf" | "excel"): Promise<void> => {
-  generatingReport.value = true
-  generationStatus.value = "Analizando rendimiento por clase..."
+const generateClassReport = async (format: 'pdf' | 'excel'): Promise<void> => {
+  generatingReport.value = true;
+  generationStatus.value = 'Analizando rendimiento por clase...';
 
   try {
     // TODO: Implementar reporte de clases
-    await new Promise((resolve) => setTimeout(resolve, 2000)) // Simulación
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulación
 
-    alert("✅ Reporte de rendimiento por clase generado exitosamente")
-    totalReportsGenerated.value++
+    alert('✅ Reporte de rendimiento por clase generado exitosamente');
+    totalReportsGenerated.value++;
   } catch (error) {
-    console.error("Error generando reporte de clases:", error)
-    alert("❌ Error generando el reporte de clases.")
+    console.error('Error generando reporte de clases:', error);
+    alert('❌ Error generando el reporte de clases.');
   } finally {
-    generatingReport.value = false
+    generatingReport.value = false;
   }
-}
+};
 
 // Métodos auxiliares
 const downloadFile = (blob: Blob, filename: string): void => {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
-}
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
 const calculateStudentsAtRisk = async (attendanceData: any[]): Promise<any[]> => {
   // Calcular estudiantes en riesgo basado en patrones de asistencia
-  const studentStats: any = {}
+  const studentStats: any = {};
 
   attendanceData.forEach((record: any) => {
     if (!studentStats[record.studentId]) {
@@ -759,229 +759,229 @@ const calculateStudentsAtRisk = async (attendanceData: any[]): Promise<any[]> =>
         absentClasses: 0,
         lateArrivals: 0,
         justifiedAbsences: 0,
-      }
+      };
     }
 
-    const stats = studentStats[record.studentId]
-    stats.totalClasses++
+    const stats = studentStats[record.studentId];
+    stats.totalClasses++;
 
     switch (record.status) {
-      case "presente":
-        stats.attendedClasses++
-        break
-      case "ausente":
-        stats.absentClasses++
-        break
-      case "tardanza":
-        stats.attendedClasses++
-        stats.lateArrivals++
-        break
-      case "justificada":
-        stats.justifiedAbsences++
-        break
+    case 'presente':
+      stats.attendedClasses++;
+      break;
+    case 'ausente':
+      stats.absentClasses++;
+      break;
+    case 'tardanza':
+      stats.attendedClasses++;
+      stats.lateArrivals++;
+      break;
+    case 'justificada':
+      stats.justifiedAbsences++;
+      break;
     }
-  })
+  });
 
   // Calcular métricas de riesgo
   const riskStudents = Object.values(studentStats)
     .map((student: any) => {
-      const attendanceRate = student.attendedClasses / student.totalClasses || 0
+      const attendanceRate = student.attendedClasses / student.totalClasses || 0;
       const punctualityRate =
         student.attendedClasses > 0
           ? (student.attendedClasses - student.lateArrivals) / student.attendedClasses
-          : 1
+          : 1;
 
-      let riskLevel = "bajo"
-      if (attendanceRate < 0.7 || student.absentClasses >= 3) riskLevel = "crítico"
-      else if (attendanceRate < 0.8 || student.absentClasses >= 2) riskLevel = "alto"
-      else if (attendanceRate < 0.9 || student.lateArrivals >= 3) riskLevel = "medio"
+      let riskLevel = 'bajo';
+      if (attendanceRate < 0.7 || student.absentClasses >= 3) riskLevel = 'crítico';
+      else if (attendanceRate < 0.8 || student.absentClasses >= 2) riskLevel = 'alto';
+      else if (attendanceRate < 0.9 || student.lateArrivals >= 3) riskLevel = 'medio';
 
       return {
         ...student,
         attendanceRate,
         punctualityRate,
         riskLevel,
-        trend: "estable", // TODO: Calcular tendencia real
-      }
+        trend: 'estable', // TODO: Calcular tendencia real
+      };
     })
-    .filter((student) => student.riskLevel === "alto" || student.riskLevel === "crítico")
+    .filter((student) => student.riskLevel === 'alto' || student.riskLevel === 'crítico');
 
-  return riskStudents
-}
+  return riskStudents;
+};
 
 const loadDashboardMetrics = async (): Promise<void> => {
   try {
     const attendanceReport = await dailyAttendanceService.getDailyAttendanceReport(
-      new Date().toISOString().split("T")[0]
-    )
-    const attendanceData = attendanceReport.records || []
+      new Date().toISOString().split('T')[0],
+    );
+    const attendanceData = attendanceReport.records || [];
 
     // Calcular métricas
-    const totalRecords = attendanceData.length
+    const totalRecords = attendanceData.length;
     const presentCount = attendanceData.filter(
-      (r) => r.status === "Presente" || r.status === "Tardanza"
-    ).length
-    averageAttendanceRate.value = Math.round((presentCount / totalRecords) * 100)
+      (r) => r.status === 'Presente' || r.status === 'Tardanza',
+    ).length;
+    averageAttendanceRate.value = Math.round((presentCount / totalRecords) * 100);
 
-    const riskStudents = await calculateStudentsAtRisk(attendanceData)
-    studentsAtRisk.value = riskStudents.length
+    const riskStudents = await calculateStudentsAtRisk(attendanceData);
+    studentsAtRisk.value = riskStudents.length;
 
     // Cargar analytics
-    await loadAnalyticsData(attendanceData)
+    await loadAnalyticsData(attendanceData);
   } catch (error) {
-    console.error("Error cargando métricas:", error)
+    console.error('Error cargando métricas:', error);
   }
-}
+};
 
 const loadAnalyticsData = async (attendanceData: any[]): Promise<void> => {
   try {
     // Inicializar motor de analytics
-    analyticsEngine.initializeWithData(attendanceData)
+    analyticsEngine.initializeWithData(attendanceData);
 
     // Obtener patrones y insights
-    const patterns = analyticsEngine.getPatterns()
-    const insights = analyticsEngine.getPredictiveInsights()
+    const patterns = analyticsEngine.getPatterns();
+    const insights = analyticsEngine.getPredictiveInsights();
 
     // Transformar para la UI
     detectedPatterns.value = patterns.slice(0, 5).map((pattern, index) => ({
       id: index,
-      title: pattern.description.split(".")[0],
+      title: pattern.description.split('.')[0],
       description: pattern.description,
       severity: pattern.severity,
       confidence: Math.round(pattern.confidence * 100),
       recommendations: pattern.recommendations,
-    }))
+    }));
 
     predictiveInsights.value = insights.slice(0, 3).map((insight, index) => ({
       id: index,
-      title: `Riesgo de ${insight.type.replace("_", " ")}`,
+      title: `Riesgo de ${insight.type.replace('_', ' ')}`,
       description: `${insight.targetStudents.length} estudiantes identificados con riesgo en ${insight.timeframe}`,
       probability: insight.probability,
       preventiveActions: insight.preventiveActions,
-    }))
+    }));
   } catch (error) {
-    console.error("Error cargando analytics:", error)
+    console.error('Error cargando analytics:', error);
   }
-}
+};
 
 const loadReportHistory = (): void => {
   // TODO: Cargar historial real desde el backend
-  console.log("Cargando historial de reportes...")
-}
+  console.log('Cargando historial de reportes...');
+};
 
 // Métodos de UI
 const getPatternSeverityClass = (severity: string): string => {
   switch (severity) {
-    case "critical":
-      return "bg-red-50 dark:bg-red-900 border-red-500 text-red-800 dark:text-red-200"
-    case "high":
-      return "bg-orange-50 dark:bg-orange-900 border-orange-500 text-orange-800 dark:text-orange-200"
-    case "medium":
-      return "bg-yellow-50 dark:bg-yellow-900 border-yellow-500 text-yellow-800 dark:text-yellow-200"
-    default:
-      return "bg-blue-50 dark:bg-blue-900 border-blue-500 text-blue-800 dark:text-blue-200"
+  case 'critical':
+    return 'bg-red-50 dark:bg-red-900 border-red-500 text-red-800 dark:text-red-200';
+  case 'high':
+    return 'bg-orange-50 dark:bg-orange-900 border-orange-500 text-orange-800 dark:text-orange-200';
+  case 'medium':
+    return 'bg-yellow-50 dark:bg-yellow-900 border-yellow-500 text-yellow-800 dark:text-yellow-200';
+  default:
+    return 'bg-blue-50 dark:bg-blue-900 border-blue-500 text-blue-800 dark:text-blue-200';
   }
-}
+};
 
 const getReportIcon = (type: string): string => {
   switch (type) {
-    case "attendance":
-      return "📊"
-    case "risk":
-      return "⚠️"
-    case "class":
-      return "📚"
-    case "notification":
-      return "📱"
-    default:
-      return "📄"
+  case 'attendance':
+    return '📊';
+  case 'risk':
+    return '⚠️';
+  case 'class':
+    return '📚';
+  case 'notification':
+    return '📱';
+  default:
+    return '📄';
   }
-}
+};
 
 const getReportTypeClass = (type: string): string => {
   switch (type) {
-    case "attendance":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-    case "risk":
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-    case "class":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+  case 'attendance':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+  case 'risk':
+    return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+  case 'class':
+    return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
   }
-}
+};
 
 const getReportTypeLabel = (type: string): string => {
   switch (type) {
-    case "attendance":
-      return "Asistencia"
-    case "risk":
-      return "Riesgo"
-    case "class":
-      return "Clase"
-    case "notification":
-      return "Notificación"
-    default:
-      return "Otro"
+  case 'attendance':
+    return 'Asistencia';
+  case 'risk':
+    return 'Riesgo';
+  case 'class':
+    return 'Clase';
+  case 'notification':
+    return 'Notificación';
+  default:
+    return 'Otro';
   }
-}
+};
 
 const getStatusClass = (status: string): string => {
   switch (status) {
-    case "completed":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-    case "generating":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-    case "failed":
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+  case 'completed':
+    return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+  case 'generating':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+  case 'failed':
+    return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
   }
-}
+};
 
 const getStatusLabel = (status: string): string => {
   switch (status) {
-    case "completed":
-      return "Completado"
-    case "generating":
-      return "Generando"
-    case "failed":
-      return "Error"
-    default:
-      return "Desconocido"
+  case 'completed':
+    return 'Completado';
+  case 'generating':
+    return 'Generando';
+  case 'failed':
+    return 'Error';
+  default:
+    return 'Desconocido';
   }
-}
+};
 
 const formatDisplayDate = (date: Date): string => {
-  return formatDate(new Date(date), "dd/MM/yyyy HH:mm", {locale: es})
-}
+  return formatDate(new Date(date), 'dd/MM/yyyy HH:mm', { locale: es });
+};
 
 // Event handlers
 const handleReportGeneration = (reportConfig: any): void => {
-  console.log("Generando reporte con configuración:", reportConfig)
-  showReportWizard.value = false
+  console.log('Generando reporte con configuración:', reportConfig);
+  showReportWizard.value = false;
   // TODO: Implementar generación basada en configuración
-}
+};
 
 const downloadReport = (report: any): void => {
-  console.log("Descargando reporte:", report.name)
+  console.log('Descargando reporte:', report.name);
   // TODO: Implementar descarga de reporte existente
-}
+};
 
 const viewReportDetails = (report: any): void => {
-  console.log("Viendo detalles del reporte:", report.name)
+  console.log('Viendo detalles del reporte:', report.name);
   // TODO: Implementar vista de detalles
-}
+};
 
 const regenerateReport = (report: any): void => {
-  console.log("Regenerando reporte:", report.name)
+  console.log('Regenerando reporte:', report.name);
   // TODO: Implementar regeneración
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  await loadDashboardMetrics()
-  totalReportsGenerated.value = 127 // TODO: Obtener de BD
-  totalExports.value = 89 // TODO: Obtener de BD
-})
+  await loadDashboardMetrics();
+  totalReportsGenerated.value = 127; // TODO: Obtener de BD
+  totalExports.value = 89; // TODO: Obtener de BD
+});
 </script>

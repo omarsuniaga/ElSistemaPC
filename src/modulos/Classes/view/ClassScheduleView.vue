@@ -123,7 +123,7 @@ const showEventDialog = ref(false);
 onMounted(async () => {
   await Promise.all([
     classesStore.fetchClasses(),
-    teachersStore.fetchTeachers()
+    teachersStore.fetchTeachers(),
   ]);
 });
 
@@ -136,7 +136,7 @@ const filteredClasses = computed(() => {
     c.name.toLowerCase().includes(searchLower) ||
     c.level.toLowerCase().includes(searchLower) ||
     c.instrument.toLowerCase().includes(searchLower) ||
-    getTeacherName(c.teacherId).toLowerCase().includes(searchLower)
+    getTeacherName(c.teacherId).toLowerCase().includes(searchLower),
   );
 });
 
@@ -176,7 +176,7 @@ const calendarEvents = computed(() => {
         classItem: cls,
         teacherName: getTeacherName(cls.teacherId),
         studentsCount: cls.studentIds?.length || 0,
-        description: cls.description
+        description: cls.description,
       };
     }).filter(Boolean);
   });
@@ -202,7 +202,7 @@ const filteredEvents = computed(() => {
           slot && typeof slot === 'object' && 
           'day' in slot && 
           typeof slot.day === 'string' &&
-          slot.day.toLowerCase() === dayOfWeek.toLowerCase()
+          slot.day.toLowerCase() === dayOfWeek.toLowerCase(),
         );
       }
       

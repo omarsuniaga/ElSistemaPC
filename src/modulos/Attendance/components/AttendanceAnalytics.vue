@@ -1,38 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useAttendanceStore} from "../store/attendance"
-import AbsenteesList from "../../../components/AbsenteesList.vue"
-
-const attendanceStore = useAttendanceStore()
-
-const isLoading = ref(true)
-const error = ref("")
-
-const analytics = computed(() => attendanceStore.analytics)
-
-const getAttendanceRateClass = (rate: number) => {
-  if (rate >= 90) return "text-green-600 dark:text-green-400"
-  if (rate >= 75) return "text-yellow-600 dark:text-yellow-400"
-  return "text-red-600 dark:text-red-400"
-}
-
-const updateAnalytics = async () => {
-  try {
-    isLoading.value = true
-    await attendanceStore.updateAnalytics()
-  } catch (err) {
-    error.value = "Error al cargar las estadísticas"
-    console.error("Error updating analytics:", err)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(updateAnalytics)
-
-// Watch for changes in attendance records to update analytics
-watch(() => attendanceStore.records.length, updateAnalytics)
-</script>
 <template>
   <div class="space-y-6">
     <!-- Loading State -->
@@ -174,3 +139,38 @@ watch(() => attendanceStore.records.length, updateAnalytics)
     </div>
   </div>
 </template>
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { useAttendanceStore } from '../store/attendance';
+import AbsenteesList from '../../../components/AbsenteesList.vue';
+
+const attendanceStore = useAttendanceStore();
+
+const isLoading = ref(true);
+const error = ref('');
+
+const analytics = computed(() => attendanceStore.analytics);
+
+const getAttendanceRateClass = (rate: number) => {
+  if (rate >= 90) return 'text-green-600 dark:text-green-400';
+  if (rate >= 75) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-red-600 dark:text-red-400';
+};
+
+const updateAnalytics = async () => {
+  try {
+    isLoading.value = true;
+    await attendanceStore.updateAnalytics();
+  } catch (err) {
+    error.value = 'Error al cargar las estadísticas';
+    console.error('Error updating analytics:', err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(updateAnalytics);
+
+// Watch for changes in attendance records to update analytics
+watch(() => attendanceStore.records.length, updateAnalytics);
+</script>

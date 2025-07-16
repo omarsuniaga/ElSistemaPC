@@ -1,786 +1,4 @@
-﻿<script setup lang="ts">
-import {computed, onMounted, ref} from "vue"
-import {useRouter} from "vue-router"
-import {
-  CalendarIcon,
-  MapPinIcon,
-  UserGroupIcon,
-  PencilIcon,
-  TrashIcon,
-  UserPlusIcon,
-  ClipboardDocumentCheckIcon,
-  XMarkIcon,
-  EyeIcon,
-  MusicalNoteIcon,
-  EllipsisVerticalIcon,
-  ShareIcon,
-  ClockIcon,
-  BuildingOfficeIcon,
-  DocumentTextIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  UserIcon,
-  PrinterIcon,
-} from "@heroicons/vue/24/outline"
-import {
-  Dialog,
-  DialogPanel,
-  DialogTitle,
-  TransitionChild,
-  TransitionRoot,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuItems,
-} from "@headlessui/vue"
-import {useStudentsStore} from "../../../modulos/Students/store/students"
-import {useTeachersStore} from "../store/teachers"
-import {useTeacherCollaboration} from "../../../modulos/Classes/composables/useTeacherCollaboration"
-import {useAuthStore} from "../../../stores/auth"
-import {format} from "date-fns"
-import jsPDF from "jspdf"
-import "jspdf-autotable"
-import ShareClassModal from "./ShareClassModal.vue"
-
-const props = defineProps({
-  classData: {
-    type: Object,
-    required: true,
-  },
-  viewMode: {
-    type: String,
-    default: "card", // 'card' | 'list'
-    validator: (value: string) => ["card", "list"].includes(value),
-  },
-})
-
-const emit = defineEmits([
-  "view",
-  "edit",
-  "delete",
-  "manage-students",
-  "take-attendance",
-  "view-history",
-  "collaboration-updated",
-])
-
-// Stores
-const studentsStore = useStudentsStore()
-const teachersStore = useTeachersStore()
-const authStore = useAuthStore()
-const {inviteAssistant} = useTeacherCollaboration()
-
-// Router para la navegación
-const router = useRouter()
-
-// Estados para modales
-const showStudentsModal = ref(false)
-const showShareModal = ref(false)
-const showPermissionsModal = ref(false)
-const showManageCollaboratorsModal = ref(false)
-const selectedTeacherId = ref("")
-const isExpanded = ref(false)
-
-// Permisos para maestros asistentes
-const assistantPermissions = ref({
-  canTakeAttendance: true,
-  canAddObservations: true,
-  canViewAttendanceHistory: false,
-})
-
-// Estado de carga
-const isLoading = ref(false)
-
-// Verificación segura para validar studentIds
-const hasStudentIds = computed(() => {
-  return Array.isArray(props.classData.studentIds) && props.classData.studentIds.length > 0
-})
-
-// Determinar si es clase compartida (el usuario actual es asistente)
-const isSharedClass = computed(() => {
-  return props.classData.myRole === "assistant"
-})
-
-// Obtener el nombre del maestro principal para clases compartidas
-const leadTeacherName = computed(() => {
-  if (isSharedClass.value && props.classData.leadTeacher) {
-    return props.classData.leadTeacher.name || "Maestro Principal"
-  }
-  return ""
-})
-
-// Verificar si el usuario actual puede compartir la clase (solo maestros principales)
-const canShareClass = computed(() => {
-  return (
-    props.classData.myRole === "lead" ||
-    (!props.classData.myRole && props.classData.teacherId === authStore.user?.uid)
-  )
-})
-
-// Verificar si la clase tiene colaboradores (maestros asistentes)
-const hasAssistants = computed(() => {
-  return props.classData.assistantTeachers && props.classData.assistantTeachers.length > 0
-})
-
-// Obtener los permisos específicos del usuario actual en la clase
-const myPermissions = computed(() => {
-  if (isSharedClass.value && props.classData.myPermissions) {
-    return props.classData.myPermissions
-  }
-  // Si es maestro principal, tiene todos los permisos
-  if (canShareClass.value) {
-    return {
-      canTakeAttendance: true,
-      canAddObservations: true,
-      canViewAttendanceHistory: true,
-      canManageStudents: true,
-      canEditClass: true,
-    }
-  }
-  return {}
-})
-
-// Obtener el indicador de rol
-const roleIndicator = computed(() => {
-  if (isSharedClass.value) {
-    return {
-      text: "Asistente",
-      icon: "👥",
-      class: "bg-blue-100 text-blue-800 border border-blue-200",
-    }
-  } else if (hasAssistants.value) {
-    return {
-      text: "Principal",
-      icon: "👑",
-      class: "bg-yellow-100 text-yellow-800 border border-yellow-200",
-    }
-  } else {
-    return {
-      text: "Titular",
-      icon: "🎓",
-      class: "bg-green-100 text-green-800 border border-green-200",
-    }
-  }
-})
-
-// Formatear horarios para mostrar
-const formatSchedule = computed(() => {
-  if (props.classData.horarios && props.classData.horarios.length > 0) {
-    return props.classData.horarios
-      .map(
-        (h: {day: string; startTime: string; endTime: string}) =>
-          `${h.day}: ${h.startTime} - ${h.endTime}`
-      )
-      .join(", ")
-  }
-  if (props.classData.startTime && props.classData.endTime) {
-    return `${props.classData.startTime} - ${props.classData.endTime}`
-  }
-  return "Sin horario definido"
-})
-const hasCollaborators = computed(() => {
-  return (
-    canShareClass.value &&
-    props.classData.assistantTeachers &&
-    props.classData.assistantTeachers.length > 0
-  )
-})
-
-// Obtener lista de colaboradores para mostrar
-const collaboratorsList = computed(() => {
-  if (!hasCollaborators.value) return []
-  return (
-    props.classData.assistantTeachers?.map(
-      (teacher: {name?: string}) => teacher.name || "Maestro"
-    ) || []
-  )
-})
-
-// Función para obtener el color del día
-const getDayColor = computed(() => {
-  const day = props.classData.schedule?.slots?.[0]?.day as string
-  if (!day) {
-    return {
-      border: "border-t-gray-400",
-      bg: "bg-gray-50 dark:bg-gray-700",
-      text: "text-gray-600 dark:text-gray-300",
-      accent: "accent-gray-500",
-      shadow: "shadow-gray-200",
-    }
-  }
-  const normalizedDay = typeof day === "string" ? day.toLowerCase().trim() : String(day)
-  const dayColors = {
-    // Lunes - Azul
-    lunes: {
-      border: "border-t-blue-500",
-      bg: "bg-blue-50 dark:bg-blue-900/20",
-      text: "text-blue-700 dark:text-blue-300",
-      accent: "accent-blue-500",
-      shadow: "shadow-blue-200",
-    },
-    lun: {
-      border: "border-t-blue-500",
-      bg: "bg-blue-50 dark:bg-blue-900/20",
-      text: "text-blue-700 dark:text-blue-300",
-      accent: "accent-blue-500",
-      shadow: "shadow-blue-200",
-    },
-    monday: {
-      border: "border-t-blue-500",
-      bg: "bg-blue-50 dark:bg-blue-900/20",
-      text: "text-blue-700 dark:text-blue-300",
-      accent: "accent-blue-500",
-      shadow: "shadow-blue-200",
-    },
-    "1": {
-      border: "border-t-blue-500",
-      bg: "bg-blue-50 dark:bg-blue-900/20",
-      text: "text-blue-700 dark:text-blue-300",
-      accent: "accent-blue-500",
-      shadow: "shadow-blue-200",
-    },
-
-    // Martes - Verde
-    martes: {
-      border: "border-t-green-500",
-      bg: "bg-green-50 dark:bg-green-900/20",
-      text: "text-green-700 dark:text-green-300",
-      accent: "accent-green-500",
-      shadow: "shadow-green-200",
-    },
-    mar: {
-      border: "border-t-green-500",
-      bg: "bg-green-50 dark:bg-green-900/20",
-      text: "text-green-700 dark:text-green-300",
-      accent: "accent-green-500",
-      shadow: "shadow-green-200",
-    },
-    tuesday: {
-      border: "border-t-green-500",
-      bg: "bg-green-50 dark:bg-green-900/20",
-      text: "text-green-700 dark:text-green-300",
-      accent: "accent-green-500",
-      shadow: "shadow-green-200",
-    },
-    "2": {
-      border: "border-t-green-500",
-      bg: "bg-green-50 dark:bg-green-900/20",
-      text: "text-green-700 dark:text-green-300",
-      accent: "accent-green-500",
-      shadow: "shadow-green-200",
-    },
-
-    // Miércoles - Amarillo/Ámbar
-    miércoles: {
-      border: "border-t-amber-500",
-      bg: "bg-amber-50 dark:bg-amber-900/20",
-      text: "text-amber-700 dark:text-amber-300",
-      accent: "accent-amber-500",
-      shadow: "shadow-amber-200",
-    },
-    miercoles: {
-      border: "border-t-amber-500",
-      bg: "bg-amber-50 dark:bg-amber-900/20",
-      text: "text-amber-700 dark:text-amber-300",
-      accent: "accent-amber-500",
-      shadow: "shadow-amber-200",
-    },
-    mié: {
-      border: "border-t-amber-500",
-      bg: "bg-amber-50 dark:bg-amber-900/20",
-      text: "text-amber-700 dark:text-amber-300",
-      accent: "accent-amber-500",
-      shadow: "shadow-amber-200",
-    },
-    wednesday: {
-      border: "border-t-amber-500",
-      bg: "bg-amber-50 dark:bg-amber-900/20",
-      text: "text-amber-700 dark:text-amber-300",
-      accent: "accent-amber-500",
-      shadow: "shadow-amber-200",
-    },
-    "3": {
-      border: "border-t-amber-500",
-      bg: "bg-amber-50 dark:bg-amber-900/20",
-      text: "text-amber-700 dark:text-amber-300",
-      accent: "accent-amber-500",
-      shadow: "shadow-amber-200",
-    },
-
-    // Jueves - Púrpura
-    jueves: {
-      border: "border-t-purple-500",
-      bg: "bg-purple-50 dark:bg-purple-900/20",
-      text: "text-purple-700 dark:text-purple-300",
-      accent: "accent-purple-500",
-      shadow: "shadow-purple-200",
-    },
-    jue: {
-      border: "border-t-purple-500",
-      bg: "bg-purple-50 dark:bg-purple-900/20",
-      text: "text-purple-700 dark:text-purple-300",
-      accent: "accent-purple-500",
-      shadow: "shadow-purple-200",
-    },
-    thursday: {
-      border: "border-t-purple-500",
-      bg: "bg-purple-50 dark:bg-purple-900/20",
-      text: "text-purple-700 dark:text-purple-300",
-      accent: "accent-purple-500",
-      shadow: "shadow-purple-200",
-    },
-    "4": {
-      border: "border-t-purple-500",
-      bg: "bg-purple-50 dark:bg-purple-900/20",
-      text: "text-purple-700 dark:text-purple-300",
-      accent: "accent-purple-500",
-      shadow: "shadow-purple-200",
-    },
-
-    // Viernes - Rosa
-    viernes: {
-      border: "border-t-pink-500",
-      bg: "bg-pink-50 dark:bg-pink-900/20",
-      text: "text-pink-700 dark:text-pink-300",
-      accent: "accent-pink-500",
-      shadow: "shadow-pink-200",
-    },
-    vie: {
-      border: "border-t-pink-500",
-      bg: "bg-pink-50 dark:bg-pink-900/20",
-      text: "text-pink-700 dark:text-pink-300",
-      accent: "accent-pink-500",
-      shadow: "shadow-pink-200",
-    },
-    friday: {
-      border: "border-t-pink-500",
-      bg: "bg-pink-50 dark:bg-pink-900/20",
-      text: "text-pink-700 dark:text-pink-300",
-      accent: "accent-pink-500",
-      shadow: "shadow-pink-200",
-    },
-    "5": {
-      border: "border-t-pink-500",
-      bg: "bg-pink-50 dark:bg-pink-900/20",
-      text: "text-pink-700 dark:text-pink-300",
-      accent: "accent-pink-500",
-      shadow: "shadow-pink-200",
-    },
-
-    // Sábado - Índigo
-    sábado: {
-      border: "border-t-indigo-500",
-      bg: "bg-indigo-50 dark:bg-indigo-900/20",
-      text: "text-indigo-700 dark:text-indigo-300",
-      accent: "accent-indigo-500",
-      shadow: "shadow-indigo-200",
-    },
-    sabado: {
-      border: "border-t-indigo-500",
-      bg: "bg-indigo-50 dark:bg-indigo-900/20",
-      text: "text-indigo-700 dark:text-indigo-300",
-      accent: "accent-indigo-500",
-      shadow: "shadow-indigo-200",
-    },
-    sáb: {
-      border: "border-t-indigo-500",
-      bg: "bg-indigo-50 dark:bg-indigo-900/20",
-      text: "text-indigo-700 dark:text-indigo-300",
-      accent: "accent-indigo-500",
-      shadow: "shadow-indigo-200",
-    },
-    saturday: {
-      border: "border-t-indigo-500",
-      bg: "bg-indigo-50 dark:bg-indigo-900/20",
-      text: "text-indigo-700 dark:text-indigo-300",
-      accent: "accent-indigo-500",
-      shadow: "shadow-indigo-200",
-    },
-    "6": {
-      border: "border-t-indigo-500",
-      bg: "bg-indigo-50 dark:bg-indigo-900/20",
-      text: "text-indigo-700 dark:text-indigo-300",
-      accent: "accent-indigo-500",
-      shadow: "shadow-indigo-200",
-    },
-
-    // Domingo - Rojo
-    domingo: {
-      border: "border-t-red-500",
-      bg: "bg-red-50 dark:bg-red-900/20",
-      text: "text-red-700 dark:text-red-300",
-      accent: "accent-red-500",
-      shadow: "shadow-red-200",
-    },
-    dom: {
-      border: "border-t-red-500",
-      bg: "bg-red-50 dark:bg-red-900/20",
-      text: "text-red-700 dark:text-red-300",
-      accent: "accent-red-500",
-      shadow: "shadow-red-200",
-    },
-    sunday: {
-      border: "border-t-red-500",
-      bg: "bg-red-50 dark:bg-red-900/20",
-      text: "text-red-700 dark:text-red-300",
-      accent: "accent-red-500",
-      shadow: "shadow-red-200",
-    },
-    "0": {
-      border: "border-t-red-500",
-      bg: "bg-red-50 dark:bg-red-900/20",
-      text: "text-red-700 dark:text-red-300",
-      accent: "accent-red-500",
-      shadow: "shadow-red-200",
-    },
-  }
-
-  return (
-    (dayColors as Record<string, any>)[normalizedDay] || {
-      border: "border-t-gray-400",
-      bg: "bg-gray-50 dark:bg-gray-700",
-      text: "text-gray-600 dark:text-gray-300",
-      accent: "accent-gray-500",
-      shadow: "shadow-gray-200",
-    }
-  )
-})
-
-// Formatear nombre del día
-const formatDayName = (day: string) => {
-  const dayNames: Record<string, string> = {
-    monday: "Lunes",
-    tuesday: "Martes",
-    wednesday: "Miércoles",
-    thursday: "Jueves",
-    friday: "Viernes",
-    saturday: "Sábado",
-    sunday: "Domingo",
-  }
-  return dayNames[day.toLowerCase()] || day
-}
-
-// Formatear el horario de la clase
-const formattedSchedule = computed(() => {
-  if (!props.classData.schedule?.slots?.length) {
-    return "Sin horario definido"
-  }
-
-  const slot = props.classData.schedule.slots[0]
-  const dayName = formatDayName(slot.day)
-  return `${dayName} de ${slot.startTime} a ${slot.endTime}`
-})
-
-// Obtener maestros disponibles para compartir
-const availableTeachers = computed(() => {
-  return teachersStore.teachers.filter(
-    (teacher) => teacher.id !== props.classData.teacherId // Excluir al maestro principal
-  )
-})
-
-// Obtiene los tres primeros estudiantes para mostrar en la tarjeta
-const topStudents = computed(() => {
-  if (!hasStudentIds.value) return []
-
-  const result = []
-  const sliceLength = Math.min(3, props.classData.studentIds.length)
-
-  for (let i = 0; i < sliceLength; i++) {
-    const id = props.classData.studentIds[i]
-    const student = studentsStore.getStudentById(id)
-
-    if (student) {
-      result.push(`${student.nombre || ""} ${student.apellido || ""}`.trim() || "Sin nombre")
-    } else {
-      result.push(`Estudiante ${id}`)
-    }
-  }
-
-  return result
-})
-
-// Calcula el número de estudiantes adicionales
-const additionalStudents = computed(() => {
-  if (!hasStudentIds.value) return 0
-  return Math.max(0, props.classData.studentIds.length - 3)
-})
-
-// Obtiene todos los estudiantes para el modal
-const allStudents = computed(() => {
-  if (!hasStudentIds.value) return []
-  return props.classData.studentIds.map((id: string) => {
-    const student = studentsStore.getStudentById(id)
-    return {
-      id: student?.id || id,
-      name: student
-        ? `${student.nombre || ""} ${student.apellido || ""}`.trim()
-        : `Estudiante ${id}`,
-      instrument: student?.instrumento || "No especificado",
-      age: student?.edad || "N/A",
-    }
-  })
-})
-
-// Manejadores de eventos
-const handleView = () => {
-  try {
-    // Obtener información de rol de usuario desde localStorage o del store de autenticación
-    let userRole
-    try {
-      const userDataStr = localStorage.getItem("user")
-      if (userDataStr) {
-        const userData = JSON.parse(userDataStr)
-        userRole = userData.role
-      }
-    } catch (e) {
-      console.warn("No se pudo obtener el rol de usuario desde localStorage")
-    }
-
-    // Si es maestro, utilizar la ruta específica para evitar problemas
-    if (userRole === "Maestro") {
-      router
-        .push({
-          name: "TeacherClassDetail",
-          params: {id: props.classData.id},
-        })
-        .catch((error) => {
-          console.error("Error al navegar a vista de maestro:", error)
-          // Como fallback, emitir el evento original
-          emit("view", props.classData.id)
-        })
-    } else {
-      // Para directores y admin, usar la vista regular de clase
-      router
-        .push({
-          name: "ClassDetail",
-          params: {id: props.classData.id},
-        })
-        .catch((error) => {
-          console.error("Error al navegar a vista general:", error)
-          // Como fallback, emitir el evento original
-          emit("view", props.classData.id)
-        })
-    }
-  } catch (error) {
-    console.error("Error al manejar navegación:", error)
-    // En caso de cualquier error, usar el método de emisión de evento
-    emit("view", props.classData.id)
-  }
-}
-
-const handleEdit = () => emit("edit", props.classData.id)
-const handleDelete = () => emit("delete", props.classData.id)
-const handleManageStudents = () => emit("manage-students", props.classData.id)
-
-const handleTakeAttendance = () => {
-  // Verificar permisos antes de proceder
-  if (isSharedClass.value && !myPermissions.value.canTakeAttendance) {
-    console.warn("No tienes permisos para tomar asistencia en esta clase")
-    return
-  }
-  const today = new Date()
-  const dateString = format(today, "yyyyMMdd")
-
-  router.push({
-    name: "attendance",
-    params: {
-      classId: props.classData.id,
-      date: dateString,
-    },
-  })
-}
-
-const handleViewHistory = () => {
-  emit("view-history", props.classData.id)
-}
-
-// Mostrar modal de estudiantes
-const handleShowStudents = () => {
-  showStudentsModal.value = true
-}
-
-// Función para generar PDF de la clase
-const handlePrintClass = async () => {
-  try {
-    const doc = new jsPDF()
-
-    // Título principal
-    doc.setFont("helvetica", "bold")
-    doc.setFontSize(20)
-    doc.text("Reporte de Clase", 20, 30)
-
-    // Información básica de la clase
-    doc.setFont("helvetica", "normal")
-    doc.setFontSize(16)
-    doc.text(`Clase: ${props.classData.name}`, 20, 50)
-
-    doc.setFontSize(12)
-    doc.setFont("helvetica", "normal")
-    doc.text(`Descripción: ${props.classData.description || "Sin descripción"}`, 20, 65)
-
-    // Obtener información del maestro
-    const teacher = teachersStore.getTeacherById(props.classData.teacherId)
-    doc.text(`Maestro: ${teacher?.name || "No asignado"}`, 20, 80)
-
-    doc.text(`Horario: ${formattedSchedule.value}`, 20, 95)
-    doc.text(`Salón: ${props.classData.classroom || "Sin asignar"}`, 20, 110)
-    doc.text(
-      `Total de estudiantes: ${hasStudentIds.value ? props.classData.studentIds.length : 0}`,
-      20,
-      125
-    )
-
-    // Lista de estudiantes en tabla
-    if (hasStudentIds.value && props.classData.studentIds.length > 0) {
-      const studentRows = []
-
-      for (const studentId of props.classData.studentIds) {
-        const student = studentsStore.getStudentById(studentId)
-        if (student) {
-          studentRows.push([
-            student.id || studentId,
-            `${student.nombre || ""} ${student.apellido || ""}`.trim() || "Sin nombre",
-            student.edad || "N/A",
-            student.phone || "Sin teléfono",
-          ])
-        }
-      }
-
-      // Añadir tabla con autoTable
-      ;(doc as any).autoTable({
-        head: [["ID", "Nombre Completo", "Edad", "Teléfono"]],
-        body: studentRows,
-        startY: 140,
-        theme: "grid",
-        headStyles: {fillColor: [66, 139, 202]},
-        styles: {fontSize: 10},
-        margin: {left: 20, right: 20},
-      })
-    }
-
-    // Añadir fecha de generación
-    const currentDate = format(new Date(), "dd/MM/yyyy HH:mm")
-    doc.setFontSize(8)
-    doc.text(`Generado el: ${currentDate}`, 20, doc.internal.pageSize.height - 20)
-
-    // Guardar el PDF
-    const fileName = `Clase_${props.classData.name.replace(/\s+/g, "_")}_${format(new Date(), "yyyyMMdd")}.pdf`
-    doc.save(fileName)
-  } catch (error) {
-    console.error("Error generating PDF:", error)
-    alert("Error al generar el PDF. Por favor, inténtalo de nuevo.")
-  }
-}
-
-// Manejar compartir clase
-const handleShare = () => {
-  showShareModal.value = true
-}
-
-const selectTeacher = (teacherId: string) => {
-  selectedTeacherId.value = teacherId
-  showShareModal.value = false
-  showPermissionsModal.value = true
-}
-
-const confirmShare = async () => {
-  if (!selectedTeacherId.value) return
-
-  isLoading.value = true
-  try {
-    await inviteAssistant({
-      classId: props.classData.id,
-      teacherId: selectedTeacherId.value,
-      permissions: assistantPermissions.value,
-    })
-
-    showPermissionsModal.value = false
-    selectedTeacherId.value = ""
-
-    alert("Maestro asistente invitado exitosamente")
-  } catch (error) {
-    console.error("Error inviting teacher:", error)
-    alert("Error al invitar maestro asistente")
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const cancelShare = () => {
-  showPermissionsModal.value = false
-  showShareModal.value = false
-  selectedTeacherId.value = ""
-}
-
-// Manejar invitación enviada
-const handleInvitationSent = () => {
-  // Opcional: Actualizar el estado local o mostrar confirmación
-  console.log("Invitación enviada correctamente")
-}
-
-// Manejar abandono de colaboración (maestro asistente)
-const handleLeaveCollaboration = async () => {
-  if (!confirm("¿Estás seguro de que quieres abandonar esta colaboración?")) {
-    return
-  }
-
-  isLoading.value = true
-  try {
-    const {removeAssistant} = useTeacherCollaboration()
-    await removeAssistant(props.classData.id, authStore.user?.uid || "")
-
-    alert("Has abandonado la colaboración exitosamente")
-
-    // Emitir evento para que el padre actualice la lista
-    emit("collaboration-updated")
-  } catch (error) {
-    console.error("Error abandoning colaboration:", error)
-    alert("Error al abandonar la colaboración")
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Remover colaborador (maestro principal)
-const removeCollaborator = async (teacherId: string) => {
-  if (!confirm("¿Estás seguro de que quieres remover este colaborador?")) {
-    return
-  }
-
-  isLoading.value = true
-  try {
-    const {removeAssistant} = useTeacherCollaboration()
-    await removeAssistant(props.classData.id, teacherId)
-
-    alert("Colaborador removido exitosamente")
-    showManageCollaboratorsModal.value = false
-
-    // Emitir evento para que el padre actualice la lista
-    emit("collaboration-updated")
-  } catch (error) {
-    console.error("Error removing collaborator:", error)
-    alert("Error al remover colaborador")
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Cargar datos al montar
-onMounted(async () => {
-  if (!studentsStore.students.length) {
-    await studentsStore.fetchStudents()
-  }
-  if (!teachersStore.teachers.length) {
-    await teachersStore.fetchTeachers()
-  }
-})
-
-const studentCount = computed(() => {
-  return studentsStore.getStudentsByClass(props.classData.id).length
-})
-</script>
-
-<template>
+﻿<template>
   <div
     :class="[
       'relative bg-white dark:bg-gray-800 rounded-xl shadow-md transition-all duration-500 overflow-visible border-t-4 teacher-class-card',
@@ -1693,6 +911,788 @@ const studentCount = computed(() => {
     </TransitionRoot>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import {
+  CalendarIcon,
+  MapPinIcon,
+  UserGroupIcon,
+  PencilIcon,
+  TrashIcon,
+  UserPlusIcon,
+  ClipboardDocumentCheckIcon,
+  XMarkIcon,
+  EyeIcon,
+  MusicalNoteIcon,
+  EllipsisVerticalIcon,
+  ShareIcon,
+  ClockIcon,
+  BuildingOfficeIcon,
+  DocumentTextIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  UserIcon,
+  PrinterIcon,
+} from '@heroicons/vue/24/outline';
+import {
+  Dialog,
+  DialogPanel,
+  DialogTitle,
+  TransitionChild,
+  TransitionRoot,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuItems,
+} from '@headlessui/vue';
+import { useStudentsStore } from '../../../modulos/Students/store/students';
+import { useTeachersStore } from '../store/teachers';
+import { useTeacherCollaboration } from '../../../modulos/Classes/composables/useTeacherCollaboration';
+import { useAuthStore } from '../../../stores/auth';
+import { format } from 'date-fns';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import ShareClassModal from './ShareClassModal.vue';
+
+const props = defineProps({
+  classData: {
+    type: Object,
+    required: true,
+  },
+  viewMode: {
+    type: String,
+    default: 'card', // 'card' | 'list'
+    validator: (value: string) => ['card', 'list'].includes(value),
+  },
+});
+
+const emit = defineEmits([
+  'view',
+  'edit',
+  'delete',
+  'manage-students',
+  'take-attendance',
+  'view-history',
+  'collaboration-updated',
+]);
+
+// Stores
+const studentsStore = useStudentsStore();
+const teachersStore = useTeachersStore();
+const authStore = useAuthStore();
+const { inviteAssistant } = useTeacherCollaboration();
+
+// Router para la navegación
+const router = useRouter();
+
+// Estados para modales
+const showStudentsModal = ref(false);
+const showShareModal = ref(false);
+const showPermissionsModal = ref(false);
+const showManageCollaboratorsModal = ref(false);
+const selectedTeacherId = ref('');
+const isExpanded = ref(false);
+
+// Permisos para maestros asistentes
+const assistantPermissions = ref({
+  canTakeAttendance: true,
+  canAddObservations: true,
+  canViewAttendanceHistory: false,
+});
+
+// Estado de carga
+const isLoading = ref(false);
+
+// Verificación segura para validar studentIds
+const hasStudentIds = computed(() => {
+  return Array.isArray(props.classData.studentIds) && props.classData.studentIds.length > 0;
+});
+
+// Determinar si es clase compartida (el usuario actual es asistente)
+const isSharedClass = computed(() => {
+  return props.classData.myRole === 'assistant';
+});
+
+// Obtener el nombre del maestro principal para clases compartidas
+const leadTeacherName = computed(() => {
+  if (isSharedClass.value && props.classData.leadTeacher) {
+    return props.classData.leadTeacher.name || 'Maestro Principal';
+  }
+  return '';
+});
+
+// Verificar si el usuario actual puede compartir la clase (solo maestros principales)
+const canShareClass = computed(() => {
+  return (
+    props.classData.myRole === 'lead' ||
+    (!props.classData.myRole && props.classData.teacherId === authStore.user?.uid)
+  );
+});
+
+// Verificar si la clase tiene colaboradores (maestros asistentes)
+const hasAssistants = computed(() => {
+  return props.classData.assistantTeachers && props.classData.assistantTeachers.length > 0;
+});
+
+// Obtener los permisos específicos del usuario actual en la clase
+const myPermissions = computed(() => {
+  if (isSharedClass.value && props.classData.myPermissions) {
+    return props.classData.myPermissions;
+  }
+  // Si es maestro principal, tiene todos los permisos
+  if (canShareClass.value) {
+    return {
+      canTakeAttendance: true,
+      canAddObservations: true,
+      canViewAttendanceHistory: true,
+      canManageStudents: true,
+      canEditClass: true,
+    };
+  }
+  return {};
+});
+
+// Obtener el indicador de rol
+const roleIndicator = computed(() => {
+  if (isSharedClass.value) {
+    return {
+      text: 'Asistente',
+      icon: '👥',
+      class: 'bg-blue-100 text-blue-800 border border-blue-200',
+    };
+  } else if (hasAssistants.value) {
+    return {
+      text: 'Principal',
+      icon: '👑',
+      class: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+    };
+  } else {
+    return {
+      text: 'Titular',
+      icon: '🎓',
+      class: 'bg-green-100 text-green-800 border border-green-200',
+    };
+  }
+});
+
+// Formatear horarios para mostrar
+const formatSchedule = computed(() => {
+  if (props.classData.horarios && props.classData.horarios.length > 0) {
+    return props.classData.horarios
+      .map(
+        (h: {day: string; startTime: string; endTime: string}) =>
+          `${h.day}: ${h.startTime} - ${h.endTime}`,
+      )
+      .join(', ');
+  }
+  if (props.classData.startTime && props.classData.endTime) {
+    return `${props.classData.startTime} - ${props.classData.endTime}`;
+  }
+  return 'Sin horario definido';
+});
+const hasCollaborators = computed(() => {
+  return (
+    canShareClass.value &&
+    props.classData.assistantTeachers &&
+    props.classData.assistantTeachers.length > 0
+  );
+});
+
+// Obtener lista de colaboradores para mostrar
+const collaboratorsList = computed(() => {
+  if (!hasCollaborators.value) return [];
+  return (
+    props.classData.assistantTeachers?.map(
+      (teacher: {name?: string}) => teacher.name || 'Maestro',
+    ) || []
+  );
+});
+
+// Función para obtener el color del día
+const getDayColor = computed(() => {
+  const day = props.classData.schedule?.slots?.[0]?.day as string;
+  if (!day) {
+    return {
+      border: 'border-t-gray-400',
+      bg: 'bg-gray-50 dark:bg-gray-700',
+      text: 'text-gray-600 dark:text-gray-300',
+      accent: 'accent-gray-500',
+      shadow: 'shadow-gray-200',
+    };
+  }
+  const normalizedDay = typeof day === 'string' ? day.toLowerCase().trim() : String(day);
+  const dayColors = {
+    // Lunes - Azul
+    lunes: {
+      border: 'border-t-blue-500',
+      bg: 'bg-blue-50 dark:bg-blue-900/20',
+      text: 'text-blue-700 dark:text-blue-300',
+      accent: 'accent-blue-500',
+      shadow: 'shadow-blue-200',
+    },
+    lun: {
+      border: 'border-t-blue-500',
+      bg: 'bg-blue-50 dark:bg-blue-900/20',
+      text: 'text-blue-700 dark:text-blue-300',
+      accent: 'accent-blue-500',
+      shadow: 'shadow-blue-200',
+    },
+    monday: {
+      border: 'border-t-blue-500',
+      bg: 'bg-blue-50 dark:bg-blue-900/20',
+      text: 'text-blue-700 dark:text-blue-300',
+      accent: 'accent-blue-500',
+      shadow: 'shadow-blue-200',
+    },
+    '1': {
+      border: 'border-t-blue-500',
+      bg: 'bg-blue-50 dark:bg-blue-900/20',
+      text: 'text-blue-700 dark:text-blue-300',
+      accent: 'accent-blue-500',
+      shadow: 'shadow-blue-200',
+    },
+
+    // Martes - Verde
+    martes: {
+      border: 'border-t-green-500',
+      bg: 'bg-green-50 dark:bg-green-900/20',
+      text: 'text-green-700 dark:text-green-300',
+      accent: 'accent-green-500',
+      shadow: 'shadow-green-200',
+    },
+    mar: {
+      border: 'border-t-green-500',
+      bg: 'bg-green-50 dark:bg-green-900/20',
+      text: 'text-green-700 dark:text-green-300',
+      accent: 'accent-green-500',
+      shadow: 'shadow-green-200',
+    },
+    tuesday: {
+      border: 'border-t-green-500',
+      bg: 'bg-green-50 dark:bg-green-900/20',
+      text: 'text-green-700 dark:text-green-300',
+      accent: 'accent-green-500',
+      shadow: 'shadow-green-200',
+    },
+    '2': {
+      border: 'border-t-green-500',
+      bg: 'bg-green-50 dark:bg-green-900/20',
+      text: 'text-green-700 dark:text-green-300',
+      accent: 'accent-green-500',
+      shadow: 'shadow-green-200',
+    },
+
+    // Miércoles - Amarillo/Ámbar
+    miércoles: {
+      border: 'border-t-amber-500',
+      bg: 'bg-amber-50 dark:bg-amber-900/20',
+      text: 'text-amber-700 dark:text-amber-300',
+      accent: 'accent-amber-500',
+      shadow: 'shadow-amber-200',
+    },
+    miercoles: {
+      border: 'border-t-amber-500',
+      bg: 'bg-amber-50 dark:bg-amber-900/20',
+      text: 'text-amber-700 dark:text-amber-300',
+      accent: 'accent-amber-500',
+      shadow: 'shadow-amber-200',
+    },
+    mié: {
+      border: 'border-t-amber-500',
+      bg: 'bg-amber-50 dark:bg-amber-900/20',
+      text: 'text-amber-700 dark:text-amber-300',
+      accent: 'accent-amber-500',
+      shadow: 'shadow-amber-200',
+    },
+    wednesday: {
+      border: 'border-t-amber-500',
+      bg: 'bg-amber-50 dark:bg-amber-900/20',
+      text: 'text-amber-700 dark:text-amber-300',
+      accent: 'accent-amber-500',
+      shadow: 'shadow-amber-200',
+    },
+    '3': {
+      border: 'border-t-amber-500',
+      bg: 'bg-amber-50 dark:bg-amber-900/20',
+      text: 'text-amber-700 dark:text-amber-300',
+      accent: 'accent-amber-500',
+      shadow: 'shadow-amber-200',
+    },
+
+    // Jueves - Púrpura
+    jueves: {
+      border: 'border-t-purple-500',
+      bg: 'bg-purple-50 dark:bg-purple-900/20',
+      text: 'text-purple-700 dark:text-purple-300',
+      accent: 'accent-purple-500',
+      shadow: 'shadow-purple-200',
+    },
+    jue: {
+      border: 'border-t-purple-500',
+      bg: 'bg-purple-50 dark:bg-purple-900/20',
+      text: 'text-purple-700 dark:text-purple-300',
+      accent: 'accent-purple-500',
+      shadow: 'shadow-purple-200',
+    },
+    thursday: {
+      border: 'border-t-purple-500',
+      bg: 'bg-purple-50 dark:bg-purple-900/20',
+      text: 'text-purple-700 dark:text-purple-300',
+      accent: 'accent-purple-500',
+      shadow: 'shadow-purple-200',
+    },
+    '4': {
+      border: 'border-t-purple-500',
+      bg: 'bg-purple-50 dark:bg-purple-900/20',
+      text: 'text-purple-700 dark:text-purple-300',
+      accent: 'accent-purple-500',
+      shadow: 'shadow-purple-200',
+    },
+
+    // Viernes - Rosa
+    viernes: {
+      border: 'border-t-pink-500',
+      bg: 'bg-pink-50 dark:bg-pink-900/20',
+      text: 'text-pink-700 dark:text-pink-300',
+      accent: 'accent-pink-500',
+      shadow: 'shadow-pink-200',
+    },
+    vie: {
+      border: 'border-t-pink-500',
+      bg: 'bg-pink-50 dark:bg-pink-900/20',
+      text: 'text-pink-700 dark:text-pink-300',
+      accent: 'accent-pink-500',
+      shadow: 'shadow-pink-200',
+    },
+    friday: {
+      border: 'border-t-pink-500',
+      bg: 'bg-pink-50 dark:bg-pink-900/20',
+      text: 'text-pink-700 dark:text-pink-300',
+      accent: 'accent-pink-500',
+      shadow: 'shadow-pink-200',
+    },
+    '5': {
+      border: 'border-t-pink-500',
+      bg: 'bg-pink-50 dark:bg-pink-900/20',
+      text: 'text-pink-700 dark:text-pink-300',
+      accent: 'accent-pink-500',
+      shadow: 'shadow-pink-200',
+    },
+
+    // Sábado - Índigo
+    sábado: {
+      border: 'border-t-indigo-500',
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      text: 'text-indigo-700 dark:text-indigo-300',
+      accent: 'accent-indigo-500',
+      shadow: 'shadow-indigo-200',
+    },
+    sabado: {
+      border: 'border-t-indigo-500',
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      text: 'text-indigo-700 dark:text-indigo-300',
+      accent: 'accent-indigo-500',
+      shadow: 'shadow-indigo-200',
+    },
+    sáb: {
+      border: 'border-t-indigo-500',
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      text: 'text-indigo-700 dark:text-indigo-300',
+      accent: 'accent-indigo-500',
+      shadow: 'shadow-indigo-200',
+    },
+    saturday: {
+      border: 'border-t-indigo-500',
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      text: 'text-indigo-700 dark:text-indigo-300',
+      accent: 'accent-indigo-500',
+      shadow: 'shadow-indigo-200',
+    },
+    '6': {
+      border: 'border-t-indigo-500',
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20',
+      text: 'text-indigo-700 dark:text-indigo-300',
+      accent: 'accent-indigo-500',
+      shadow: 'shadow-indigo-200',
+    },
+
+    // Domingo - Rojo
+    domingo: {
+      border: 'border-t-red-500',
+      bg: 'bg-red-50 dark:bg-red-900/20',
+      text: 'text-red-700 dark:text-red-300',
+      accent: 'accent-red-500',
+      shadow: 'shadow-red-200',
+    },
+    dom: {
+      border: 'border-t-red-500',
+      bg: 'bg-red-50 dark:bg-red-900/20',
+      text: 'text-red-700 dark:text-red-300',
+      accent: 'accent-red-500',
+      shadow: 'shadow-red-200',
+    },
+    sunday: {
+      border: 'border-t-red-500',
+      bg: 'bg-red-50 dark:bg-red-900/20',
+      text: 'text-red-700 dark:text-red-300',
+      accent: 'accent-red-500',
+      shadow: 'shadow-red-200',
+    },
+    '0': {
+      border: 'border-t-red-500',
+      bg: 'bg-red-50 dark:bg-red-900/20',
+      text: 'text-red-700 dark:text-red-300',
+      accent: 'accent-red-500',
+      shadow: 'shadow-red-200',
+    },
+  };
+
+  return (
+    (dayColors as Record<string, any>)[normalizedDay] || {
+      border: 'border-t-gray-400',
+      bg: 'bg-gray-50 dark:bg-gray-700',
+      text: 'text-gray-600 dark:text-gray-300',
+      accent: 'accent-gray-500',
+      shadow: 'shadow-gray-200',
+    }
+  );
+});
+
+// Formatear nombre del día
+const formatDayName = (day: string) => {
+  const dayNames: Record<string, string> = {
+    monday: 'Lunes',
+    tuesday: 'Martes',
+    wednesday: 'Miércoles',
+    thursday: 'Jueves',
+    friday: 'Viernes',
+    saturday: 'Sábado',
+    sunday: 'Domingo',
+  };
+  return dayNames[day.toLowerCase()] || day;
+};
+
+// Formatear el horario de la clase
+const formattedSchedule = computed(() => {
+  if (!props.classData.schedule?.slots?.length) {
+    return 'Sin horario definido';
+  }
+
+  const slot = props.classData.schedule.slots[0];
+  const dayName = formatDayName(slot.day);
+  return `${dayName} de ${slot.startTime} a ${slot.endTime}`;
+});
+
+// Obtener maestros disponibles para compartir
+const availableTeachers = computed(() => {
+  return teachersStore.teachers.filter(
+    (teacher) => teacher.id !== props.classData.teacherId, // Excluir al maestro principal
+  );
+});
+
+// Obtiene los tres primeros estudiantes para mostrar en la tarjeta
+const topStudents = computed(() => {
+  if (!hasStudentIds.value) return [];
+
+  const result = [];
+  const sliceLength = Math.min(3, props.classData.studentIds.length);
+
+  for (let i = 0; i < sliceLength; i++) {
+    const id = props.classData.studentIds[i];
+    const student = studentsStore.getStudentById(id);
+
+    if (student) {
+      result.push(`${student.nombre || ''} ${student.apellido || ''}`.trim() || 'Sin nombre');
+    } else {
+      result.push(`Estudiante ${id}`);
+    }
+  }
+
+  return result;
+});
+
+// Calcula el número de estudiantes adicionales
+const additionalStudents = computed(() => {
+  if (!hasStudentIds.value) return 0;
+  return Math.max(0, props.classData.studentIds.length - 3);
+});
+
+// Obtiene todos los estudiantes para el modal
+const allStudents = computed(() => {
+  if (!hasStudentIds.value) return [];
+  return props.classData.studentIds.map((id: string) => {
+    const student = studentsStore.getStudentById(id);
+    return {
+      id: student?.id || id,
+      name: student
+        ? `${student.nombre || ''} ${student.apellido || ''}`.trim()
+        : `Estudiante ${id}`,
+      instrument: student?.instrumento || 'No especificado',
+      age: student?.edad || 'N/A',
+    };
+  });
+});
+
+// Manejadores de eventos
+const handleView = () => {
+  try {
+    // Obtener información de rol de usuario desde localStorage o del store de autenticación
+    let userRole;
+    try {
+      const userDataStr = localStorage.getItem('user');
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        userRole = userData.role;
+      }
+    } catch (e) {
+      console.warn('No se pudo obtener el rol de usuario desde localStorage');
+    }
+
+    // Si es maestro, utilizar la ruta específica para evitar problemas
+    if (userRole === 'Maestro') {
+      router
+        .push({
+          name: 'TeacherClassDetail',
+          params: { id: props.classData.id },
+        })
+        .catch((error) => {
+          console.error('Error al navegar a vista de maestro:', error);
+          // Como fallback, emitir el evento original
+          emit('view', props.classData.id);
+        });
+    } else {
+      // Para directores y admin, usar la vista regular de clase
+      router
+        .push({
+          name: 'ClassDetail',
+          params: { id: props.classData.id },
+        })
+        .catch((error) => {
+          console.error('Error al navegar a vista general:', error);
+          // Como fallback, emitir el evento original
+          emit('view', props.classData.id);
+        });
+    }
+  } catch (error) {
+    console.error('Error al manejar navegación:', error);
+    // En caso de cualquier error, usar el método de emisión de evento
+    emit('view', props.classData.id);
+  }
+};
+
+const handleEdit = () => emit('edit', props.classData.id);
+const handleDelete = () => emit('delete', props.classData.id);
+const handleManageStudents = () => emit('manage-students', props.classData.id);
+
+const handleTakeAttendance = () => {
+  // Verificar permisos antes de proceder
+  if (isSharedClass.value && !myPermissions.value.canTakeAttendance) {
+    console.warn('No tienes permisos para tomar asistencia en esta clase');
+    return;
+  }
+  const today = new Date();
+  const dateString = format(today, 'yyyyMMdd');
+
+  router.push({
+    name: 'attendance',
+    params: {
+      classId: props.classData.id,
+      date: dateString,
+    },
+  });
+};
+
+const handleViewHistory = () => {
+  emit('view-history', props.classData.id);
+};
+
+// Mostrar modal de estudiantes
+const handleShowStudents = () => {
+  showStudentsModal.value = true;
+};
+
+// Función para generar PDF de la clase
+const handlePrintClass = async () => {
+  try {
+    const doc = new jsPDF();
+
+    // Título principal
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('Reporte de Clase', 20, 30);
+
+    // Información básica de la clase
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(16);
+    doc.text(`Clase: ${props.classData.name}`, 20, 50);
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Descripción: ${props.classData.description || 'Sin descripción'}`, 20, 65);
+
+    // Obtener información del maestro
+    const teacher = teachersStore.getTeacherById(props.classData.teacherId);
+    doc.text(`Maestro: ${teacher?.name || 'No asignado'}`, 20, 80);
+
+    doc.text(`Horario: ${formattedSchedule.value}`, 20, 95);
+    doc.text(`Salón: ${props.classData.classroom || 'Sin asignar'}`, 20, 110);
+    doc.text(
+      `Total de estudiantes: ${hasStudentIds.value ? props.classData.studentIds.length : 0}`,
+      20,
+      125,
+    );
+
+    // Lista de estudiantes en tabla
+    if (hasStudentIds.value && props.classData.studentIds.length > 0) {
+      const studentRows = [];
+
+      for (const studentId of props.classData.studentIds) {
+        const student = studentsStore.getStudentById(studentId);
+        if (student) {
+          studentRows.push([
+            student.id || studentId,
+            `${student.nombre || ''} ${student.apellido || ''}`.trim() || 'Sin nombre',
+            student.edad || 'N/A',
+            student.phone || 'Sin teléfono',
+          ]);
+        }
+      }
+
+      // Añadir tabla con autoTable
+      ;(doc as any).autoTable({
+        head: [['ID', 'Nombre Completo', 'Edad', 'Teléfono']],
+        body: studentRows,
+        startY: 140,
+        theme: 'grid',
+        headStyles: { fillColor: [66, 139, 202] },
+        styles: { fontSize: 10 },
+        margin: { left: 20, right: 20 },
+      });
+    }
+
+    // Añadir fecha de generación
+    const currentDate = format(new Date(), 'dd/MM/yyyy HH:mm');
+    doc.setFontSize(8);
+    doc.text(`Generado el: ${currentDate}`, 20, doc.internal.pageSize.height - 20);
+
+    // Guardar el PDF
+    const fileName = `Clase_${props.classData.name.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+    doc.save(fileName);
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    alert('Error al generar el PDF. Por favor, inténtalo de nuevo.');
+  }
+};
+
+// Manejar compartir clase
+const handleShare = () => {
+  showShareModal.value = true;
+};
+
+const selectTeacher = (teacherId: string) => {
+  selectedTeacherId.value = teacherId;
+  showShareModal.value = false;
+  showPermissionsModal.value = true;
+};
+
+const confirmShare = async () => {
+  if (!selectedTeacherId.value) return;
+
+  isLoading.value = true;
+  try {
+    await inviteAssistant({
+      classId: props.classData.id,
+      teacherId: selectedTeacherId.value,
+      permissions: assistantPermissions.value,
+    });
+
+    showPermissionsModal.value = false;
+    selectedTeacherId.value = '';
+
+    alert('Maestro asistente invitado exitosamente');
+  } catch (error) {
+    console.error('Error inviting teacher:', error);
+    alert('Error al invitar maestro asistente');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const cancelShare = () => {
+  showPermissionsModal.value = false;
+  showShareModal.value = false;
+  selectedTeacherId.value = '';
+};
+
+// Manejar invitación enviada
+const handleInvitationSent = () => {
+  // Opcional: Actualizar el estado local o mostrar confirmación
+  console.log('Invitación enviada correctamente');
+};
+
+// Manejar abandono de colaboración (maestro asistente)
+const handleLeaveCollaboration = async () => {
+  if (!confirm('¿Estás seguro de que quieres abandonar esta colaboración?')) {
+    return;
+  }
+
+  isLoading.value = true;
+  try {
+    const { removeAssistant } = useTeacherCollaboration();
+    await removeAssistant(props.classData.id, authStore.user?.uid || '');
+
+    alert('Has abandonado la colaboración exitosamente');
+
+    // Emitir evento para que el padre actualice la lista
+    emit('collaboration-updated');
+  } catch (error) {
+    console.error('Error abandoning colaboration:', error);
+    alert('Error al abandonar la colaboración');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Remover colaborador (maestro principal)
+const removeCollaborator = async (teacherId: string) => {
+  if (!confirm('¿Estás seguro de que quieres remover este colaborador?')) {
+    return;
+  }
+
+  isLoading.value = true;
+  try {
+    const { removeAssistant } = useTeacherCollaboration();
+    await removeAssistant(props.classData.id, teacherId);
+
+    alert('Colaborador removido exitosamente');
+    showManageCollaboratorsModal.value = false;
+
+    // Emitir evento para que el padre actualice la lista
+    emit('collaboration-updated');
+  } catch (error) {
+    console.error('Error removing collaborator:', error);
+    alert('Error al remover colaborador');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Cargar datos al montar
+onMounted(async () => {
+  if (!studentsStore.students.length) {
+    await studentsStore.fetchStudents();
+  }
+  if (!teachersStore.teachers.length) {
+    await teachersStore.fetchTeachers();
+  }
+});
+
+const studentCount = computed(() => {
+  return studentsStore.getStudentsByClass(props.classData.id).length;
+});
+</script>
 
 <style scoped>
 /* Custom scrollbar para la lista de estudiantes */

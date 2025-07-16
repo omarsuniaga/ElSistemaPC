@@ -1,16 +1,3 @@
-<script setup lang="ts">
-import {ref} from "vue"
-import {ClipboardDocumentCheckIcon} from "@heroicons/vue/24/outline"
-
-const selectedDate = ref(new Date().toISOString().split("T")[0])
-
-const emit = defineEmits(["take-attendance"])
-
-const handleTakeAttendance = () => {
-  emit("take-attendance", selectedDate.value)
-}
-</script>
-
 <template>
   <div class="space-y-4">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
@@ -50,3 +37,16 @@ const handleTakeAttendance = () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { ClipboardDocumentCheckIcon } from '@heroicons/vue/24/outline';
+
+const selectedDate = ref(new Date().toISOString().split('T')[0]);
+
+const emit = defineEmits(['take-attendance']);
+
+const handleTakeAttendance = () => {
+  emit('take-attendance', selectedDate.value);
+};
+</script>

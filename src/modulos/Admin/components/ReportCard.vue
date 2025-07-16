@@ -111,9 +111,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {useRouter} from "vue-router"
-import {useRBACStore} from "@/stores/rbacStore"
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useRBACStore } from '@/stores/rbacStore';
 import {
   ClipboardDocumentCheckIcon,
   TrophyIcon,
@@ -123,7 +123,7 @@ import {
   ArrowTrendingDownIcon,
   EyeIcon,
   ArrowDownTrayIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface QuickAction {
   icon: any
@@ -144,7 +144,7 @@ interface Props {
   value: string | number
   unit?: string
   trend?: string
-  color?: "blue" | "green" | "purple" | "orange" | "red" | "yellow" | "indigo"
+  color?: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'yellow' | 'indigo'
   permission?: {module: string; action: string}
   loading?: boolean
   progress?: number
@@ -154,16 +154,16 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  color: "blue",
+  color: 'blue',
   loading: false,
-})
+});
 
 const emit = defineEmits<{
   quickAction: [action: string]
-}>()
+}>();
 
-const router = useRouter()
-const rbacStore = useRBACStore()
+const router = useRouter();
+const rbacStore = useRBACStore();
 
 // Icon mapping
 const iconComponents = {
@@ -173,75 +173,75 @@ const iconComponents = {
   ChartBarIcon,
   EyeIcon,
   ArrowDownTrayIcon,
-}
+};
 
 // Computed properties
 const hasPermission = computed(() => {
-  if (!props.permission) return true
-  return rbacStore.hasPermission(props.permission.module, props.permission.action)
-})
+  if (!props.permission) return true;
+  return rbacStore.hasPermission(props.permission.module, props.permission.action);
+});
 
 const iconComponent = computed(
-  () => iconComponents[props.icon as keyof typeof iconComponents] || ChartBarIcon
-)
+  () => iconComponents[props.icon as keyof typeof iconComponents] || ChartBarIcon,
+);
 
 const cardClasses = computed(() => ({
-  "transform hover:scale-102 hover:shadow-lg": true,
-  "cursor-not-allowed opacity-50": props.loading,
-}))
+  'transform hover:scale-102 hover:shadow-lg': true,
+  'cursor-not-allowed opacity-50': props.loading,
+}));
 
 const patternClass = computed(
-  () => `bg-gradient-to-br from-${props.color}-500 to-${props.color}-600`
-)
+  () => `bg-gradient-to-br from-${props.color}-500 to-${props.color}-600`,
+);
 
 const iconBgClass = computed(
   () =>
-    `bg-${props.color}-50 dark:bg-${props.color}-900/20 group-hover:bg-${props.color}-100 dark:group-hover:bg-${props.color}-900/30`
-)
+    `bg-${props.color}-50 dark:bg-${props.color}-900/20 group-hover:bg-${props.color}-100 dark:group-hover:bg-${props.color}-900/30`,
+);
 
-const iconClass = computed(() => `text-${props.color}-600 dark:text-${props.color}-400`)
+const iconClass = computed(() => `text-${props.color}-600 dark:text-${props.color}-400`);
 
-const valueClass = computed(() => `text-${props.color}-600 dark:text-${props.color}-400`)
+const valueClass = computed(() => `text-${props.color}-600 dark:text-${props.color}-400`);
 
-const progressBarClass = computed(() => `bg-${props.color}-500`)
+const progressBarClass = computed(() => `bg-${props.color}-500`);
 
 const trendIcon = computed(() => {
-  if (!props.trend) return null
-  const isPositive = props.trend.startsWith("+")
-  return isPositive ? ArrowTrendingUpIcon : ArrowTrendingDownIcon
-})
+  if (!props.trend) return null;
+  const isPositive = props.trend.startsWith('+');
+  return isPositive ? ArrowTrendingUpIcon : ArrowTrendingDownIcon;
+});
 
 const trendClass = computed(() => {
-  if (!props.trend) return ""
-  const isPositive = props.trend.startsWith("+")
-  return isPositive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-})
+  if (!props.trend) return '';
+  const isPositive = props.trend.startsWith('+');
+  return isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+});
 
 // Methods
 const navigateToRoute = async () => {
-  if (props.loading || !hasPermission.value) return
+  if (props.loading || !hasPermission.value) return;
 
   try {
-    await router.push(props.route)
+    await router.push(props.route);
   } catch (error) {
-    console.error("Navigation error:", error)
+    console.error('Navigation error:', error);
   }
-}
+};
 
 const handleQuickAction = () => {
   if (props.quickAction) {
-    emit("quickAction", props.quickAction.action)
+    emit('quickAction', props.quickAction.action);
   }
-}
+};
 
 const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
 </script>
 
 <style scoped>

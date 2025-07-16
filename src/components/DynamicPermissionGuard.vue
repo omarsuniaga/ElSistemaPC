@@ -43,9 +43,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useRBAC} from "@/composables/useRBAC"
-import {useAuth} from "@/modulos/Auth/composables/useAuth"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRBAC } from '@/composables/useRBAC';
+import { useAuth } from '@/modulos/Auth/composables/useAuth';
 
 interface Props {
   permissions?: string[]
@@ -61,83 +61,83 @@ const props = withDefaults(defineProps<Props>(), {
   roles: () => [],
   requireAll: false,
   showFallback: true,
-})
+});
 
-const {user} = useAuth()
+const { user } = useAuth();
 const {
   hasPermission,
   hasModuleAccess,
   canAccessComponent,
   userRoles,
   loading: rbacLoading,
-} = useRBAC()
+} = useRBAC();
 
-const loading = ref(true)
-const hasAccess = ref(false)
+const loading = ref(true);
+const hasAccess = ref(false);
 
-const requiredPermissions = computed(() => props.permissions)
-const requiredRoles = computed(() => props.roles)
+const requiredPermissions = computed(() => props.permissions);
+const requiredRoles = computed(() => props.roles);
 
 const checkAccess = async () => {
   if (!user.value) {
-    hasAccess.value = false
-    loading.value = false
-    return
+    hasAccess.value = false;
+    loading.value = false;
+    return;
   }
 
-  loading.value = true
+  loading.value = true;
 
   try {
-    let accessGranted = true
+    let accessGranted = true;
 
     // Verificar acceso por módulo
     if (props.moduleId) {
-      const moduleAccess = await hasModuleAccess(props.moduleId)
+      const moduleAccess = await hasModuleAccess(props.moduleId);
       if (!moduleAccess) {
-        accessGranted = false
+        accessGranted = false;
       }
     }
 
     // Verificar acceso por componente
     if (accessGranted && props.componentId && props.moduleId) {
-      const componentAccess = canAccessComponent(props.componentId, props.moduleId)
+      const componentAccess = canAccessComponent(props.componentId, props.moduleId);
       if (!componentAccess) {
-        accessGranted = false
+        accessGranted = false;
       }
     }
 
     // Verificar permisos específicos
     if (accessGranted && props.permissions.length > 0) {
       const permissionChecks = await Promise.all(
-        props.permissions.map((permission) => hasPermission(permission))
-      )
+        props.permissions.map((permission) => hasPermission(permission)),
+      );
 
       if (props.requireAll) {
-        accessGranted = permissionChecks.every((check) => check)
+        accessGranted = permissionChecks.every((check) => check);
       } else {
-        accessGranted = permissionChecks.some((check) => check)
+        accessGranted = permissionChecks.some((check) => check);
       }
     }
 
     // Verificar roles específicos
     if (accessGranted && props.roles.length > 0) {
-      const userRolesList = userRoles.value
+      const userRolesList = userRoles.value;
 
       if (props.requireAll) {
-        accessGranted = props.roles.every((role) => userRolesList.includes(role))
+        accessGranted = props.roles.every((role) => userRolesList.includes(role));
       } else {
-        accessGranted = props.roles.some((role) => userRolesList.includes(role))
+        accessGranted = props.roles.some((role) => userRolesList.includes(role));
       }
     }
 
-    hasAccess.value = accessGranted
+    hasAccess.value = accessGranted;
   } catch (error) {
-    console.error("Error checking access:", error)
-    hasAccess.value = false
+    console.error('Error checking access:', error);
+    hasAccess.value = false;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Reactividad
 watch(
@@ -149,19 +149,19 @@ watch(
     () => props.componentId,
   ],
   () => {
-    checkAccess()
-  }
-)
+    checkAccess();
+  },
+);
 
 watch(rbacLoading, (newVal) => {
   if (!newVal) {
-    checkAccess()
+    checkAccess();
   }
-})
+});
 
 onMounted(() => {
-  checkAccess()
-})
+  checkAccess();
+});
 </script>
 
 <style scoped>

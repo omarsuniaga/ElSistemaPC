@@ -46,42 +46,42 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 
 interface Props {
   trends?: any[]
   loading?: boolean
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 // Mock data for demonstration
 const mockWeeklyData = [
-  {label: "Sem 1", value: 85},
-  {label: "Sem 2", value: 78},
-  {label: "Sem 3", value: 82},
-  {label: "Sem 4", value: 88},
-]
+  { label: 'Sem 1', value: 85 },
+  { label: 'Sem 2', value: 78 },
+  { label: 'Sem 3', value: 82 },
+  { label: 'Sem 4', value: 88 },
+];
 
 const bestWeek = computed(() => {
-  return Math.max(...mockWeeklyData.map((w) => w.value))
-})
+  return Math.max(...mockWeeklyData.map((w) => w.value));
+});
 
 const weeklyTrend = computed(() => {
-  const recent = mockWeeklyData.slice(-2)
-  const change = recent[1].value - recent[0].value
-  return change > 0 ? `+${change}%` : `${change}%`
-})
+  const recent = mockWeeklyData.slice(-2);
+  const change = recent[1].value - recent[0].value;
+  return change > 0 ? `+${change}%` : `${change}%`;
+});
 
 const trendColor = computed(() => {
-  const recent = mockWeeklyData.slice(-2)
-  const change = recent[1].value - recent[0].value
-  return change > 0 ? "text-green-600" : "text-red-600"
-})
+  const recent = mockWeeklyData.slice(-2);
+  const change = recent[1].value - recent[0].value;
+  return change > 0 ? 'text-green-600' : 'text-red-600';
+});
 
 function getBarColor(value: number): string {
-  if (value >= 85) return "bg-green-500"
-  if (value >= 75) return "bg-yellow-500"
-  return "bg-red-500"
+  if (value >= 85) return 'bg-green-500';
+  if (value >= 75) return 'bg-yellow-500';
+  return 'bg-red-500';
 }
 </script>

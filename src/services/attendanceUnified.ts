@@ -16,10 +16,10 @@ import {
   where,
   orderBy,
   Timestamp,
-} from "firebase/firestore"
-import {db} from "@/firebase"
-import {useRBACStore} from "@/stores/rbacStore"
-import {useAuthStore} from "@/stores/auth"
+} from 'firebase/firestore';
+import { db } from '@/firebase';
+import { useRBACStore } from '@/stores/rbacStore';
+import { useAuthStore } from '@/stores/auth';
 import {
   AttendanceRecordSchema,
   AttendanceCreateSchema,
@@ -35,7 +35,7 @@ import {
   type ObservationData,
   type ObservationCreate,
   type ObservationUpdate,
-} from "@/schemas"
+} from '@/schemas';
 
 /**
  * Interfaz para opciones de registro de asistencia
@@ -62,11 +62,11 @@ interface AttendanceOperationResult {
 class UnifiedAttendanceService {
   // Stores se inicializarán dinámicamente para evitar problemas de Pinia
   private get rbacStore() {
-    return useRBACStore()
+    return useRBACStore();
   }
 
   private get authStore() {
-    return useAuthStore()
+    return useAuthStore();
   }
 
   // ==================== PERMISSION CHECKS ====================
@@ -76,33 +76,33 @@ class UnifiedAttendanceService {
    */
   private async checkAttendancePermission(classId: string): Promise<boolean> {
     // Verificar permisos globales primero
-    if (this.rbacStore.hasPermission("attendance_create")) {
-      return true
+    if (this.rbacStore.hasPermission('attendance_create')) {
+      return true;
     }
 
     // Verificar si es el maestro de la clase
-    const currentUserId = this.authStore.user?.uid
-    if (!currentUserId) return false
+    const currentUserId = this.authStore.user?.uid;
+    if (!currentUserId) return false;
 
     // Aquí se podría integrar con classesStore para verificar si es el maestro titular
     // O si tiene permisos de colaboración en la clase
-    return this.rbacStore.hasPermission("attendance_own_classes")
+    return this.rbacStore.hasPermission('attendance_own_classes');
   }
 
   /**
    * Verifica permisos de colaboración en una clase
    */
   private async checkCollaborationPermission(classId: string, teacherId: string): Promise<boolean> {
-    const currentUserId = this.authStore.user?.uid
-    if (!currentUserId) return false
+    const currentUserId = this.authStore.user?.uid;
+    if (!currentUserId) return false;
 
     // Verificar si es super admin
-    if (this.rbacStore.hasPermission("attendance_all_classes")) {
-      return true
+    if (this.rbacStore.hasPermission('attendance_all_classes')) {
+      return true;
     }
 
     // Verificar si es maestro colaborador en la clase específica
-    return this.rbacStore.hasPermission("attendance_collaborate")
+    return this.rbacStore.hasPermission('attendance_collaborate');
   }
 
   // ==================== CORE ATTENDANCE OPERATIONS ====================
@@ -113,41 +113,41 @@ class UnifiedAttendanceService {
    */
   async recordAttendance(
     attendanceData: AttendanceCreate,
-    options: RecordAttendanceOptions = {}
+    options: RecordAttendanceOptions = {},
   ): Promise<AttendanceOperationResult> {
     try {
       const {
         validatePermissions = true,
         allowCollaboration = true,
         skipValidation = false,
-      } = options
+      } = options;
 
       // 1. Validar datos de entrada
       if (!skipValidation) {
-        validateAndTransform(AttendanceCreateSchema, attendanceData)
+        validateAndTransform(AttendanceCreateSchema, attendanceData);
       }
 
       // 2. Verificar permisos
       if (validatePermissions) {
-        const hasPermission = await this.checkAttendancePermission(attendanceData.classId)
+        const hasPermission = await this.checkAttendancePermission(attendanceData.classId);
         if (!hasPermission) {
           // Si no tiene permisos directos, verificar colaboración
           if (allowCollaboration) {
             const hasCollabPermission = await this.checkCollaborationPermission(
               attendanceData.classId,
-              attendanceData.teacherId
-            )
+              attendanceData.teacherId,
+            );
             if (!hasCollabPermission) {
               return {
                 success: false,
-                message: "No tienes permisos para registrar asistencia en esta clase",
-              }
+                message: 'No tienes permisos para registrar asistencia en esta clase',
+              };
             }
           } else {
             return {
               success: false,
-              message: "No tienes permisos para registrar asistencia",
-            }
+              message: 'No tienes permisos para registrar asistencia',
+            };
           }
         }
       }
@@ -156,11 +156,11 @@ class UnifiedAttendanceService {
       const existingRecord = await this.getAttendanceRecord(
         attendanceData.studentId,
         attendanceData.classId,
-        attendanceData.date
-      )
+        attendanceData.date,
+      );
 
-      let recordId: string
-      let operation: string
+      let recordId: string;
+      let operation: string;
 
       if (existingRecord) {
         // Actualizar registro existente
@@ -169,37 +169,37 @@ class UnifiedAttendanceService {
           notes: attendanceData.notes,
           justification: attendanceData.justification,
           updatedBy: this.authStore.user?.uid,
-        })
-        recordId = existingRecord.id
-        operation = "actualizado"
+        });
+        recordId = existingRecord.id;
+        operation = 'actualizado';
       } else {
         // Crear nuevo registro
         const dataToSave = {
           ...attendanceData,
           timestamp: new Date(),
           updatedBy: this.authStore.user?.uid,
-        }
+        };
 
-        const docRef = await addDoc(collection(db, "ASISTENCIA"), dataToSave)
-        recordId = docRef.id
-        operation = "creado"
+        const docRef = await addDoc(collection(db, 'ASISTENCIA'), dataToSave);
+        recordId = docRef.id;
+        operation = 'creado';
       }
 
       // 4. Obtener el registro final para retornar
-      const finalRecord = await this.getAttendanceRecordById(recordId)
+      const finalRecord = await this.getAttendanceRecordById(recordId);
 
       return {
         success: true,
         recordId,
         message: `Registro de asistencia ${operation} exitosamente`,
         data: finalRecord || undefined,
-      }
+      };
     } catch (error: any) {
-      console.error("Error recording attendance:", error)
+      console.error('Error recording attendance:', error);
       return {
         success: false,
-        message: error.message || "Error al registrar asistencia",
-      }
+        message: error.message || 'Error al registrar asistencia',
+      };
     }
   }
 
@@ -209,28 +209,28 @@ class UnifiedAttendanceService {
   private async getAttendanceRecord(
     studentId: string,
     classId: string,
-    date: string
+    date: string,
   ): Promise<AttendanceRecord | null> {
     try {
-      const attendanceRef = collection(db, "ASISTENCIA")
+      const attendanceRef = collection(db, 'ASISTENCIA');
       const q = query(
         attendanceRef,
-        where("studentId", "==", studentId),
-        where("classId", "==", classId),
-        where("date", "==", date)
-      )
+        where('studentId', '==', studentId),
+        where('classId', '==', classId),
+        where('date', '==', date),
+      );
 
-      const snapshot = await getDocs(q)
+      const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        const doc = snapshot.docs[0]
-        const rawData = {id: doc.id, ...doc.data()}
-        return validateFirebaseData(AttendanceRecordSchema, rawData)
+        const doc = snapshot.docs[0];
+        const rawData = { id: doc.id, ...doc.data() };
+        return validateFirebaseData(AttendanceRecordSchema, rawData);
       }
 
-      return null
+      return null;
     } catch (error) {
-      console.error("Error getting attendance record:", error)
-      return null
+      console.error('Error getting attendance record:', error);
+      return null;
     }
   }
 
@@ -239,15 +239,15 @@ class UnifiedAttendanceService {
    */
   async getAttendanceRecordById(recordId: string): Promise<AttendanceRecord | null> {
     try {
-      const recordDoc = await getDoc(doc(db, "ASISTENCIA", recordId))
+      const recordDoc = await getDoc(doc(db, 'ASISTENCIA', recordId));
       if (recordDoc.exists()) {
-        const rawData = {id: recordDoc.id, ...recordDoc.data()}
-        return validateFirebaseData(AttendanceRecordSchema, rawData)
+        const rawData = { id: recordDoc.id, ...recordDoc.data() };
+        return validateFirebaseData(AttendanceRecordSchema, rawData);
       }
-      return null
+      return null;
     } catch (error) {
-      console.error("Error getting attendance record by ID:", error)
-      return null
+      console.error('Error getting attendance record by ID:', error);
+      return null;
     }
   }
 
@@ -257,18 +257,18 @@ class UnifiedAttendanceService {
   async updateAttendance(recordId: string, updates: AttendanceUpdate): Promise<boolean> {
     try {
       // Validar actualizaciones
-      const validatedUpdates = validateAndTransform(AttendanceUpdateSchema, updates)
+      const validatedUpdates = validateAndTransform(AttendanceUpdateSchema, updates);
 
-      const recordDoc = doc(db, "ASISTENCIA", recordId)
+      const recordDoc = doc(db, 'ASISTENCIA', recordId);
       await updateDoc(recordDoc, {
         ...validatedUpdates,
         updatedAt: new Date(),
-      })
+      });
 
-      return true
+      return true;
     } catch (error) {
-      console.error("Error updating attendance:", error)
-      return false
+      console.error('Error updating attendance:', error);
+      return false;
     }
   }
 
@@ -277,26 +277,26 @@ class UnifiedAttendanceService {
    */
   async getAttendanceByDateAndClass(classId: string, date: string): Promise<AttendanceRecord[]> {
     try {
-      if (!this.rbacStore.hasPermission("attendance_view")) {
-        throw new Error("No tienes permisos para ver registros de asistencia")
+      if (!this.rbacStore.hasPermission('attendance_view')) {
+        throw new Error('No tienes permisos para ver registros de asistencia');
       }
 
-      const attendanceRef = collection(db, "ASISTENCIA")
+      const attendanceRef = collection(db, 'ASISTENCIA');
       const q = query(
         attendanceRef,
-        where("classId", "==", classId),
-        where("date", "==", date),
-        orderBy("timestamp", "desc")
-      )
+        where('classId', '==', classId),
+        where('date', '==', date),
+        orderBy('timestamp', 'desc'),
+      );
 
-      const snapshot = await getDocs(q)
+      const snapshot = await getDocs(q);
       return snapshot.docs.map((doc) => {
-        const rawData = {id: doc.id, ...doc.data()}
-        return validateFirebaseData(AttendanceRecordSchema, rawData)
-      })
+        const rawData = { id: doc.id, ...doc.data() };
+        return validateFirebaseData(AttendanceRecordSchema, rawData);
+      });
     } catch (error) {
-      console.error("Error getting attendance by date and class:", error)
-      return []
+      console.error('Error getting attendance by date and class:', error);
+      return [];
     }
   }
 
@@ -306,32 +306,32 @@ class UnifiedAttendanceService {
   async getAttendanceByStudent(
     studentId: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ): Promise<AttendanceRecord[]> {
     try {
-      if (!this.rbacStore.hasPermission("attendance_view")) {
-        throw new Error("No tienes permisos para ver registros de asistencia")
+      if (!this.rbacStore.hasPermission('attendance_view')) {
+        throw new Error('No tienes permisos para ver registros de asistencia');
       }
 
-      const attendanceRef = collection(db, "ASISTENCIA")
-      let q = query(attendanceRef, where("studentId", "==", studentId), orderBy("date", "desc"))
+      const attendanceRef = collection(db, 'ASISTENCIA');
+      let q = query(attendanceRef, where('studentId', '==', studentId), orderBy('date', 'desc'));
 
       // Filtros opcionales por rango de fechas
       if (startDate) {
-        q = query(q, where("date", ">=", startDate))
+        q = query(q, where('date', '>=', startDate));
       }
       if (endDate) {
-        q = query(q, where("date", "<=", endDate))
+        q = query(q, where('date', '<=', endDate));
       }
 
-      const snapshot = await getDocs(q)
+      const snapshot = await getDocs(q);
       return snapshot.docs.map((doc) => {
-        const rawData = {id: doc.id, ...doc.data()}
-        return validateFirebaseData(AttendanceRecordSchema, rawData)
-      })
+        const rawData = { id: doc.id, ...doc.data() };
+        return validateFirebaseData(AttendanceRecordSchema, rawData);
+      });
     } catch (error) {
-      console.error("Error getting attendance by student:", error)
-      return []
+      console.error('Error getting attendance by student:', error);
+      return [];
     }
   }
 
@@ -342,24 +342,24 @@ class UnifiedAttendanceService {
    */
   async createObservation(observationData: ObservationCreate): Promise<string | null> {
     try {
-      if (!this.rbacStore.hasPermission("observations_create")) {
-        throw new Error("No tienes permisos para crear observaciones")
+      if (!this.rbacStore.hasPermission('observations_create')) {
+        throw new Error('No tienes permisos para crear observaciones');
       }
 
       // Validar datos
-      const validatedData = validateAndTransform(ObservationCreateSchema, observationData)
+      const validatedData = validateAndTransform(ObservationCreateSchema, observationData);
 
       const dataToSave = {
         ...validatedData,
         createdAt: new Date(),
         updatedAt: new Date(),
-      }
+      };
 
-      const docRef = await addDoc(collection(db, "OBSERVACIONES"), dataToSave)
-      return docRef.id
+      const docRef = await addDoc(collection(db, 'OBSERVACIONES'), dataToSave);
+      return docRef.id;
     } catch (error) {
-      console.error("Error creating observation:", error)
-      return null
+      console.error('Error creating observation:', error);
+      return null;
     }
   }
 
@@ -368,22 +368,22 @@ class UnifiedAttendanceService {
    */
   async updateObservation(observationId: string, updates: ObservationUpdate): Promise<boolean> {
     try {
-      if (!this.rbacStore.hasPermission("observations_edit")) {
-        throw new Error("No tienes permisos para editar observaciones")
+      if (!this.rbacStore.hasPermission('observations_edit')) {
+        throw new Error('No tienes permisos para editar observaciones');
       }
 
-      const validatedUpdates = validateAndTransform(ObservationUpdateSchema, updates)
+      const validatedUpdates = validateAndTransform(ObservationUpdateSchema, updates);
 
-      const observationDoc = doc(db, "OBSERVACIONES", observationId)
+      const observationDoc = doc(db, 'OBSERVACIONES', observationId);
       await updateDoc(observationDoc, {
         ...validatedUpdates,
         updatedAt: new Date(),
-      })
+      });
 
-      return true
+      return true;
     } catch (error) {
-      console.error("Error updating observation:", error)
-      return false
+      console.error('Error updating observation:', error);
+      return false;
     }
   }
 
@@ -392,26 +392,26 @@ class UnifiedAttendanceService {
    */
   async getObservationsByClassAndDate(classId: string, date: string): Promise<ObservationData[]> {
     try {
-      if (!this.rbacStore.hasPermission("observations_view")) {
-        throw new Error("No tienes permisos para ver observaciones")
+      if (!this.rbacStore.hasPermission('observations_view')) {
+        throw new Error('No tienes permisos para ver observaciones');
       }
 
-      const observationsRef = collection(db, "OBSERVACIONES")
+      const observationsRef = collection(db, 'OBSERVACIONES');
       const q = query(
         observationsRef,
-        where("classId", "==", classId),
-        where("date", "==", date),
-        orderBy("createdAt", "desc")
-      )
+        where('classId', '==', classId),
+        where('date', '==', date),
+        orderBy('createdAt', 'desc'),
+      );
 
-      const snapshot = await getDocs(q)
+      const snapshot = await getDocs(q);
       return snapshot.docs.map((doc) => {
-        const rawData = {id: doc.id, ...doc.data()}
-        return validateFirebaseData(ObservationSchema, rawData)
-      })
+        const rawData = { id: doc.id, ...doc.data() };
+        return validateFirebaseData(ObservationSchema, rawData);
+      });
     } catch (error) {
-      console.error("Error getting observations:", error)
-      return []
+      console.error('Error getting observations:', error);
+      return [];
     }
   }
 
@@ -422,21 +422,21 @@ class UnifiedAttendanceService {
    */
   async recordBulkAttendance(
     attendanceRecords: AttendanceCreate[],
-    options: RecordAttendanceOptions = {}
+    options: RecordAttendanceOptions = {},
   ): Promise<{success: AttendanceOperationResult[]; errors: AttendanceOperationResult[]}> {
-    const success: AttendanceOperationResult[] = []
-    const errors: AttendanceOperationResult[] = []
+    const success: AttendanceOperationResult[] = [];
+    const errors: AttendanceOperationResult[] = [];
 
     for (const record of attendanceRecords) {
-      const result = await this.recordAttendance(record, options)
+      const result = await this.recordAttendance(record, options);
       if (result.success) {
-        success.push(result)
+        success.push(result);
       } else {
-        errors.push(result)
+        errors.push(result);
       }
     }
 
-    return {success, errors}
+    return { success, errors };
   }
 
   // ==================== UTILITIES ====================
@@ -445,11 +445,11 @@ class UnifiedAttendanceService {
    * Validar fecha de asistencia (no puede ser futura)
    */
   validateAttendanceDate(date: string): boolean {
-    const attendanceDate = new Date(date)
-    const today = new Date()
-    today.setHours(23, 59, 59, 999) // Permitir hasta el final del día actual
+    const attendanceDate = new Date(date);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Permitir hasta el final del día actual
 
-    return attendanceDate <= today
+    return attendanceDate <= today;
   }
 
   /**
@@ -457,22 +457,22 @@ class UnifiedAttendanceService {
    */
   async generateAttendanceStats(classId: string, startDate: string, endDate: string) {
     try {
-      const attendanceRef = collection(db, "ASISTENCIA")
+      const attendanceRef = collection(db, 'ASISTENCIA');
       const q = query(
         attendanceRef,
-        where("classId", "==", classId),
-        where("date", ">=", startDate),
-        where("date", "<=", endDate)
-      )
+        where('classId', '==', classId),
+        where('date', '>=', startDate),
+        where('date', '<=', endDate),
+      );
 
-      const snapshot = await getDocs(q)
-      const records = snapshot.docs.map((doc) => doc.data())
+      const snapshot = await getDocs(q);
+      const records = snapshot.docs.map((doc) => doc.data());
 
-      const totalRecords = records.length
-      const presentCount = records.filter((r) => r.status === "presente").length
-      const absentCount = records.filter((r) => r.status === "ausente").length
-      const lateCount = records.filter((r) => r.status === "tardanza").length
-      const justifiedCount = records.filter((r) => r.status === "justificado").length
+      const totalRecords = records.length;
+      const presentCount = records.filter((r) => r.status === 'presente').length;
+      const absentCount = records.filter((r) => r.status === 'ausente').length;
+      const lateCount = records.filter((r) => r.status === 'tardanza').length;
+      const justifiedCount = records.filter((r) => r.status === 'justificado').length;
 
       return {
         totalRecords,
@@ -481,16 +481,16 @@ class UnifiedAttendanceService {
         lateCount,
         justifiedCount,
         attendanceRate: totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 0,
-      }
+      };
     } catch (error) {
-      console.error("Error generating attendance stats:", error)
-      return null
+      console.error('Error generating attendance stats:', error);
+      return null;
     }
   }
 }
 
 // Exportar instancia singleton del servicio
-export const attendanceService = new UnifiedAttendanceService()
+export const attendanceService = new UnifiedAttendanceService();
 
 // Exportar clase para testing o instanciación manual
-export {UnifiedAttendanceService}
+export { UnifiedAttendanceService };

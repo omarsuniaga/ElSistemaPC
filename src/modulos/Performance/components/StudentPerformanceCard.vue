@@ -212,10 +212,10 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 // import { Icon } from '@iconify/vue'; // Commented temporarily for build
-import StudentAvatar from "../../Students/components/StudentAvatar.vue"
-import type {StudentPerformance, PerformanceRecommendation} from "../types/performance"
+import StudentAvatar from '../../Students/components/StudentAvatar.vue';
+import type { StudentPerformance, PerformanceRecommendation } from '../types/performance';
 
 interface Props {
   performance: StudentPerformance
@@ -232,82 +232,82 @@ const props = withDefaults(defineProps<Props>(), {
   showActions: true,
   compact: false,
   highlighted: false,
-})
+});
 
 const emit = defineEmits<{
-  "view-details": [studentId: string]
-  "view-profile": [studentId: string]
-  "needs-attention": [studentId: string]
-}>()
+  'view-details': [studentId: string]
+  'view-profile': [studentId: string]
+  'needs-attention': [studentId: string]
+}>();
 
 // Computed para clases y estilos
 const cardClass = computed(() => ({
   // 'card-compact': props.compact, // Handled inline
   // 'card-highlighted': props.highlighted, // Handled inline
   // 'card-needs-attention': props.performance.scores.overallScore < 60 || props.performance.attendance.attendanceRate < 75 // Handled inline
-}))
+}));
 
 const classificationClass = computed(() => {
-  const classification = props.performance.classification?.toLowerCase() || ""
-  if (classification.includes("excelente")) return "bg-green-100 text-green-800"
-  if (classification.includes("bueno")) return "bg-blue-100 text-blue-800"
-  if (classification.includes("regular")) return "bg-yellow-100 text-yellow-800"
-  if (classification.includes("mejora")) return "bg-orange-100 text-orange-800"
-  return "bg-red-100 text-red-800" // badge-concerning
-})
+  const classification = props.performance.classification?.toLowerCase() || '';
+  if (classification.includes('excelente')) return 'bg-green-100 text-green-800';
+  if (classification.includes('bueno')) return 'bg-blue-100 text-blue-800';
+  if (classification.includes('regular')) return 'bg-yellow-100 text-yellow-800';
+  if (classification.includes('mejora')) return 'bg-orange-100 text-orange-800';
+  return 'bg-red-100 text-red-800'; // badge-concerning
+});
 
 const scoreCircleClass = computed(() => {
-  const score = props.performance.scores.overallScore
-  if (score >= 90) return "bg-green-500" // circle-excellent
-  if (score >= 80) return "bg-blue-500" // circle-good
-  if (score >= 70) return "bg-yellow-500" // circle-regular
-  if (score >= 60) return "bg-orange-500" // circle-needs-improvement
-  return "bg-red-500" // circle-concerning
-})
+  const score = props.performance.scores.overallScore;
+  if (score >= 90) return 'bg-green-500'; // circle-excellent
+  if (score >= 80) return 'bg-blue-500'; // circle-good
+  if (score >= 70) return 'bg-yellow-500'; // circle-regular
+  if (score >= 60) return 'bg-orange-500'; // circle-needs-improvement
+  return 'bg-red-500'; // circle-concerning
+});
 
 const progressClass = computed(() => {
-  const score = props.performance.scores.overallScore
-  if (score >= 90) return "bg-green-500" // progress-excellent
-  if (score >= 80) return "bg-blue-500" // progress-good
-  if (score >= 70) return "bg-yellow-500" // progress-regular
-  if (score >= 60) return "bg-orange-500" // progress-needs-improvement
-  return "bg-red-500" // progress-concerning
-})
+  const score = props.performance.scores.overallScore;
+  if (score >= 90) return 'bg-green-500'; // progress-excellent
+  if (score >= 80) return 'bg-blue-500'; // progress-good
+  if (score >= 70) return 'bg-yellow-500'; // progress-regular
+  if (score >= 60) return 'bg-orange-500'; // progress-needs-improvement
+  return 'bg-red-500'; // progress-concerning
+});
 
 // Tendencia
 const trendIcon = computed(() => {
-  const trend = props.performance.trends?.overall.changeRate
-  if (trend === undefined) return "heroicons:minus"
-  if (trend > 5) return "heroicons:arrow-trending-up"
-  if (trend < -5) return "heroicons:arrow-trending-down"
-  return "heroicons:minus"
-})
+  const trend = props.performance.trends?.overall.changeRate;
+  if (trend === undefined) return 'heroicons:minus';
+  if (trend > 5) return 'heroicons:arrow-trending-up';
+  if (trend < -5) return 'heroicons:arrow-trending-down';
+  return 'heroicons:minus';
+});
 
 const trendClass = computed(() => {
-  const trend = props.performance.trends?.overall.changeRate
-  if (trend === undefined) return "text-gray-600" // trend-stable
-  if (trend > 5) return "text-green-600" // trend-positive
-  if (trend < -5) return "text-red-600" // trend-negative
-  return "text-gray-600" // trend-stable
-})
+  const trend = props.performance.trends?.overall.changeRate;
+  if (trend === undefined) return 'text-gray-600'; // trend-stable
+  if (trend > 5) return 'text-green-600'; // trend-positive
+  if (trend < -5) return 'text-red-600'; // trend-negative
+  return 'text-gray-600'; // trend-stable
+});
 
 const trendText = computed(() => {
-  const trend = props.performance.trends?.overall.changeRate
-  if (trend === undefined) return "Estable"
-  if (trend > 10) return "Mejorando mucho"
-  if (trend > 5) return "Mejorando"
-  if (trend < -10) return "Declinando mucho"
-  if (trend < -5) return "Declinando"
-  return "Estable"
-})
+  const trend = props.performance.trends?.overall.changeRate;
+  if (trend === undefined) return 'Estable';
+  if (trend > 10) return 'Mejorando mucho';
+  if (trend > 5) return 'Mejorando';
+  if (trend < -10) return 'Declinando mucho';
+  if (trend < -5) return 'Declinando';
+  return 'Estable';
+});
 
 const trendFillClass = computed(() => {
-  const trend = props.performance.trends?.overall.changeRate
-  if (trend === undefined) return "bg-gray-400" // trend-fill-stable
-  if (trend > 0) return "bg-green-500" // trend-fill-positive
-  if (trend < 0) return "bg-red-500" // trend-fill-negative
-  return "bg-gray-400" // trend-fill-stable
-})
+  const trend = props.performance.trends?.overall.changeRate;
+  if (trend === undefined) return 'bg-gray-400'; // trend-fill-stable
+  if (trend > 0) return 'bg-green-500'; // trend-fill-positive
+  if (trend < 0) return 'bg-red-500'; // trend-fill-negative
+  return 'bg-gray-400'; // trend-fill-stable
+});
 
 // Alertas
 const hasAlerts = computed(() => {
@@ -315,22 +315,22 @@ const hasAlerts = computed(() => {
     props.performance.attendance.attendanceRate < 75 ||
     props.performance.scores.overallScore < 60 ||
     (props.performance.trends && props.performance.trends.overall.changeRate < -10)
-  )
-})
+  );
+});
 
 // Utilidades
 const formatDate = (dateString: string | undefined) => {
-  if (!dateString) return "N/A"
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffTime = Math.abs(now.getTime() - date.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 1) return "hace 1 día"
-  if (diffDays < 7) return `hace ${diffDays} días`
-  if (diffDays < 30) return `hace ${Math.ceil(diffDays / 7)} semanas`
-  return `hace ${Math.ceil(diffDays / 30)} meses`
-}
+  if (diffDays === 1) return 'hace 1 día';
+  if (diffDays < 7) return `hace ${diffDays} días`;
+  if (diffDays < 30) return `hace ${Math.ceil(diffDays / 7)} semanas`;
+  return `hace ${Math.ceil(diffDays / 30)} meses`;
+};
 </script>
 
 <style scoped>

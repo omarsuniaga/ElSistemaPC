@@ -11,7 +11,7 @@
 <script setup lang="ts">
 defineProps<{
   message: string | null
-}>()
+}>();
 </script>
 
 <style scoped>

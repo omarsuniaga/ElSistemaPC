@@ -1,160 +1,3 @@
-<script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useMontajeStore } from '../store/montaje'
-import { TipoInstrumento, EstadoCompass, COLOR_ESTADOS_COMPASS } from '../types'
-import { permissionsService } from '../service/permissionsService'
-import { MontajePermission } from '../types/permissions'
-import { compassStateService } from '../service/compassStateService'
-
-// Propiedades
-const props = defineProps({
-  obraId: {
-    type: String,
-    required: true
-  }
-})
-
-// Estado local
-const montajeStore = useMontajeStore()
-const isLoading = ref(true)
-const hasPermission = ref(false)
-const instrumentosObra = ref<TipoInstrumento[]>([])
-const estadisticasPorInstrumento = ref<Record<TipoInstrumento, any>>({})
-const selectedInstrument = ref<TipoInstrumento | null>(null)
-const error = ref<string | null>(null)
-
-// Colores para estados
-const colors = COLOR_ESTADOS_COMPASS
-
-// Verificar permisos para ver reportes agregados
-async function checkPermissions() {
-  try {
-    hasPermission.value = await permissionsService.hasPermission(
-      MontajePermission.VIEW_AGGREGATED_REPORTS
-    )
-  } catch (error) {
-    console.error('Error al verificar permisos:', error)
-    hasPermission.value = false
-  }
-}
-
-// Cargar instrumentos de la obra
-async function loadWorkInstruments() {
-  if (!props.obraId) return
-  
-  isLoading.value = true
-  error.value = null
-  
-  try {
-    // Cargar obra si no está cargada
-    if (!montajeStore.obraActual || montajeStore.obraActual.id !== props.obraId) {
-      await montajeStore.cargarObra(props.obraId)
-    }
-    
-    // Obtener instrumentos asignados a la obra desde los metadatos o configuración
-    // Nota: Esto dependerá de cómo estén estructurados los datos de la obra
-    // Por ahora usamos todos los instrumentos posibles
-    instrumentosObra.value = Object.values(TipoInstrumento)
-    
-    // Cargar estadísticas para cada instrumento
-    await loadAllInstrumentStatistics()
-    
-  } catch (err) {
-    console.error('Error cargando instrumentos de la obra:', err)
-    error.value = 'No se pudieron cargar los instrumentos'
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Cargar estadísticas para todos los instrumentos
-async function loadAllInstrumentStatistics() {
-  const stats: Record<TipoInstrumento, any> = {} as Record<TipoInstrumento, any>
-  
-  for (const instrumento of instrumentosObra.value) {
-    try {
-      // Obtener estadísticas para este instrumento
-      const estadisticas = await compassStateService.obtenerEstadisticas(
-        props.obraId,
-        instrumento
-      )
-      
-      stats[instrumento] = estadisticas
-    } catch (err) {
-      console.error(`Error cargando estadísticas para ${instrumento}:`, err)
-    }
-  }
-  
-  estadisticasPorInstrumento.value = stats
-}
-
-// Seleccionar instrumento para ver detalles
-function selectInstrument(instrumento: TipoInstrumento) {
-  selectedInstrument.value = instrumento === selectedInstrument.value 
-    ? null 
-    : instrumento
-}
-
-// Calcular el progreso total de la obra por todos los instrumentos
-const progresoTotal = computed(() => {
-  if (Object.keys(estadisticasPorInstrumento.value).length === 0) return 0
-  
-  let totalCompases = 0
-  let totalCompletados = 0
-  
-  for (const instrumento in estadisticasPorInstrumento.value) {
-    const stats = estadisticasPorInstrumento.value[instrumento as TipoInstrumento]
-    if (stats) {
-      totalCompases += stats.totalCompases || 0
-      totalCompletados += stats.completados || 0
-    }
-  }
-  
-  return totalCompases > 0 ? Math.round((totalCompletados / totalCompases) * 100) : 0
-})
-
-// Calcular instrumentos con más dificultades
-const instrumentosConMasDificultades = computed(() => {
-  if (Object.keys(estadisticasPorInstrumento.value).length === 0) return []
-  
-  return Object.entries(estadisticasPorInstrumento.value)
-    .map(([instrumento, stats]: [string, any]) => ({
-      instrumento,
-      conDificultad: stats.conDificultad || 0,
-      porcentajeDificultad: stats.totalCompases > 0 
-        ? Math.round((stats.conDificultad / stats.totalCompases) * 100) 
-        : 0
-    }))
-    .sort((a, b) => b.porcentajeDificultad - a.porcentajeDificultad)
-    .slice(0, 5)
-})
-
-// Formatear estado para mostrar
-function formatEstado(estado: EstadoCompass): string {
-  return estado.replace(/_/g, ' ').toLowerCase()
-}
-
-// Determinar clase de color según porcentaje de progreso
-function getProgressColorClass(porcentaje: number): string {
-  if (porcentaje >= 80) return 'bg-green-500'
-  if (porcentaje >= 60) return 'bg-green-400'
-  if (porcentaje >= 40) return 'bg-yellow-400'
-  if (porcentaje >= 20) return 'bg-orange-400'
-  return 'bg-red-500'
-}
-
-// Cargar datos cuando cambia la obra
-watch(() => props.obraId, loadWorkInstruments)
-
-// Al montar el componente
-onMounted(async () => {
-  await checkPermissions()
-  if (hasPermission.value) {
-    await loadWorkInstruments()
-  }
-})
-</script>
-
 <template>
   <div class="director-aggregated-heatmap">
     <!-- Verificación de permisos -->
@@ -212,7 +55,7 @@ onMounted(async () => {
             <div class="stat-value text-3xl font-bold">
               {{ instrumentosConMasDificultades.length > 0 ? instrumentosConMasDificultades[0].instrumento : 'Ninguno' }}
             </div>
-            <div class="stat-description text-sm mt-2" v-if="instrumentosConMasDificultades.length > 0">
+            <div v-if="instrumentosConMasDificultades.length > 0" class="stat-description text-sm mt-2">
               {{ instrumentosConMasDificultades[0].porcentajeDificultad }}% de compases con dificultad
             </div>
           </div>
@@ -273,8 +116,8 @@ onMounted(async () => {
                 </td>
                 <td class="px-4 py-2 text-center">
                   <button 
-                    @click="selectInstrument(instrumento)" 
-                    class="btn btn-sm btn-outline-primary"
+                    class="btn btn-sm btn-outline-primary" 
+                    @click="selectInstrument(instrumento)"
                   >
                     <span v-if="selectedInstrument === instrumento">Ocultar</span>
                     <span v-else>Detalles</span>
@@ -296,8 +139,8 @@ onMounted(async () => {
             Detalles de {{ selectedInstrument }}
           </h3>
           <button 
-            @click="selectedInstrument = null" 
-            class="btn btn-sm btn-outline-secondary"
+            class="btn btn-sm btn-outline-secondary" 
+            @click="selectedInstrument = null"
           >
             Cerrar
           </button>
@@ -383,6 +226,163 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { useMontajeStore } from '../store/montaje';
+import { TipoInstrumento, EstadoCompass, COLOR_ESTADOS_COMPASS } from '../types';
+import { permissionsService } from '../service/permissionsService';
+import { MontajePermission } from '../types/permissions';
+import { compassStateService } from '../service/compassStateService';
+
+// Propiedades
+const props = defineProps({
+  obraId: {
+    type: String,
+    required: true,
+  },
+});
+
+// Estado local
+const montajeStore = useMontajeStore();
+const isLoading = ref(true);
+const hasPermission = ref(false);
+const instrumentosObra = ref<TipoInstrumento[]>([]);
+const estadisticasPorInstrumento = ref<Record<TipoInstrumento, any>>({});
+const selectedInstrument = ref<TipoInstrumento | null>(null);
+const error = ref<string | null>(null);
+
+// Colores para estados
+const colors = COLOR_ESTADOS_COMPASS;
+
+// Verificar permisos para ver reportes agregados
+async function checkPermissions() {
+  try {
+    hasPermission.value = await permissionsService.hasPermission(
+      MontajePermission.VIEW_AGGREGATED_REPORTS,
+    );
+  } catch (error) {
+    console.error('Error al verificar permisos:', error);
+    hasPermission.value = false;
+  }
+}
+
+// Cargar instrumentos de la obra
+async function loadWorkInstruments() {
+  if (!props.obraId) return;
+  
+  isLoading.value = true;
+  error.value = null;
+  
+  try {
+    // Cargar obra si no está cargada
+    if (!montajeStore.obraActual || montajeStore.obraActual.id !== props.obraId) {
+      await montajeStore.cargarObra(props.obraId);
+    }
+    
+    // Obtener instrumentos asignados a la obra desde los metadatos o configuración
+    // Nota: Esto dependerá de cómo estén estructurados los datos de la obra
+    // Por ahora usamos todos los instrumentos posibles
+    instrumentosObra.value = Object.values(TipoInstrumento);
+    
+    // Cargar estadísticas para cada instrumento
+    await loadAllInstrumentStatistics();
+    
+  } catch (err) {
+    console.error('Error cargando instrumentos de la obra:', err);
+    error.value = 'No se pudieron cargar los instrumentos';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Cargar estadísticas para todos los instrumentos
+async function loadAllInstrumentStatistics() {
+  const stats: Record<TipoInstrumento, any> = {} as Record<TipoInstrumento, any>;
+  
+  for (const instrumento of instrumentosObra.value) {
+    try {
+      // Obtener estadísticas para este instrumento
+      const estadisticas = await compassStateService.obtenerEstadisticas(
+        props.obraId,
+        instrumento,
+      );
+      
+      stats[instrumento] = estadisticas;
+    } catch (err) {
+      console.error(`Error cargando estadísticas para ${instrumento}:`, err);
+    }
+  }
+  
+  estadisticasPorInstrumento.value = stats;
+}
+
+// Seleccionar instrumento para ver detalles
+function selectInstrument(instrumento: TipoInstrumento) {
+  selectedInstrument.value = instrumento === selectedInstrument.value 
+    ? null 
+    : instrumento;
+}
+
+// Calcular el progreso total de la obra por todos los instrumentos
+const progresoTotal = computed(() => {
+  if (Object.keys(estadisticasPorInstrumento.value).length === 0) return 0;
+  
+  let totalCompases = 0;
+  let totalCompletados = 0;
+  
+  for (const instrumento in estadisticasPorInstrumento.value) {
+    const stats = estadisticasPorInstrumento.value[instrumento as TipoInstrumento];
+    if (stats) {
+      totalCompases += stats.totalCompases || 0;
+      totalCompletados += stats.completados || 0;
+    }
+  }
+  
+  return totalCompases > 0 ? Math.round((totalCompletados / totalCompases) * 100) : 0;
+});
+
+// Calcular instrumentos con más dificultades
+const instrumentosConMasDificultades = computed(() => {
+  if (Object.keys(estadisticasPorInstrumento.value).length === 0) return [];
+  
+  return Object.entries(estadisticasPorInstrumento.value)
+    .map(([instrumento, stats]: [string, any]) => ({
+      instrumento,
+      conDificultad: stats.conDificultad || 0,
+      porcentajeDificultad: stats.totalCompases > 0 
+        ? Math.round((stats.conDificultad / stats.totalCompases) * 100) 
+        : 0,
+    }))
+    .sort((a, b) => b.porcentajeDificultad - a.porcentajeDificultad)
+    .slice(0, 5);
+});
+
+// Formatear estado para mostrar
+function formatEstado(estado: EstadoCompass): string {
+  return estado.replace(/_/g, ' ').toLowerCase();
+}
+
+// Determinar clase de color según porcentaje de progreso
+function getProgressColorClass(porcentaje: number): string {
+  if (porcentaje >= 80) return 'bg-green-500';
+  if (porcentaje >= 60) return 'bg-green-400';
+  if (porcentaje >= 40) return 'bg-yellow-400';
+  if (porcentaje >= 20) return 'bg-orange-400';
+  return 'bg-red-500';
+}
+
+// Cargar datos cuando cambia la obra
+watch(() => props.obraId, loadWorkInstruments);
+
+// Al montar el componente
+onMounted(async () => {
+  await checkPermissions();
+  if (hasPermission.value) {
+    await loadWorkInstruments();
+  }
+});
+</script>
 
 <style scoped>
 .director-aggregated-heatmap {

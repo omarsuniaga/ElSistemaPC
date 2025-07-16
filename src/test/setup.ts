@@ -1,64 +1,64 @@
-import {vi, beforeEach} from "vitest"
-import {config} from "@vue/test-utils"
-import {createPinia, setActivePinia} from "pinia"
+import { vi, beforeEach } from 'vitest';
+import { config } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 
 // --- Firebase Mocking ---
 // This mock is now more complete to satisfy the imports in the app's source code.
-vi.mock("firebase/firestore", async (importOriginal) => {
-  const actual = await importOriginal()
+vi.mock('firebase/firestore', async (importOriginal) => {
+  const actual = await importOriginal();
   return {
     ...actual,
     getFirestore: vi.fn(),
     initializeFirestore: vi.fn(),
     persistentLocalCache: vi.fn(),
     persistentMultipleTabManager: vi.fn(),
-  }
-})
+  };
+});
 
-vi.mock("@/firebase/config", () => ({
-  auth: {currentUser: null},
+vi.mock('@/firebase/config', () => ({
+  auth: { currentUser: null },
   db: {},
   storage: {},
-}))
+}));
 
 // --- Pinia Setup ---
 beforeEach(() => {
-  const pinia = createPinia()
-  setActivePinia(pinia)
-})
+  const pinia = createPinia();
+  setActivePinia(pinia);
+});
 
 // --- Vue Router Mock ---
-vi.mock("vue-router", () => ({
-  createRouter: vi.fn(() => ({beforeEach: vi.fn()})),
+vi.mock('vue-router', () => ({
+  createRouter: vi.fn(() => ({ beforeEach: vi.fn() })),
   createWebHistory: vi.fn(),
-  useRouter: vi.fn(() => ({push: vi.fn(), replace: vi.fn()})),
-  useRoute: vi.fn(() => ({params: {}, query: {}})),
-}))
+  useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn() })),
+  useRoute: vi.fn(() => ({ params: {}, query: {} })),
+}));
 
 // --- Global Mocks & Cleanup ---
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-}))
+}));
 
 beforeEach(() => {
-  vi.clearAllMocks()
-})
+  vi.clearAllMocks();
+});
 
 config.global.mocks = {
   $t: (key) => key, // Mock i18n
-}
+};
 
 // Mock Pinia
-vi.mock("pinia", () => ({
+vi.mock('pinia', () => ({
   defineStore: vi.fn(() => vi.fn()),
   createPinia: vi.fn(),
   setActivePinia: vi.fn(),
-}))
+}));
 
 // Mock Vue Router
-vi.mock("vue-router", () => ({
+vi.mock('vue-router', () => ({
   createRouter: vi.fn(),
   createWebHistory: vi.fn(),
   useRouter: vi.fn(() => ({
@@ -71,20 +71,20 @@ vi.mock("vue-router", () => ({
   useRoute: vi.fn(() => ({
     params: {},
     query: {},
-    path: "/",
-    name: "home",
+    path: '/',
+    name: 'home',
   })),
-}))
+}));
 
 // Global test utilities
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-}))
+}));
 
 // Mock window.matchMedia
-Object.defineProperty(window, "matchMedia", {
+Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
     matches: false,
@@ -96,7 +96,7 @@ Object.defineProperty(window, "matchMedia", {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
-})
+});
 
 // Mock localStorage
 const localStorageMock = {
@@ -104,8 +104,8 @@ const localStorageMock = {
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
-}
-vi.stubGlobal("localStorage", localStorageMock)
+};
+vi.stubGlobal('localStorage', localStorageMock);
 
 // Mock sessionStorage
 const sessionStorageMock = {
@@ -113,21 +113,21 @@ const sessionStorageMock = {
   setItem: vi.fn(),
   removeItem: vi.fn(),
   clear: vi.fn(),
-}
-vi.stubGlobal("sessionStorage", sessionStorageMock)
+};
+vi.stubGlobal('sessionStorage', sessionStorageMock);
 
 // Reset mocks before each test
 beforeEach(() => {
-  vi.clearAllMocks()
-  localStorageMock.getItem.mockClear()
-  localStorageMock.setItem.mockClear()
-  localStorageMock.removeItem.mockClear()
-  localStorageMock.clear.mockClear()
-  sessionStorageMock.getItem.mockClear()
-  sessionStorageMock.setItem.mockClear()
-  sessionStorageMock.removeItem.mockClear()
-  sessionStorageMock.clear.mockClear()
-})
+  vi.clearAllMocks();
+  localStorageMock.getItem.mockClear();
+  localStorageMock.setItem.mockClear();
+  localStorageMock.removeItem.mockClear();
+  localStorageMock.clear.mockClear();
+  sessionStorageMock.getItem.mockClear();
+  sessionStorageMock.setItem.mockClear();
+  sessionStorageMock.removeItem.mockClear();
+  sessionStorageMock.clear.mockClear();
+});
 
 // Configure Vue Test Utils
 config.global.mocks = {
@@ -142,7 +142,7 @@ config.global.mocks = {
   $route: {
     params: {},
     query: {},
-    path: "/",
-    name: "home",
+    path: '/',
+    name: 'home',
   },
-}
+};

@@ -334,14 +334,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 
 interface Teacher {
   id: string
   name: string
   email: string
   specialties: string[]
-  status: "active" | "inactive" | "vacation"
+  status: 'active' | 'inactive' | 'vacation'
   studentCount: number
   rating: number
   lastAccess: Date
@@ -356,153 +356,153 @@ const emit = defineEmits<{
   deleteTeacher: [teacher: Teacher]
   manageSchedule: [teacher: Teacher]
   refreshData: []
-}>()
+}>();
 
 // State
-const showFilters = ref(false)
-const showCreateModal = ref(false)
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
+const showFilters = ref(false);
+const showCreateModal = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
 
-const teachers = ref<Teacher[]>([])
+const teachers = ref<Teacher[]>([]);
 const filters = ref({
-  status: "",
-  specialty: "",
-  experience: "",
-  search: "",
-})
+  status: '',
+  specialty: '',
+  experience: '',
+  search: '',
+});
 
 // Computed
 const filteredTeachers = computed(() => {
-  let filtered = teachers.value
+  let filtered = teachers.value;
 
   if (filters.value.status) {
-    filtered = filtered.filter((t) => t.status === filters.value.status)
+    filtered = filtered.filter((t) => t.status === filters.value.status);
   }
 
   if (filters.value.specialty) {
-    filtered = filtered.filter((t) => t.specialties.includes(filters.value.specialty))
+    filtered = filtered.filter((t) => t.specialties.includes(filters.value.specialty));
   }
 
   if (filters.value.experience) {
-    filtered = filtered.filter((t) => t.experience === filters.value.experience)
+    filtered = filtered.filter((t) => t.experience === filters.value.experience);
   }
 
   if (filters.value.search) {
-    const search = filters.value.search.toLowerCase()
+    const search = filters.value.search.toLowerCase();
     filtered = filtered.filter(
-      (t) => t.name.toLowerCase().includes(search) || t.email.toLowerCase().includes(search)
-    )
+      (t) => t.name.toLowerCase().includes(search) || t.email.toLowerCase().includes(search),
+    );
   }
 
   return filtered.slice(
     (currentPage.value - 1) * itemsPerPage.value,
-    currentPage.value * itemsPerPage.value
-  )
-})
+    currentPage.value * itemsPerPage.value,
+  );
+});
 
-const totalTeachers = computed(() => teachers.value.length)
-const totalPages = computed(() => Math.ceil(totalTeachers.value / itemsPerPage.value))
+const totalTeachers = computed(() => teachers.value.length);
+const totalPages = computed(() => Math.ceil(totalTeachers.value / itemsPerPage.value));
 
 const stats = computed(() => ({
   total: teachers.value.length,
-  active: teachers.value.filter((t) => t.status === "active").length,
+  active: teachers.value.filter((t) => t.status === 'active').length,
   withStudents: teachers.value.filter((t) => t.studentCount > 0).length,
-  onVacation: teachers.value.filter((t) => t.status === "vacation").length,
-}))
+  onVacation: teachers.value.filter((t) => t.status === 'vacation').length,
+}));
 
 // Methods
 const getStatusClass = (status: string) => {
   const classes = {
-    active: "bg-green-100 text-green-800",
-    inactive: "bg-gray-100 text-gray-800",
-    vacation: "bg-orange-100 text-orange-800",
-  }
-  return classes[status as keyof typeof classes] || classes.inactive
-}
+    active: 'bg-green-100 text-green-800',
+    inactive: 'bg-gray-100 text-gray-800',
+    vacation: 'bg-orange-100 text-orange-800',
+  };
+  return classes[status as keyof typeof classes] || classes.inactive;
+};
 
 const getStatusLabel = (status: string) => {
   const labels = {
-    active: "Activo",
-    inactive: "Inactivo",
-    vacation: "En vacaciones",
-  }
-  return labels[status as keyof typeof labels] || "Desconocido"
-}
+    active: 'Activo',
+    inactive: 'Inactivo',
+    vacation: 'En vacaciones',
+  };
+  return labels[status as keyof typeof labels] || 'Desconocido';
+};
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+};
 
 const viewTeacher = (teacher: Teacher) => {
-  emit("viewTeacher", teacher)
-}
+  emit('viewTeacher', teacher);
+};
 
 const editTeacher = (teacher: Teacher) => {
-  emit("editTeacher", teacher)
-}
+  emit('editTeacher', teacher);
+};
 
 const deleteTeacher = (teacher: Teacher) => {
-  emit("deleteTeacher", teacher)
-}
+  emit('deleteTeacher', teacher);
+};
 
 const manageSchedule = (teacher: Teacher) => {
-  emit("manageSchedule", teacher)
-}
+  emit('manageSchedule', teacher);
+};
 
 const refreshData = () => {
-  emit("refreshData")
-  loadTeachers()
-}
+  emit('refreshData');
+  loadTeachers();
+};
 
 const loadTeachers = () => {
   // Simular datos de maestros
   teachers.value = [
     {
-      id: "1",
-      name: "Prof. Elena Martínez",
-      email: "elena.martinez@academia.com",
-      specialties: ["Piano", "Teoría Musical"],
-      status: "active",
+      id: '1',
+      name: 'Prof. Elena Martínez',
+      email: 'elena.martinez@academia.com',
+      specialties: ['Piano', 'Teoría Musical'],
+      status: 'active',
       studentCount: 15,
       rating: 4.8,
       lastAccess: new Date(Date.now() - 3600000),
-      avatar: "/avatars/elena.jpg",
-      experience: "5+",
+      avatar: '/avatars/elena.jpg',
+      experience: '5+',
     },
     {
-      id: "2",
-      name: "Mtro. Jorge Díaz",
-      email: "jorge.diaz@academia.com",
-      specialties: ["Guitarra", "Bajo"],
-      status: "active",
+      id: '2',
+      name: 'Mtro. Jorge Díaz',
+      email: 'jorge.diaz@academia.com',
+      specialties: ['Guitarra', 'Bajo'],
+      status: 'active',
       studentCount: 12,
       rating: 4.6,
       lastAccess: new Date(Date.now() - 7200000),
-      avatar: "/avatars/jorge.jpg",
-      experience: "3-5",
+      avatar: '/avatars/jorge.jpg',
+      experience: '3-5',
     },
     {
-      id: "3",
-      name: "Mtra. Carmen Vásquez",
-      email: "carmen.vasquez@academia.com",
-      specialties: ["Violín", "Viola"],
-      status: "vacation",
+      id: '3',
+      name: 'Mtra. Carmen Vásquez',
+      email: 'carmen.vasquez@academia.com',
+      specialties: ['Violín', 'Viola'],
+      status: 'vacation',
       studentCount: 8,
       rating: 4.9,
       lastAccess: new Date(Date.now() - 604800000),
-      avatar: "/avatars/carmen.jpg",
-      experience: "5+",
+      avatar: '/avatars/carmen.jpg',
+      experience: '5+',
     },
-  ]
-}
+  ];
+};
 
 // Lifecycle
 onMounted(() => {
-  loadTeachers()
-})
+  loadTeachers();
+});
 </script>

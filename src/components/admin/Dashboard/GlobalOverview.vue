@@ -203,10 +203,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject } from 'vue'
-import type { Ref } from 'vue'
-import ReporteAsistenciaDiaria from "@/modulos/Attendance/views/ReporteAsistenciaDiaria.vue"
-import AdminReporteSemanal from "@/modulos/Teachers/view/admin/AdminReporteSemanal.vue"
+import { computed, inject } from 'vue';
+import type { Ref } from 'vue';
+import ReporteAsistenciaDiaria from '@/modulos/Attendance/views/ReporteAsistenciaDiaria.vue';
+import AdminReporteSemanal from '@/modulos/Teachers/view/admin/AdminReporteSemanal.vue';
 
 // Tipos
 interface Student {
@@ -238,43 +238,43 @@ interface DashboardData {
 }
 
 // Inyectar datos del dashboard padre
-const dashboardData = inject<Ref<DashboardData | null>>('dashboardData')
-const isLoading = inject<Ref<boolean>>('isLoading', { value: false } as Ref<boolean>)
+const dashboardData = inject<Ref<DashboardData | null>>('dashboardData');
+const isLoading = inject<Ref<boolean>>('isLoading', { value: false } as Ref<boolean>);
 
 // Computed properties para datos derivados
 const systemHealthColor = computed(() => {
-  if (isLoading.value) return 'bg-gray-300 dark:bg-gray-600'
+  if (isLoading.value) return 'bg-gray-300 dark:bg-gray-600';
   
-  const status = dashboardData?.value?.systemHealth?.status
+  const status = dashboardData?.value?.systemHealth?.status;
   switch (status) {
-    case 'operational':
-      return 'bg-green-500'
-    case 'warning':
-      return 'bg-yellow-500'
-    case 'critical':
-      return 'bg-red-500'
-    default:
-      return 'bg-gray-400'
+  case 'operational':
+    return 'bg-green-500';
+  case 'warning':
+    return 'bg-yellow-500';
+  case 'critical':
+    return 'bg-red-500';
+  default:
+    return 'bg-gray-400';
   }
-})
+});
 
 const systemHealthMessage = computed(() => {
-  if (isLoading.value) return 'Cargando estado del sistema...'
-  return dashboardData?.value?.systemHealth?.message || 'Estado desconocido'
-})
+  if (isLoading.value) return 'Cargando estado del sistema...';
+  return dashboardData?.value?.systemHealth?.message || 'Estado desconocido';
+});
 
 const studentsAtRisk = computed(() => {
-  if (isLoading.value || !dashboardData?.value) return []
-  return dashboardData.value.studentsAtRisk?.slice(0, 5) || []
-})
+  if (isLoading.value || !dashboardData?.value) return [];
+  return dashboardData.value.studentsAtRisk?.slice(0, 5) || [];
+});
 
 const lastUpdateTime = computed(() => {
-  if (!dashboardData?.value?.lastUpdate) return 'Nunca'
+  if (!dashboardData?.value?.lastUpdate) return 'Nunca';
   return new Date(dashboardData.value.lastUpdate).toLocaleTimeString('es-ES', {
     hour: '2-digit',
-    minute: '2-digit'
-  })
-})
+    minute: '2-digit',
+  });
+});
 </script>
 
 <style scoped>

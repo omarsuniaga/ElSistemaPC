@@ -806,16 +806,16 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import Datepicker from "@vuepic/vue-datepicker"
-import "@vuepic/vue-datepicker/dist/main.css"
-import {useFirestoreCollection} from "../composables/useFirestoreCollection"
-import {where, QueryConstraint, Timestamp} from "firebase/firestore"
-import Modal from "../components/ConfirmModal.vue"
-import JustifiedAbsenceModal from "../components/JustifiedAbsenceModal.vue" // Asegúrate que tenga export default
-import AbsenteesList from "../components/monitoring/AbsenteesList.vue"
+import { ref, computed, watch, onMounted } from 'vue';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
+import { useFirestoreCollection } from '../composables/useFirestoreCollection';
+import { where, QueryConstraint, Timestamp } from 'firebase/firestore';
+import Modal from '../components/ConfirmModal.vue';
+import JustifiedAbsenceModal from '../components/JustifiedAbsenceModal.vue'; // Asegúrate que tenga export default
+import AbsenteesList from '../components/monitoring/AbsenteesList.vue';
 import {
   ChartBarIcon,
   DocumentTextIcon,
@@ -829,9 +829,9 @@ import {
   ClockIcon,
   DocumentCheckIcon,
   CheckIcon as UserCheckIcon,
-} from "@heroicons/vue/24/outline"
-import jsPDF from "jspdf"
-import * as ExcelJS from "exceljs"
+} from '@heroicons/vue/24/outline';
+import jsPDF from 'jspdf';
+import * as ExcelJS from 'exceljs';
 
 // Tipos
 interface Student {
@@ -853,82 +853,82 @@ interface AttendanceRecord {
   className: string
   date: string
   timestamp: Timestamp
-  status: "present" | "absent" | "late" | "justified"
+  status: 'present' | 'absent' | 'late' | 'justified'
   observations?: string
   justification?: string
   student: Student
 }
 
 // Estado reactivo
-const isListView = ref(true)
-const selectedDate = ref(new Date())
-const selectedClass = ref("")
-const selectedStatus = ref("")
-const showDetailsModal = ref(false)
-const showEditModal = ref(false)
-const showJustificationModal = ref(false)
-const showReportModal = ref(false)
-const showExportModal = ref(false)
-const selectedRecord = ref<AttendanceRecord | null>(null)
-const dateFormat = "dd/MM/yyyy"
+const isListView = ref(true);
+const selectedDate = ref(new Date());
+const selectedClass = ref('');
+const selectedStatus = ref('');
+const showDetailsModal = ref(false);
+const showEditModal = ref(false);
+const showJustificationModal = ref(false);
+const showReportModal = ref(false);
+const showExportModal = ref(false);
+const selectedRecord = ref<AttendanceRecord | null>(null);
+const dateFormat = 'dd/MM/yyyy';
 
 // Formulario de edición
 const editForm = ref({
-  status: "",
-  observations: "",
-  justification: "",
-})
+  status: '',
+  observations: '',
+  justification: '',
+});
 
 // Rangos para reportes y exportación
 const reportRange = ref({
   startDate: new Date(),
   endDate: new Date(),
-})
+});
 
 const exportRange = ref({
   startDate: new Date(),
   endDate: new Date(),
-})
+});
 
-const reportType = ref("summary")
-const exportFormat = ref("excel")
+const reportType = ref('summary');
+const exportFormat = ref('excel');
 
 // Crear restricciones para la consulta Firestore
 const getQueryConstraints = computed<QueryConstraint[]>(() => {
-  const dateStr = format(selectedDate.value, "yyyy-MM-dd")
-  const constraints: QueryConstraint[] = [where("date", "==", dateStr)]
+  const dateStr = format(selectedDate.value, 'yyyy-MM-dd');
+  const constraints: QueryConstraint[] = [where('date', '==', dateStr)];
 
   if (selectedClass.value) {
-    constraints.push(where("classId", "==", selectedClass.value))
+    constraints.push(where('classId', '==', selectedClass.value));
   }
 
   // No filtramos por status aquí, lo haremos en memoria para evitar múltiples índices
-  return constraints
-})
+  return constraints;
+});
 
 // Usar el composable para obtener datos de Firestore
 const {
   items: attendance,
   loading,
   error,
-} = useFirestoreCollection<AttendanceRecord>("attendance", getQueryConstraints)
+} = useFirestoreCollection<AttendanceRecord>('attendance', getQueryConstraints);
 
 // Obtener clases para el selector
-const {items: classes} = useFirestoreCollection<Class>("classes", [])
+const { items: classes } = useFirestoreCollection<Class>('classes', []);
 
 // Filtrar por estado si es necesario
 const filteredAttendance = computed(() => {
-  if (!selectedStatus.value) return attendance.value
-  return attendance.value.filter((record) => record.status === selectedStatus.value)
-})
+  if (!selectedStatus.value) return attendance.value;
+  return attendance.value.filter((record) => record.status === selectedStatus.value);
+});
 
 // Calcular estadísticas
 const stats = computed(() => {
-  const total = attendance.value.length
-  const present = attendance.value.filter((record) => record.status === "present").length
-  const absent = attendance.value.filter((record) => record.status === "absent").length
-  const late = attendance.value.filter((record) => record.status === "late").length
-  const justified = attendance.value.filter((record) => record.status === "justified").length
+  const total = attendance.value.length;
+  const present = attendance.value.filter((record) => record.status === 'present').length;
+  const absent = attendance.value.filter((record) => record.status === 'absent').length;
+  const late = attendance.value.filter((record) => record.status === 'late').length;
+  const justified = attendance.value.filter((record) => record.status === 'justified').length;
 
   return {
     total,
@@ -937,95 +937,95 @@ const stats = computed(() => {
     late,
     justified,
     attendanceRate: total > 0 ? ((present + late) / total) * 100 : 0,
-  }
-})
+  };
+});
 
 // Obtener estudiantes ausentes para el componente AbsenteesList
 const absentStudents = computed(() => {
   return attendance.value
-    .filter((record) => record.status === "absent")
+    .filter((record) => record.status === 'absent')
     .map((record) => ({
       id: record.id,
       studentId: record.studentId,
       studentName:
-        record.student?.firstName + " " + record.student?.lastName || "Estudiante desconocido",
+        record.student?.firstName + ' ' + record.student?.lastName || 'Estudiante desconocido',
       className:
-        classes.value.find((cls) => cls.id === record.classId)?.name || "Clase desconocida",
-      classTime: record.classTime || "00:00",
+        classes.value.find((cls) => cls.id === record.classId)?.name || 'Clase desconocida',
+      classTime: record.classTime || '00:00',
       teacherName:
         classes.value.find((cls) => cls.id === record.classId)?.teacherName ||
-        "Profesor desconocido",
-      reason: record.observations || "",
+        'Profesor desconocido',
+      reason: record.observations || '',
       consecutiveAbsences: 1, // Esto debería calcularse desde un análisis histórico
       lastContactDate: record.date,
-      parentPhone: record.student?.phone || "",
-      parentEmail: record.student?.email || "",
-    }))
-})
+      parentPhone: record.student?.phone || '',
+      parentEmail: record.student?.email || '',
+    }));
+});
 
 // Funciones para manejar eventos del componente AbsenteesList
 const handleContactStudent = (absentee: any) => {
-  console.log("Contactar estudiante:", absentee)
+  console.log('Contactar estudiante:', absentee);
   // Aquí implementar lógica de contacto (WhatsApp, Email, etc.)
-}
+};
 
 const handleJustifyAbsence = (absentee: any) => {
-  console.log("Justificar ausencia:", absentee)
+  console.log('Justificar ausencia:', absentee);
   // Aquí implementar lógica para marcar como justificada
-}
+};
 
 const handleFollowUp = (absentee: any) => {
-  console.log("Programar seguimiento:", absentee)
+  console.log('Programar seguimiento:', absentee);
   // Aquí implementar lógica de seguimiento
-}
+};
 
 const handleNotifyAll = (absentees: any[]) => {
-  console.log("Notificar a todos:", absentees)
+  console.log('Notificar a todos:', absentees);
   // Aquí implementar lógica para notificar a todos los padres
-}
+};
 
 // Métodos para mostrar etiquetas y clases según el estado
 const getStatusLabel = (status: string) => {
   const labels = {
-    present: "Presente",
-    absent: "Ausente",
-    late: "Tarde",
-    justified: "Justificado",
-  }
-  return labels[status] || "Desconocido"
-}
+    present: 'Presente',
+    absent: 'Ausente',
+    late: 'Tarde',
+    justified: 'Justificado',
+  };
+  return labels[status] || 'Desconocido';
+};
 
 // Métodos y helpers requeridos por el template
 function toggleView() {
-  isListView.value = !isListView.value
+  isListView.value = !isListView.value;
 }
 
 function openDetails(record: AttendanceRecord) {
-  selectedRecord.value = record
-  showDetailsModal.value = true
+  selectedRecord.value = record;
+  showDetailsModal.value = true;
 }
 
 function editStatus(record: AttendanceRecord) {
-  selectedRecord.value = record
-  editForm.value.status = record.status
-  editForm.value.observations = record.observations || ""
-  editForm.value.justification = record.justification || ""
-  showEditModal.value = true
+  selectedRecord.value = record;
+  editForm.value.status = record.status;
+  editForm.value.observations = record.observations || '';
+  editForm.value.justification = record.justification || '';
+  showEditModal.value = true;
 }
 
 function justifyAbsence(record: AttendanceRecord) {
-  selectedRecord.value = record
-  showJustificationModal.value = true
+  selectedRecord.value = record;
+  showJustificationModal.value = true;
 }
 
 function saveEditedStatus() {
   // Implementa lógica de guardado aquí
-  showEditModal.value = false
+  showEditModal.value = false;
 }
 
 function saveJustification() {
   // Implementa lógica de guardado aquí
-  showJustificationModal.value = false
+  showJustificationModal.value = false;
 }
 
 function generateReport() {
@@ -1038,48 +1038,48 @@ function exportData() {
 
 function formatDate(date: string | Date) {
   try {
-    return format(typeof date === "string" ? new Date(date) : date, dateFormat)
+    return format(typeof date === 'string' ? new Date(date) : date, dateFormat);
   } catch {
-    return date
+    return date;
   }
 }
 
 function formatTime(date: string | Date) {
   try {
-    const d = typeof date === "string" ? new Date(date) : date
-    return d.toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"})
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   } catch {
-    return ""
+    return '';
   }
 }
 
 const getStatusClasses = (status: string) => {
   const statusClasses = {
-    present: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
-    absent: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
-    late: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-    justified: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  }
-  return statusClasses[status] || ""
-}
+    present: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    absent: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    late: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    justified: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  };
+  return statusClasses[status] || '';
+};
 
 const getStatusDotClass = (status: string) => {
   const dotClasses = {
-    present: "bg-green-500",
-    absent: "bg-red-500",
-    late: "bg-amber-500",
-    justified: "bg-blue-500",
-  }
-  return dotClasses[status] || ""
-}
+    present: 'bg-green-500',
+    absent: 'bg-red-500',
+    late: 'bg-amber-500',
+    justified: 'bg-blue-500',
+  };
+  return dotClasses[status] || '';
+};
 
 const getStatusBorderClass = (status: string) => {
   const borderClasses = {
-    present: "border-green-500",
-    absent: "border-red-500",
-    late: "border-amber-500",
-    justified: "border-blue-500",
-  }
-  return borderClasses[status] || ""
-}
+    present: 'border-green-500',
+    absent: 'border-red-500',
+    late: 'border-amber-500',
+    justified: 'border-blue-500',
+  };
+  return borderClasses[status] || '';
+};
 </script>

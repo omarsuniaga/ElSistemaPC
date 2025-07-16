@@ -1,11 +1,12 @@
 <template>
   <div v-if="isOpen" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-300">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-95 opacity-0"
+    <div
+class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-95 opacity-0"
          :class="{ 'scale-100 opacity-100': isOpen }">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
         <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Instrumentos de la Obra</h3>
-        <button @click="closeModal" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+        <button class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300" @click="closeModal">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
@@ -18,13 +19,13 @@
         <div class="relative mb-6">
           <div class="relative">
             <input
+              ref="searchInput"
               v-model="searchTerm"
               type="text"
               class="w-full pl-4 pr-10 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               placeholder="Buscar instrumento..."
               @keyup.enter="addInstrument"
               @input="updateFilteredInstruments"
-              ref="searchInput"
             />
             <div class="absolute inset-y-0 right-0 flex items-center pr-3">
               <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -34,9 +35,11 @@
           </div>
           
           <!-- Lista de sugerencias -->
-          <div v-if="filteredInstruments.length > 0 && searchTerm" 
+          <div
+v-if="filteredInstruments.length > 0 && searchTerm" 
                class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-72 overflow-auto transition-all duration-200 transform origin-top">
-            <div v-for="instrument in filteredInstruments"
+            <div
+v-for="instrument in filteredInstruments"
                  :key="instrument"
                  class="px-4 py-3 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer flex items-center group"
                  @click="selectInstrument(instrument)">
@@ -52,12 +55,14 @@
           <div v-if="selectedInstruments.length > 0" class="space-y-2">
             <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Instrumentos seleccionados</h4>
             <div class="flex flex-wrap gap-2">
-              <div v-for="(instrument, index) in selectedInstruments"
+              <div
+v-for="(instrument, index) in selectedInstruments"
                    :key="index"
                    class="inline-flex items-center px-3 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 group">
                 <span>{{ instrument }}</span>
-                <button @click="removeInstrument(index)" 
-                        class="ml-2 p-0.5 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+                <button
+class="ml-2 p-0.5 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors" 
+                        @click="removeInstrument(index)">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                   </svg>
@@ -74,14 +79,14 @@
       <!-- Footer -->
       <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 bg-gray-50 dark:bg-gray-800/50 rounded-b-xl">
         <button
-          @click="closeModal"
           class="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          @click="closeModal"
         >
           Cancelar
         </button>
         <button
-          @click="saveInstruments"
           class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-md hover:shadow-lg"
+          @click="saveInstruments"
         >
           Guardar Cambios
         </button>
@@ -125,7 +130,7 @@ const defaultInstruments = [
   'Violín I', 'Violín II', 'Viola', 'Violonchelo', 'Contrabajo',
   'Flauta', 'Flautín', 'Oboe', 'Corno Inglés', 'Clarinete en Sib', 'Clarinete Bajo',
   'Fagot', 'Contrafagot', 'Trompa en Fa', 'Trompeta en Sib', 'Trombón', 'Tuba',
-  'Tímpani', 'Platillos', 'Bombo', 'Triángulo', 'Piano', 'Celesta'
+  'Tímpani', 'Platillos', 'Bombo', 'Triángulo', 'Piano', 'Celesta',
 ];
 
 // Cargar instrumentos guardados del localStorage
@@ -165,7 +170,7 @@ const loadInstruments = () => {
     const defaultInstruments = [
       'Flauta', 'Oboe', 'Clarinete', 'Fagot', 'Corno', 'Trompeta',
       'Trombón', 'Tuba', 'Tímpani', 'Platillos', 'Violín I', 'Violín II',
-      'Viola', 'Violonchelo', 'Contrabajo', 'Piano',  'Clave'
+      'Viola', 'Violonchelo', 'Contrabajo', 'Piano',  'Clave',
     ];
     allInstruments.value = [...new Set([...defaultInstruments, ...instrumentsFromWorks])];
     saveInstrumentsToStorage();
@@ -196,7 +201,7 @@ const filteredInstruments = computed(() => {
       
       // Verificar que no esté ya seleccionado
       const notSelected = !selectedInstruments.value.some(
-        sel => sel.toLowerCase() === instrument.toLowerCase()
+        sel => sel.toLowerCase() === instrument.toLowerCase(),
       );
       
       return (startsWithTerm || includesTerm) && notSelected;
@@ -222,7 +227,7 @@ const addInstrument = () => {
   // Verificar si el instrumento ya existe
   const normalizedSearch = instrumentName.toLowerCase();
   const exists = selectedInstruments.value.some(
-    inst => inst.toLowerCase() === normalizedSearch
+    inst => inst.toLowerCase() === normalizedSearch,
   );
 
   if (!exists) {
@@ -244,7 +249,7 @@ const selectInstrument = (instrument: string) => {
   // Verificar si ya está seleccionado (insensible a mayúsculas)
   const normalizedSearch = instrument.toLowerCase();
   const exists = selectedInstruments.value.some(
-    inst => inst.toLowerCase() === normalizedSearch
+    inst => inst.toLowerCase() === normalizedSearch,
   );
 
   if (!exists) {

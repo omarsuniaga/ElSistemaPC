@@ -160,3 +160,269 @@ export interface EventReminder {
   timing: number // minutes before event
   enabled: boolean
 }
+
+export interface Obra {
+  id: string;
+  titulo: string;
+  compositor: string;
+  repertorioId: string;
+  totalCompases: number;
+  duracionEstimada: number; // en minutos
+  instrumentosRequeridos: {
+    instrumentoId: string;
+    nombre: string;
+    cantidad: number;
+    nivel: 'principiante' | 'intermedio' | 'avanzado';
+    esObligatorio: boolean;
+  }[];
+  fechaCreacion: any; // Firebase Timestamp
+  metadatos: {
+    complejidadGeneral: DificultadFrase;
+    frasesDefinidas: number;
+    frasesCompletadas: number;
+    progresoPorcentaje: number;
+    horasEnsayoEstimadas: number;
+    horasEnsayoReales: number;
+    tags?: string[];
+  };
+  auditoria: {
+    creadoPor: string;
+    fechaCreacion: any; // Firebase Timestamp
+    modificadoPor?: string;
+    fechaModificacion?: any; // Firebase Timestamp
+    version: number;
+    activo: boolean;
+  };
+  estado: 'pendiente' | 'en_progreso' | 'completada' | 'archivada';
+  // Otros campos relevantes
+}
+
+export interface Repertorio {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  fechaCreacion: any; // Firebase Timestamp
+  auditoria: {
+    creadoPor: string;
+    fechaCreacion: any;
+    modificadoPor?: string;
+    fechaModificacion?: any;
+    version: number;
+    activo: boolean;
+  };
+}
+
+export interface PlanAccion {
+  id: string;
+  obraId: string;
+  maestroId: string;
+  fechaCreacion: any; // Firebase Timestamp
+  fechaInicio: any; // Firebase Timestamp
+  fechaFin: any; // Firebase Timestamp
+  objetivos: string[];
+  fases: {
+    nombre: string;
+    descripcion: string;
+    estado: 'pendiente' | 'en_progreso' | 'completada';
+    fechaInicio: any;
+    fechaFin: any;
+  }[];
+  metadatos: {
+    progresoPorcentaje: number;
+    fasesCompletadas: number;
+    totalFases: number;
+    horasEstimadas: number;
+    horasReales: number;
+  };
+  auditoria: {
+    creadoPor: string;
+    fechaCreacion: any;
+    modificadoPor?: string;
+    fechaModificacion?: any;
+    version: number;
+    activo: boolean;
+  };
+}
+
+export interface FraseMontaje {
+  id: string;
+  planAccionId: string;
+  obraId: string;
+  nombre: string;
+  descripcion: string;
+  compassInicio: number;
+  compassFinalizacion: number;
+  prioridad: number; // 1-5
+  metadatos: {
+    totalCompases: number;
+    estadosCompases: Record<number, EstadoCompass>; // Mapa de número de compás a su estado
+    progresoPorcentaje: number;
+    horasEnsayoAcumuladas: number;
+    dificultadesIdentificadas: string[];
+    logrosAlcanzados: string[];
+  };
+  auditoria: {
+    creadoPor: string;
+    fechaCreacion: any;
+    modificadoPor?: string;
+    fechaModificacion?: any;
+    version: number;
+    activo: boolean;
+  };
+}
+
+export interface EstadoCompassDetalle {
+  compas: number;
+  estado: EstadoCompass;
+  instrumentos: Record<TipoInstrumento, EstadoCompass>; // Estado por instrumento
+  observaciones: string[];
+  fechaUltimaModificacion: any; // Firebase Timestamp
+  modificadoPor: string; // ID del maestro
+  sesionesEnsayo: number;
+  dificultadesEspecificas: string[];
+}
+
+export interface ObservacionPedagogica {
+  id: string;
+  obraId: string;
+  fraseId?: string;
+  maestroId: string;
+  fecha: any; // Firebase Timestamp
+  tipo: 'tecnica' | 'musical' | 'comportamiento' | 'general';
+  contenido: string;
+  recomendaciones: string[];
+  resuelto: boolean;
+  fechaResolucion?: any; // Firebase Timestamp
+  auditoria: {
+    creadoPor: string;
+    fechaCreacion: any;
+    modificadoPor?: string;
+    fechaModificacion?: any;
+    version: number;
+    activo: boolean;
+  };
+}
+
+export interface EvaluacionContinua {
+  id: string;
+  estudianteId: string;
+  obraId: string;
+  maestroEvaluadorId: string;
+  fecha: any; // Firebase Timestamp
+  criterios: Record<string, number>; // Ej: { afinacion: 4, ritmo: 3 }
+  puntuacionGeneral: number; // 1-5
+  comentarios: string;
+  metadatos: {
+    duracionEvaluacion: number; // en minutos
+    tiempoPreparacion: number; // en minutos
+    condicionesEvaluacion: string;
+    porcentajeCumplimiento: number; // 0-100
+  };
+  auditoria: {
+    creadoPor: string;
+    fechaCreacion: any;
+    modificadoPor?: string;
+    fechaModificacion?: any;
+    version: number;
+    activo: boolean;
+  };
+}
+
+export interface EvaluacionFinal {
+  id: string;
+  estudianteId: string;
+  obraId: string;
+  maestroEvaluadorId: string;
+  fecha: any; // Firebase Timestamp
+  puntuacionFinal: number; // 1-100
+  comentariosGenerales: string;
+  logrosDestacados: string[];
+  areasParaMejorar: string[];
+  recomendacionesFuturas: string[];
+  auditoria: {
+    creadoPor: string;
+    fechaCreacion: any;
+    modificadoPor?: string;
+    fechaModificacion?: any;
+    version: number;
+    activo: boolean;
+  };
+}
+
+export interface NotificacionMontaje {
+  id: string;
+  tipo: 'evaluacion' | 'observacion' | 'cambio_estado' | 'recordatorio';
+  titulo: string;
+  mensaje: string;
+  fechaCreacion: any; // Firebase Timestamp
+  destinatarioId: string; // ID del usuario o 'todos'
+  remitenteId: string; // ID del usuario que la generó
+  entidadRelacionada: {
+    tipo: 'obra' | 'frase' | 'compas' | 'evaluacion';
+    id: string;
+  };
+  prioridad: 'baja' | 'media' | 'alta' | 'urgente';
+  metadatos: {
+    leida: boolean;
+    fechaLectura?: any; // Firebase Timestamp
+    accionRequerida: boolean;
+  };
+}
+
+export interface FiltrosMontaje {
+  repertorioId?: string;
+  estado?: 'pendiente' | 'en_progreso' | 'completada' | 'archivada';
+  dificultad?: DificultadFrase;
+  instrumento?: TipoInstrumento;
+  tags?: string[];
+}
+
+export interface CambioEstadoCompass {
+  id: string;
+  obraId: string;
+  fraseId: string;
+  compas: number;
+  instrumento?: TipoInstrumento;
+  estadoAnterior: EstadoCompass;
+  estadoNuevo: EstadoCompass;
+  razon?: string;
+  maestroId: string;
+  fechaCambio?: any; // Firebase Timestamp
+}
+
+export interface EstadoCompassInstrumento {
+  numeroCompas: number;
+  estado: EstadoCompass;
+  instrumento: TipoInstrumento;
+  observaciones: string;
+  fechaUltimaActualizacion: any; // Firebase Timestamp
+  maestroActualizador: string; // ID del maestro
+  sesionesEnsayo: number;
+  dificultadesEspecificas: string[];
+}
+
+export interface EstadisticasProgreso {
+  totalCompases: number;
+  compasesSinTrabajar: number;
+  compasesLeidos: number;
+  compasesEnProgreso: number;
+  compasesConDificultad: number;
+  compasesLogrados: number;
+  compasesDominados: number;
+  compasesCompletados: number;
+  porcentajeGeneral: number;
+  porcentajePorInstrumento: Record<TipoInstrumento, number>;
+}
+
+export interface HistorialTrabajoMaestro {
+  id?: string;
+  maestroId: string;
+  obraId: string;
+  instrumentoId: TipoInstrumento;
+  compas: number;
+  estadoAnterior: EstadoCompass;
+  estadoNuevo: EstadoCompass;
+  fechaCambio: any; // Firebase Timestamp
+  observacionClase?: string; // Observación general de la clase
+  razonCambio?: string; // Razón específica del cambio de compás
+}

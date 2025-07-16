@@ -31,21 +31,21 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, ref, watch, onMounted} from "vue"
-import {db} from "../../firebase"
-import {collection, query, where, getDocs, orderBy} from "firebase/firestore"
-import type {NotificationHistory} from "../../types/notificationHistory"
-import type {Conversation} from "../../types/conversation"
+import { defineComponent, ref, watch, onMounted } from 'vue';
+import { db } from '../../firebase';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import type { NotificationHistory } from '../../types/notificationHistory';
+import type { Conversation } from '../../types/conversation';
 
 interface TimelineItem {
   id: string
   message: string
   timestamp: Date
-  direction: "incoming" | "outgoing"
+  direction: 'incoming' | 'outgoing'
 }
 
 export default defineComponent({
-  name: "ConversationHistoryModal",
+  name: 'ConversationHistoryModal',
   props: {
     studentId: {
       type: String,
@@ -56,89 +56,89 @@ export default defineComponent({
       required: true,
     },
   },
-  emits: ["close"],
-  setup(props, {emit}) {
-    const loading = ref(false)
-    const timeline = ref<TimelineItem[]>([])
+  emits: ['close'],
+  setup(props, { emit }) {
+    const loading = ref(false);
+    const timeline = ref<TimelineItem[]>([]);
 
     const fetchHistory = async () => {
-      if (!props.studentId) return
+      if (!props.studentId) return;
 
-      loading.value = true
-      const allItems: TimelineItem[] = []
+      loading.value = true;
+      const allItems: TimelineItem[] = [];
 
       try {
         // Fetch notifications (outgoing)
         const notificationsQuery = query(
-          collection(db, "notification_history"),
-          where("studentId", "==", props.studentId),
-          orderBy("timestamp", "asc")
-        )
-        const notificationsSnapshot = await getDocs(notificationsQuery)
+          collection(db, 'notification_history'),
+          where('studentId', '==', props.studentId),
+          orderBy('timestamp', 'asc'),
+        );
+        const notificationsSnapshot = await getDocs(notificationsQuery);
         notificationsSnapshot.forEach((doc) => {
-          const data = doc.data() as NotificationHistory
+          const data = doc.data() as NotificationHistory;
           allItems.push({
             id: doc.id,
             message: data.messageContent,
             timestamp: (data.timestamp as any).toDate(),
-            direction: "outgoing",
-          })
-        })
+            direction: 'outgoing',
+          });
+        });
 
         // Fetch conversations (incoming)
         const conversationsQuery = query(
-          collection(db, "conversations"),
-          where("studentId", "==", props.studentId),
-          orderBy("timestamp", "asc")
-        )
-        const conversationsSnapshot = await getDocs(conversationsQuery)
+          collection(db, 'conversations'),
+          where('studentId', '==', props.studentId),
+          orderBy('timestamp', 'asc'),
+        );
+        const conversationsSnapshot = await getDocs(conversationsQuery);
         conversationsSnapshot.forEach((doc) => {
-          const data = doc.data() as Conversation
+          const data = doc.data() as Conversation;
           allItems.push({
             id: doc.id,
             message: data.message,
             timestamp: (data.timestamp as any).toDate(),
-            direction: "incoming",
-          })
-        })
+            direction: 'incoming',
+          });
+        });
 
         // Sort all items by timestamp
-        timeline.value = allItems.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+        timeline.value = allItems.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
       } catch (error) {
-        console.error("Error fetching communication history:", error)
+        console.error('Error fetching communication history:', error);
       } finally {
-        loading.value = false
+        loading.value = false;
       }
-    }
+    };
 
     watch(
       () => props.visible,
       (newVal) => {
         if (newVal) {
-          fetchHistory()
+          fetchHistory();
         }
-      }
-    )
+      },
+    );
 
     const closeModal = () => {
-      emit("close")
-    }
+      emit('close');
+    };
 
     const formatDate = (date: Date) => {
-      return new Intl.DateTimeFormat("es-ES", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(date)
-    }
+      return new Intl.DateTimeFormat('es-ES', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(date);
+    };
 
     return {
       loading,
       timeline,
       closeModal,
       formatDate,
-    }
+    };
   },
-})
+});
 </script>
 
 <style scoped>

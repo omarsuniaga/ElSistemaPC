@@ -75,7 +75,6 @@
                   <button
                     v-for="score in 5"
                     :key="score"
-                    @click="setScore(instrument.id, key, score)"
                     :class="[
                       'w-7 h-7 rounded-full text-xs font-bold border transition-colors',
                       evaluations[instrument.id][key] === score 
@@ -83,6 +82,7 @@
                         : 'border-gray-200 hover:bg-gray-100'
                     ]"
                     :title="criterion.scales[score]"
+                    @click="setScore(instrument.id, key, score)"
                   >
                     {{ score }}
                   </button>
@@ -94,15 +94,15 @@
                 <div class="flex items-center gap-2">
                   <textarea
                     v-model="evaluations[instrument.id].comentarios"
-                    @blur="saveEvaluation(instrument.id, 'comentarios', evaluations[instrument.id].comentarios)"
                     class="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     rows="2"
                     placeholder="Comentarios..."
+                    @blur="saveEvaluation(instrument.id, 'comentarios', evaluations[instrument.id].comentarios)"
                   ></textarea>
                   <button
-                    @click="openCommentsModal(instrument)"
                     class="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors"
                     title="Comentarios detallados"
+                    @click="openCommentsModal(instrument)"
                   >
                     📝
                   </button>
@@ -115,7 +115,6 @@
                   <button
                     v-for="score in 5"
                     :key="score"
-                    @click="setScore(instrument.id, 'tiempoDedicado', score)"
                     :class="[
                       'w-7 h-7 rounded-full text-xs font-bold border transition-colors',
                       evaluations[instrument.id].tiempoDedicado === score 
@@ -123,6 +122,7 @@
                         : 'border-gray-200 hover:bg-gray-100'
                     ]"
                     :title="getTiempoDedicadoLabel(score)"
+                    @click="setScore(instrument.id, 'tiempoDedicado', score)"
                   >
                     {{ score }}
                   </button>
@@ -133,16 +133,16 @@
               <td class="px-4 py-4 text-center">
                 <div class="flex flex-col gap-1">
                   <button
-                    @click="openDetailModal(instrument)"
                     class="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors"
                     title="Evaluación detallada"
+                    @click="openDetailModal(instrument)"
                   >
                     📊 Detalle
                   </button>
                   <button
-                    @click="clearInstrumentEvaluation(instrument.id)"
                     class="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors"
                     title="Limpiar evaluación"
+                    @click="clearInstrumentEvaluation(instrument.id)"
                   >
                     🗑️ Limpiar
                   </button>
@@ -270,14 +270,14 @@
         
         <div class="flex gap-3 mt-6">
           <button
-            @click="saveDetailedComments"
             class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            @click="saveDetailedComments"
           >
             💾 Guardar Comentarios
           </button>
           <button
-            @click="closeCommentsModal"
             class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            @click="closeCommentsModal"
           >
             Cancelar
           </button>
@@ -383,14 +383,14 @@
         
         <div class="flex gap-3 mt-6">
           <button
-            @click="saveDetailedInfo"
             class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+            @click="saveDetailedInfo"
           >
             💾 Guardar Información
           </button>
           <button
-            @click="closeDetailModal"
             class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            @click="closeDetailModal"
           >
             Cancelar
           </button>
@@ -401,37 +401,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import type { MusicalWork, Instrument } from '../types/heatmap'
-import { EVALUATION_CRITERIA } from '../types/heatmap'
+import { ref, reactive, computed } from 'vue';
+import type { MusicalWork, Instrument } from '../types/heatmap';
+import { EVALUATION_CRITERIA } from '../types/heatmap';
 
 const props = defineProps<{
   work: MusicalWork
-}>()
+}>();
 
 // Initialize evaluations for each instrument
-const evaluations = reactive<Record<string, any>>({})
+const evaluations = reactive<Record<string, any>>({});
 
 // Modal states
-const showCommentsModal = ref(false)
-const showDetailModal = ref(false)
-const selectedInstrument = ref<Instrument | null>(null)
+const showCommentsModal = ref(false);
+const showDetailModal = ref(false);
+const selectedInstrument = ref<Instrument | null>(null);
 
 // Detailed comments
 const detailedComments = reactive({
   general: '',
   strengths: '',
   improvements: '',
-  specific: ''
-})
+  specific: '',
+});
 
 // Detailed information
 const detailedInfo = reactive({
   hoursPerWeek: 0,
   difficulty: 5,
   expectedProgress: 0,
-  nextEvaluation: ''
-})
+  nextEvaluation: '',
+});
 
 // Initialize evaluations
 const initializeEvaluations = () => {
@@ -449,51 +449,51 @@ const initializeEvaluations = () => {
         general: '',
         strengths: '',
         improvements: '',
-        specific: ''
+        specific: '',
       },
       detailedInfo: {
         hoursPerWeek: 0,
         difficulty: 5,
         expectedProgress: 0,
-        nextEvaluation: ''
-      }
-    }
-  })
-}
+        nextEvaluation: '',
+      },
+    };
+  });
+};
 
 // Initialize evaluations immediately during setup
-initializeEvaluations()
+initializeEvaluations();
 
 // Set score for a specific criterion
 const setScore = (instrumentId: string, criterion: string, score: number) => {
-  evaluations[instrumentId][criterion] = score
-  saveEvaluation(instrumentId, criterion, score)
-}
+  evaluations[instrumentId][criterion] = score;
+  saveEvaluation(instrumentId, criterion, score);
+};
 
 // Get color class based on score
 const getScoreColor = (score: number): string => {
-  if (score === 0) return 'text-gray-400'
-  if (score <= 2) return 'text-red-600 bg-red-50'
-  if (score === 3) return 'text-yellow-600 bg-yellow-50'
-  if (score >= 4) return 'text-green-600 bg-green-50'
-  return 'text-gray-600'
-}
+  if (score === 0) return 'text-gray-400';
+  if (score <= 2) return 'text-red-600 bg-red-50';
+  if (score === 3) return 'text-yellow-600 bg-yellow-50';
+  if (score >= 4) return 'text-green-600 bg-green-50';
+  return 'text-gray-600';
+};
 
 // Get button color based on score
 const getScoreButtonColor = (score: number): string => {
-  if (score <= 2) return 'bg-red-500 text-white border-red-500'
-  if (score === 3) return 'bg-yellow-500 text-white border-yellow-500'
-  if (score >= 4) return 'bg-green-500 text-white border-green-500'
-  return 'bg-gray-500 text-white border-gray-500'
-}
+  if (score <= 2) return 'bg-red-500 text-white border-red-500';
+  if (score === 3) return 'bg-yellow-500 text-white border-yellow-500';
+  if (score >= 4) return 'bg-green-500 text-white border-green-500';
+  return 'bg-gray-500 text-white border-gray-500';
+};
 
 // Get progress bar color
 const getProgressBarColor = (score: number): string => {
-  if (score <= 2) return 'bg-red-500'
-  if (score === 3) return 'bg-yellow-500'
-  if (score >= 4) return 'bg-green-500'
-  return 'bg-gray-500'
-}
+  if (score <= 2) return 'bg-red-500';
+  if (score === 3) return 'bg-yellow-500';
+  if (score >= 4) return 'bg-green-500';
+  return 'bg-gray-500';
+};
 
 // Get tiempo dedicado label
 const getTiempoDedicadoLabel = (score: number): string => {
@@ -502,127 +502,127 @@ const getTiempoDedicadoLabel = (score: number): string => {
     2: 'Poco',
     3: 'Moderado',
     4: 'Bastante',
-    5: 'Mucho'
-  }
-  return labels[score] || ''
-}
+    5: 'Mucho',
+  };
+  return labels[score] || '';
+};
 
 // Calculate average score for a criterion
 const getAverageScore = (criterion: string): number => {
   const scores = Object.values(evaluations)
     .map(evaluationItem => evaluationItem[criterion])
-    .filter(score => score > 0)
+    .filter(score => score > 0);
   
-  if (scores.length === 0) return 0
-  return scores.reduce((sum, score) => sum + score, 0) / scores.length
-}
+  if (scores.length === 0) return 0;
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+};
 
 // Save evaluation (simulate API call)
 const saveEvaluation = async (instrumentId: string, criterion: string, value: any) => {
   try {
     // Here you would save to your backend/Firebase
-    console.log('Saving evaluation:', { instrumentId, criterion, value })
+    console.log('Saving evaluation:', { instrumentId, criterion, value });
     
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Show success feedback (optional)
     // You could add a toast notification here
   } catch (error) {
-    console.error('Error saving evaluation:', error)
+    console.error('Error saving evaluation:', error);
   }
-}
+};
 
 // Clear instrument evaluation
 const clearInstrumentEvaluation = (instrumentId: string) => {
   if (confirm('¿Estás seguro de que quieres limpiar toda la evaluación de este instrumento?')) {
     Object.keys(EVALUATION_CRITERIA).forEach(key => {
-      evaluations[instrumentId][key] = 0
-    })
-    evaluations[instrumentId].comentarios = ''
-    evaluations[instrumentId].tiempoDedicado = 0
+      evaluations[instrumentId][key] = 0;
+    });
+    evaluations[instrumentId].comentarios = '';
+    evaluations[instrumentId].tiempoDedicado = 0;
     evaluations[instrumentId].detailedComments = {
       general: '',
       strengths: '',
       improvements: '',
-      specific: ''
-    }
+      specific: '',
+    };
     evaluations[instrumentId].detailedInfo = {
       hoursPerWeek: 0,
       difficulty: 5,
       expectedProgress: 0,
-      nextEvaluation: ''
-    }
+      nextEvaluation: '',
+    };
   }
-}
+};
 
 // Comments modal functions
 const openCommentsModal = (instrument: Instrument) => {
-  selectedInstrument.value = instrument
-  const instrumentEval = evaluations[instrument.id]
+  selectedInstrument.value = instrument;
+  const instrumentEval = evaluations[instrument.id];
   if (instrumentEval.detailedComments) {
-    Object.assign(detailedComments, instrumentEval.detailedComments)
+    Object.assign(detailedComments, instrumentEval.detailedComments);
   }
-  showCommentsModal.value = true
-}
+  showCommentsModal.value = true;
+};
 
 const closeCommentsModal = () => {
-  showCommentsModal.value = false
-  selectedInstrument.value = null
+  showCommentsModal.value = false;
+  selectedInstrument.value = null;
   Object.assign(detailedComments, {
     general: '',
     strengths: '',
     improvements: '',
-    specific: ''
-  })
-}
+    specific: '',
+  });
+};
 
 const saveDetailedComments = async () => {
-  if (!selectedInstrument.value) return
+  if (!selectedInstrument.value) return;
   
-  evaluations[selectedInstrument.value.id].detailedComments = { ...detailedComments }
+  evaluations[selectedInstrument.value.id].detailedComments = { ...detailedComments };
   
   // Update the brief comments field with a summary
   const summary = [
     detailedComments.general,
     detailedComments.strengths ? `Fortalezas: ${detailedComments.strengths}` : '',
-    detailedComments.improvements ? `Mejoras: ${detailedComments.improvements}` : ''
-  ].filter(Boolean).join('. ').substring(0, 100) + '...'
+    detailedComments.improvements ? `Mejoras: ${detailedComments.improvements}` : '',
+  ].filter(Boolean).join('. ').substring(0, 100) + '...';
   
-  evaluations[selectedInstrument.value.id].comentarios = summary
+  evaluations[selectedInstrument.value.id].comentarios = summary;
   
-  await saveEvaluation(selectedInstrument.value.id, 'detailedComments', detailedComments)
-  closeCommentsModal()
-}
+  await saveEvaluation(selectedInstrument.value.id, 'detailedComments', detailedComments);
+  closeCommentsModal();
+};
 
 // Detail modal functions
 const openDetailModal = (instrument: Instrument) => {
-  selectedInstrument.value = instrument
-  const instrumentEval = evaluations[instrument.id]
+  selectedInstrument.value = instrument;
+  const instrumentEval = evaluations[instrument.id];
   if (instrumentEval.detailedInfo) {
-    Object.assign(detailedInfo, instrumentEval.detailedInfo)
+    Object.assign(detailedInfo, instrumentEval.detailedInfo);
   }
-  showDetailModal.value = true
-}
+  showDetailModal.value = true;
+};
 
 const closeDetailModal = () => {
-  showDetailModal.value = false
-  selectedInstrument.value = null
+  showDetailModal.value = false;
+  selectedInstrument.value = null;
   Object.assign(detailedInfo, {
     hoursPerWeek: 0,
     difficulty: 5,
     expectedProgress: 0,
-    nextEvaluation: ''
-  })
-}
+    nextEvaluation: '',
+  });
+};
 
 const saveDetailedInfo = async () => {
-  if (!selectedInstrument.value) return
+  if (!selectedInstrument.value) return;
   
-  evaluations[selectedInstrument.value.id].detailedInfo = { ...detailedInfo }
-  await saveEvaluation(selectedInstrument.value.id, 'detailedInfo', detailedInfo)
-  closeDetailModal()
-}
+  evaluations[selectedInstrument.value.id].detailedInfo = { ...detailedInfo };
+  await saveEvaluation(selectedInstrument.value.id, 'detailedInfo', detailedInfo);
+  closeDetailModal();
+};
 </script>
 
 <style scoped>

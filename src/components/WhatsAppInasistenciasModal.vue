@@ -237,7 +237,7 @@
               </div>
 
               <!-- Contenido por nivel -->
-              <div v-for="level in getRepresentedLevels()" :key="level" v-show="activeTab === level">
+              <div v-for="level in getRepresentedLevels()" v-show="activeTab === level" :key="level">
                 <div class="mb-6">
                   <div class="flex justify-between items-center mb-4">
                     <h4 class="text-lg font-medium text-gray-900 dark:text-white">
@@ -403,109 +403,109 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useStudentsStore } from '@/modulos/Students/store/students'
-import { useAttendanceStore } from '@/modulos/Attendance/store/attendance'
+import { ref, computed, onMounted } from 'vue';
+import { useStudentsStore } from '@/modulos/Students/store/students';
+import { useAttendanceStore } from '@/modulos/Attendance/store/attendance';
 import { 
   notifyUnexcusedAbsences, 
   getStudentMessageHistory,
-  MESSAGE_TEMPLATES 
-} from '@/services/attendanceNotifications'
-import { httpsCallable } from 'firebase/functions'
-import { functions } from '@/firebase'
+  MESSAGE_TEMPLATES, 
+} from '@/services/attendanceNotifications';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '@/firebase';
 
 // Props
 interface Props {
   isVisible: boolean
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
   close: []
   messagesSent: [{ success: number; failed: number; messages: any[] }]
-}>()
+}>();
 
 // Stores
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
 
 // State
-const loading = ref(false)
-const sending = ref(false)
-const selectedPeriod = ref('week')
-const searchQuery = ref('')
-const selectedStudents = ref<string[]>([])
-const studentsWithAbsences = ref<any[]>([])
-const activeTab = ref(1)
-const customMessages = ref<Record<number, string>>({})
-const modifiedLevels = ref<Set<number>>(new Set())
-const showPreview = ref(false)
-const previewContent = ref('')
+const loading = ref(false);
+const sending = ref(false);
+const selectedPeriod = ref('week');
+const searchQuery = ref('');
+const selectedStudents = ref<string[]>([]);
+const studentsWithAbsences = ref<any[]>([]);
+const activeTab = ref(1);
+const customMessages = ref<Record<number, string>>({});
+const modifiedLevels = ref<Set<number>>(new Set());
+const showPreview = ref(false);
+const previewContent = ref('');
 
 // Firebase Function
-const getStudentAttendanceSummary = httpsCallable(functions, 'getStudentAttendanceSummary')
+const getStudentAttendanceSummary = httpsCallable(functions, 'getStudentAttendanceSummary');
 
 // Computed
 const filteredStudents = computed(() => {
-  let filtered = studentsWithAbsences.value
+  let filtered = studentsWithAbsences.value;
 
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(student => 
       `${student.nombre} ${student.apellido}`.toLowerCase().includes(query) ||
-      (student.instrumento || '').toLowerCase().includes(query)
-    )
+      (student.instrumento || '').toLowerCase().includes(query),
+    );
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 const getRepresentedLevels = () => {
   const levels = new Set(
     studentsWithAbsences.value
       .filter(s => selectedStudents.value.includes(s.id))
-      .map(s => s.escalationLevel)
-  )
-  return Array.from(levels).sort()
-}
+      .map(s => s.escalationLevel),
+  );
+  return Array.from(levels).sort();
+};
 
 const getStudentsByLevel = (level: number) => {
   return studentsWithAbsences.value.filter(
-    s => selectedStudents.value.includes(s.id) && s.escalationLevel === level
-  )
-}
+    s => selectedStudents.value.includes(s.id) && s.escalationLevel === level,
+  );
+};
 
 // Methods
 const close = () => {
-  emit('close')
-}
+  emit('close');
+};
 
 const fetchStudentsWithAbsences = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const startDate = getStartDate()
-    const endDate = new Date().toISOString().split('T')[0]
+    const startDate = getStartDate();
+    const endDate = new Date().toISOString().split('T')[0];
     
     // Obtener estudiantes con ausencias usando el store
     const absentStudents = await attendanceStore.fetchTopAbsentStudentsByRange(
       startDate,
       endDate,
-      100 // Obtener hasta 100 estudiantes
-    )
+      100, // Obtener hasta 100 estudiantes
+    );
 
     // Enriquecer con datos del estudiante y calcular escalación
     const enrichedStudents = await Promise.all(
       absentStudents.map(async (student) => {
-        const studentData = studentsStore.getStudentById(student.studentId)
-        if (!studentData) return null
+        const studentData = studentsStore.getStudentById(student.studentId);
+        if (!studentData) return null;
 
         // Calcular nivel de escalación basado en ausencias
-        const escalationLevel = getEscalationLevel(student.absences)
+        const escalationLevel = getEscalationLevel(student.absences);
         
         // Obtener última ausencia (puedes mejorar esto con una consulta específica)
-        const lastAbsence = new Date().toISOString().split('T')[0] // Placeholder
+        const lastAbsence = new Date().toISOString().split('T')[0]; // Placeholder
 
         return {
           id: student.studentId,
@@ -517,225 +517,225 @@ const fetchStudentsWithAbsences = async () => {
           absences: student.absences,
           escalationLevel,
           lastAbsence,
-          attendanceRate: student.percentage
-        }
-      })
-    )
+          attendanceRate: student.percentage,
+        };
+      }),
+    );
 
-    studentsWithAbsences.value = enrichedStudents.filter(Boolean)
+    studentsWithAbsences.value = enrichedStudents.filter(Boolean);
     
     // Inicializar mensajes con plantillas por defecto
-    initializeMessages()
+    initializeMessages();
     
   } catch (error) {
-    console.error('Error fetching students with absences:', error)
+    console.error('Error fetching students with absences:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const getStartDate = () => {
-  const now = new Date()
+  const now = new Date();
   if (selectedPeriod.value === 'week') {
-    const startOfWeek = new Date(now)
-    startOfWeek.setDate(now.getDate() - now.getDay() + 1) // Lunes
-    return startOfWeek.toISOString().split('T')[0]
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + 1); // Lunes
+    return startOfWeek.toISOString().split('T')[0];
   } else if (selectedPeriod.value === 'month') {
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    return startOfMonth.toISOString().split('T')[0]
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return startOfMonth.toISOString().split('T')[0];
   }
-  return now.toISOString().split('T')[0]
-}
+  return now.toISOString().split('T')[0];
+};
 
 const getEscalationLevel = (absences: number): number => {
-  if (absences === 1) return 1
-  if (absences === 2) return 2
-  if (absences === 3) return 3
-  if (absences >= 4) return 4
-  return 1
-}
+  if (absences === 1) return 1;
+  if (absences === 2) return 2;
+  if (absences === 3) return 3;
+  if (absences >= 4) return 4;
+  return 1;
+};
 
 const getEscalationLevelClass = (level: number) => {
   const classes = {
     1: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300',
     2: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300',
     3: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300',
-    4: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
-  }
-  return classes[level as keyof typeof classes] || classes[1]
-}
+    4: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300',
+  };
+  return classes[level as keyof typeof classes] || classes[1];
+};
 
 const getLevelDescription = (level: number) => {
   const descriptions = {
     1: 'Recordatorio amable',
     2: 'Tono disciplinario',
     3: 'Solicitud de explicación',
-    4: 'Citación obligatoria'
-  }
-  return descriptions[level as keyof typeof descriptions] || 'Nivel desconocido'
-}
+    4: 'Citación obligatoria',
+  };
+  return descriptions[level as keyof typeof descriptions] || 'Nivel desconocido';
+};
 
 const initializeMessages = () => {
   // Inicializar mensajes con plantillas por defecto
   MESSAGE_TEMPLATES.forEach(template => {
     if (template.level) {
-      customMessages.value[template.level] = template.content
+      customMessages.value[template.level] = template.content;
     }
-  })
-}
+  });
+};
 
 const toggleStudent = (studentId: string) => {
-  const index = selectedStudents.value.indexOf(studentId)
+  const index = selectedStudents.value.indexOf(studentId);
   if (index > -1) {
-    selectedStudents.value.splice(index, 1)
+    selectedStudents.value.splice(index, 1);
   } else {
-    selectedStudents.value.push(studentId)
+    selectedStudents.value.push(studentId);
   }
-}
+};
 
 const selectAll = () => {
-  selectedStudents.value = filteredStudents.value.map(s => s.id)
-}
+  selectedStudents.value = filteredStudents.value.map(s => s.id);
+};
 
 const deselectAll = () => {
-  selectedStudents.value = []
-}
+  selectedStudents.value = [];
+};
 
 const getTotalPhoneNumbers = () => {
   return studentsWithAbsences.value
     .filter(s => selectedStudents.value.includes(s.id))
     .reduce((total, student) => {
-      let phones = 0
-      if (student.tlf_madre) phones++
-      if (student.tlf_padre) phones++
-      return total + phones
-    }, 0)
-}
+      let phones = 0;
+      if (student.tlf_madre) phones++;
+      if (student.tlf_padre) phones++;
+      return total + phones;
+    }, 0);
+};
 
 const getTotalMessages = () => {
-  return getTotalPhoneNumbers()
-}
+  return getTotalPhoneNumbers();
+};
 
 const insertVariable = (level: number, variable: string) => {
-  const textarea = document.querySelector(`textarea`) as HTMLTextAreaElement
+  const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
   if (textarea) {
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const text = customMessages.value[level] || ''
-    customMessages.value[level] = text.substring(0, start) + variable + text.substring(end)
-    markAsModified(level)
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = customMessages.value[level] || '';
+    customMessages.value[level] = text.substring(0, start) + variable + text.substring(end);
+    markAsModified(level);
   }
-}
+};
 
 const markAsModified = (level: number) => {
-  modifiedLevels.value.add(level)
-}
+  modifiedLevels.value.add(level);
+};
 
 const resetToTemplate = (level: number) => {
-  const template = MESSAGE_TEMPLATES.find(t => t.level === level)
+  const template = MESSAGE_TEMPLATES.find(t => t.level === level);
   if (template) {
-    customMessages.value[level] = template.content
-    modifiedLevels.value.delete(level)
+    customMessages.value[level] = template.content;
+    modifiedLevels.value.delete(level);
   }
-}
+};
 
 const saveAsTemplate = (level: number) => {
   // Aquí puedes implementar la lógica para guardar la plantilla personalizada
   // Por ejemplo, en localStorage o enviando al backend
-  localStorage.setItem(`whatsapp_template_level_${level}`, customMessages.value[level])
-  alert(`Plantilla guardada para nivel ${level}`)
-}
+  localStorage.setItem(`whatsapp_template_level_${level}`, customMessages.value[level]);
+  alert(`Plantilla guardada para nivel ${level}`);
+};
 
 const previewMessage = (level: number) => {
-  const students = getStudentsByLevel(level)
+  const students = getStudentsByLevel(level);
   if (students.length > 0) {
-    const sampleStudent = students[0]
-    let preview = customMessages.value[level] || ''
+    const sampleStudent = students[0];
+    let preview = customMessages.value[level] || '';
     
     // Reemplazar variables
     preview = preview
       .replace(/{studentName}/g, `${sampleStudent.nombre} ${sampleStudent.apellido}`)
       .replace(/{date}/g, new Date().toLocaleDateString('es-ES'))
       .replace(/{absenceCount}/g, sampleStudent.absences.toString())
-      .replace(/{academyName}/g, 'Academia Musical El Sistema')
+      .replace(/{academyName}/g, 'Academia Musical El Sistema');
     
-    previewContent.value = preview
-    showPreview.value = true
+    previewContent.value = preview;
+    showPreview.value = true;
   }
-}
+};
 
 const formatLastAbsence = (dateStr: string) => {
-  const date = new Date(dateStr)
+  const date = new Date(dateStr);
   return date.toLocaleDateString('es-ES', { 
     day: '2-digit', 
-    month: '2-digit' 
-  })
-}
+    month: '2-digit', 
+  });
+};
 
 const sendMessages = async () => {
-  if (selectedStudents.value.length === 0) return
+  if (selectedStudents.value.length === 0) return;
 
-  const confirmMessage = `¿Enviar mensajes de WhatsApp a ${selectedStudents.value.length} estudiantes (${getTotalPhoneNumbers()} números)?`
+  const confirmMessage = `¿Enviar mensajes de WhatsApp a ${selectedStudents.value.length} estudiantes (${getTotalPhoneNumbers()} números)?`;
   
-  if (!confirm(confirmMessage)) return
+  if (!confirm(confirmMessage)) return;
 
-  sending.value = true
+  sending.value = true;
   try {
     // Agrupar estudiantes por nivel de escalación
-    const studentsByLevel = {}
+    const studentsByLevel = {};
     
     selectedStudents.value.forEach(studentId => {
-      const student = studentsWithAbsences.value.find(s => s.id === studentId)
+      const student = studentsWithAbsences.value.find(s => s.id === studentId);
       if (student) {
-        const level = student.escalationLevel
+        const level = student.escalationLevel;
         if (!studentsByLevel[level]) {
-          studentsByLevel[level] = []
+          studentsByLevel[level] = [];
         }
-        studentsByLevel[level].push(studentId)
+        studentsByLevel[level].push(studentId);
       }
-    })
+    });
 
     // Enviar mensajes por cada nivel
-    let totalSuccess = 0
-    let totalFailed = 0
-    const allMessages = []
+    let totalSuccess = 0;
+    let totalFailed = 0;
+    const allMessages = [];
 
     for (const [level, studentIds] of Object.entries(studentsByLevel)) {
       // Aquí podrías modificar la función notifyUnexcusedAbsences para aceptar mensajes personalizados
       // Por ahora usamos la función existente
-      const result = await notifyUnexcusedAbsences(studentIds as string[])
-      totalSuccess += result.success
-      totalFailed += result.failed
-      allMessages.push(...result.messages)
+      const result = await notifyUnexcusedAbsences(studentIds as string[]);
+      totalSuccess += result.success;
+      totalFailed += result.failed;
+      allMessages.push(...result.messages);
     }
 
     const finalResult = {
       success: totalSuccess,
       failed: totalFailed,
-      messages: allMessages
-    }
+      messages: allMessages,
+    };
 
-    emit('messagesSent', finalResult)
+    emit('messagesSent', finalResult);
     
-    alert(`✅ Mensajes enviados!\n\nExitosos: ${totalSuccess}\nFallidos: ${totalFailed}`)
+    alert(`✅ Mensajes enviados!\n\nExitosos: ${totalSuccess}\nFallidos: ${totalFailed}`);
     
     if (totalSuccess > 0) {
-      close()
+      close();
     }
 
   } catch (error) {
-    console.error('Error sending messages:', error)
-    alert('❌ Error enviando mensajes')
+    console.error('Error sending messages:', error);
+    alert('❌ Error enviando mensajes');
   } finally {
-    sending.value = false
+    sending.value = false;
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  await studentsStore.fetchStudents()
-  await fetchStudentsWithAbsences()
-})
+  await studentsStore.fetchStudents();
+  await fetchStudentsWithAbsences();
+});
 </script>
 
 <style scoped>

@@ -82,23 +82,23 @@
 // Métodos para manejar acciones
 const handleStudentAction = (actionId: string) => {
   switch (actionId) {
-    case "create":
-      // Abrir modal de creación de estudiante
-      break
-    case "import":
-      // Abrir importador de estudiantes
-      break
-    case "export":
-      // Exportar datos de estudiantes
-      break
+  case 'create':
+    // Abrir modal de creación de estudiante
+    break;
+  case 'import':
+    // Abrir importador de estudiantes
+    break;
+  case 'export':
+    // Exportar datos de estudiantes
+    break;
   }
-}
+};
 
 const handleTeacherAction = (actionId: string) => {
   // Lógica para acciones de maestros
-}
+};
 
 const handleClassAction = (actionId: string) => {
   // Lógica para acciones de clases
-}
+};
 </script>

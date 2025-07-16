@@ -26,5 +26,5 @@
 </template>
 
 <script setup lang="ts">
-import ScheduleView from "../../../modulos/Schedules/view/ScheduleView.vue"
+import ScheduleView from '../../../modulos/Schedules/view/ScheduleView.vue';
 </script>

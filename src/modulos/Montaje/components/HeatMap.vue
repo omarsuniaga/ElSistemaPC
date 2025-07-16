@@ -129,13 +129,13 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, PropType, watch} from "vue"
-import {useMontaje} from "../composables/useMontaje"
+import { ref, computed, PropType, watch } from 'vue';
+import { useMontaje } from '../composables/useMontaje';
 
 // Definir tipos
 interface Compas {
   numero: number
-  estado: "sin_trabajar" | "leido" | "con_dificultad" | "logrado"
+  estado: 'sin_trabajar' | 'leido' | 'con_dificultad' | 'logrado'
   observacion?: string
   ultimaActualizacion?: Date
   seccion?: string
@@ -157,174 +157,174 @@ const props = defineProps({
     type: Array as PropType<Compas[]>,
     default: () => [],
   },
-})
+});
 
-const emit = defineEmits(["update:measures", "progress-change"])
+const emit = defineEmits(['update:measures', 'progress-change']);
 
 // Estado
-const measures = ref<Compas[]>(props.initialMeasures)
-const isLoading = ref(false)
-const currentSection = ref("")
-const showObservationModal = ref(false)
-const selectedMeasure = ref<Compas | null>(null)
-const observationText = ref("")
-const {cargarCompases, guardarCompas, cargarUsuario} = useMontaje()
+const measures = ref<Compas[]>(props.initialMeasures);
+const isLoading = ref(false);
+const currentSection = ref('');
+const showObservationModal = ref(false);
+const selectedMeasure = ref<Compas | null>(null);
+const observationText = ref('');
+const { cargarCompases, guardarCompas, cargarUsuario } = useMontaje();
 
 // Cargar datos iniciales
 const loadMeasures = async () => {
   if (measures.value.length === 0) {
-    isLoading.value = true
+    isLoading.value = true;
     try {
-      const loadedMeasures = await cargarCompases(props.obraId)
-      measures.value = loadedMeasures || []
+      const loadedMeasures = await cargarCompases(props.obraId);
+      measures.value = loadedMeasures || [];
 
       // Si no hay compases y tenemos totalCompases, inicializamos
       if (measures.value.length === 0 && props.totalCompases > 0) {
         // No inicializamos automáticamente, esperamos que el usuario lo decida
       }
     } catch (error) {
-      console.error("Error al cargar compases:", error)
+      console.error('Error al cargar compases:', error);
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
   }
-}
+};
 
 // Inicializar compases
 const initializeMeasures = async () => {
-  isLoading.value = true
+  isLoading.value = true;
   try {
     // Crear array de compases inicial
-    const newMeasures: Compas[] = []
+    const newMeasures: Compas[] = [];
     for (let i = 1; i <= props.totalCompases; i++) {
       newMeasures.push({
         numero: i,
-        estado: "sin_trabajar",
+        estado: 'sin_trabajar',
         ultimaActualizacion: new Date(),
         seccion: determineSection(i), // Función para determinar la sección basado en el número de compás
-      })
+      });
     }
-    measures.value = newMeasures
+    measures.value = newMeasures;
 
     // Guardar todos los compases
     for (const measure of newMeasures) {
-      await guardarCompas(props.obraId, measure)
+      await guardarCompas(props.obraId, measure);
     }
 
-    emit("update:measures", measures.value)
+    emit('update:measures', measures.value);
   } catch (error) {
-    console.error("Error al inicializar compases:", error)
+    console.error('Error al inicializar compases:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Determinar sección basado en el número de compás (lógica simplificada)
 const determineSection = (measureNumber: number): string => {
   // Ejemplo de lógica para asignar secciones, ajustar según necesidades reales
-  if (measureNumber <= props.totalCompases / 3) return "A"
-  if (measureNumber <= (props.totalCompases / 3) * 2) return "B"
-  return "C"
-}
+  if (measureNumber <= props.totalCompases / 3) return 'A';
+  if (measureNumber <= (props.totalCompases / 3) * 2) return 'B';
+  return 'C';
+};
 
 // Compases filtrados por sección
 const filteredMeasures = computed(() => {
-  if (!currentSection.value) return measures.value
-  return measures.value.filter((m) => m.seccion === currentSection.value)
-})
+  if (!currentSection.value) return measures.value;
+  return measures.value.filter((m) => m.seccion === currentSection.value);
+});
 
 // Secciones disponibles
 const sections = computed(() => {
-  const uniqueSections = new Set<string>()
+  const uniqueSections = new Set<string>();
   measures.value.forEach((m) => {
-    if (m.seccion) uniqueSections.add(m.seccion)
-  })
-  return Array.from(uniqueSections).sort()
-})
+    if (m.seccion) uniqueSections.add(m.seccion);
+  });
+  return Array.from(uniqueSections).sort();
+});
 
-const hasSections = computed(() => sections.value.length > 0)
+const hasSections = computed(() => sections.value.length > 0);
 
 // Estadísticas
-const totalMeasures = computed(() => props.totalCompases)
+const totalMeasures = computed(() => props.totalCompases);
 const completedMeasures = computed(
-  () => measures.value.filter((m) => m.estado === "logrado").length
-)
+  () => measures.value.filter((m) => m.estado === 'logrado').length,
+);
 const progressPercentage = computed(() => {
-  return Math.round((completedMeasures.value / totalMeasures.value) * 100) || 0
-})
+  return Math.round((completedMeasures.value / totalMeasures.value) * 100) || 0;
+});
 
 // Determinar el estilo de la rejilla para mostrar exactamente los compases necesarios
 const gridStyle = computed(() => {
   // Por defecto, agrupar en 10 columnas o según la configuración de la obra
   // Podríamos obtener este valor de la configuración de la obra si estuviera disponible
-  const columnsPerRow = 10
+  const columnsPerRow = 10;
   return {
     'grid-template-columns': `repeat(${columnsPerRow}, minmax(0, 1fr))`,
     // Asegurar que solo se muestren tantas celdas como compases haya definidos
-    'grid-template-areas': '"."'
-  }
-})
+    'grid-template-areas': '"."',
+  };
+});
 
 // Cambiar estado de compás
 const toggleMeasureState = (measure: Compas) => {
   // Si tiene doble-click, mostrar modal de observación
-  if (measure.estado === "con_dificultad") {
-    selectedMeasure.value = measure
-    observationText.value = measure.observacion || ""
-    showObservationModal.value = true
-    return
+  if (measure.estado === 'con_dificultad') {
+    selectedMeasure.value = measure;
+    observationText.value = measure.observacion || '';
+    showObservationModal.value = true;
+    return;
   }
 
   // Ciclo de estados: sin_trabajar -> leido -> con_dificultad -> logrado -> sin_trabajar
-  let newState: Compas["estado"]
+  let newState: Compas['estado'];
   switch (measure.estado) {
-    case "sin_trabajar":
-      newState = "leido"
-      break
-    case "leido":
-      newState = "con_dificultad"
-      break
-    case "con_dificultad":
-      newState = "logrado"
-      break
-    case "logrado":
-      newState = "sin_trabajar"
-      break
-    default:
-      newState = "sin_trabajar"
+  case 'sin_trabajar':
+    newState = 'leido';
+    break;
+  case 'leido':
+    newState = 'con_dificultad';
+    break;
+  case 'con_dificultad':
+    newState = 'logrado';
+    break;
+  case 'logrado':
+    newState = 'sin_trabajar';
+    break;
+  default:
+    newState = 'sin_trabajar';
   }
 
-  updateMeasureState(measure, newState)
-}
+  updateMeasureState(measure, newState);
+};
 
 // Actualizar estado de compás
-const updateMeasureState = async (measure: Compas, newState: Compas["estado"]) => {
+const updateMeasureState = async (measure: Compas, newState: Compas['estado']) => {
   try {
-    const user = await cargarUsuario()
+    const user = await cargarUsuario();
     const updatedMeasure = {
       ...measure,
       estado: newState,
       ultimaActualizacion: new Date(),
-      maestroId: user?.uid || "",
-      teacherInitial: user?.displayName ? user.displayName.charAt(0).toUpperCase() : "?",
-    }
+      maestroId: user?.uid || '',
+      teacherInitial: user?.displayName ? user.displayName.charAt(0).toUpperCase() : '?',
+    };
 
     // Actualizar en el estado local
-    const index = measures.value.findIndex((m) => m.numero === measure.numero)
+    const index = measures.value.findIndex((m) => m.numero === measure.numero);
     if (index !== -1) {
-      measures.value[index] = updatedMeasure
+      measures.value[index] = updatedMeasure;
     }
 
     // Guardar en Firestore
-    await guardarCompas(props.obraId, updatedMeasure)
+    await guardarCompas(props.obraId, updatedMeasure);
 
     // Emitir eventos de actualización
-    emit("update:measures", measures.value)
-    emit("progress-change", progressPercentage.value)
+    emit('update:measures', measures.value);
+    emit('progress-change', progressPercentage.value);
   } catch (error) {
-    console.error("Error al actualizar compás:", error)
+    console.error('Error al actualizar compás:', error);
   }
-}
+};
 
 // Modal de observaciones
 const saveObservation = async () => {
@@ -333,62 +333,62 @@ const saveObservation = async () => {
       ...selectedMeasure.value,
       observacion: observationText.value,
       ultimaActualizacion: new Date(),
-    }
+    };
 
-    const index = measures.value.findIndex((m) => m.numero === selectedMeasure.value?.numero)
+    const index = measures.value.findIndex((m) => m.numero === selectedMeasure.value?.numero);
     if (index !== -1) {
-      measures.value[index] = updatedMeasure
+      measures.value[index] = updatedMeasure;
     }
 
-    await guardarCompas(props.obraId, updatedMeasure)
-    emit("update:measures", measures.value)
+    await guardarCompas(props.obraId, updatedMeasure);
+    emit('update:measures', measures.value);
   }
 
-  showObservationModal.value = false
-  selectedMeasure.value = null
-  observationText.value = ""
-}
+  showObservationModal.value = false;
+  selectedMeasure.value = null;
+  observationText.value = '';
+};
 
 const cancelObservation = () => {
-  showObservationModal.value = false
-  selectedMeasure.value = null
-  observationText.value = ""
-}
+  showObservationModal.value = false;
+  selectedMeasure.value = null;
+  observationText.value = '';
+};
 
 // Clases CSS para estados
 const getMeasureStateClass = (state: string) => {
   switch (state) {
-    case "sin_trabajar":
-      return "bg-pink-100 border-pink-300 hover:bg-pink-200"
-    case "leido":
-      return "bg-orange-100 border-orange-300 hover:bg-orange-200"
-    case "con_dificultad":
-      return "bg-yellow-100 border-yellow-300 hover:bg-yellow-200"
-    case "logrado":
-      return "bg-green-100 border-green-300 hover:bg-green-200"
-    default:
-      return "bg-gray-100 border-gray-300 hover:bg-gray-200"
+  case 'sin_trabajar':
+    return 'bg-pink-100 border-pink-300 hover:bg-pink-200';
+  case 'leido':
+    return 'bg-orange-100 border-orange-300 hover:bg-orange-200';
+  case 'con_dificultad':
+    return 'bg-yellow-100 border-yellow-300 hover:bg-yellow-200';
+  case 'logrado':
+    return 'bg-green-100 border-green-300 hover:bg-green-200';
+  default:
+    return 'bg-gray-100 border-gray-300 hover:bg-gray-200';
   }
-}
+};
 
 // Inicialización
 watch(
   () => props.obraId,
   () => {
-    loadMeasures()
+    loadMeasures();
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 watch(
   () => props.initialMeasures,
   (newMeasures) => {
     if (newMeasures.length > 0) {
-      measures.value = newMeasures
+      measures.value = newMeasures;
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 </script>
 
 <style scoped>

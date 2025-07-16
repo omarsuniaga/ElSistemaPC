@@ -38,7 +38,7 @@
 // - TypeScript, Vite, Tailwind CSS, Vitest, Workbox
 // - Integración con Firebase (Firestore, Storage, Authentication)
 
-import type {FunctionalComponent, SVGAttributes} from "vue"
+import type { FunctionalComponent, SVGAttributes } from 'vue';
 
 defineProps<{
   icon: FunctionalComponent<SVGAttributes>
@@ -46,5 +46,5 @@ defineProps<{
   value: number
   bgColorClass?: string
   iconColorClass?: string
-}>()
+}>();
 </script>

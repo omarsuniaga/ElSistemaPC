@@ -21,8 +21,8 @@
         <div class="flex items-center space-x-2">
           <button
             class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            @click="previousMonth"
             aria-label="Mes anterior"
+            @click="previousMonth"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -35,8 +35,8 @@
 
           <button
             class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            @click="nextMonth"
             aria-label="Mes siguiente"
+            @click="nextMonth"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -114,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue';
 import {
   format,
   addMonths,
@@ -126,10 +126,10 @@ import {
   endOfWeek,
   isSameMonth,
   isSameDay,
-  isToday as dateFnsIsToday
-} from 'date-fns'
-import { es } from 'date-fns/locale'
-import CalendarDay from './CalendarDay.vue'
+  isToday as dateFnsIsToday,
+} from 'date-fns';
+import { es } from 'date-fns/locale';
+import CalendarDay from './CalendarDay.vue';
 
 // Props
 interface Props {
@@ -141,30 +141,30 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   selectedDate: '',
   teacherId: '',
-  showDebug: false
-})
+  showDebug: false,
+});
 
 // Emits
 const emit = defineEmits<{
   'date-selected': [date: string]
   'month-changed': [month: Date]
-}>()
+}>();
 
 // Estado
-const currentMonth = ref(new Date())
+const currentMonth = ref(new Date());
 
 // Días de la semana (domingo a sábado)
-const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 // Computed
 const calendarDays = computed(() => {
-  const monthStart = startOfMonth(currentMonth.value)
-  const monthEnd = endOfMonth(currentMonth.value)
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }) // Domingo = 0
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 })
+  const monthStart = startOfMonth(currentMonth.value);
+  const monthEnd = endOfMonth(currentMonth.value);
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Domingo = 0
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
-  return eachDayOfInterval({ start: calendarStart, end: calendarEnd })
-})
+  return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+});
 
 const debugInfo = computed(() => ({
   selectedDate: props.selectedDate,
@@ -174,55 +174,55 @@ const debugInfo = computed(() => ({
   weekStartsOn: 0, // Domingo
   calendarRange: {
     start: format(calendarDays.value[0], 'yyyy-MM-dd'),
-    end: format(calendarDays.value[calendarDays.value.length - 1], 'yyyy-MM-dd')
-  }
-}))
+    end: format(calendarDays.value[calendarDays.value.length - 1], 'yyyy-MM-dd'),
+  },
+}));
 
 // Methods
 const formatMonth = (date: Date): string => {
-  return format(date, 'MMMM yyyy', { locale: es })
-}
+  return format(date, 'MMMM yyyy', { locale: es });
+};
 
 const isToday = (date: Date): boolean => {
-  return dateFnsIsToday(date)
-}
+  return dateFnsIsToday(date);
+};
 
 const isSelectedDate = (date: Date): boolean => {
-  if (!props.selectedDate) return false
+  if (!props.selectedDate) return false;
   
   try {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    return dateStr === props.selectedDate
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return dateStr === props.selectedDate;
   } catch {
-    return false
+    return false;
   }
-}
+};
 
 const handleDateClick = (date: Date) => {
-  const dateStr = format(date, 'yyyy-MM-dd')
-  console.log(`[NewAttendanceCalendar] Date clicked: ${dateStr}`)
-  emit('date-selected', dateStr)
-}
+  const dateStr = format(date, 'yyyy-MM-dd');
+  console.log(`[NewAttendanceCalendar] Date clicked: ${dateStr}`);
+  emit('date-selected', dateStr);
+};
 
 const previousMonth = () => {
-  currentMonth.value = subMonths(currentMonth.value, 1)
-  emit('month-changed', currentMonth.value)
-}
+  currentMonth.value = subMonths(currentMonth.value, 1);
+  emit('month-changed', currentMonth.value);
+};
 
 const nextMonth = () => {
-  currentMonth.value = addMonths(currentMonth.value, 1)
-  emit('month-changed', currentMonth.value)
-}
+  currentMonth.value = addMonths(currentMonth.value, 1);
+  emit('month-changed', currentMonth.value);
+};
 
 const goToToday = () => {
-  const today = new Date()
-  currentMonth.value = startOfMonth(today)
-  emit('month-changed', currentMonth.value)
+  const today = new Date();
+  currentMonth.value = startOfMonth(today);
+  emit('month-changed', currentMonth.value);
   
   // Seleccionar hoy automáticamente
-  const todayStr = format(today, 'yyyy-MM-dd')
-  emit('date-selected', todayStr)
-}
+  const todayStr = format(today, 'yyyy-MM-dd');
+  emit('date-selected', todayStr);
+};
 
 // Watchers
 watch(
@@ -230,32 +230,32 @@ watch(
   (newDate) => {
     if (newDate) {
       try {
-        const date = new Date(newDate)
+        const date = new Date(newDate);
         if (!isSameMonth(date, currentMonth.value)) {
-          currentMonth.value = startOfMonth(date)
-          emit('month-changed', currentMonth.value)
+          currentMonth.value = startOfMonth(date);
+          emit('month-changed', currentMonth.value);
         }
       } catch (error) {
-        console.warn('[NewAttendanceCalendar] Invalid date format:', newDate)
+        console.warn('[NewAttendanceCalendar] Invalid date format:', newDate);
       }
     }
-  }
-)
+  },
+);
 
 // Lifecycle
 onMounted(() => {
-  console.log('[NewAttendanceCalendar] Mounted')
+  console.log('[NewAttendanceCalendar] Mounted');
   
   // Si hay fecha seleccionada, navegar a ese mes
   if (props.selectedDate) {
     try {
-      const selectedDate = new Date(props.selectedDate)
-      currentMonth.value = startOfMonth(selectedDate)
+      const selectedDate = new Date(props.selectedDate);
+      currentMonth.value = startOfMonth(selectedDate);
     } catch (error) {
-      console.warn('[NewAttendanceCalendar] Invalid initial date:', props.selectedDate)
+      console.warn('[NewAttendanceCalendar] Invalid initial date:', props.selectedDate);
     }
   }
-})
+});
 </script>
 
 <style scoped>

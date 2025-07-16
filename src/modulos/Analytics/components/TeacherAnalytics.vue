@@ -277,12 +277,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAnalyticsStore} from "../store/analytics"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {Line, Bar, Doughnut} from "vue-chartjs"
+import { ref, computed, onMounted, watch } from 'vue';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAnalyticsStore } from '../store/analytics';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { Line, Bar, Doughnut } from 'vue-chartjs';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -294,7 +294,7 @@ import {
   Title,
   Tooltip,
   Legend,
-} from "chart.js"
+} from 'chart.js';
 
 // Registrar componentes de Chart.js
 ChartJS.register(
@@ -306,22 +306,22 @@ ChartJS.register(
   ArcElement,
   Title,
   Tooltip,
-  Legend
-)
+  Legend,
+);
 
-const analyticsStore = useAnalyticsStore()
-const teachersStore = useTeachersStore()
+const analyticsStore = useAnalyticsStore();
+const teachersStore = useTeachersStore();
 
 // Estado local
-const isLoading = ref(true)
-const error = ref("")
-const selectedPeriod = ref("currentMonth")
-const showCustomDatePicker = ref(false)
+const isLoading = ref(true);
+const error = ref('');
+const selectedPeriod = ref('currentMonth');
+const showCustomDatePicker = ref(false);
 const customDateRange = ref({
-  startDate: "",
-  endDate: "",
-})
-const selectedTeacher = ref("")
+  startDate: '',
+  endDate: '',
+});
+const selectedTeacher = ref('');
 
 // Métricas
 const metrics = ref({
@@ -332,113 +332,113 @@ const metrics = ref({
   weeklyAttendanceBalance: [],
   specialtyDistribution: [],
   workloadDistribution: [],
-})
+});
 
 // Observar cambios en el periodo seleccionado
 watch(selectedPeriod, (newPeriod) => {
-  if (newPeriod === "custom") {
-    showCustomDatePicker.value = true
+  if (newPeriod === 'custom') {
+    showCustomDatePicker.value = true;
   } else {
-    showCustomDatePicker.value = false
-    loadMetrics()
+    showCustomDatePicker.value = false;
+    loadMetrics();
   }
-})
+});
 
 // Aplicar filtro de fechas personalizado
 function applyCustomDateFilter() {
   if (customDateRange.value.startDate && customDateRange.value.endDate) {
-    loadMetrics()
+    loadMetrics();
   }
 }
 
 // Cargar métricas desde el store
 async function loadMetrics() {
-  isLoading.value = true
-  error.value = ""
+  isLoading.value = true;
+  error.value = '';
 
   try {
-    await Promise.all([analyticsStore.fetchAnalytics(), teachersStore.fetchTeachers()])
+    await Promise.all([analyticsStore.fetchAnalytics(), teachersStore.fetchTeachers()]);
 
     // Asignar métricas de maestros
-    const teacherMetrics = analyticsStore.teacherMetrics || {}
+    const teacherMetrics = analyticsStore.teacherMetrics || {};
 
     // Datos básicos
-    metrics.value.totalTeachers = teachersStore.teachers?.length || 0
-    metrics.value.averageAttendance = teacherMetrics.averageAttendance || 92
-    metrics.value.averageEfficiency = teacherMetrics.averageEfficiency || 87
-    metrics.value.averageSatisfaction = teacherMetrics.averageSatisfaction || 4.6
+    metrics.value.totalTeachers = teachersStore.teachers?.length || 0;
+    metrics.value.averageAttendance = teacherMetrics.averageAttendance || 92;
+    metrics.value.averageEfficiency = teacherMetrics.averageEfficiency || 87;
+    metrics.value.averageSatisfaction = teacherMetrics.averageSatisfaction || 4.6;
 
     // Balance de asistencia semanal
     metrics.value.weeklyAttendanceBalance =
-      teacherMetrics.weeklyAttendanceBalance || generateMockWeeklyAttendance()
+      teacherMetrics.weeklyAttendanceBalance || generateMockWeeklyAttendance();
 
     // Distribución por especialidad
     metrics.value.specialtyDistribution =
-      teacherMetrics.specialtyDistribution || generateMockSpecialtyDistribution()
+      teacherMetrics.specialtyDistribution || generateMockSpecialtyDistribution();
 
     // Distribución de carga horaria
     metrics.value.workloadDistribution =
-      teacherMetrics.workloadDistribution || generateMockWorkloadDistribution()
+      teacherMetrics.workloadDistribution || generateMockWorkloadDistribution();
   } catch (err) {
-    console.error("Error cargando métricas de maestros:", err)
-    error.value = "Error al cargar los datos. Por favor, intente de nuevo."
+    console.error('Error cargando métricas de maestros:', err);
+    error.value = 'Error al cargar los datos. Por favor, intente de nuevo.';
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 // Funciones para generar datos simulados
 function generateMockWeeklyAttendance() {
   const teachers = [
-    "Prof. García",
-    "Prof. Rodríguez",
-    "Prof. Martínez",
-    "Prof. López",
-    "Prof. Fernández",
-  ]
+    'Prof. García',
+    'Prof. Rodríguez',
+    'Prof. Martínez',
+    'Prof. López',
+    'Prof. Fernández',
+  ];
 
-  const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
-  const result = []
+  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+  const result = [];
 
   teachers.forEach((teacher) => {
     const teacherData = {
       teacher,
       planned: {},
       actual: {},
-    }
+    };
 
     days.forEach((day) => {
-      const plannedHours = Math.floor(Math.random() * 4) + 2 // 2-6
-      const actualHours = plannedHours - Math.floor(Math.random() * Math.min(2, plannedHours)) // 0-2 menos que planned
+      const plannedHours = Math.floor(Math.random() * 4) + 2; // 2-6
+      const actualHours = plannedHours - Math.floor(Math.random() * Math.min(2, plannedHours)); // 0-2 menos que planned
 
-      teacherData.planned[day] = plannedHours
-      teacherData.actual[day] = actualHours
-    })
+      teacherData.planned[day] = plannedHours;
+      teacherData.actual[day] = actualHours;
+    });
 
-    result.push(teacherData)
-  })
+    result.push(teacherData);
+  });
 
-  return result
+  return result;
 }
 
 function generateMockSpecialtyDistribution() {
   return [
-    {specialty: "Piano", count: 6},
-    {specialty: "Guitarra", count: 8},
-    {specialty: "Violín", count: 5},
-    {specialty: "Batería", count: 3},
-    {specialty: "Canto", count: 4},
-    {specialty: "Otros", count: 2},
-  ]
+    { specialty: 'Piano', count: 6 },
+    { specialty: 'Guitarra', count: 8 },
+    { specialty: 'Violín', count: 5 },
+    { specialty: 'Batería', count: 3 },
+    { specialty: 'Canto', count: 4 },
+    { specialty: 'Otros', count: 2 },
+  ];
 }
 
 function generateMockWorkloadDistribution() {
   return [
-    {hours: "0-10", count: 3},
-    {hours: "11-20", count: 8},
-    {hours: "21-30", count: 12},
-    {hours: "31-40", count: 5},
-  ]
+    { hours: '0-10', count: 3 },
+    { hours: '11-20', count: 8 },
+    { hours: '21-30', count: 12 },
+    { hours: '31-40', count: 5 },
+  ];
 }
 
 // Lista de profesores
@@ -447,47 +447,47 @@ const teachersList = computed(() => {
     teachersStore.teachers?.map((teacher) => ({
       id: teacher.id,
       name: teacher.nombre || teacher.name || `Profesor ${teacher.id}`,
-      specialty: teacher.specialty || "No especificado",
+      specialty: teacher.specialty || 'No especificado',
     })) || []
-  )
-})
+  );
+});
 
 // Datos para el horario del profesor seleccionado
 const teacherSchedule = computed(() => {
   // Suponiendo que teachersStore.selectedTeacher contiene el maestro seleccionado y tiene un arreglo de clases
-  const teacher = teachersStore.teachers?.find((t) => t.id === selectedTeacher.value)
+  const teacher = teachersStore.teachers?.find((t) => t.id === selectedTeacher.value);
   if (!teacher || !teacher.schedule) {
-    return []
+    return [];
   }
   // teacher.schedule debe tener la estructura esperada: [{ time: '08:00', classes: { Lunes: {...}, Martes: {...}, ... } }, ...]
-  return teacher.schedule
-})
+  return teacher.schedule;
+});
 
 // Función para obtener el nombre de un profesor por su ID
 function getTeacherName(id) {
-  const teacher = teachersList.value.find((t) => t.id === id)
-  return teacher ? teacher.name : "Profesor no encontrado"
+  const teacher = teachersList.value.find((t) => t.id === id);
+  return teacher ? teacher.name : 'Profesor no encontrado';
 }
 
 // Función para obtener la clase en un día y horario específico
 function getClassInfo(timeSlot, day) {
-  return timeSlot.classes[day]
+  return timeSlot.classes[day];
 }
 
 // Función para obtener la clase CSS según la asistencia
 function getCellClass(timeSlot, day) {
-  const classInfo = getClassInfo(timeSlot, day)
+  const classInfo = getClassInfo(timeSlot, day);
 
   if (!classInfo) {
-    return "bg-white dark:bg-gray-800"
+    return 'bg-white dark:bg-gray-800';
   }
 
   if (classInfo.attendance >= 90) {
-    return "bg-green-100 dark:bg-green-800"
+    return 'bg-green-100 dark:bg-green-800';
   } else if (classInfo.attendance >= 75) {
-    return "bg-yellow-100 dark:bg-yellow-800"
+    return 'bg-yellow-100 dark:bg-yellow-800';
   } else {
-    return "bg-red-100 dark:bg-red-800"
+    return 'bg-red-100 dark:bg-red-800';
   }
 }
 
@@ -497,88 +497,88 @@ const topPerformingTeachers = computed(() => {
   const teachers = (teachersStore.teachers || []).map((teacher) => ({
     id: teacher.id,
     name: teacher.nombre || teacher.name || `Profesor ${teacher.id}`,
-    specialty: teacher.specialty || "No especificado",
+    specialty: teacher.specialty || 'No especificado',
     totalClasses: teacher.totalClasses || 0,
     attendance: teacher.attendance || 0,
     efficiency: teacher.efficiency || 0,
-  }))
-  return teachers.sort((a, b) => b.efficiency - a.efficiency).slice(0, 5)
-})
+  }));
+  return teachers.sort((a, b) => b.efficiency - a.efficiency).slice(0, 5);
+});
 
 // Datos para gráfico de balance de asistencias semanales
 const weeklyAttendanceBalanceChart = computed(() => {
-  const data = metrics.value.weeklyAttendanceBalance
+  const data = metrics.value.weeklyAttendanceBalance;
 
   // Extraer nombres de profesores y días
-  const teachers = data.map((item) => item.teacher)
-  const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+  const teachers = data.map((item) => item.teacher);
+  const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 
   // Preparar datasets
-  const datasets = []
+  const datasets = [];
 
   days.forEach((day, index) => {
-    const plannedData = data.map((item) => item.planned[day])
-    const actualData = data.map((item) => item.actual[day])
+    const plannedData = data.map((item) => item.planned[day]);
+    const actualData = data.map((item) => item.actual[day]);
 
     datasets.push({
       label: `Plan ${day}`,
       data: plannedData,
       backgroundColor: `rgba(59, 130, 246, ${0.5 + index * 0.1})`,
       stack: day,
-    })
+    });
 
     datasets.push({
       label: `Real ${day}`,
       data: actualData,
       backgroundColor: `rgba(16, 185, 129, ${0.5 + index * 0.1})`,
       stack: day,
-    })
-  })
+    });
+  });
 
   return {
     labels: teachers,
     datasets,
-  }
-})
+  };
+});
 
 // Datos para gráfico de distribución por especialidad
 const specialtyDistributionChart = computed(() => {
-  const specialties = metrics.value.specialtyDistribution
+  const specialties = metrics.value.specialtyDistribution;
 
   return {
     labels: specialties.map((item) => item.specialty),
     datasets: [
       {
-        label: "Maestros",
+        label: 'Maestros',
         data: specialties.map((item) => item.count),
         backgroundColor: [
-          "rgba(255, 99, 132, 0.6)",
-          "rgba(54, 162, 235, 0.6)",
-          "rgba(255, 206, 86, 0.6)",
-          "rgba(75, 192, 192, 0.6)",
-          "rgba(153, 102, 255, 0.6)",
-          "rgba(255, 159, 64, 0.6)",
+          'rgba(255, 99, 132, 0.6)',
+          'rgba(54, 162, 235, 0.6)',
+          'rgba(255, 206, 86, 0.6)',
+          'rgba(75, 192, 192, 0.6)',
+          'rgba(153, 102, 255, 0.6)',
+          'rgba(255, 159, 64, 0.6)',
         ],
       },
     ],
-  }
-})
+  };
+});
 
 // Datos para gráfico de carga horaria
 const workloadChart = computed(() => {
-  const workload = metrics.value.workloadDistribution
+  const workload = metrics.value.workloadDistribution;
 
   return {
     labels: workload.map((item) => item.hours),
     datasets: [
       {
-        label: "Maestros",
+        label: 'Maestros',
         data: workload.map((item) => item.count),
-        backgroundColor: "rgba(99, 102, 241, 0.6)",
+        backgroundColor: 'rgba(99, 102, 241, 0.6)',
       },
     ],
-  }
-})
+  };
+});
 
 // Opciones para gráficos de Doughnut
 const doughnutOptions = {
@@ -586,10 +586,10 @@ const doughnutOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: "right" as const,
+      position: 'right' as const,
     },
   },
-}
+};
 
 // Opciones para gráficos de barras
 const barChartOptions = {
@@ -605,7 +605,7 @@ const barChartOptions = {
       beginAtZero: true,
     },
   },
-}
+};
 
 // Opciones para gráficos de barras agrupadas
 const groupedBarChartOptions = {
@@ -613,7 +613,7 @@ const groupedBarChartOptions = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: "bottom" as const,
+      position: 'bottom' as const,
     },
   },
   scales: {
@@ -624,10 +624,10 @@ const groupedBarChartOptions = {
       beginAtZero: true,
     },
   },
-}
+};
 
 // Cargar datos iniciales
 onMounted(() => {
-  loadMetrics()
-})
+  loadMetrics();
+});
 </script>

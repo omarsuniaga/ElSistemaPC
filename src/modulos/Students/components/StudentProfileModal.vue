@@ -158,14 +158,14 @@ interface Student {
 const props = defineProps<{
   student: Student
   show: boolean
-}>()
+}>();
 
-const emit = defineEmits(["close", "view-profile"])
+const emit = defineEmits(['close', 'view-profile']);
 
 // Handle viewing full profile
 const viewFullProfile = () => {
-  emit("view-profile", props.student.id)
-}
+  emit('view-profile', props.student.id);
+};
 </script>
 
 <style scoped>

@@ -154,7 +154,7 @@ import {
   InformationCircleIcon,
   LightBulbIcon,
   ArrowTrendingUpIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface AttendanceAnalysisData {
   attendanceRate: number
@@ -170,23 +170,23 @@ interface AttendanceAnalysisData {
 defineProps<{
   studentId: string
   data?: AttendanceAnalysisData
-}>()
+}>();
 
 // Mock data for demonstration
 const mockWeeklyData = [
-  {week: 1, attendance: 100},
-  {week: 2, attendance: 75},
-  {week: 3, attendance: 100},
-  {week: 4, attendance: 50},
-  {week: 5, attendance: 100},
-  {week: 6, attendance: 75},
-  {week: 7, attendance: 100},
-  {week: 8, attendance: 100},
-  {week: 9, attendance: 75},
-  {week: 10, attendance: 100},
-  {week: 11, attendance: 100},
-  {week: 12, attendance: 100},
-]
+  { week: 1, attendance: 100 },
+  { week: 2, attendance: 75 },
+  { week: 3, attendance: 100 },
+  { week: 4, attendance: 50 },
+  { week: 5, attendance: 100 },
+  { week: 6, attendance: 75 },
+  { week: 7, attendance: 100 },
+  { week: 8, attendance: 100 },
+  { week: 9, attendance: 75 },
+  { week: 10, attendance: 100 },
+  { week: 11, attendance: 100 },
+  { week: 12, attendance: 100 },
+];
 </script>
 
 <style scoped>

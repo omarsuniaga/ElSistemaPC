@@ -7,12 +7,12 @@ import type {
   PerformanceWeights,
   PositiveComment,
   BehaviorRating,
-} from "../types/performance"
+} from '../types/performance';
 import {
   DEFAULT_WEIGHTS,
   PERFORMANCE_THRESHOLDS,
   POSITIVE_COMMENT_CATEGORIES,
-} from "../types/performance"
+} from '../types/performance';
 
 export class PerformanceAnalysisService {
   /**
@@ -26,33 +26,33 @@ export class PerformanceAnalysisService {
         punctuality: 0,
         attendanceRate: 0,
         consistencyScore: 0,
-      }
+      };
     }
 
-    const totalClasses = attendanceRecords.length
+    const totalClasses = attendanceRecords.length;
     const attendedClasses = attendanceRecords.filter(
-      (record) => record.status === "presente" || record.status === "tardanza"
-    ).length
+      (record) => record.status === 'presente' || record.status === 'tardanza',
+    ).length;
 
     const punctualClasses = attendanceRecords.filter(
-      (record) => record.status === "presente"
-    ).length
+      (record) => record.status === 'presente',
+    ).length;
 
-    const attendanceRate = (attendedClasses / totalClasses) * 100
-    const punctuality = totalClasses > 0 ? (punctualClasses / totalClasses) * 100 : 0
+    const attendanceRate = (attendedClasses / totalClasses) * 100;
+    const punctuality = totalClasses > 0 ? (punctualClasses / totalClasses) * 100 : 0;
 
     // Calcular consistencia (penalizar ausencias consecutivas)
-    let consistencyScore = 100
-    let consecutiveAbsences = 0
+    let consistencyScore = 100;
+    let consecutiveAbsences = 0;
 
     for (const record of attendanceRecords) {
-      if (record.status === "ausente") {
-        consecutiveAbsences++
+      if (record.status === 'ausente') {
+        consecutiveAbsences++;
         if (consecutiveAbsences > 2) {
-          consistencyScore -= 5 // Penalizar ausencias consecutivas
+          consistencyScore -= 5; // Penalizar ausencias consecutivas
         }
       } else {
-        consecutiveAbsences = 0
+        consecutiveAbsences = 0;
       }
     }
 
@@ -62,7 +62,7 @@ export class PerformanceAnalysisService {
       punctuality: Math.round(punctuality),
       attendanceRate: Math.round(attendanceRate),
       consistencyScore: Math.max(0, Math.round(consistencyScore)),
-    }
+    };
   }
 
   /**
@@ -77,31 +77,31 @@ export class PerformanceAnalysisService {
         technicalProficiency: 0,
         musicalExpression: 0,
         stagePresence: 0,
-      }
+      };
     }
 
-    const totalMontajes = montajes.length
-    const completedMontajes = montajes.filter((m) => m.status === "completado").length
+    const totalMontajes = montajes.length;
+    const completedMontajes = montajes.filter((m) => m.status === 'completado').length;
 
     const scores = montajes
-      .filter((m) => m.evaluacion && typeof m.evaluacion.total === "number")
-      .map((m) => m.evaluacion.total)
+      .filter((m) => m.evaluacion && typeof m.evaluacion.total === 'number')
+      .map((m) => m.evaluacion.total);
 
     const averageScore =
-      scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0
+      scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
 
     // Calcular métricas específicas si están disponibles
     const technicalScores = montajes
       .filter((m) => m.evaluacion?.tecnica)
-      .map((m) => m.evaluacion.tecnica)
+      .map((m) => m.evaluacion.tecnica);
 
     const expressionScores = montajes
       .filter((m) => m.evaluacion?.expresion)
-      .map((m) => m.evaluacion.expresion)
+      .map((m) => m.evaluacion.expresion);
 
     const presenceScores = montajes
       .filter((m) => m.evaluacion?.presencia)
-      .map((m) => m.evaluacion.presencia)
+      .map((m) => m.evaluacion.presencia);
 
     return {
       totalMontajes,
@@ -119,53 +119,53 @@ export class PerformanceAnalysisService {
         presenceScores.length > 0
           ? Math.round(presenceScores.reduce((a, b) => a + b, 0) / presenceScores.length)
           : 0,
-    }
+    };
   }
 
   /**
    * Analiza las observaciones positivas de los maestros
    */
   static analyzeTeacherObservations(observations: any[]): TeacherObservations {
-    const positiveComments: PositiveComment[] = []
-    const behaviorRatings: BehaviorRating[] = []
+    const positiveComments: PositiveComment[] = [];
+    const behaviorRatings: BehaviorRating[] = [];
 
     // Procesar observaciones y extraer comentarios positivos
     observations.forEach((obs) => {
       if (obs.comentarios && this.isPositiveComment(obs.comentarios)) {
         positiveComments.push({
           id: obs.id || Date.now().toString(),
-          teacherId: obs.teacherId || "",
-          teacherName: obs.teacherName || "Maestro",
-          classId: obs.classId || "",
-          className: obs.className || "",
+          teacherId: obs.teacherId || '',
+          teacherName: obs.teacherName || 'Maestro',
+          classId: obs.classId || '',
+          className: obs.className || '',
           date: obs.fecha || new Date().toISOString(),
           category: this.categorizeComment(obs.comentarios),
           comment: obs.comentarios,
           impact: this.assessCommentImpact(obs.comentarios),
           tags: this.extractTags(obs.comentarios),
-        })
+        });
       }
 
       // Extraer calificaciones de comportamiento si están disponibles
       if (obs.calificaciones) {
         behaviorRatings.push({
           date: obs.fecha || new Date().toISOString(),
-          teacherId: obs.teacherId || "",
-          classId: obs.classId || "",
+          teacherId: obs.teacherId || '',
+          classId: obs.classId || '',
           attitude: obs.calificaciones.actitud || 5,
           participation: obs.calificaciones.participacion || 5,
           respect: obs.calificaciones.respeto || 5,
           responsibility: obs.calificaciones.responsabilidad || 5,
-        })
+        });
       }
-    })
+    });
 
     return {
       positiveComments,
       behaviorRatings,
       skillDevelopment: [], // Se puede implementar más tarde
       monthlyProgress: [], // Se puede implementar más tarde
-    }
+    };
   }
 
   /**
@@ -173,123 +173,123 @@ export class PerformanceAnalysisService {
    */
   private static isPositiveComment(comment: string): boolean {
     const positiveKeywords = [
-      "excelente",
-      "sobresaliente",
-      "destacado",
-      "brillante",
-      "excepcional",
-      "mejoró",
-      "progreso",
-      "avance",
-      "superó",
-      "logró",
-      "talentoso",
-      "hábil",
-      "técnica impresionante",
-      "expresivo",
-      "liderazgo",
-      "colaborativo",
-      "responsable",
-      "puntual",
-      "creativo",
-      "innovador",
-      "inspirador",
-    ]
+      'excelente',
+      'sobresaliente',
+      'destacado',
+      'brillante',
+      'excepcional',
+      'mejoró',
+      'progreso',
+      'avance',
+      'superó',
+      'logró',
+      'talentoso',
+      'hábil',
+      'técnica impresionante',
+      'expresivo',
+      'liderazgo',
+      'colaborativo',
+      'responsable',
+      'puntual',
+      'creativo',
+      'innovador',
+      'inspirador',
+    ];
 
-    const lowerComment = comment.toLowerCase()
-    return positiveKeywords.some((keyword) => lowerComment.includes(keyword))
+    const lowerComment = comment.toLowerCase();
+    return positiveKeywords.some((keyword) => lowerComment.includes(keyword));
   }
 
   /**
    * Categoriza un comentario positivo
    */
   private static categorizeComment(
-    comment: string
-  ): "técnica" | "expresión" | "comportamiento" | "progreso" | "liderazgo" | "creatividad" {
-    const lowerComment = comment.toLowerCase()
+    comment: string,
+  ): 'técnica' | 'expresión' | 'comportamiento' | 'progreso' | 'liderazgo' | 'creatividad' {
+    const lowerComment = comment.toLowerCase();
 
     if (
-      lowerComment.includes("técnica") ||
-      lowerComment.includes("habilidad") ||
-      lowerComment.includes("destreza")
+      lowerComment.includes('técnica') ||
+      lowerComment.includes('habilidad') ||
+      lowerComment.includes('destreza')
     ) {
-      return "técnica"
+      return 'técnica';
     }
     if (
-      lowerComment.includes("expresión") ||
-      lowerComment.includes("emotivo") ||
-      lowerComment.includes("interpretación")
+      lowerComment.includes('expresión') ||
+      lowerComment.includes('emotivo') ||
+      lowerComment.includes('interpretación')
     ) {
-      return "expresión"
+      return 'expresión';
     }
     if (
-      lowerComment.includes("líder") ||
-      lowerComment.includes("liderazgo") ||
-      lowerComment.includes("guía")
+      lowerComment.includes('líder') ||
+      lowerComment.includes('liderazgo') ||
+      lowerComment.includes('guía')
     ) {
-      return "liderazgo"
+      return 'liderazgo';
     }
     if (
-      lowerComment.includes("creativ") ||
-      lowerComment.includes("innovador") ||
-      lowerComment.includes("original")
+      lowerComment.includes('creativ') ||
+      lowerComment.includes('innovador') ||
+      lowerComment.includes('original')
     ) {
-      return "creatividad"
+      return 'creatividad';
     }
     if (
-      lowerComment.includes("progreso") ||
-      lowerComment.includes("mejoró") ||
-      lowerComment.includes("avance")
+      lowerComment.includes('progreso') ||
+      lowerComment.includes('mejoró') ||
+      lowerComment.includes('avance')
     ) {
-      return "progreso"
+      return 'progreso';
     }
 
-    return "comportamiento"
+    return 'comportamiento';
   }
 
   /**
    * Evalúa el impacto de un comentario
    */
-  private static assessCommentImpact(comment: string): "bajo" | "medio" | "alto" {
-    const highImpactWords = ["excepcional", "extraordinario", "brillante", "sobresaliente"]
-    const mediumImpactWords = ["bueno", "mejoró", "progreso", "destacado"]
+  private static assessCommentImpact(comment: string): 'bajo' | 'medio' | 'alto' {
+    const highImpactWords = ['excepcional', 'extraordinario', 'brillante', 'sobresaliente'];
+    const mediumImpactWords = ['bueno', 'mejoró', 'progreso', 'destacado'];
 
-    const lowerComment = comment.toLowerCase()
+    const lowerComment = comment.toLowerCase();
 
     if (highImpactWords.some((word) => lowerComment.includes(word))) {
-      return "alto"
+      return 'alto';
     }
     if (mediumImpactWords.some((word) => lowerComment.includes(word))) {
-      return "medio"
+      return 'medio';
     }
 
-    return "bajo"
+    return 'bajo';
   }
 
   /**
    * Extrae etiquetas relevantes del comentario
    */
   private static extractTags(comment: string): string[] {
-    const tags: string[] = []
-    const lowerComment = comment.toLowerCase()
+    const tags: string[] = [];
+    const lowerComment = comment.toLowerCase();
 
     const tagMap = {
-      técnica: ["técnica", "habilidad", "destreza"],
-      expresión: ["expresión", "emotivo", "interpretación"],
-      liderazgo: ["líder", "liderazgo", "guía"],
-      creatividad: ["creativ", "innovador", "original"],
-      progreso: ["progreso", "mejoró", "avance"],
-      colaboración: ["colabor", "equipo", "grupo"],
-      responsabilidad: ["responsable", "puntual", "compromiso"],
-    }
+      técnica: ['técnica', 'habilidad', 'destreza'],
+      expresión: ['expresión', 'emotivo', 'interpretación'],
+      liderazgo: ['líder', 'liderazgo', 'guía'],
+      creatividad: ['creativ', 'innovador', 'original'],
+      progreso: ['progreso', 'mejoró', 'avance'],
+      colaboración: ['colabor', 'equipo', 'grupo'],
+      responsabilidad: ['responsable', 'puntual', 'compromiso'],
+    };
 
     for (const [tag, keywords] of Object.entries(tagMap)) {
       if (keywords.some((keyword) => lowerComment.includes(keyword))) {
-        tags.push(tag)
+        tags.push(tag);
       }
     }
 
-    return tags
+    return tags;
   }
 
   /**
@@ -309,7 +309,7 @@ export class PerformanceAnalysisService {
         leadershipQualities: this.assessLeadership(studentData),
         ensembleSkills: studentData.ensembleSkills || 5,
       },
-    }
+    };
   }
 
   /**
@@ -317,7 +317,7 @@ export class PerformanceAnalysisService {
    */
   private static calculateImprovementRate(studentData: any): number {
     // Implementar lógica para calcular mejora basada en evaluaciones pasadas
-    return 5 // Placeholder
+    return 5; // Placeholder
   }
 
   /**
@@ -325,7 +325,7 @@ export class PerformanceAnalysisService {
    */
   private static isConsistentPractice(studentData: any): boolean {
     // Implementar lógica basada en registros de práctica
-    return true // Placeholder
+    return true; // Placeholder
   }
 
   /**
@@ -333,7 +333,7 @@ export class PerformanceAnalysisService {
    */
   private static assessLeadership(studentData: any): number {
     // Implementar lógica basada en observaciones de maestros
-    return 5 // Placeholder
+    return 5; // Placeholder
   }
 
   /**
@@ -344,47 +344,47 @@ export class PerformanceAnalysisService {
     repertoire: RepertoireMetrics,
     work: WorkMetrics,
     observations: TeacherObservations,
-    weights: PerformanceWeights = DEFAULT_WEIGHTS
-  ): StudentPerformance["scores"] {
+    weights: PerformanceWeights = DEFAULT_WEIGHTS,
+  ): StudentPerformance['scores'] {
     // Calcular puntuación de asistencia
     const attendanceScore =
       attendance.attendanceRate * 0.6 +
       attendance.punctuality * 0.3 +
-      attendance.consistencyScore * 0.1
+      attendance.consistencyScore * 0.1;
 
     // Calcular puntuación de repertorio
     const repertoireScore =
       repertoire.averageScore * 0.4 +
       repertoire.technicalProficiency * 0.3 +
       repertoire.musicalExpression * 0.2 +
-      repertoire.stagePresence * 0.1
+      repertoire.stagePresence * 0.1;
 
     // Calcular puntuación de trabajo
     const individualScore =
       (work.individualWork.selfAssessment * 2 +
         work.individualWork.improvementRate * 2 +
         (work.individualWork.consistentPractice ? 10 : 0)) *
-      5 // Convertir a escala 0-100
+      5; // Convertir a escala 0-100
 
     const collectiveScore =
       work.collectiveWork.teamworkScore * 2.5 +
       work.collectiveWork.collaborationRating * 2.5 +
       work.collectiveWork.leadershipQualities * 2.5 +
-      work.collectiveWork.ensembleSkills * 2.5 // Ya en escala 0-100
+      work.collectiveWork.ensembleSkills * 2.5; // Ya en escala 0-100
 
-    const workScore = (individualScore + collectiveScore) / 2
+    const workScore = (individualScore + collectiveScore) / 2;
 
     // Calcular puntuación de observaciones
-    const positiveCommentsScore = this.calculatePositiveCommentsScore(observations.positiveComments)
-    const behaviorScore = this.calculateBehaviorScore(observations.behaviorRatings)
-    const observationsScore = (positiveCommentsScore + behaviorScore) / 2
+    const positiveCommentsScore = this.calculatePositiveCommentsScore(observations.positiveComments);
+    const behaviorScore = this.calculateBehaviorScore(observations.behaviorRatings);
+    const observationsScore = (positiveCommentsScore + behaviorScore) / 2;
 
     // Calcular puntuación general
     const overallScore =
       attendanceScore * weights.attendance +
       repertoireScore * weights.repertoire +
       workScore * (weights.individualWork + weights.collectiveWork) +
-      observationsScore * weights.teacherObservations
+      observationsScore * weights.teacherObservations;
 
     return {
       attendanceScore: Math.round(attendanceScore),
@@ -393,58 +393,58 @@ export class PerformanceAnalysisService {
       behaviorScore: Math.round(behaviorScore),
       progressScore: Math.round(positiveCommentsScore),
       overallScore: Math.round(Math.min(100, Math.max(0, overallScore))),
-    }
+    };
   }
 
   /**
    * Calcula puntuación basada en comentarios positivos
    */
   private static calculatePositiveCommentsScore(comments: PositiveComment[]): number {
-    if (comments.length === 0) return 50 // Puntuación neutral
+    if (comments.length === 0) return 50; // Puntuación neutral
 
-    let totalScore = 0
-    let weightedCount = 0
+    let totalScore = 0;
+    let weightedCount = 0;
 
     comments.forEach((comment) => {
       const categoryWeight =
-        POSITIVE_COMMENT_CATEGORIES.find((c) => c.value === comment.category)?.weight || 1
+        POSITIVE_COMMENT_CATEGORIES.find((c) => c.value === comment.category)?.weight || 1;
       const impactMultiplier =
-        comment.impact === "alto" ? 1.5 : comment.impact === "medio" ? 1.2 : 1
+        comment.impact === 'alto' ? 1.5 : comment.impact === 'medio' ? 1.2 : 1;
 
-      const commentScore = 70 + 10 * categoryWeight * impactMultiplier
-      totalScore += commentScore
-      weightedCount += categoryWeight
-    })
+      const commentScore = 70 + 10 * categoryWeight * impactMultiplier;
+      totalScore += commentScore;
+      weightedCount += categoryWeight;
+    });
 
-    const averageScore = totalScore / Math.max(1, weightedCount)
-    return Math.min(100, averageScore)
+    const averageScore = totalScore / Math.max(1, weightedCount);
+    return Math.min(100, averageScore);
   }
 
   /**
    * Calcula puntuación de comportamiento
    */
   private static calculateBehaviorScore(ratings: BehaviorRating[]): number {
-    if (ratings.length === 0) return 70 // Puntuación neutral
+    if (ratings.length === 0) return 70; // Puntuación neutral
 
     const totalRatings = ratings.reduce((sum, rating) => {
-      return sum + rating.attitude + rating.participation + rating.respect + rating.responsibility
-    }, 0)
+      return sum + rating.attitude + rating.participation + rating.respect + rating.responsibility;
+    }, 0);
 
-    const averageRating = totalRatings / (ratings.length * 4) // 4 categorías
-    return Math.round((averageRating / 10) * 100) // Convertir de escala 1-10 a 0-100
+    const averageRating = totalRatings / (ratings.length * 4); // 4 categorías
+    return Math.round((averageRating / 10) * 100); // Convertir de escala 1-10 a 0-100
   }
 
   /**
    * Determina la clasificación del estudiante
    */
   static getPerformanceClassification(
-    overallScore: number
-  ): "excepcional" | "sobresaliente" | "bueno" | "regular" | "necesita_mejora" {
-    if (overallScore >= PERFORMANCE_THRESHOLDS.excepcional) return "excepcional"
-    if (overallScore >= PERFORMANCE_THRESHOLDS.sobresaliente) return "sobresaliente"
-    if (overallScore >= PERFORMANCE_THRESHOLDS.bueno) return "bueno"
-    if (overallScore >= PERFORMANCE_THRESHOLDS.regular) return "regular"
-    return "necesita_mejora"
+    overallScore: number,
+  ): 'excepcional' | 'sobresaliente' | 'bueno' | 'regular' | 'necesita_mejora' {
+    if (overallScore >= PERFORMANCE_THRESHOLDS.excepcional) return 'excepcional';
+    if (overallScore >= PERFORMANCE_THRESHOLDS.sobresaliente) return 'sobresaliente';
+    if (overallScore >= PERFORMANCE_THRESHOLDS.bueno) return 'bueno';
+    if (overallScore >= PERFORMANCE_THRESHOLDS.regular) return 'regular';
+    return 'necesita_mejora';
   }
 
   /**
@@ -452,45 +452,45 @@ export class PerformanceAnalysisService {
    */
   static calculateTrends(
     currentScore: number,
-    previousScores: number[]
+    previousScores: number[],
   ): {
-    direction: "mejorando" | "estable" | "decayendo"
+    direction: 'mejorando' | 'estable' | 'decayendo'
     changeRate: number
     consistency: number
   } {
     if (previousScores.length === 0) {
-      return {direction: "estable", changeRate: 0, consistency: 100}
+      return { direction: 'estable', changeRate: 0, consistency: 100 };
     }
 
     const recentAverage =
-      previousScores.slice(-3).reduce((a, b) => a + b, 0) / Math.min(3, previousScores.length)
-    const changeRate = ((currentScore - recentAverage) / recentAverage) * 100
+      previousScores.slice(-3).reduce((a, b) => a + b, 0) / Math.min(3, previousScores.length);
+    const changeRate = ((currentScore - recentAverage) / recentAverage) * 100;
 
-    let direction: "mejorando" | "estable" | "decayendo" = "estable"
-    if (changeRate > 5) direction = "mejorando"
-    else if (changeRate < -5) direction = "decayendo"
+    let direction: 'mejorando' | 'estable' | 'decayendo' = 'estable';
+    if (changeRate > 5) direction = 'mejorando';
+    else if (changeRate < -5) direction = 'decayendo';
 
     // Calcular consistencia (menor varianza = mayor consistencia)
-    const variance = this.calculateVariance([...previousScores, currentScore])
-    const consistency = Math.max(0, 100 - variance)
+    const variance = this.calculateVariance([...previousScores, currentScore]);
+    const consistency = Math.max(0, 100 - variance);
 
     return {
       direction,
       changeRate: Math.round(changeRate),
       consistency: Math.round(consistency),
-    }
+    };
   }
 
   /**
    * Calcula la varianza de un conjunto de números
    */
   private static calculateVariance(numbers: number[]): number {
-    if (numbers.length <= 1) return 0
+    if (numbers.length <= 1) return 0;
 
-    const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length
-    const squaredDiffs = numbers.map((n) => Math.pow(n - mean, 2))
-    const variance = squaredDiffs.reduce((a, b) => a + b, 0) / numbers.length
+    const mean = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+    const squaredDiffs = numbers.map((n) => Math.pow(n - mean, 2));
+    const variance = squaredDiffs.reduce((a, b) => a + b, 0) / numbers.length;
 
-    return Math.sqrt(variance)
+    return Math.sqrt(variance);
   }
 }

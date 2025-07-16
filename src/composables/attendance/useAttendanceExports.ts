@@ -2,45 +2,45 @@
  * Composable para gestionar exportaciones e informes
  * Extrae la lógica de PDF, email y reportes del AttendanceView.vue
  */
-import {ref} from "vue"
-import {parseISO, format} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAuthStore} from "@/stores/auth"
-import {useConfigStore} from "@/stores/config"
-import {useAttendanceStore} from "@/modulos/Attendance/store/attendance"
-import {useStudentsStore} from "@/modulos/Students/store/students"
-import {generateAttendancePDF} from "@/utils/pdf/pdf-export"
-import {sendToMake} from "@/utils/webhook"
-import type {AttendanceFiltersType} from "@/modulos/Attendance/types/attendance"
-import type {useAttendanceState} from "./useAttendanceState"
+import { ref } from 'vue';
+import { parseISO, format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAuthStore } from '@/stores/auth';
+import { useConfigStore } from '@/stores/config';
+import { useAttendanceStore } from '@/modulos/Attendance/store/attendance';
+import { useStudentsStore } from '@/modulos/Students/store/students';
+import { generateAttendancePDF } from '@/utils/pdf/pdf-export';
+import { sendToMake } from '@/utils/webhook';
+import type { AttendanceFiltersType } from '@/modulos/Attendance/types/attendance';
+import type { useAttendanceState } from './useAttendanceState';
 
 export function useAttendanceExports(state: ReturnType<typeof useAttendanceState>) {
-  const authStore = useAuthStore()
-  const configStore = useConfigStore()
-  const attendanceStore = useAttendanceStore()
-  const studentsStore = useStudentsStore()
+  const authStore = useAuthStore();
+  const configStore = useConfigStore();
+  const attendanceStore = useAttendanceStore();
+  const studentsStore = useStudentsStore();
 
   // ============= LOCAL STATE =============
-  const isExporting = ref(false)
-  const exportMessage = ref("")
+  const isExporting = ref(false);
+  const exportMessage = ref('');
 
   // ============= COMPUTED PROPERTIES =============
-  const selectedClassName = ref("")
+  const selectedClassName = ref('');
 
   // ============= PDF EXPORT =============
   const exportCurrentClassAttendanceToPDF = async () => {
     try {
       if (!state.selectedClass.value || !state.selectedDate.value) {
-        state.showToast("Seleccione una clase y fecha primero", "error")
-        return
+        state.showToast('Seleccione una clase y fecha primero', 'error');
+        return;
       }
 
-      isExporting.value = true
-      exportMessage.value = "Generando PDF..."
+      isExporting.value = true;
+      exportMessage.value = 'Generando PDF...';
 
-      const students = studentsStore.getStudentsByClass(state.selectedClass.value)
-      const teacherName = authStore.user?.email || "Profesor"
-      const justifications = attendanceStore.getJustificationsByStudent || {}
+      const students = studentsStore.getStudentsByClass(state.selectedClass.value);
+      const teacherName = authStore.user?.email || 'Profesor';
+      const justifications = attendanceStore.getJustificationsByStudent || {};
 
       await generateAttendancePDF(
         students,
@@ -49,18 +49,18 @@ export function useAttendanceExports(state: ReturnType<typeof useAttendanceState
         selectedClassName.value,
         teacherName,
         state.selectedDate.value,
-        justifications
-      )
+        justifications,
+      );
 
-      state.showToast("PDF generado correctamente", "success")
+      state.showToast('PDF generado correctamente', 'success');
     } catch (err) {
-      console.error("Error generating PDF:", err)
-      state.showToast("Error al generar PDF", "error")
+      console.error('Error generating PDF:', err);
+      state.showToast('Error al generar PDF', 'error');
     } finally {
-      isExporting.value = false
-      exportMessage.value = ""
+      isExporting.value = false;
+      exportMessage.value = '';
     }
-  }
+  };
 
   // ============= HTML GENERATION =============
   const generateAttendanceHTML = (
@@ -68,31 +68,31 @@ export function useAttendanceExports(state: ReturnType<typeof useAttendanceState
     records: any,
     observations: string,
     className: string,
-    date: string
+    date: string,
   ) => {
-    const presentCount = Object.values(records).filter((status) => status === "Presente").length
-    const lateCount = Object.values(records).filter((status) => status === "Tardanza").length
+    const presentCount = Object.values(records).filter((status) => status === 'Presente').length;
+    const lateCount = Object.values(records).filter((status) => status === 'Tardanza').length;
     const justifiedCount = Object.values(records).filter(
-      (status) => status === "Justificado"
-    ).length
-    const absentCount = Object.values(records).filter((status) => status === "Ausente").length
+      (status) => status === 'Justificado',
+    ).length;
+    const absentCount = Object.values(records).filter((status) => status === 'Ausente').length;
 
     const studentRows = students
       .map((student, index) => {
-        const status = records[student.id] || "No registrado"
-        const statusClass = status.toLowerCase().replace(" ", "-")
+        const status = records[student.id] || 'No registrado';
+        const statusClass = status.toLowerCase().replace(' ', '-');
         return `
         <tr>
           <td>${index + 1}</td>
           <td>${student.nombre} ${student.apellido}</td>
           <td class="${statusClass}">${status}</td>
-          <td>${status === "Justificado" ? "Sí" : "No"}</td>
+          <td>${status === 'Justificado' ? 'Sí' : 'No'}</td>
         </tr>
-      `
+      `;
       })
-      .join("")
+      .join('');
 
-    const formattedDate = format(parseISO(date), "d 'de' MMMM yyyy", {locale: es})
+    const formattedDate = format(parseISO(date), 'd \'de\' MMMM yyyy', { locale: es });
 
     return `
       <!DOCTYPE html>
@@ -125,7 +125,7 @@ export function useAttendanceExports(state: ReturnType<typeof useAttendanceState
           <h1>Reporte de Asistencia</h1>
           <h2>Clase: ${className}</h2>
           <h2>Fecha: ${formattedDate}</h2>
-          <h2>Maestro: ${authStore.user?.email || "Profesor"}</h2>
+          <h2>Maestro: ${authStore.user?.email || 'Profesor'}</h2>
         </div>
         
         <div class="summary-container">
@@ -171,83 +171,83 @@ export function useAttendanceExports(state: ReturnType<typeof useAttendanceState
         </div>
       </body>
       </html>
-    `
-  }
+    `;
+  };
 
   // ============= EMAIL EXPORT =============
   const sendAttendanceEmail = async () => {
     if (!state.selectedClass.value || !state.selectedDate.value) {
-      state.showToast("Seleccione una clase y fecha para enviar el correo.", "error")
-      return
+      state.showToast('Seleccione una clase y fecha para enviar el correo.', 'error');
+      return;
     }
 
     if (!authStore.user || !authStore.user.email) {
-      state.showToast("No se pudo obtener el correo del usuario para enviar el reporte.", "error")
-      return
+      state.showToast('No se pudo obtener el correo del usuario para enviar el reporte.', 'error');
+      return;
     }
 
     if (!state.recipientEmail.value) {
-      state.showToast("Por favor ingrese un correo electrónico de destinatario", "error")
-      return
+      state.showToast('Por favor ingrese un correo electrónico de destinatario', 'error');
+      return;
     }
 
-    isExporting.value = true
-    exportMessage.value = "Enviando correo..."
+    isExporting.value = true;
+    exportMessage.value = 'Enviando correo...';
 
     try {
-      const students = studentsStore.getStudentsByClass(state.selectedClass.value)
-      const records = attendanceStore.attendanceRecords
+      const students = studentsStore.getStudentsByClass(state.selectedClass.value);
+      const records = attendanceStore.attendanceRecords;
       const rawObservations =
-        attendanceStore.currentAttendanceDoc?.data.observación || "Sin observaciones."
+        attendanceStore.currentAttendanceDoc?.data.observación || 'Sin observaciones.';
       const observations = Array.isArray(rawObservations)
-        ? rawObservations.join("\n")
-        : rawObservations
-      const className = selectedClassName.value
-      const date = state.selectedDate.value
+        ? rawObservations.join('\n')
+        : rawObservations;
+      const className = selectedClassName.value;
+      const date = state.selectedDate.value;
 
       // Generate HTML content for email
-      const htmlContent = generateAttendanceHTML(students, records, observations, className, date)
+      const htmlContent = generateAttendanceHTML(students, records, observations, className, date);
 
       // Use webhook URL from Firestore configuration
       const makeWebhookUrl =
         configStore.attendanceWebhookUrl ||
-        "https://hook.us2.make.com/t2ockuc1vne58yqc68rjqp94njv1i3uo"
+        'https://hook.us2.make.com/t2ockuc1vne58yqc68rjqp94njv1i3uo';
 
       // Prepare formatted students array for Google Sheets
       const formattedStudents = students.map((student, index) => {
-        const attendanceStatus = records[student.id] || "No registrado"
-        let justificationReason = ""
+        const attendanceStatus = records[student.id] || 'No registrado';
+        let justificationReason = '';
 
         if (
-          attendanceStatus === "Justificado" &&
+          attendanceStatus === 'Justificado' &&
           attendanceStore.currentAttendanceDoc?.data?.justificacion
         ) {
           const justification = attendanceStore.currentAttendanceDoc.data.justificacion.find(
-            (j) => j.id === student.id
-          )
+            (j) => j.id === student.id,
+          );
           if (justification && justification.reason) {
-            justificationReason = `Justificación: ${justification.reason}`
+            justificationReason = `Justificación: ${justification.reason}`;
           }
         }
 
         return {
           Num: index + 1,
-          Nombre: student.nombre || "",
-          Apellido: student.apellido || "",
+          Nombre: student.nombre || '',
+          Apellido: student.apellido || '',
           Estado: attendanceStatus,
-          Observaciones: attendanceStatus === "Justificado" ? justificationReason : observations,
-          Maestro: authStore.user?.email || "Profesor Desconocido",
-          Fecha: format(parseISO(date), "yyyy-MM-dd"),
+          Observaciones: attendanceStatus === 'Justificado' ? justificationReason : observations,
+          Maestro: authStore.user?.email || 'Profesor Desconocido',
+          Fecha: format(parseISO(date), 'yyyy-MM-dd'),
           Clase: className,
-        }
-      })
+        };
+      });
 
       // Prepare payload for Make.com
       const makePayload = {
-        subject: `Reporte de Asistencia - ${className} - ${format(parseISO(date), "yyyy-MM-dd")}`,
-        format: "email",
-        type: "attendance_report",
-        action: "send_attendance_email",
+        subject: `Reporte de Asistencia - ${className} - ${format(parseISO(date), 'yyyy-MM-dd')}`,
+        format: 'email',
+        type: 'attendance_report',
+        action: 'send_attendance_email',
         htmlBody: htmlContent,
         date: state.selectedDate.value,
         class: state.selectedClass.value,
@@ -257,72 +257,72 @@ export function useAttendanceExports(state: ReturnType<typeof useAttendanceState
         attendanceRecords: attendanceStore.attendanceRecords,
         observations: attendanceStore.currentAttendanceDoc?.data.observación,
         teacherId: authStore.user?.uid,
-        teacherName: authStore.user?.email || "Profesor Desconocido",
+        teacherName: authStore.user?.email || 'Profesor Desconocido',
         teacherEmail: authStore.user?.email,
         recipient: state.recipientEmail.value,
         summary: {
           total: students.length,
-          presentes: Object.values(records).filter((status) => status === "Presente").length,
-          ausentes: Object.values(records).filter((status) => status === "Ausente").length,
-          tardanza: Object.values(records).filter((status) => status === "Tardanza").length,
-          justificados: Object.values(records).filter((status) => status === "Justificado").length,
+          presentes: Object.values(records).filter((status) => status === 'Presente').length,
+          ausentes: Object.values(records).filter((status) => status === 'Ausente').length,
+          tardanza: Object.values(records).filter((status) => status === 'Tardanza').length,
+          justificados: Object.values(records).filter((status) => status === 'Justificado').length,
         },
-      }
+      };
 
       // Send data to Make.com
-      await sendToMake(makeWebhookUrl, makePayload)
+      await sendToMake(makeWebhookUrl, makePayload);
 
       state.showToast(
-        "Datos enviados a Make.com correctamente. Se procesará el envío del correo.",
-        "success"
-      )
+        'Datos enviados a Make.com correctamente. Se procesará el envío del correo.',
+        'success',
+      );
     } catch (err: any) {
-      console.error("Error enviando datos a Make.com:", err)
+      console.error('Error enviando datos a Make.com:', err);
       state.showToast(
-        `Error al enviar datos a Make.com: ${err.message || "Error desconocido"}`,
-        "error"
-      )
+        `Error al enviar datos a Make.com: ${err.message || 'Error desconocido'}`,
+        'error',
+      );
     } finally {
-      isExporting.value = false
-      exportMessage.value = ""
+      isExporting.value = false;
+      exportMessage.value = '';
     }
-  }
+  };
 
   // ============= REPORT GENERATION =============
   const handleGenerateReport = (filters: AttendanceFiltersType) => {
-    state.reportFilters.value = filters
-    console.log("Generating report with filters:", filters)
+    state.reportFilters.value = filters;
+    console.log('Generating report with filters:', filters);
 
     // Here you would implement the actual report generation logic
     // This is a placeholder for the report generation functionality
-    state.showToast("Generando reporte con filtros aplicados...", "success")
-  }
+    state.showToast('Generando reporte con filtros aplicados...', 'success');
+  };
 
   // ============= MODAL HANDLERS =============
   const toggleAnalytics = () => {
-    state.showAnalytics.value = !state.showAnalytics.value
-  }
+    state.showAnalytics.value = !state.showAnalytics.value;
+  };
 
   const toggleTrends = () => {
-    state.showTrends.value = !state.showTrends.value
-  }
+    state.showTrends.value = !state.showTrends.value;
+  };
 
   const openReportModal = () => {
-    state.showReportModal.value = true
-  }
+    state.showReportModal.value = true;
+  };
 
   const openExportModal = () => {
-    state.showExportModal.value = true
-  }
+    state.showExportModal.value = true;
+  };
 
   const handleOpenExport = (value: boolean) => {
-    state.showExportModal.value = value
-  }
+    state.showExportModal.value = value;
+  };
 
   // ============= UTILITY FUNCTIONS =============
   const setSelectedClassName = (className: string) => {
-    selectedClassName.value = className
-  }
+    selectedClassName.value = className;
+  };
 
   return {
     // Local state
@@ -349,5 +349,5 @@ export function useAttendanceExports(state: ReturnType<typeof useAttendanceState
 
     // Utilities
     setSelectedClassName,
-  }
+  };
 }

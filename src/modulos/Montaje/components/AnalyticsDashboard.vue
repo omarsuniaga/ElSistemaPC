@@ -281,9 +281,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch, nextTick} from "vue"
-import {useMontajeAnalytics} from "../composables/useMontajeAnalytics"
-import type {Work, Evaluation, WorkState, Plan} from "../types"
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { useMontajeAnalytics } from '../composables/useMontajeAnalytics';
+import type { Work, Evaluation, WorkState, Plan } from '../types';
 
 interface Props {
   works: Work[]
@@ -292,120 +292,120 @@ interface Props {
   plans: Plan[]
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const analytics = useMontajeAnalytics()
+const analytics = useMontajeAnalytics();
 
 // Chart refs
-const timelineChartRef = ref<HTMLCanvasElement>()
-const distributionChartRef = ref<HTMLCanvasElement>()
+const timelineChartRef = ref<HTMLCanvasElement>();
+const distributionChartRef = ref<HTMLCanvasElement>();
 
 // Selection state
-const selectedTimelineMetric = ref<"works" | "evaluations" | "averageScore">("works")
-const selectedPeriod = ref<"week" | "month" | "quarter">("month")
+const selectedTimelineMetric = ref<'works' | 'evaluations' | 'averageScore'>('works');
+const selectedPeriod = ref<'week' | 'month' | 'quarter'>('month');
 
 // Computed metrics
 const kpis = computed(() =>
-  analytics.calculateInstitutionalKPIs(props.works, props.plans, props.evaluations, props.states)
-)
+  analytics.calculateInstitutionalKPIs(props.works, props.plans, props.evaluations, props.states),
+);
 
-const stateMetrics = computed(() => analytics.calculateStateMetrics(props.states))
+const stateMetrics = computed(() => analytics.calculateStateMetrics(props.states));
 
 const totalStates = computed(() =>
-  Object.values(stateMetrics.value.stateDistribution).reduce((sum, count) => sum + count, 0)
-)
+  Object.values(stateMetrics.value.stateDistribution).reduce((sum, count) => sum + count, 0),
+);
 
 const periodComparison = ref(
-  analytics.calculatePeriodComparison(props.works, props.evaluations, selectedPeriod.value)
-)
+  analytics.calculatePeriodComparison(props.works, props.evaluations, selectedPeriod.value),
+);
 
-const timelineData = computed(() => analytics.generateTimelineChart(props.works, props.evaluations))
+const timelineData = computed(() => analytics.generateTimelineChart(props.works, props.evaluations));
 
-const distributionData = computed(() => analytics.generateDistributionChart(props.evaluations))
+const distributionData = computed(() => analytics.generateDistributionChart(props.evaluations));
 
 // Methods
-const getTrendColor = (trend: "up" | "down" | "neutral") => {
+const getTrendColor = (trend: 'up' | 'down' | 'neutral') => {
   switch (trend) {
-    case "up":
-      return "text-green-600"
-    case "down":
-      return "text-red-600"
-    default:
-      return "text-gray-600"
+  case 'up':
+    return 'text-green-600';
+  case 'down':
+    return 'text-red-600';
+  default:
+    return 'text-gray-600';
   }
-}
+};
 
-const getTrendIcon = (trend: "up" | "down" | "neutral") => {
+const getTrendIcon = (trend: 'up' | 'down' | 'neutral') => {
   switch (trend) {
-    case "up":
-      return "↗"
-    case "down":
-      return "↘"
-    default:
-      return "→"
+  case 'up':
+    return '↗';
+  case 'down':
+    return '↘';
+  default:
+    return '→';
   }
-}
+};
 
-const getTrendText = (trend: "up" | "down" | "neutral") => {
+const getTrendText = (trend: 'up' | 'down' | 'neutral') => {
   switch (trend) {
-    case "up":
-      return "Mejorando"
-    case "down":
-      return "Descendente"
-    default:
-      return "Estable"
+  case 'up':
+    return 'Mejorando';
+  case 'down':
+    return 'Descendente';
+  default:
+    return 'Estable';
   }
-}
+};
 
 const getStateColor = (state: string) => {
   const colorMap: Record<string, string> = {
-    active: "bg-green-500",
-    completed: "bg-blue-500",
-    inactive: "bg-gray-500",
-    archived: "bg-yellow-500",
-    planning: "bg-purple-500",
-    "in-progress": "bg-orange-500",
-  }
-  return colorMap[state] || "bg-gray-500"
-}
+    active: 'bg-green-500',
+    completed: 'bg-blue-500',
+    inactive: 'bg-gray-500',
+    archived: 'bg-yellow-500',
+    planning: 'bg-purple-500',
+    'in-progress': 'bg-orange-500',
+  };
+  return colorMap[state] || 'bg-gray-500';
+};
 
 const updatePeriodComparison = () => {
   periodComparison.value = analytics.calculatePeriodComparison(
     props.works,
     props.evaluations,
-    selectedPeriod.value
-  )
-}
+    selectedPeriod.value,
+  );
+};
 
 // Chart rendering (simplified for demo - in real implementation would use Chart.js)
 const renderTimelineChart = () => {
   // This would integrate with a proper charting library like Chart.js
-  console.log("Rendering timeline chart with data:", timelineData.value)
-}
+  console.log('Rendering timeline chart with data:', timelineData.value);
+};
 
 const renderDistributionChart = () => {
   // This would integrate with a proper charting library like Chart.js
-  console.log("Rendering distribution chart with data:", distributionData.value)
-}
+  console.log('Rendering distribution chart with data:', distributionData.value);
+};
 
 // Watchers
 watch([selectedTimelineMetric, timelineData], () => {
   nextTick(() => {
-    renderTimelineChart()
-  })
-})
+    renderTimelineChart();
+  });
+});
 
 watch(distributionData, () => {
   nextTick(() => {
-    renderDistributionChart()
-  })
-})
+    renderDistributionChart();
+  });
+});
 
 // Lifecycle
 onMounted(() => {
   nextTick(() => {
-    renderTimelineChart()
-    renderDistributionChart()
-  })
-})
+    renderTimelineChart();
+    renderDistributionChart();
+  });
+});
 </script>

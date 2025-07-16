@@ -340,7 +340,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 
 interface ClassSchedule {
   day: string
@@ -357,8 +357,8 @@ interface Class {
   students: string[]
   studentCount: number
   maxStudents: number
-  modality: "individual" | "group" | "masterclass"
-  status: "active" | "completed" | "cancelled" | "scheduled"
+  modality: 'individual' | 'group' | 'masterclass'
+  status: 'active' | 'completed' | 'cancelled' | 'scheduled'
   schedule: ClassSchedule
 }
 
@@ -369,190 +369,190 @@ const emit = defineEmits<{
   deleteClass: [clase: Class]
   manageStudents: [clase: Class]
   refreshData: []
-}>()
+}>();
 
 // State
-const showFilters = ref(false)
-const showCreateModal = ref(false)
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
+const showFilters = ref(false);
+const showCreateModal = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
 
-const classes = ref<Class[]>([])
+const classes = ref<Class[]>([]);
 const filters = ref({
-  status: "",
-  instrument: "",
-  modality: "",
-  search: "",
-})
+  status: '',
+  instrument: '',
+  modality: '',
+  search: '',
+});
 
 // Computed
 const filteredClasses = computed(() => {
-  let filtered = classes.value
+  let filtered = classes.value;
 
   if (filters.value.status) {
-    filtered = filtered.filter((c) => c.status === filters.value.status)
+    filtered = filtered.filter((c) => c.status === filters.value.status);
   }
 
   if (filters.value.instrument) {
-    filtered = filtered.filter((c) => c.instrument === filters.value.instrument)
+    filtered = filtered.filter((c) => c.instrument === filters.value.instrument);
   }
 
   if (filters.value.modality) {
-    filtered = filtered.filter((c) => c.modality === filters.value.modality)
+    filtered = filtered.filter((c) => c.modality === filters.value.modality);
   }
 
   if (filters.value.search) {
-    const search = filters.value.search.toLowerCase()
+    const search = filters.value.search.toLowerCase();
     filtered = filtered.filter(
       (c) =>
         c.name.toLowerCase().includes(search) ||
         c.teacher.toLowerCase().includes(search) ||
-        c.students.some((s) => s.toLowerCase().includes(search))
-    )
+        c.students.some((s) => s.toLowerCase().includes(search)),
+    );
   }
 
   return filtered.slice(
     (currentPage.value - 1) * itemsPerPage.value,
-    currentPage.value * itemsPerPage.value
-  )
-})
+    currentPage.value * itemsPerPage.value,
+  );
+});
 
-const totalClasses = computed(() => classes.value.length)
-const totalPages = computed(() => Math.ceil(totalClasses.value / itemsPerPage.value))
+const totalClasses = computed(() => classes.value.length);
+const totalPages = computed(() => Math.ceil(totalClasses.value / itemsPerPage.value));
 
 const stats = computed(() => ({
   total: classes.value.length,
-  active: classes.value.filter((c) => c.status === "active").length,
-  scheduled: classes.value.filter((c) => c.status === "scheduled").length,
-  group: classes.value.filter((c) => c.modality === "group").length,
-  cancelled: classes.value.filter((c) => c.status === "cancelled").length,
-}))
+  active: classes.value.filter((c) => c.status === 'active').length,
+  scheduled: classes.value.filter((c) => c.status === 'scheduled').length,
+  group: classes.value.filter((c) => c.modality === 'group').length,
+  cancelled: classes.value.filter((c) => c.status === 'cancelled').length,
+}));
 
 // Methods
 const getStatusClass = (status: string) => {
   const classes = {
-    active: "bg-green-100 text-green-800",
-    completed: "bg-blue-100 text-blue-800",
-    cancelled: "bg-red-100 text-red-800",
-    scheduled: "bg-yellow-100 text-yellow-800",
-  }
-  return classes[status as keyof typeof classes] || "bg-gray-100 text-gray-800"
-}
+    active: 'bg-green-100 text-green-800',
+    completed: 'bg-blue-100 text-blue-800',
+    cancelled: 'bg-red-100 text-red-800',
+    scheduled: 'bg-yellow-100 text-yellow-800',
+  };
+  return classes[status as keyof typeof classes] || 'bg-gray-100 text-gray-800';
+};
 
 const getStatusLabel = (status: string) => {
   const labels = {
-    active: "Activa",
-    completed: "Completada",
-    cancelled: "Cancelada",
-    scheduled: "Programada",
-  }
-  return labels[status as keyof typeof labels] || "Desconocido"
-}
+    active: 'Activa',
+    completed: 'Completada',
+    cancelled: 'Cancelada',
+    scheduled: 'Programada',
+  };
+  return labels[status as keyof typeof labels] || 'Desconocido';
+};
 
 const getModalityClass = (modality: string) => {
   const classes = {
-    individual: "bg-blue-100 text-blue-800",
-    group: "bg-purple-100 text-purple-800",
-    masterclass: "bg-orange-100 text-orange-800",
-  }
-  return classes[modality as keyof typeof classes] || "bg-gray-100 text-gray-800"
-}
+    individual: 'bg-blue-100 text-blue-800',
+    group: 'bg-purple-100 text-purple-800',
+    masterclass: 'bg-orange-100 text-orange-800',
+  };
+  return classes[modality as keyof typeof classes] || 'bg-gray-100 text-gray-800';
+};
 
 const getModalityLabel = (modality: string) => {
   const labels = {
-    individual: "Individual",
-    group: "Grupal",
-    masterclass: "Masterclass",
-  }
-  return labels[modality as keyof typeof labels] || "Desconocido"
-}
+    individual: 'Individual',
+    group: 'Grupal',
+    masterclass: 'Masterclass',
+  };
+  return labels[modality as keyof typeof labels] || 'Desconocido';
+};
 
 const getStudentListPreview = (students: string[]) => {
-  if (students.length === 0) return "Sin estudiantes"
-  if (students.length <= 2) return students.join(", ")
-  return `${students.slice(0, 2).join(", ")}...`
-}
+  if (students.length === 0) return 'Sin estudiantes';
+  if (students.length <= 2) return students.join(', ');
+  return `${students.slice(0, 2).join(', ')}...`;
+};
 
 const viewClass = (clase: Class) => {
-  emit("viewClass", clase)
-}
+  emit('viewClass', clase);
+};
 
 const editClass = (clase: Class) => {
-  emit("editClass", clase)
-}
+  emit('editClass', clase);
+};
 
 const deleteClass = (clase: Class) => {
-  emit("deleteClass", clase)
-}
+  emit('deleteClass', clase);
+};
 
 const manageStudents = (clase: Class) => {
-  emit("manageStudents", clase)
-}
+  emit('manageStudents', clase);
+};
 
 const refreshData = () => {
-  emit("refreshData")
-  loadClasses()
-}
+  emit('refreshData');
+  loadClasses();
+};
 
 const loadClasses = () => {
   // Simular datos de clases
   classes.value = [
     {
-      id: "1",
-      name: "Piano Intermedio A",
-      instrument: "Piano",
-      level: "Intermedio",
-      teacher: "Prof. Elena Martínez",
-      students: ["Ana García", "Luis Rodríguez"],
+      id: '1',
+      name: 'Piano Intermedio A',
+      instrument: 'Piano',
+      level: 'Intermedio',
+      teacher: 'Prof. Elena Martínez',
+      students: ['Ana García', 'Luis Rodríguez'],
       studentCount: 2,
       maxStudents: 6,
-      modality: "group",
-      status: "active",
+      modality: 'group',
+      status: 'active',
       schedule: {
-        day: "Lunes",
-        time: "16:00-17:00",
+        day: 'Lunes',
+        time: '16:00-17:00',
         duration: 60,
       },
     },
     {
-      id: "2",
-      name: "Guitarra Principiante",
-      instrument: "Guitarra",
-      level: "Principiante",
-      teacher: "Mtro. Jorge Díaz",
-      students: ["Carlos López"],
+      id: '2',
+      name: 'Guitarra Principiante',
+      instrument: 'Guitarra',
+      level: 'Principiante',
+      teacher: 'Mtro. Jorge Díaz',
+      students: ['Carlos López'],
       studentCount: 1,
       maxStudents: 1,
-      modality: "individual",
-      status: "active",
+      modality: 'individual',
+      status: 'active',
       schedule: {
-        day: "Miércoles",
-        time: "18:00-19:00",
+        day: 'Miércoles',
+        time: '18:00-19:00',
         duration: 60,
       },
     },
     {
-      id: "3",
-      name: "Violín Avanzado",
-      instrument: "Violín",
-      level: "Avanzado",
-      teacher: "Mtra. Carmen Vásquez",
-      students: ["María Rodríguez", "José Hernández", "Laura Morales"],
+      id: '3',
+      name: 'Violín Avanzado',
+      instrument: 'Violín',
+      level: 'Avanzado',
+      teacher: 'Mtra. Carmen Vásquez',
+      students: ['María Rodríguez', 'José Hernández', 'Laura Morales'],
       studentCount: 3,
       maxStudents: 4,
-      modality: "group",
-      status: "scheduled",
+      modality: 'group',
+      status: 'scheduled',
       schedule: {
-        day: "Viernes",
-        time: "15:00-16:30",
+        day: 'Viernes',
+        time: '15:00-16:30',
         duration: 90,
       },
     },
-  ]
-}
+  ];
+};
 
 // Lifecycle
 onMounted(() => {
-  loadClasses()
-})
+  loadClasses();
+});
 </script>

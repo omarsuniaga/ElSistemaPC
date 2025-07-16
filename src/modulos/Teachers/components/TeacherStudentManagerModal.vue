@@ -1,33 +1,3 @@
-<script setup lang="ts">
-import {
-  Dialog,
-  DialogPanel,
-  DialogOverlay,
-  DialogTitle,
-  TransitionRoot,
-  TransitionChild,
-} from "@headlessui/vue"
-import ClassStudentManager from "@/modulos/Classes/components/ClassStudentManager.vue"
-import type {ClassData} from "../types/teacherTypes" // Assuming types are moved
-
-const props = defineProps<{
-  show: boolean
-  selectedClass: ClassData | null
-}>()
-const emit = defineEmits(["update:show", "update", "close"])
-
-const closeModal = () => {
-  emit("update:show", false)
-  emit("close") // Also emit close for consistency
-}
-
-const handleUpdate = (studentIds: string[]) => {
-  emit("update", studentIds)
-  // Optionally close modal on update, or let the parent handle it
-  // closeModal();
-}
-</script>
-
 <template>
   <TransitionRoot appear :show="show && selectedClass !== null">
     <Dialog as="div" class="fixed inset-0 z-50 overflow-y-auto" @close="closeModal">
@@ -78,3 +48,33 @@ const handleUpdate = (studentIds: string[]) => {
     </Dialog>
   </TransitionRoot>
 </template>
+
+<script setup lang="ts">
+import {
+  Dialog,
+  DialogPanel,
+  DialogOverlay,
+  DialogTitle,
+  TransitionRoot,
+  TransitionChild,
+} from '@headlessui/vue';
+import ClassStudentManager from '@/modulos/Classes/components/ClassStudentManager.vue';
+import type { ClassData } from '../types/teacherTypes'; // Assuming types are moved
+
+const props = defineProps<{
+  show: boolean
+  selectedClass: ClassData | null
+}>();
+const emit = defineEmits(['update:show', 'update', 'close']);
+
+const closeModal = () => {
+  emit('update:show', false);
+  emit('close'); // Also emit close for consistency
+};
+
+const handleUpdate = (studentIds: string[]) => {
+  emit('update', studentIds);
+  // Optionally close modal on update, or let the parent handle it
+  // closeModal();
+};
+</script>

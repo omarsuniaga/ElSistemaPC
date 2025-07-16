@@ -61,8 +61,8 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {EstadoCompass} from "../types"
+import { computed } from 'vue';
+import { EstadoCompass } from '../types';
 
 interface Props {
   obraId: string
@@ -72,14 +72,14 @@ interface Props {
 }
 
 interface Emits {
-  (e: "update-estado", obraId: string, compas: number, estado: string): void
+  (e: 'update-estado', obraId: string, compas: number, estado: string): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   editable: false,
-})
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // Estados disponibles en orden para rotación
 const estadosOrden = [
@@ -87,7 +87,7 @@ const estadosOrden = [
   EstadoCompass.LEIDO,
   EstadoCompass.CON_DIFICULTAD,
   EstadoCompass.LOGRADO,
-]
+];
 
 // Computed
 const estadisticas = computed(() => {
@@ -96,69 +96,69 @@ const estadisticas = computed(() => {
     leidos: 0,
     conDificultad: 0,
     logrados: 0,
-  }
+  };
 
   for (let i = 1; i <= props.totalCompases; i++) {
-    const estado = props.estadosCompases[i] || EstadoCompass.SIN_TRABAJAR
+    const estado = props.estadosCompases[i] || EstadoCompass.SIN_TRABAJAR;
     switch (estado) {
-      case EstadoCompass.SIN_TRABAJAR:
-        stats.sinTrabajar++
-        break
-      case EstadoCompass.LEIDO:
-        stats.leidos++
-        break
-      case EstadoCompass.CON_DIFICULTAD:
-        stats.conDificultad++
-        break
-      case EstadoCompass.LOGRADO:
-        stats.logrados++
-        break
+    case EstadoCompass.SIN_TRABAJAR:
+      stats.sinTrabajar++;
+      break;
+    case EstadoCompass.LEIDO:
+      stats.leidos++;
+      break;
+    case EstadoCompass.CON_DIFICULTAD:
+      stats.conDificultad++;
+      break;
+    case EstadoCompass.LOGRADO:
+      stats.logrados++;
+      break;
     }
   }
 
-  return stats
-})
+  return stats;
+});
 
 // Methods
 function getEstadoClass(estado: string): string {
   switch (estado) {
-    case EstadoCompass.SIN_TRABAJAR:
-      return "bg-gray-300 text-gray-700"
-    case EstadoCompass.LEIDO:
-      return "bg-blue-400 text-blue-900"
-    case EstadoCompass.CON_DIFICULTAD:
-      return "bg-yellow-400 text-yellow-900"
-    case EstadoCompass.LOGRADO:
-      return "bg-green-400 text-green-900"
-    default:
-      return "bg-gray-300 text-gray-700"
+  case EstadoCompass.SIN_TRABAJAR:
+    return 'bg-gray-300 text-gray-700';
+  case EstadoCompass.LEIDO:
+    return 'bg-blue-400 text-blue-900';
+  case EstadoCompass.CON_DIFICULTAD:
+    return 'bg-yellow-400 text-yellow-900';
+  case EstadoCompass.LOGRADO:
+    return 'bg-green-400 text-green-900';
+  default:
+    return 'bg-gray-300 text-gray-700';
   }
 }
 
 function getEstadoLabel(estado: string): string {
   switch (estado) {
-    case EstadoCompass.SIN_TRABAJAR:
-      return "Sin trabajar"
-    case EstadoCompass.LEIDO:
-      return "Leído"
-    case EstadoCompass.CON_DIFICULTAD:
-      return "Con dificultad"
-    case EstadoCompass.LOGRADO:
-      return "Logrado"
-    default:
-      return "Sin trabajar"
+  case EstadoCompass.SIN_TRABAJAR:
+    return 'Sin trabajar';
+  case EstadoCompass.LEIDO:
+    return 'Leído';
+  case EstadoCompass.CON_DIFICULTAD:
+    return 'Con dificultad';
+  case EstadoCompass.LOGRADO:
+    return 'Logrado';
+  default:
+    return 'Sin trabajar';
   }
 }
 
 function cambiarEstado(compas: number) {
-  if (!props.editable) return
+  if (!props.editable) return;
 
-  const estadoActual = props.estadosCompases[compas] || EstadoCompass.SIN_TRABAJAR
-  const indiceActual = estadosOrden.indexOf(estadoActual as EstadoCompass)
-  const siguienteIndice = (indiceActual + 1) % estadosOrden.length
-  const nuevoEstado = estadosOrden[siguienteIndice]
+  const estadoActual = props.estadosCompases[compas] || EstadoCompass.SIN_TRABAJAR;
+  const indiceActual = estadosOrden.indexOf(estadoActual as EstadoCompass);
+  const siguienteIndice = (indiceActual + 1) % estadosOrden.length;
+  const nuevoEstado = estadosOrden[siguienteIndice];
 
-  emit("update-estado", props.obraId, compas, nuevoEstado)
+  emit('update-estado', props.obraId, compas, nuevoEstado);
 }
 </script>
 

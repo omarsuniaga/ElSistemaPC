@@ -26,5 +26,5 @@
 </template>
 
 <script setup lang="ts">
-import AdminClassesManagement from "../../../modulos/Classes/views/AdminClassesManagement.vue"
+import AdminClassesManagement from '../../../modulos/Classes/views/AdminClassesManagement.vue';
 </script>

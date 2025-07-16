@@ -118,66 +118,66 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {useBrandingStore} from "@/stores/brandingStore"
-import BrandingTestDashboard from "@/components/testing/BrandingTestDashboard.vue"
-import {logger} from "@/utils/logging/logger"
+import { computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useBrandingStore } from '@/stores/brandingStore';
+import BrandingTestDashboard from '@/components/testing/BrandingTestDashboard.vue';
+import { logger } from '@/utils/logging/logger';
 
 // Composables
-const router = useRouter()
-const brandingStore = useBrandingStore()
+const router = useRouter();
+const brandingStore = useBrandingStore();
 
 // Computed properties
 const browserInfo = computed(() => {
-  const ua = navigator.userAgent
-  if (ua.includes("Chrome")) return "Chrome"
-  if (ua.includes("Firefox")) return "Firefox"
-  if (ua.includes("Safari")) return "Safari"
-  if (ua.includes("Edge")) return "Edge"
-  return "Desconocido"
-})
+  const ua = navigator.userAgent;
+  if (ua.includes('Chrome')) return 'Chrome';
+  if (ua.includes('Firefox')) return 'Firefox';
+  if (ua.includes('Safari')) return 'Safari';
+  if (ua.includes('Edge')) return 'Edge';
+  return 'Desconocido';
+});
 
 const viewportInfo = computed(() => {
-  return `${window.innerWidth}x${window.innerHeight}`
-})
+  return `${window.innerWidth}x${window.innerHeight}`;
+});
 
 // Métodos
 function goBack() {
-  router.back()
+  router.back();
 }
 
 function goToBrandingManager() {
-  router.push("/admin/branding")
+  router.push('/admin/branding');
 }
 
 function formatLastUpdate(): string {
-  const now = new Date()
-  return now.toLocaleString("es-ES", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+  const now = new Date();
+  return now.toLocaleString('es-ES', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function clearCache() {
-  if (confirm("¿Estás seguro de que quieres limpiar toda la caché?")) {
-    localStorage.clear()
-    sessionStorage.clear()
+  if (confirm('¿Estás seguro de que quieres limpiar toda la caché?')) {
+    localStorage.clear();
+    sessionStorage.clear();
 
     // Limpiar caché del service worker si existe
-    if ("serviceWorker" in navigator) {
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach((registration) => {
-          registration.unregister()
-        })
-      })
+          registration.unregister();
+        });
+      });
     }
 
-    alert("✅ Caché limpiada. Se recomienda recargar la página.")
-    logger.info("BRANDING_TEST", "Caché limpiada desde testing dashboard")
+    alert('✅ Caché limpiada. Se recomienda recargar la página.');
+    logger.info('BRANDING_TEST', 'Caché limpiada desde testing dashboard');
   }
 }
 
@@ -196,44 +196,44 @@ function exportTestResults() {
       },
       localStorageSize: JSON.stringify(localStorage).length,
       sessionStorageSize: JSON.stringify(sessionStorage).length,
-    }
+    };
 
-    const blob = new Blob([JSON.stringify(results, null, 2)], {type: "application/json"})
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `branding-test-results-${new Date().toISOString().split("T")[0]}.json`
-    a.click()
+    const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `branding-test-results-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
 
-    URL.revokeObjectURL(url)
+    URL.revokeObjectURL(url);
 
-    alert("✅ Resultados de testing exportados exitosamente")
-    logger.info("BRANDING_TEST", "Resultados exportados", results)
+    alert('✅ Resultados de testing exportados exitosamente');
+    logger.info('BRANDING_TEST', 'Resultados exportados', results);
   } catch (error) {
-    logger.error("BRANDING_TEST", "Error exportando resultados", error)
-    alert("❌ Error exportando resultados de testing")
+    logger.error('BRANDING_TEST', 'Error exportando resultados', error);
+    alert('❌ Error exportando resultados de testing');
   }
 }
 
 function resetToDefaults() {
   if (
     confirm(
-      "¿Estás seguro de que quieres hacer un reset completo? Esto restaurará toda la configuración a valores por defecto."
+      '¿Estás seguro de que quieres hacer un reset completo? Esto restaurará toda la configuración a valores por defecto.',
     )
   ) {
     try {
-      brandingStore.resetToDefault()
-      clearCache()
+      brandingStore.resetToDefault();
+      clearCache();
 
       setTimeout(() => {
-        window.location.reload()
-      }, 1000)
+        window.location.reload();
+      }, 1000);
 
-      alert("✅ Reset completo realizado. La página se recargará automáticamente.")
-      logger.info("BRANDING_TEST", "Reset completo ejecutado")
+      alert('✅ Reset completo realizado. La página se recargará automáticamente.');
+      logger.info('BRANDING_TEST', 'Reset completo ejecutado');
     } catch (error) {
-      logger.error("BRANDING_TEST", "Error durante reset completo", error)
-      alert("❌ Error durante el reset completo")
+      logger.error('BRANDING_TEST', 'Error durante reset completo', error);
+      alert('❌ Error durante el reset completo');
     }
   }
 }
@@ -241,12 +241,12 @@ function resetToDefaults() {
 // Lifecycle
 onMounted(async () => {
   try {
-    await brandingStore.loadBrandingConfig()
-    logger.info("BRANDING_TEST", "Vista de testing cargada exitosamente")
+    await brandingStore.loadBrandingConfig();
+    logger.info('BRANDING_TEST', 'Vista de testing cargada exitosamente');
   } catch (error) {
-    logger.error("BRANDING_TEST", "Error cargando vista de testing", error)
+    logger.error('BRANDING_TEST', 'Error cargando vista de testing', error);
   }
-})
+});
 </script>
 
 <style scoped>

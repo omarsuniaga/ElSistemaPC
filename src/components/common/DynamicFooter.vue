@@ -33,19 +33,19 @@
           <h4 class="footer-section-title">Contacto</h4>
           <div class="footer-contact">
             <div v-if="contactInfo.phone" class="contact-item">
-              <ion-icon :icon="callOutline" />
+              <IonIcon :icon="callOutline" />
               <a :href="`tel:${contactInfo.phone}`">{{ contactInfo.phone }}</a>
             </div>
             <div v-if="contactInfo.email" class="contact-item">
-              <ion-icon :icon="mailOutline" />
+              <IonIcon :icon="mailOutline" />
               <a :href="`mailto:${contactInfo.email}`">{{ contactInfo.email }}</a>
             </div>
             <div v-if="contactInfo.address" class="contact-item">
-              <ion-icon :icon="locationOutline" />
+              <IonIcon :icon="locationOutline" />
               <span>{{ contactInfo.address }}</span>
             </div>
             <div v-if="contactInfo.website" class="contact-item">
-              <ion-icon :icon="globeOutline" />
+              <IonIcon :icon="globeOutline" />
               <a :href="contactInfo.website" target="_blank" rel="noopener"> Sitio Web </a>
             </div>
           </div>
@@ -84,7 +84,7 @@
               class="social-link"
               aria-label="Facebook"
             >
-              <ion-icon :icon="logoFacebook" />
+              <IonIcon :icon="logoFacebook" />
             </a>
             <a
               v-if="contactInfo.socialMedia?.instagram"
@@ -94,7 +94,7 @@
               class="social-link"
               aria-label="Instagram"
             >
-              <ion-icon :icon="logoInstagram" />
+              <IonIcon :icon="logoInstagram" />
             </a>
             <a
               v-if="contactInfo.socialMedia?.twitter"
@@ -104,7 +104,7 @@
               class="social-link"
               aria-label="Twitter"
             >
-              <ion-icon :icon="logoTwitter" />
+              <IonIcon :icon="logoTwitter" />
             </a>
             <a
               v-if="contactInfo.socialMedia?.youtube"
@@ -114,7 +114,7 @@
               class="social-link"
               aria-label="YouTube"
             >
-              <ion-icon :icon="logoYoutube" />
+              <IonIcon :icon="logoYoutube" />
             </a>
           </div>
         </div>
@@ -159,8 +159,8 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {IonIcon} from "@ionic/vue"
+import { computed } from 'vue';
+import { IonIcon } from '@ionic/vue';
 import {
   callOutline,
   mailOutline,
@@ -170,8 +170,8 @@ import {
   logoInstagram,
   logoTwitter,
   logoYoutube,
-} from "ionicons/icons"
-import {useBranding} from "@/composables/useBranding"
+} from 'ionicons/icons';
+import { useBranding } from '@/composables/useBranding';
 
 interface QuickLink {
   label: string
@@ -205,7 +205,7 @@ const props = withDefaults(defineProps<Props>(), {
   quickLinks: () => [],
   legalLinks: () => [],
   customStyles: () => ({}),
-})
+});
 
 // Branding composable
 const {
@@ -218,39 +218,39 @@ const {
   shouldShowPoweredBy,
   footerText,
   getCSSVariables,
-} = useBranding()
+} = useBranding();
 
 // Verificar si hay redes sociales configuradas
 const hasSocialMedia = computed(() => {
-  const social = contactInfo.value.socialMedia
-  return !!(social?.facebook || social?.instagram || social?.twitter || social?.youtube)
-})
+  const social = contactInfo.value.socialMedia;
+  return !!(social?.facebook || social?.instagram || social?.twitter || social?.youtube);
+});
 
 // Estilos dinámicos del footer
 const footerStyles = computed(() => {
   const baseStyles = {
-    "--footer-bg": brandColors.value.secondary || "#2c3e50",
-    "--footer-text": getContrastColor(brandColors.value.secondary || "#2c3e50"),
-    "--footer-accent": brandColors.value.accent || brandColors.value.primary,
-    "--footer-border": `${brandColors.value.primary}33`, // 20% opacity
+    '--footer-bg': brandColors.value.secondary || '#2c3e50',
+    '--footer-text': getContrastColor(brandColors.value.secondary || '#2c3e50'),
+    '--footer-accent': brandColors.value.accent || brandColors.value.primary,
+    '--footer-border': `${brandColors.value.primary}33`, // 20% opacity
     ...getCSSVariables(),
-  }
+  };
 
   return {
     ...baseStyles,
     ...props.customStyles,
-  }
-})
+  };
+});
 
 // Calcular color de contraste
 function getContrastColor(hexColor: string): string {
-  const hex = hexColor.replace("#", "")
-  const r = parseInt(hex.substr(0, 2), 16)
-  const g = parseInt(hex.substr(2, 2), 16)
-  const b = parseInt(hex.substr(4, 2), 16)
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
 
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  return luminance > 0.5 ? "#2c3e50" : "#ecf0f1"
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5 ? '#2c3e50' : '#ecf0f1';
 }
 </script>
 

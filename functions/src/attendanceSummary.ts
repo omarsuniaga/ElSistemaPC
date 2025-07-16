@@ -1,12 +1,12 @@
-import * as functions from "firebase-functions"
-import * as admin from "firebase-admin"
+import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
 
 // Asegurarse de que Firebase Admin se inicialice solo una vez
 if (admin.apps.length === 0) {
-  admin.initializeApp()
+  admin.initializeApp();
 }
 
-const db = admin.firestore()
+const db = admin.firestore();
 
 /**
  * @function getStudentAttendanceSummary
@@ -20,49 +20,49 @@ export const getStudentAttendanceSummary = functions.https.onCall(async (data, c
   // 1. Verificación de Autenticación
   if (!context.auth) {
     throw new functions.https.HttpsError(
-      "unauthenticated",
-      "El usuario debe estar autenticado para realizar esta acción."
-    )
+      'unauthenticated',
+      'El usuario debe estar autenticado para realizar esta acción.',
+    );
   }
 
-  const studentId = data.studentId
+  const studentId = data.studentId;
 
   // 2. Validación de Parámetros
   if (!studentId) {
     throw new functions.https.HttpsError(
-      "invalid-argument",
-      "El ID del estudiante (studentId) es un parámetro requerido."
-    )
+      'invalid-argument',
+      'El ID del estudiante (studentId) es un parámetro requerido.',
+    );
   }
 
   try {
     // 3. Consulta a Firestore
-    const attendanceRef = db.collection("attendance")
-    const snapshot = await attendanceRef.where("studentId", "==", studentId).get()
+    const attendanceRef = db.collection('attendance');
+    const snapshot = await attendanceRef.where('studentId', '==', studentId).get();
 
     if (snapshot.empty) {
-      return {absentCount: 0, lateCount: 0}
+      return { absentCount: 0, lateCount: 0 };
     }
 
-    let absentCount = 0
-    let lateCount = 0
+    let absentCount = 0;
+    let lateCount = 0;
 
     // 4. Conteo de Estados
     snapshot.forEach((doc) => {
-      const record = doc.data()
-      if (record.status === "absent") {
-        absentCount++
-      } else if (record.status === "late") {
-        lateCount++
+      const record = doc.data();
+      if (record.status === 'absent') {
+        absentCount++;
+      } else if (record.status === 'late') {
+        lateCount++;
       }
-    })
+    });
 
-    return {absentCount, lateCount}
+    return { absentCount, lateCount };
   } catch (error) {
-    console.error("Error al obtener el resumen de asistencias:", error)
+    console.error('Error al obtener el resumen de asistencias:', error);
     throw new functions.https.HttpsError(
-      "internal",
-      "Ocurrió un error interno al procesar la solicitud."
-    )
+      'internal',
+      'Ocurrió un error interno al procesar la solicitud.',
+    );
   }
-})
+});

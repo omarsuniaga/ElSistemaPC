@@ -1,217 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import AppImage from "@/components/ui/AppImage.vue"
-import {useRouter} from "vue-router"
-import {useTeachersStore} from "../../store/teachers"
-import {useClassesStore} from "../../../Classes/store/classes"
-import {useScheduleStore} from "../../../../modulos/Schedules/store/schedule"
-import {useNotificationsStore} from "../../../../stores/notifications"
-import {useUserSessionsStore} from "../../../Users/store/userSessions"
-import NotificationSystem from "../../../../components/NotificationSystem.vue"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import FileUpload from "../../../../components/FileUpload.vue"
-import {getAuth} from "firebase/auth"
-import {
-  SunIcon,
-  MoonIcon,
-  PencilIcon,
-  DocumentArrowDownIcon,
-  ArrowLeftOnRectangleIcon,
-  ChartBarIcon,
-  BellIcon,
-  UserIcon,
-  ClockIcon,
-  XMarkIcon,
-} from "@heroicons/vue/24/outline"
-import {Dialog, DialogPanel, TransitionRoot, TransitionChild} from "@headlessui/vue"
-import {jsPDF} from "jspdf"
-import "jspdf-autotable"
-
-const notificationsStore = useNotificationsStore()
-const router = useRouter()
-const auth = getAuth()
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-const scheduleStore = useScheduleStore()
-const userSessionsStore = useUserSessionsStore()
-
-// Only set dark mode on mount, don't toggle it
-const isDark = ref(localStorage.getItem("darkMode") === "true")
-onMounted(() => {
-  document.documentElement.classList.toggle("dark", isDark.value)
-})
-
-// Get the current user's UID from Firebase Auth
-const currentUserUID = ref(auth.currentUser?.uid || "")
-// Use refs for both UID and ID to handle asynchronous updating
-const teacherUID = ref("")
-const teacherId = ref(null)
-
-const dismissNotification = async (id: string) => {
-  await notificationsStore.dismissNotification(id)
-}
-
-const teacher = ref(null)
-const isLoading = ref(true)
-
-// Update the teacherClasses computation to use the teacherId ref
-const teacherClasses = computed(() =>
-  classesStore.classes.filter((c: any) => c.teacherId === teacherId.value)
-)
-
-const statistics = ref({totalStudents: 0, activeClasses: 0, weeklyHours: 0})
-
-const loadTeacherData = async () => {
-  isLoading.value = true
-  try {
-    console.log("Current user UID:", currentUserUID.value)
-
-    if (!currentUserUID.value) {
-      console.error("No authenticated user found")
-      return
-    }
-
-    teacherUID.value = currentUserUID.value
-
-    // Fetch teachers first to ensure we have the full collection
-    await teachersStore.fetchTeachers()
-
-    // Find the teacher with matching UID directly from teachers collection
-    const teacherWithUID = teachersStore.teachers.find((t) => t.uid === teacherUID.value)
-
-    if (teacherWithUID) {
-      // If found by UID, use the teacher's ID
-      teacherId.value = teacherWithUID.id
-      teacher.value = teacherWithUID
-      console.log("Teacher found by UID:", teacher.value)
-    } else {
-      // As a fallback, try to get teacher ID from userSessions store
-      const id = await userSessionsStore.getTeacherIdByUID(teacherUID.value)
-
-      if (id) {
-        teacherId.value = id
-        // Find teacher by ID
-        teacher.value = teachersStore.teachers.find((t) => t.id === teacherId.value)
-        console.log("Teacher found by ID from userSessions:", teacher.value)
-      } else {
-        console.error("Teacher not found with UID:", teacherUID.value)
-      }
-    }
-
-    // Continue loading other data
-    await Promise.all([classesStore.fetchClasses(), scheduleStore.fetchAllSchedules()])
-
-    // Calculate statistics with the classes for this teacher
-    if (teacher.value) {
-      calculateStatistics()
-    }
-  } catch (error) {
-    console.error("Error loading teacher data:", error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Move the statistics calculation to a separate function
-const calculateStatistics = () => {
-  // Get unique students from all classes
-  const uniqueStudents = new Set()
-  teacherClasses.value.forEach((cls) => {
-    if (cls.studentIds) {
-      cls.studentIds.forEach((id) => uniqueStudents.add(id))
-    }
-  })
-
-  // Calculate total weekly hours from all class schedules
-  const weeklyHours = teacherClasses.value.reduce((total, cls) => {
-    if (!cls.schedule?.slots) return total
-
-    return (
-      total +
-      cls.schedule.slots.reduce((slotTotal, slot) => {
-        const [startHour, startMin] = slot.startTime.split(":").map(Number)
-        const [endHour, endMin] = slot.endTime.split(":").map(Number)
-        const hours = endHour - startHour + (endMin - startMin) / 60
-        return slotTotal + hours
-      }, 0)
-    )
-  }, 0)
-
-  statistics.value = {
-    totalStudents: uniqueStudents.size,
-    activeClasses: teacherClasses.value.length,
-    weeklyHours,
-  }
-}
-
-// Call loadTeacherData when the component is mounted
-onMounted(loadTeacherData)
-
-const toggleDarkMode = () => {
-  isDark.value = !isDark.value
-  document.documentElement.classList.toggle("dark", isDark.value)
-  localStorage.setItem("darkMode", String(isDark.value))
-}
-
-const formatHours = (hours: number) => `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`
-const formattedDate = format(new Date(), "EEEE, d 'de' MMMM yyyy", {locale: es})
-
-const handleLogout = async () => {
-  await auth.signOut()
-  router.push("/login")
-}
-
-const handleEditProfile = () => {
-  router.push(`/teachers/${teacherUID.value}/edit`)
-}
-
-const showNotificationsModal = ref(false)
-const notifications = ref([])
-
-// Function to generate and download PDF
-const downloadSchedule = async () => {
-  const doc = new jsPDF()
-
-  // Configurar el título
-  doc.setFont("helvetica", "bold")
-  doc.setFontSize(20)
-  doc.text("Horario de Clases", doc.internal.pageSize.width / 2, 20, {align: "center"})
-
-  // Nombre del profesor y fecha
-  doc.setFont("helvetica", "normal")
-  doc.setFontSize(14)
-  doc.text(`${teacher.value?.name}`, doc.internal.pageSize.width / 2, 30, {align: "center"})
-  doc.text(format(new Date(), "MMMM yyyy", {locale: es}), doc.internal.pageSize.width / 2, 40, {
-    align: "center",
-  })
-
-  // Preparar datos para la tabla
-  const tableData = teacherClasses.value
-    .map((cls) => {
-      return cls.schedule?.slots.map((slot) => [
-        cls.name,
-        slot.day,
-        `${slot.startTime} - ${slot.endTime}`,
-      ])
-    })
-    .flat()
-
-  // Generar tabla
-  doc.autoTable({
-    startY: 50,
-    head: [["Clase", "Día", "Horario"]],
-    body: tableData,
-    theme: "striped",
-    headStyles: {fillColor: [63, 81, 181]},
-    styles: {fontSize: 10, cellPadding: 5},
-  })
-
-  // Guardar el PDF
-  doc.save(`${teacher.value?.name}_${format(new Date(), "MMMM_yyyy", {locale: es})}.pdf`)
-}
-</script>
-
 <template>
   <div v-if="!isLoading" class="max-w-5xl mx-auto py-8 px-6 space-y-8">
     <!-- Perfil Header -->
@@ -342,6 +128,220 @@ const downloadSchedule = async () => {
     </Dialog>
   </TransitionRoot>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import AppImage from '@/components/ui/AppImage.vue';
+import { useRouter } from 'vue-router';
+import { useTeachersStore } from '../../store/teachers';
+import { useClassesStore } from '../../../Classes/store/classes';
+import { useScheduleStore } from '../../../../modulos/Schedules/store/schedule';
+import { useNotificationsStore } from '../../../../stores/notifications';
+import { useUserSessionsStore } from '../../../Users/store/userSessions';
+import NotificationSystem from '../../../../components/NotificationSystem.vue';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import FileUpload from '../../../../components/FileUpload.vue';
+import { getAuth } from 'firebase/auth';
+import {
+  SunIcon,
+  MoonIcon,
+  PencilIcon,
+  DocumentArrowDownIcon,
+  ArrowLeftOnRectangleIcon,
+  ChartBarIcon,
+  BellIcon,
+  UserIcon,
+  ClockIcon,
+  XMarkIcon,
+} from '@heroicons/vue/24/outline';
+import { Dialog, DialogPanel, TransitionRoot, TransitionChild } from '@headlessui/vue';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+
+const notificationsStore = useNotificationsStore();
+const router = useRouter();
+const auth = getAuth();
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+const scheduleStore = useScheduleStore();
+const userSessionsStore = useUserSessionsStore();
+
+// Only set dark mode on mount, don't toggle it
+const isDark = ref(localStorage.getItem('darkMode') === 'true');
+onMounted(() => {
+  document.documentElement.classList.toggle('dark', isDark.value);
+});
+
+// Get the current user's UID from Firebase Auth
+const currentUserUID = ref(auth.currentUser?.uid || '');
+// Use refs for both UID and ID to handle asynchronous updating
+const teacherUID = ref('');
+const teacherId = ref(null);
+
+const dismissNotification = async (id: string) => {
+  await notificationsStore.dismissNotification(id);
+};
+
+const teacher = ref(null);
+const isLoading = ref(true);
+
+// Update the teacherClasses computation to use the teacherId ref
+const teacherClasses = computed(() =>
+  classesStore.classes.filter((c: any) => c.teacherId === teacherId.value),
+);
+
+const statistics = ref({ totalStudents: 0, activeClasses: 0, weeklyHours: 0 });
+
+const loadTeacherData = async () => {
+  isLoading.value = true;
+  try {
+    console.log('Current user UID:', currentUserUID.value);
+
+    if (!currentUserUID.value) {
+      console.error('No authenticated user found');
+      return;
+    }
+
+    teacherUID.value = currentUserUID.value;
+
+    // Fetch teachers first to ensure we have the full collection
+    await teachersStore.fetchTeachers();
+
+    // Find the teacher with matching UID directly from teachers collection
+    const teacherWithUID = teachersStore.teachers.find((t) => t.uid === teacherUID.value);
+
+    if (teacherWithUID) {
+      // If found by UID, use the teacher's ID
+      teacherId.value = teacherWithUID.id;
+      teacher.value = teacherWithUID;
+      console.log('Teacher found by UID:', teacher.value);
+    } else {
+      // As a fallback, try to get teacher ID from userSessions store
+      const id = await userSessionsStore.getTeacherIdByUID(teacherUID.value);
+
+      if (id) {
+        teacherId.value = id;
+        // Find teacher by ID
+        teacher.value = teachersStore.teachers.find((t) => t.id === teacherId.value);
+        console.log('Teacher found by ID from userSessions:', teacher.value);
+      } else {
+        console.error('Teacher not found with UID:', teacherUID.value);
+      }
+    }
+
+    // Continue loading other data
+    await Promise.all([classesStore.fetchClasses(), scheduleStore.fetchAllSchedules()]);
+
+    // Calculate statistics with the classes for this teacher
+    if (teacher.value) {
+      calculateStatistics();
+    }
+  } catch (error) {
+    console.error('Error loading teacher data:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Move the statistics calculation to a separate function
+const calculateStatistics = () => {
+  // Get unique students from all classes
+  const uniqueStudents = new Set();
+  teacherClasses.value.forEach((cls) => {
+    if (cls.studentIds) {
+      cls.studentIds.forEach((id) => uniqueStudents.add(id));
+    }
+  });
+
+  // Calculate total weekly hours from all class schedules
+  const weeklyHours = teacherClasses.value.reduce((total, cls) => {
+    if (!cls.schedule?.slots) return total;
+
+    return (
+      total +
+      cls.schedule.slots.reduce((slotTotal, slot) => {
+        const [startHour, startMin] = slot.startTime.split(':').map(Number);
+        const [endHour, endMin] = slot.endTime.split(':').map(Number);
+        const hours = endHour - startHour + (endMin - startMin) / 60;
+        return slotTotal + hours;
+      }, 0)
+    );
+  }, 0);
+
+  statistics.value = {
+    totalStudents: uniqueStudents.size,
+    activeClasses: teacherClasses.value.length,
+    weeklyHours,
+  };
+};
+
+// Call loadTeacherData when the component is mounted
+onMounted(loadTeacherData);
+
+const toggleDarkMode = () => {
+  isDark.value = !isDark.value;
+  document.documentElement.classList.toggle('dark', isDark.value);
+  localStorage.setItem('darkMode', String(isDark.value));
+};
+
+const formatHours = (hours: number) => `${Math.floor(hours)}h ${Math.round((hours % 1) * 60)}m`;
+const formattedDate = format(new Date(), 'EEEE, d \'de\' MMMM yyyy', { locale: es });
+
+const handleLogout = async () => {
+  await auth.signOut();
+  router.push('/login');
+};
+
+const handleEditProfile = () => {
+  router.push(`/teachers/${teacherUID.value}/edit`);
+};
+
+const showNotificationsModal = ref(false);
+const notifications = ref([]);
+
+// Function to generate and download PDF
+const downloadSchedule = async () => {
+  const doc = new jsPDF();
+
+  // Configurar el título
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('Horario de Clases', doc.internal.pageSize.width / 2, 20, { align: 'center' });
+
+  // Nombre del profesor y fecha
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(14);
+  doc.text(`${teacher.value?.name}`, doc.internal.pageSize.width / 2, 30, { align: 'center' });
+  doc.text(format(new Date(), 'MMMM yyyy', { locale: es }), doc.internal.pageSize.width / 2, 40, {
+    align: 'center',
+  });
+
+  // Preparar datos para la tabla
+  const tableData = teacherClasses.value
+    .map((cls) => {
+      return cls.schedule?.slots.map((slot) => [
+        cls.name,
+        slot.day,
+        `${slot.startTime} - ${slot.endTime}`,
+      ]);
+    })
+    .flat();
+
+  // Generar tabla
+  doc.autoTable({
+    startY: 50,
+    head: [['Clase', 'Día', 'Horario']],
+    body: tableData,
+    theme: 'striped',
+    headStyles: { fillColor: [63, 81, 181] },
+    styles: { fontSize: 10, cellPadding: 5 },
+  });
+
+  // Guardar el PDF
+  doc.save(`${teacher.value?.name}_${format(new Date(), 'MMMM_yyyy', { locale: es })}.pdf`);
+};
+</script>
 
 <style lang="postcss" scoped>
 .btn-indigo {

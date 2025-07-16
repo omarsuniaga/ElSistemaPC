@@ -12,13 +12,13 @@
         <div
           v-for="cell in grid"
           :key="cell.id"
-          @click="handleCellClick(cell.id, $event)"
-          @mousedown="handleCellMouseDown(cell.id, $event)"
-          @mouseenter="handleCellMouseEnter(cell.id)"
           :class="getCellClass(cell)"
           class="aspect-square flex items-center justify-center text-xs font-bold text-white text-shadow cursor-pointer border border-gray-300 rounded-sm shadow-sm hover:opacity-80 transition-all duration-200"
           :title="`Compás ${cell.measureNumber} - ${getLevelName(cell.level)}${cell.selected ? ' (Seleccionado)' : ''}`"
           :data-cell-id="cell.id"
+          @click="handleCellClick(cell.id, $event)"
+          @mousedown="handleCellMouseDown(cell.id, $event)"
+          @mouseenter="handleCellMouseEnter(cell.id)"
         >
           {{ cell.measureNumber }}
         </div>
@@ -33,9 +33,9 @@
         <div class="flex items-center justify-between mb-3">
           <span class="text-sm font-medium text-gray-700">{{ selectedCells.size }} compases seleccionados</span>
           <button 
-            @click="exitMultiSelectionMode"
             class="text-gray-500 hover:text-gray-700"
             title="Cerrar selección"
+            @click="exitMultiSelectionMode"
           >
             ✕
           </button>
@@ -45,9 +45,9 @@
           <button
             v-for="level in work.levels"
             :key="level.id"
-            @click="setSelectedCellsLevel(level.id)"
             class="px-3 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all duration-200 text-sm flex items-center gap-2"
             :class="level.color"
+            @click="setSelectedCellsLevel(level.id)"
           >
             <div class="w-4 h-4 rounded-sm" :class="level.color"></div>
             {{ level.name }}
@@ -56,14 +56,14 @@
         
         <div class="flex justify-between">
           <button
-            @click="selectAll"
             class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 transition-colors"
+            @click="selectAll"
           >
             Seleccionar todo
           </button>
           <button
-            @click="clearSelection"
             class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors"
+            @click="clearSelection"
           >
             Limpiar selección
           </button>
@@ -76,8 +76,8 @@
       <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
         <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 text-shadow mb-3">Control de Niveles</h3>
         <button
-          @click="toggleMultiSelectionMode"
           class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md text-sm"
+          @click="toggleMultiSelectionMode"
         >
           {{ isMultiSelectionMode ? '🔄 Salir de Multiselección' : '✏️ Activar Multiselección' }}
         </button>
@@ -90,10 +90,10 @@
           <button
             v-for="level in work.levels"
             :key="level.id"
-            @click="setSelectedCellsLevel(level.id)"
             class="px-3 py-2 text-white font-bold rounded-lg hover:opacity-80 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 text-sm"
             :class="level.color"
             :title="level.description"
+            @click="setSelectedCellsLevel(level.id)"
           >
             {{ level.name }}
           </button>
@@ -103,8 +103,8 @@
       <!-- Action buttons -->
       <div class="flex flex-wrap gap-2">
         <button
-          @click="clearGrid"
           class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 shadow-md text-sm"
+          @click="clearGrid"
         >
           🗑️ Limpiar Todo
         </button>
@@ -148,29 +148,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import type { MusicalWork, Instrument, GridCell } from '../types/heatmap'
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import type { MusicalWork, Instrument, GridCell } from '../types/heatmap';
 
 const props = defineProps<{
   work: MusicalWork
   instrument: Instrument
-}>()
+}>();
 
-const loading = ref(false)
-const grid = ref<GridCell[]>([])
-const selectedCells = ref<Set<string>>(new Set())
-const isMultiSelectionMode = ref(false)
-const isDragging = ref(false)
-const dragStartCell = ref<string | null>(null)
+const loading = ref(false);
+const grid = ref<GridCell[]>([]);
+const selectedCells = ref<Set<string>>(new Set());
+const isMultiSelectionMode = ref(false);
+const isDragging = ref(false);
+const dragStartCell = ref<string | null>(null);
 
 // Floating menu position
-const floatingMenuPosition = ref({ x: 0, y: 0 })
+const floatingMenuPosition = ref({ x: 0, y: 0 });
 
 // Initialize grid with measure numbers
 const initializeGrid = () => {
-  const newGrid: GridCell[] = []
-  let measureNumber = 1
-  const totalMeasures = props.work.totalMeasures || 0
+  const newGrid: GridCell[] = [];
+  let measureNumber = 1;
+  const totalMeasures = props.work.totalMeasures || 0;
   
   for (let row = 0; row < props.work.rows; row++) {
     for (let col = 0; col < props.work.cols; col++) {
@@ -182,251 +182,251 @@ const initializeGrid = () => {
           row,
           col,
           selected: false,
-          measureNumber: measureNumber
-        })
-        measureNumber++
+          measureNumber: measureNumber,
+        });
+        measureNumber++;
       }
     }
   }
   
-  return newGrid
-}
+  return newGrid;
+};
 
 // Get color class from work configuration
 const getCellClass = (cell: GridCell): string => {
-  const levelConfig = props.work.levels.find(l => l.id === cell.level)
-  const baseColor = levelConfig?.color || 'bg-gray-500'
-  const selectedClass = cell.selected ? 'ring-4 ring-blue-400 ring-opacity-75 scale-105' : ''
-  return `${baseColor} ${selectedClass}`
-}
+  const levelConfig = props.work.levels.find(l => l.id === cell.level);
+  const baseColor = levelConfig?.color || 'bg-gray-500';
+  const selectedClass = cell.selected ? 'ring-4 ring-blue-400 ring-opacity-75 scale-105' : '';
+  return `${baseColor} ${selectedClass}`;
+};
 
 // Get level name from work configuration
 const getLevelName = (level: number): string => {
-  const levelConfig = props.work.levels.find(l => l.id === level)
-  return levelConfig?.name || `Nivel ${level}`
-}
+  const levelConfig = props.work.levels.find(l => l.id === level);
+  return levelConfig?.name || `Nivel ${level}`;
+};
 
 // Handle cell click
 const handleCellClick = (cellId: string, event: MouseEvent) => {
   // If we're in multi-selection mode, handle selection
   if (isMultiSelectionMode.value) {
-    toggleCellSelection(cellId)
-    updateFloatingMenuPosition(event)
-    return
+    toggleCellSelection(cellId);
+    updateFloatingMenuPosition(event);
+    return;
   }
   
   // Otherwise, cycle the cell level
-  cycleCellLevel(cellId)
-}
+  cycleCellLevel(cellId);
+};
 
 // Toggle multi-selection mode
 const toggleMultiSelectionMode = () => {
-  isMultiSelectionMode.value = !isMultiSelectionMode.value
+  isMultiSelectionMode.value = !isMultiSelectionMode.value;
   
   // Clear selection when exiting multi-selection mode
   if (!isMultiSelectionMode.value) {
-    clearSelection()
+    clearSelection();
   }
-}
+};
 
 // Exit multi-selection mode
 const exitMultiSelectionMode = () => {
-  isMultiSelectionMode.value = false
-  clearSelection()
-}
+  isMultiSelectionMode.value = false;
+  clearSelection();
+};
 
 // Handle cell mouse down (for drag selection)
 const handleCellMouseDown = (cellId: string, event: MouseEvent) => {
-  if (!isMultiSelectionMode.value) return
+  if (!isMultiSelectionMode.value) return;
   
   // Start drag selection
-  isDragging.value = true
-  dragStartCell.value = cellId
+  isDragging.value = true;
+  dragStartCell.value = cellId;
   
   // Select the cell
-  const cell = grid.value.find(c => c.id === cellId)
+  const cell = grid.value.find(c => c.id === cellId);
   if (cell) {
     // Clear previous selection unless Shift is pressed
     if (!event.shiftKey) {
-      clearSelection()
+      clearSelection();
     }
     
-    selectedCells.value.add(cellId)
-    cell.selected = true
+    selectedCells.value.add(cellId);
+    cell.selected = true;
   }
   
   // Update floating menu position
-  updateFloatingMenuPosition(event)
-}
+  updateFloatingMenuPosition(event);
+};
 
 // Handle cell mouse enter (for drag selection)
 const handleCellMouseEnter = (cellId: string) => {
-  if (!isMultiSelectionMode.value || !isDragging.value || !dragStartCell.value) return
+  if (!isMultiSelectionMode.value || !isDragging.value || !dragStartCell.value) return;
   
   // Select cells between drag start and current cell
-  selectCellsBetween(dragStartCell.value, cellId)
-}
+  selectCellsBetween(dragStartCell.value, cellId);
+};
 
 // Handle document mouse up (end drag selection)
 const handleDocumentMouseUp = (event: MouseEvent) => {
   if (isDragging.value) {
-    isDragging.value = false
-    dragStartCell.value = null
+    isDragging.value = false;
+    dragStartCell.value = null;
     
     // Update floating menu position
     if (selectedCells.value.size > 0) {
-      updateFloatingMenuPosition(event)
+      updateFloatingMenuPosition(event);
     }
   }
-}
+};
 
 // Select cells between two cells
 const selectCellsBetween = (startCellId: string, endCellId: string) => {
-  const startCell = grid.value.find(c => c.id === startCellId)
-  const endCell = grid.value.find(c => c.id === endCellId)
+  const startCell = grid.value.find(c => c.id === startCellId);
+  const endCell = grid.value.find(c => c.id === endCellId);
   
-  if (!startCell || !endCell) return
+  if (!startCell || !endCell) return;
   
   // Calculate the rectangle to select
-  const minRow = Math.min(startCell.row, endCell.row)
-  const maxRow = Math.max(startCell.row, endCell.row)
-  const minCol = Math.min(startCell.col, endCell.col)
-  const maxCol = Math.max(startCell.col, endCell.col)
+  const minRow = Math.min(startCell.row, endCell.row);
+  const maxRow = Math.max(startCell.row, endCell.row);
+  const minCol = Math.min(startCell.col, endCell.col);
+  const maxCol = Math.max(startCell.col, endCell.col);
   
   // Select all cells in the rectangle
   for (let row = minRow; row <= maxRow; row++) {
     for (let col = minCol; col <= maxCol; col++) {
-      const cell = grid.value.find(c => c.row === row && c.col === col)
+      const cell = grid.value.find(c => c.row === row && c.col === col);
       if (cell) {
-        selectedCells.value.add(cell.id)
-        cell.selected = true
+        selectedCells.value.add(cell.id);
+        cell.selected = true;
       }
     }
   }
-}
+};
 
 // Update floating menu position
 const updateFloatingMenuPosition = (event: MouseEvent) => {
   // Position the menu near the mouse but ensure it stays in viewport
-  const padding = 10
-  const menuWidth = 200
-  const menuHeight = 300
+  const padding = 10;
+  const menuWidth = 200;
+  const menuHeight = 300;
   
-  let x = event.clientX + padding
-  let y = event.clientY + padding
+  let x = event.clientX + padding;
+  let y = event.clientY + padding;
   
   // Adjust if would go off screen
   if (x + menuWidth > window.innerWidth) {
-    x = event.clientX - menuWidth - padding
+    x = event.clientX - menuWidth - padding;
   }
   
   if (y + menuHeight > window.innerHeight) {
-    y = event.clientY - menuHeight - padding
+    y = event.clientY - menuHeight - padding;
   }
   
   // Ensure we don't go negative
-  x = Math.max(padding, x)
-  y = Math.max(padding, y)
+  x = Math.max(padding, x);
+  y = Math.max(padding, y);
   
-  floatingMenuPosition.value = { x, y }
-}
+  floatingMenuPosition.value = { x, y };
+};
 
 // Toggle cell selection
 const toggleCellSelection = (cellId: string) => {
-  const cell = grid.value.find(c => c.id === cellId)
-  if (!cell) return
+  const cell = grid.value.find(c => c.id === cellId);
+  if (!cell) return;
 
   if (selectedCells.value.has(cellId)) {
-    selectedCells.value.delete(cellId)
-    cell.selected = false
+    selectedCells.value.delete(cellId);
+    cell.selected = false;
   } else {
-    selectedCells.value.add(cellId)
-    cell.selected = true
+    selectedCells.value.add(cellId);
+    cell.selected = true;
   }
-}
+};
 
 // Cycle through levels for a single cell
 const cycleCellLevel = (cellId: string) => {
-  const cell = grid.value.find(c => c.id === cellId)
-  if (!cell) return
+  const cell = grid.value.find(c => c.id === cellId);
+  if (!cell) return;
 
-  const maxLevel = props.work.levels.length - 1
-  cell.level = (cell.level + 1) % (maxLevel + 1)
-}
+  const maxLevel = props.work.levels.length - 1;
+  cell.level = (cell.level + 1) % (maxLevel + 1);
+};
 
 // Set level for selected cells
 const setSelectedCellsLevel = (level: number) => {
   selectedCells.value.forEach(cellId => {
-    const cell = grid.value.find(c => c.id === cellId)
+    const cell = grid.value.find(c => c.id === cellId);
     if (cell) {
-      cell.level = level
+      cell.level = level;
     }
-  })
+  });
   
   // Don't clear selection in multi-selection mode
   if (!isMultiSelectionMode.value) {
-    clearSelection()
+    clearSelection();
   }
-}
+};
 
 // Clear selection
 const clearSelection = () => {
-  selectedCells.value.clear()
+  selectedCells.value.clear();
   grid.value.forEach(cell => {
-    cell.selected = false
-  })
-}
+    cell.selected = false;
+  });
+};
 
 // Select all cells
 const selectAll = () => {
-  selectedCells.value.clear()
+  selectedCells.value.clear();
   grid.value.forEach(cell => {
-    selectedCells.value.add(cell.id)
-    cell.selected = true
-  })
-}
+    selectedCells.value.add(cell.id);
+    cell.selected = true;
+  });
+};
 
 // Clear all levels
 const clearGrid = () => {
   grid.value.forEach(cell => {
-    cell.level = 0
-  })
-  clearSelection()
-}
+    cell.level = 0;
+  });
+  clearSelection();
+};
 
 // Statistics
 const stats = computed(() => {
-  const totalCells = grid.value.length
+  const totalCells = grid.value.length;
   const levelCounts = props.work.levels.map(level => 
-    grid.value.filter(cell => cell.level === level.id).length
-  )
+    grid.value.filter(cell => cell.level === level.id).length,
+  );
   
   return {
     total: totalCells,
     levels: levelCounts,
     percentages: levelCounts.map(count => 
-      totalCells > 0 ? Math.round((count / totalCells) * 100) : 0
-    )
-  }
-})
+      totalCells > 0 ? Math.round((count / totalCells) * 100) : 0,
+    ),
+  };
+});
 
 onMounted(() => {
   // Initialize grid
-  grid.value = initializeGrid()
+  grid.value = initializeGrid();
   
   // Add document event listeners
-  document.addEventListener('mouseup', handleDocumentMouseUp)
+  document.addEventListener('mouseup', handleDocumentMouseUp);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      exitMultiSelectionMode()
+      exitMultiSelectionMode();
     }
-  })
-})
+  });
+});
 
 onUnmounted(() => {
   // Remove document event listeners
-  document.removeEventListener('mouseup', handleDocumentMouseUp)
-})
+  document.removeEventListener('mouseup', handleDocumentMouseUp);
+});
 </script>
 
 <style scoped>

@@ -106,8 +106,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {useRBACManagement, type Permission} from "@/composables/useRBACManagement"
+import { ref, computed, watch } from 'vue';
+import { useRBACManagement, type Permission } from '@/composables/useRBACManagement';
 
 interface Props {
   isOpen: boolean
@@ -115,86 +115,86 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "saved"): void
+  (e: 'close'): void
+  (e: 'saved'): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
-const {createPermission, updatePermission, loading} = useRBACManagement()
+const { createPermission, updatePermission, loading } = useRBACManagement();
 
 const formData = ref({
-  name: "",
-  description: "",
-  module: "",
-  action: "",
-  resource: "",
-})
+  name: '',
+  description: '',
+  module: '',
+  action: '',
+  resource: '',
+});
 
-const isEdit = computed(() => !!props.permission)
+const isEdit = computed(() => !!props.permission);
 
 // Resetear formulario cuando se abre/cierra el modal
 watch(
   () => props.isOpen,
   (newVal) => {
     if (newVal) {
-      console.log("🔄 PermissionModal - Modal abierto:", {
+      console.log('🔄 PermissionModal - Modal abierto:', {
         isEdit: isEdit.value,
         permission: props.permission,
-      })
+      });
 
       if (props.permission) {
         // Modo edición
         console.log(
-          "🔄 PermissionModal - Inicializando en modo edición con permiso:",
-          props.permission
-        )
+          '🔄 PermissionModal - Inicializando en modo edición con permiso:',
+          props.permission,
+        );
         formData.value = {
           name: props.permission.name,
           description: props.permission.description,
           module: props.permission.module,
           action: props.permission.action,
           resource: props.permission.resource,
-        }
+        };
       } else {
         // Modo creación
-        console.log("🔄 PermissionModal - Inicializando en modo creación")
+        console.log('🔄 PermissionModal - Inicializando en modo creación');
         formData.value = {
-          name: "",
-          description: "",
-          module: "",
-          action: "",
-          resource: "",
-        }
+          name: '',
+          description: '',
+          module: '',
+          action: '',
+          resource: '',
+        };
       }
 
-      console.log("🔄 PermissionModal - FormData inicializado:", formData.value)
+      console.log('🔄 PermissionModal - FormData inicializado:', formData.value);
     }
-  }
-)
+  },
+);
 
 const handleSubmit = async () => {
   try {
-    console.log("🔄 PermissionModal - handleSubmit:", {
+    console.log('🔄 PermissionModal - handleSubmit:', {
       isEdit: isEdit.value,
       permission: props.permission,
       formData: formData.value,
-    })
+    });
 
     if (isEdit.value && props.permission) {
-      console.log("🔄 Modo edición - llamando updatePermission con ID:", props.permission.id)
-      await updatePermission(props.permission.id, formData.value)
+      console.log('🔄 Modo edición - llamando updatePermission con ID:', props.permission.id);
+      await updatePermission(props.permission.id, formData.value);
     } else {
-      console.log("🔄 Modo creación - llamando createPermission")
-      await createPermission(formData.value)
+      console.log('🔄 Modo creación - llamando createPermission');
+      await createPermission(formData.value);
     }
 
-    emit("saved")
-    emit("close")
+    emit('saved');
+    emit('close');
   } catch (error) {
-    console.error("Error al guardar permiso:", error)
-    alert("Error al guardar el permiso. Por favor, inténtalo de nuevo.")
+    console.error('Error al guardar permiso:', error);
+    alert('Error al guardar el permiso. Por favor, inténtalo de nuevo.');
   }
-}
+};
 </script>

@@ -16,16 +16,16 @@ export interface Instrument {
     fechaInicio: Date | string
     fechaFin?: Date | string
   }[]
-  estado?: "excelente" | "bueno" | "regular" | "funcional" | "necesitaReparacion"
+  estado?: 'excelente' | 'bueno' | 'regular' | 'funcional' | 'necesitaReparacion'
   detallesEstado?: string
   accesorios?: {
     nombre: string
-    estado: "excelente" | "bueno" | "regular" | "malo" | "faltante"
+    estado: 'excelente' | 'bueno' | 'regular' | 'malo' | 'faltante'
     observacion?: string
   }[]
   estuche?: {
     tiene: boolean
-    estado?: "excelente" | "bueno" | "regular" | "malo"
+    estado?: 'excelente' | 'bueno' | 'regular' | 'malo'
     observacion?: string
   }
   observaciones?: string

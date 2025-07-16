@@ -66,8 +66,8 @@
 </template>
 
 <script setup lang="ts">
-import {PropType} from "vue"
-import type {ClassData} from "../../types/class" // Adjust path as necessary
+import { PropType } from 'vue';
+import type { ClassData } from '../../types/class'; // Adjust path as necessary
 
 // Define a basic Teacher type, replace with actual type from your store/types
 interface Teacher {
@@ -97,7 +97,7 @@ const props = defineProps({
     type: Array as PropType<Student[]>,
     default: () => [],
   },
-})
+});
 </script>
 
 <style scoped>

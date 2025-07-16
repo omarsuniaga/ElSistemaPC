@@ -225,37 +225,37 @@
 </template>
 
 <script setup>
-import {ref, computed} from "vue"
-import {useEmergentClassesCheck} from "../composables/useEmergentClassesCheck"
-import {sendEmergentClassNotifications} from "../services/notifications"
+import { ref, computed } from 'vue';
+import { useEmergentClassesCheck } from '../composables/useEmergentClassesCheck';
+import { sendEmergentClassNotifications } from '../services/notifications';
 
 // Estado del componente
-const showModal = ref(false)
-const notificationSent = ref(false)
-const isNotifying = ref(false)
+const showModal = ref(false);
+const notificationSent = ref(false);
+const isNotifying = ref(false);
 
 // Obtener datos de clases emergentes desde el composable
-const {isLoading, error, emergentClasses, hasApprovedEmergentClasses, emergentClassesCount} =
-  useEmergentClassesCheck()
+const { isLoading, error, emergentClasses, hasApprovedEmergentClasses, emergentClassesCount } =
+  useEmergentClassesCheck();
 
 // Métodos
 const openModal = () => {
-  showModal.value = true
-}
+  showModal.value = true;
+};
 
 const closeModal = () => {
-  showModal.value = false
-}
+  showModal.value = false;
+};
 
 const formatTime = (timestamp) => {
-  if (!timestamp) return "N/A"
+  if (!timestamp) return 'N/A';
 
-  const date = new Date(timestamp)
-  return date.toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 /**
  * Determina el estado actual de una clase según la hora actual
@@ -263,41 +263,41 @@ const formatTime = (timestamp) => {
  * @returns {Object} - Objeto con el estado y los datos asociados
  */
 const getEstadoClase = (clase) => {
-  const ahora = new Date()
-  const horaInicio = clase.startTime ? new Date(clase.startTime) : null
-  const horaFin = clase.endTime ? new Date(clase.endTime) : null
+  const ahora = new Date();
+  const horaInicio = clase.startTime ? new Date(clase.startTime) : null;
+  const horaFin = clase.endTime ? new Date(clase.endTime) : null;
 
   if (!horaInicio || !horaFin) {
-    return {estado: "Sin información de horario", color: "gray"}
+    return { estado: 'Sin información de horario', color: 'gray' };
   }
 
   // Para clases pendientes (aún no inician)
   if (ahora < horaInicio) {
     return {
-      estado: "En espera",
-      color: "blue",
+      estado: 'En espera',
+      color: 'blue',
       tiempoRestante: Math.floor((horaInicio.getTime() - ahora.getTime()) / 60000), // minutos restantes
-    }
+    };
   }
   // Para clases en curso
   else if (ahora >= horaInicio && ahora <= horaFin) {
     return {
-      estado: "En proceso",
-      color: "green",
+      estado: 'En proceso',
+      color: 'green',
       progreso: Math.floor(
         ((ahora.getTime() - horaInicio.getTime()) / (horaFin.getTime() - horaInicio.getTime())) *
-          100
+          100,
       ),
-    }
+    };
   }
   // Para clases ya terminadas
   else {
     return {
-      estado: "Terminado",
-      color: "gray",
-    }
+      estado: 'Terminado',
+      color: 'gray',
+    };
   }
-}
+};
 
 /**
  * Devuelve las clases de Tailwind CSS para el estilo del estado de la clase
@@ -305,38 +305,38 @@ const getEstadoClase = (clase) => {
  * @returns {String} - Clases de Tailwind CSS
  */
 const getEstadoClaseStyle = (clase) => {
-  const estado = getEstadoClase(clase)
+  const estado = getEstadoClase(clase);
   const styles = {
-    blue: "text-blue-600 font-medium bg-blue-100 px-2 py-0.5 rounded-full",
-    green: "text-green-600 font-medium bg-green-100 px-2 py-0.5 rounded-full",
-    yellow: "text-amber-600 font-medium bg-amber-100 px-2 py-0.5 rounded-full",
-    gray: "text-gray-600 font-medium bg-gray-100 px-2 py-0.5 rounded-full",
-    red: "text-red-600 font-medium bg-red-100 px-2 py-0.5 rounded-full",
-  }
+    blue: 'text-blue-600 font-medium bg-blue-100 px-2 py-0.5 rounded-full',
+    green: 'text-green-600 font-medium bg-green-100 px-2 py-0.5 rounded-full',
+    yellow: 'text-amber-600 font-medium bg-amber-100 px-2 py-0.5 rounded-full',
+    gray: 'text-gray-600 font-medium bg-gray-100 px-2 py-0.5 rounded-full',
+    red: 'text-red-600 font-medium bg-red-100 px-2 py-0.5 rounded-full',
+  };
 
-  return styles[estado.color] || styles["gray"]
-}
+  return styles[estado.color] || styles['gray'];
+};
 
 // Método para enviar notificaciones a los estudiantes sobre las clases emergentes
 const notifyStudents = async () => {
-  if (isNotifying.value) return
+  if (isNotifying.value) return;
 
-  isNotifying.value = true
+  isNotifying.value = true;
   try {
     // Llamada al servicio de notificaciones
-    const result = await sendEmergentClassNotifications(emergentClasses.value)
-    notificationSent.value = true
+    const result = await sendEmergentClassNotifications(emergentClasses.value);
+    notificationSent.value = true;
     // Mostrar confirmación
     alert(`Notificaciones enviadas correctamente:
     - ${result.sentNotifications} estudiantes notificados
-    - ${result.skippedNotifications} estudiantes ya habían sido notificados anteriormente`)
+    - ${result.skippedNotifications} estudiantes ya habían sido notificados anteriormente`);
   } catch (error) {
-    console.error("Error al enviar notificaciones:", error)
-    alert("Error al enviar las notificaciones: " + error.message)
+    console.error('Error al enviar notificaciones:', error);
+    alert('Error al enviar las notificaciones: ' + error.message);
   } finally {
-    isNotifying.value = false
+    isNotifying.value = false;
   }
-}
+};
 </script>
 
 <style scoped>

@@ -4,7 +4,7 @@
     <div class="bg-white p-6 rounded-lg shadow">
       <h3 class="text-lg font-semibold mb-4">Tendencia de Asistencia</h3>
       <div class="h-64">
-        <line-chart :chart-data="trendChartData" :options="chartOptions" />
+        <LineChart :chart-data="trendChartData" :options="chartOptions" />
       </div>
     </div>
 
@@ -12,15 +12,15 @@
     <div class="bg-white p-6 rounded-lg shadow">
       <h3 class="text-lg font-semibold mb-4">Distribución de Estados</h3>
       <div class="h-64">
-        <pie-chart :chart-data="distributionChartData" :options="chartOptions" />
+        <PieChart :chart-data="distributionChartData" :options="chartOptions" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import {defineComponent} from "vue"
-import {Line as LineChart, Pie as PieChart} from "vue-chartjs"
+import { defineComponent } from 'vue';
+import { Line as LineChart, Pie as PieChart } from 'vue-chartjs';
 import {
   Chart as ChartJS,
   Title,
@@ -31,7 +31,7 @@ import {
   CategoryScale,
   PointElement,
   ArcElement,
-} from "chart.js"
+} from 'chart.js';
 
 ChartJS.register(
   Title,
@@ -41,11 +41,11 @@ ChartJS.register(
   LinearScale,
   CategoryScale,
   PointElement,
-  ArcElement
-)
+  ArcElement,
+);
 
 export default defineComponent({
-  name: "AttendanceCharts",
+  name: 'AttendanceCharts',
   components: {
     LineChart,
     PieChart,
@@ -62,17 +62,17 @@ export default defineComponent({
         labels: this.attendanceData.dates,
         datasets: [
           {
-            label: "Asistencia",
+            label: 'Asistencia',
             data: this.attendanceData.attendance,
-            borderColor: "#3B82F6",
+            borderColor: '#3B82F6',
             tension: 0.1,
           },
         ],
-      }
+      };
     },
     distributionChartData() {
       return {
-        labels: ["Presentes", "Ausentes", "Justificados", "Tardanzas"],
+        labels: ['Presentes', 'Ausentes', 'Justificados', 'Tardanzas'],
         datasets: [
           {
             data: [
@@ -81,17 +81,17 @@ export default defineComponent({
               this.attendanceData.justified,
               this.attendanceData.late,
             ],
-            backgroundColor: ["#10B981", "#EF4444", "#F59E0B", "#6366F1"],
+            backgroundColor: ['#10B981', '#EF4444', '#F59E0B', '#6366F1'],
           },
         ],
-      }
+      };
     },
     chartOptions() {
       return {
         responsive: true,
         maintainAspectRatio: false,
-      }
+      };
     },
   },
-})
+});
 </script>

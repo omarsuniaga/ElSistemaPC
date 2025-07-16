@@ -73,31 +73,31 @@
 </template>
 
 <script lang="ts" setup>
-import {ref, onMounted} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import {useInstrumentoStore} from "../../Instruments/store/instrumento"
-import {useStudentsStore} from "../../Students/store/students"
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useInstrumentoStore } from '../../Instruments/store/instrumento';
+import { useStudentsStore } from '../../Students/store/students';
 
-const route = useRoute()
-const router = useRouter()
-const instrumentStore = useInstrumentoStore()
-const studentsStore = useStudentsStore()
+const route = useRoute();
+const router = useRouter();
+const instrumentStore = useInstrumentoStore();
+const studentsStore = useStudentsStore();
 
-const student = ref<any>(null)
-const instrument = ref<any>(null)
+const student = ref<any>(null);
+const instrument = ref<any>(null);
 
 onMounted(async () => {
-  const {studentId, instrumentId} = route.params
-  if (!studentsStore.students.length) await studentsStore.fetchStudents()
-  if (!instrumentStore.instruments.length) await instrumentStore.fetchInstruments()
-  student.value = studentsStore.students.find((s) => s.id === studentId)
-  instrument.value = instrumentStore.instruments.find((i) => i.id === instrumentId)
-})
+  const { studentId, instrumentId } = route.params;
+  if (!studentsStore.students.length) await studentsStore.fetchStudents();
+  if (!instrumentStore.instruments.length) await instrumentStore.fetchInstruments();
+  student.value = studentsStore.students.find((s) => s.id === studentId);
+  instrument.value = instrumentStore.instruments.find((i) => i.id === instrumentId);
+});
 
 function goToEdit() {
-  router.push({name: "InstrumentAssign", params: {id: instrument.value.id}})
+  router.push({ name: 'InstrumentAssign', params: { id: instrument.value.id } });
 }
 function goBack() {
-  router.push({name: "InstrumentList"})
+  router.push({ name: 'InstrumentList' });
 }
 </script>

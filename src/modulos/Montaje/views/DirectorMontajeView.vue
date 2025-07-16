@@ -527,254 +527,254 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {useMontajeStore} from "../store/montaje"
-import {useAuthStore} from "@/stores/auth"
-import type {Repertorio, Obra, PlanAccion} from "../types"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useMontajeStore } from '../store/montaje';
+import { useAuthStore } from '@/stores/auth';
+import type { Repertorio, Obra, PlanAccion } from '../types';
 
 // Componentes (crear estos después)
-import MapaCalorGeneral from "../components/MapaCalorGeneral.vue"
-import ModalRepertorio from "../components/ModalRepertorio.vue"
-import ModalObra from "../components/ModalObra.vue"
-import ModalPlanSemanal from "../components/ModalPlanSemanal.vue"
+import MapaCalorGeneral from '../components/MapaCalorGeneral.vue';
+import ModalRepertorio from '../components/ModalRepertorio.vue';
+import ModalObra from '../components/ModalObra.vue';
+import ModalPlanSemanal from '../components/ModalPlanSemanal.vue';
 
 // Stores
-const router = useRouter()
-const montajeStore = useMontajeStore()
-const authStore = useAuthStore()
+const router = useRouter();
+const montajeStore = useMontajeStore();
+const authStore = useAuthStore();
 
 // Estado reactivo
-const activeTab = ref("repertorio")
-const showModalRepertorio = ref(false)
-const showModalObra = ref(false)
-const showModalPlan = ref(false)
-const repertorioSeleccionado = ref<Repertorio | null>(null)
-const maestroSeleccionado = ref<any>(null)
-const repertorioEditando = ref<Repertorio | null>(null)
-const obraEditando = ref<Obra | null>(null)
-const planEditando = ref<PlanAccion | null>(null)
-const filtroSemana = ref("")
-const filtroMaestro = ref("")
+const activeTab = ref('repertorio');
+const showModalRepertorio = ref(false);
+const showModalObra = ref(false);
+const showModalPlan = ref(false);
+const repertorioSeleccionado = ref<Repertorio | null>(null);
+const maestroSeleccionado = ref<any>(null);
+const repertorioEditando = ref<Repertorio | null>(null);
+const obraEditando = ref<Obra | null>(null);
+const planEditando = ref<PlanAccion | null>(null);
+const filtroSemana = ref('');
+const filtroMaestro = ref('');
 
 // Pestañas
 const tabs = [
-  {id: "repertorio", label: "Repertorio y Obras", icon: "🎼"},
-  {id: "maestros", label: "Gestión de Maestros", icon: "👥"},
-  {id: "planes", label: "Planes de Acción", icon: "📋"},
-  {id: "analytics", label: "Analytics", icon: "📊"},
-]
+  { id: 'repertorio', label: 'Repertorio y Obras', icon: '🎼' },
+  { id: 'maestros', label: 'Gestión de Maestros', icon: '👥' },
+  { id: 'planes', label: 'Planes de Acción', icon: '📋' },
+  { id: 'analytics', label: 'Analytics', icon: '📊' },
+];
 
 // Datos simulados (reemplazar con datos reales)
-const repertorios = ref<Repertorio[]>([])
+const repertorios = ref<Repertorio[]>([]);
 const maestros = ref([
   {
-    id: "1",
-    nombre: "María González",
-    email: "maria@academia.com",
+    id: '1',
+    nombre: 'María González',
+    email: 'maria@academia.com',
     activo: true,
     estadisticas: {
       obrasAsignadas: 5,
       progresoProm: 78,
       horasTrabajo: 45,
     },
-    obrasRecientes: ["Sinfonía No. 9", "Concierto para Piano"],
+    obrasRecientes: ['Sinfonía No. 9', 'Concierto para Piano'],
     asistenciaHoy: true,
     observacionesClase: [
       {
-        id: "1",
-        contenido: "Excelente trabajo con la sección de cuerdas en el movimiento III.",
+        id: '1',
+        contenido: 'Excelente trabajo con la sección de cuerdas en el movimiento III.',
         fecha: new Date(),
       },
     ],
   },
-])
+]);
 
 const planesSemanales = ref([
   {
-    id: "1",
+    id: '1',
     semana: 45,
-    maestro: {nombre: "María González"},
-    estado: "activo",
-    objetivos: ["Mejorar articulación", "Sincronizar metales"],
+    maestro: { nombre: 'María González' },
+    estado: 'activo',
+    objetivos: ['Mejorar articulación', 'Sincronizar metales'],
     fechaCreacion: new Date(),
   },
-])
+]);
 
 const analytics = ref({
   totalRepertorios: 8,
   totalObras: 24,
   maestrosActivos: 6,
   progresoPromedio: 72,
-})
+});
 
 // Computed
 const obrasDelRepertorio = computed(() => {
-  if (!repertorioSeleccionado.value) return []
-  return montajeStore.obras.filter((obra) => obra.repertorioId === repertorioSeleccionado.value!.id)
-})
+  if (!repertorioSeleccionado.value) return [];
+  return montajeStore.obras.filter((obra) => obra.repertorioId === repertorioSeleccionado.value!.id);
+});
 
 const semanasDisponibles = computed(() => {
-  return Array.from(new Set(planesSemanales.value.map((p) => p.semana))).sort()
-})
+  return Array.from(new Set(planesSemanales.value.map((p) => p.semana))).sort();
+});
 
 const planesFiltrados = computed(() => {
-  let planes = planesSemanales.value
+  let planes = planesSemanales.value;
 
   if (filtroSemana.value) {
-    planes = planes.filter((p) => p.semana.toString() === filtroSemana.value)
+    planes = planes.filter((p) => p.semana.toString() === filtroSemana.value);
   }
 
   if (filtroMaestro.value) {
-    planes = planes.filter((p) => p.maestro.id === filtroMaestro.value)
+    planes = planes.filter((p) => p.maestro.id === filtroMaestro.value);
   }
 
-  return planes
-})
+  return planes;
+});
 
 // Métodos
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
 
 function getEstadoRepertorioClass(estado: string): string {
   switch (estado) {
-    case "planificando":
-      return "bg-yellow-100 text-yellow-800"
-    case "en_montaje":
-      return "bg-blue-100 text-blue-800"
-    case "finalizado":
-      return "bg-green-100 text-green-800"
-    case "archivado":
-      return "bg-gray-100 text-gray-800"
-    default:
-      return "bg-gray-100 text-gray-800"
+  case 'planificando':
+    return 'bg-yellow-100 text-yellow-800';
+  case 'en_montaje':
+    return 'bg-blue-100 text-blue-800';
+  case 'finalizado':
+    return 'bg-green-100 text-green-800';
+  case 'archivado':
+    return 'bg-gray-100 text-gray-800';
+  default:
+    return 'bg-gray-100 text-gray-800';
   }
 }
 
 function getEstadoPlanClass(estado: string): string {
   switch (estado) {
-    case "activo":
-      return "bg-green-100 text-green-800"
-    case "completado":
-      return "bg-blue-100 text-blue-800"
-    case "pendiente":
-      return "bg-yellow-100 text-yellow-800"
-    default:
-      return "bg-gray-100 text-gray-800"
+  case 'activo':
+    return 'bg-green-100 text-green-800';
+  case 'completado':
+    return 'bg-blue-100 text-blue-800';
+  case 'pendiente':
+    return 'bg-yellow-100 text-yellow-800';
+  default:
+    return 'bg-gray-100 text-gray-800';
   }
 }
 
 function seleccionarRepertorio(repertorio: Repertorio) {
-  repertorioSeleccionado.value = repertorio
+  repertorioSeleccionado.value = repertorio;
 }
 
 function seleccionarMaestro(maestro: any) {
-  maestroSeleccionado.value = maestro
+  maestroSeleccionado.value = maestro;
 }
 
 function abrirModalRepertorio() {
-  repertorioEditando.value = null
-  showModalRepertorio.value = true
+  repertorioEditando.value = null;
+  showModalRepertorio.value = true;
 }
 
 function editarRepertorio(repertorio: Repertorio) {
-  repertorioEditando.value = repertorio
-  showModalRepertorio.value = true
+  repertorioEditando.value = repertorio;
+  showModalRepertorio.value = true;
 }
 
 function cerrarModalRepertorio() {
-  showModalRepertorio.value = false
-  repertorioEditando.value = null
+  showModalRepertorio.value = false;
+  repertorioEditando.value = null;
 }
 
 function guardarRepertorio(repertorio: Repertorio) {
   // Lógica para guardar repertorio
-  console.log("Guardando repertorio:", repertorio)
-  cerrarModalRepertorio()
+  console.log('Guardando repertorio:', repertorio);
+  cerrarModalRepertorio();
 }
 
 function abrirModalObra() {
   if (!repertorioSeleccionado.value) {
-    alert("Selecciona un repertorio primero")
-    return
+    alert('Selecciona un repertorio primero');
+    return;
   }
-  obraEditando.value = null
-  showModalObra.value = true
+  obraEditando.value = null;
+  showModalObra.value = true;
 }
 
 function cerrarModalObra() {
-  showModalObra.value = false
-  obraEditando.value = null
+  showModalObra.value = false;
+  obraEditando.value = null;
 }
 
 function guardarObra(obra: Obra) {
   // Lógica para guardar obra
-  console.log("Guardando obra:", obra)
-  cerrarModalObra()
+  console.log('Guardando obra:', obra);
+  cerrarModalObra();
 }
 
 function verDetalleObra(obra: Obra) {
-  router.push(`/montaje/obras/${obra.id}`)
+  router.push(`/montaje/obras/${obra.id}`);
 }
 
 function definirFrases(obra: Obra) {
-  router.push(`/montaje/obras/${obra.id}/frases`)
+  router.push(`/montaje/obras/${obra.id}/frases`);
 }
 
 function agregarObservacion(obra: Obra) {
   // Lógica para agregar observación
-  console.log("Agregando observación a obra:", obra.titulo)
+  console.log('Agregando observación a obra:', obra.titulo);
 }
 
 function crearPlanSemanal() {
-  planEditando.value = null
-  showModalPlan.value = true
+  planEditando.value = null;
+  showModalPlan.value = true;
 }
 
 function editarPlan(plan: any) {
-  planEditando.value = plan
-  showModalPlan.value = true
+  planEditando.value = plan;
+  showModalPlan.value = true;
 }
 
 function cerrarModalPlan() {
-  showModalPlan.value = false
-  planEditando.value = null
+  showModalPlan.value = false;
+  planEditando.value = null;
 }
 
 function guardarPlan(plan: PlanAccion) {
   // Lógica para guardar plan
-  console.log("Guardando plan:", plan)
-  cerrarModalPlan()
+  console.log('Guardando plan:', plan);
+  cerrarModalPlan();
 }
 
 function duplicarPlan(plan: any) {
   // Lógica para duplicar plan
-  console.log("Duplicando plan:", plan)
+  console.log('Duplicando plan:', plan);
 }
 
 function enviarObservacion(maestro: any) {
   // Lógica para enviar observación
-  console.log("Enviando observación a:", maestro.nombre)
+  console.log('Enviando observación a:', maestro.nombre);
 }
 
 function asignarObras(maestro: any) {
   // Lógica para asignar obras
-  console.log("Asignando obras a:", maestro.nombre)
+  console.log('Asignando obras a:', maestro.nombre);
 }
 
 function marcarComoRevisado(maestro: any) {
   // Lógica para marcar como revisado
-  console.log("Marcando como revisado:", maestro.nombre)
+  console.log('Marcando como revisado:', maestro.nombre);
 }
 
 function verAsistencia(maestro: any) {
-  router.push(`/attendance/teacher/${maestro.id}`)
+  router.push(`/attendance/teacher/${maestro.id}`);
 }
 
 // Lifecycle
@@ -785,10 +785,10 @@ onMounted(async () => {
   // Simular datos por ahora
   repertorios.value = [
     {
-      id: "1",
-      nombre: "Concierto de Primavera 2024",
-      descripcion: "Repertorio clásico para el concierto de temporada",
-      estado: "en_montaje",
+      id: '1',
+      nombre: 'Concierto de Primavera 2024',
+      descripcion: 'Repertorio clásico para el concierto de temporada',
+      estado: 'en_montaje',
       metadatos: {
         totalObras: 4,
         totalCompases: 800,
@@ -797,10 +797,10 @@ onMounted(async () => {
       },
     },
     {
-      id: "2",
-      nombre: "Festival de Invierno 2024",
-      descripcion: "Repertorio moderno y contemporáneo",
-      estado: "planificando",
+      id: '2',
+      nombre: 'Festival de Invierno 2024',
+      descripcion: 'Repertorio moderno y contemporáneo',
+      estado: 'planificando',
       metadatos: {
         totalObras: 3,
         totalCompases: 600,
@@ -808,13 +808,13 @@ onMounted(async () => {
         progresoPorcentaje: 25,
       },
     },
-  ]
+  ];
 
   maestros.value = [
     {
-      id: "1",
-      nombre: "Carlos González",
-      email: "carlos.gonzalez@academia.com",
+      id: '1',
+      nombre: 'Carlos González',
+      email: 'carlos.gonzalez@academia.com',
       activo: true,
       asistenciaHoy: true,
       estadisticas: {
@@ -822,26 +822,26 @@ onMounted(async () => {
         progresoProm: 78,
         horasTrabajo: 24,
       },
-      obrasRecientes: ["Sinfonía No. 9", "Concierto para Piano"],
+      obrasRecientes: ['Sinfonía No. 9', 'Concierto para Piano'],
       observacionesClase: [
         {
-          id: "1",
+          id: '1',
           contenido:
-            "Excelente trabajo con la sección de cuerdas en la parte adagio. Los estudiantes muestran gran progreso en la afinación.",
+            'Excelente trabajo con la sección de cuerdas en la parte adagio. Los estudiantes muestran gran progreso en la afinación.',
           fecha: new Date(Date.now() - 2 * 60 * 60 * 1000),
         },
         {
-          id: "2",
+          id: '2',
           contenido:
-            "Necesario trabajar más la sincronización en los compases 45-60. Se sugiere práctica individual antes del ensayo.",
+            'Necesario trabajar más la sincronización en los compases 45-60. Se sugiere práctica individual antes del ensayo.',
           fecha: new Date(Date.now() - 24 * 60 * 60 * 1000),
         },
       ],
     },
     {
-      id: "2",
-      nombre: "María Rodriguez",
-      email: "maria.rodriguez@academia.com",
+      id: '2',
+      nombre: 'María Rodriguez',
+      email: 'maria.rodriguez@academia.com',
       activo: true,
       asistenciaHoy: false,
       estadisticas: {
@@ -849,41 +849,41 @@ onMounted(async () => {
         progresoProm: 85,
         horasTrabajo: 18,
       },
-      obrasRecientes: ["Bolero", "Danza Húngara"],
+      obrasRecientes: ['Bolero', 'Danza Húngara'],
       observacionesClase: [
         {
-          id: "3",
+          id: '3',
           contenido:
-            "Trabajo excepcional con los vientos. La articulación ha mejorado notablemente esta semana.",
+            'Trabajo excepcional con los vientos. La articulación ha mejorado notablemente esta semana.',
           fecha: new Date(Date.now() - 3 * 60 * 60 * 1000),
         },
       ],
     },
-  ]
+  ];
 
   planesSemanales.value = [
     {
-      id: "1",
+      id: '1',
       semana: 12,
       maestro: maestros.value[0],
       objetivos: [
-        "Perfeccionar articulación en compases 45-60",
-        "Trabajar dinámicas en sección B",
-        "Sincronizar entrada de metales",
+        'Perfeccionar articulación en compases 45-60',
+        'Trabajar dinámicas en sección B',
+        'Sincronizar entrada de metales',
       ],
-      estado: "activo",
+      estado: 'activo',
       fechaCreacion: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     },
     {
-      id: "2",
+      id: '2',
       semana: 11,
       maestro: maestros.value[1],
-      objetivos: ["Mejorar tempo en allegro", "Pulir transiciones entre movimientos"],
-      estado: "completado",
+      objetivos: ['Mejorar tempo en allegro', 'Pulir transiciones entre movimientos'],
+      estado: 'completado',
       fechaCreacion: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
     },
-  ]
-})
+  ];
+});
 </script>
 
 <style scoped>

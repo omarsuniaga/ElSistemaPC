@@ -13,16 +13,16 @@ import {
   ChatBubbleLeftRightIcon,
   SparklesIcon,
   BellIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Menú para maestros: rutas que comienzan con "/teacher"
 // (asegurándose de que las rutas coincidan con las definidas en el router)
 export const teacherMenuItems = [
   {
-    name: "Dashboard",
+    name: 'Dashboard',
     icon: HomeIcon,
-    to: "/teacher",
-    ariaLabel: "Panel de control del maestro",
+    to: '/teacher',
+    ariaLabel: 'Panel de control del maestro',
   },
   // {
   //   name: 'Notificaciones',
@@ -31,22 +31,23 @@ export const teacherMenuItems = [
   //   ariaLabel: 'Ver notificaciones'
   // },
   {
-    name: "Attendance",
+    name: 'Attendance',
     icon: ClipboardDocumentCheckIcon,
-    to: "/teacher/attendance",
-    ariaLabel: "Gestionar asistencias",
+    to: '/calendar',
+    ariaLabel: 'Gestionar asistencias',
+    // Acceso abierto para todos los roles de maestro
   },
   {
-    name: "Montaje",
+    name: 'Montaje',
     icon: SparklesIcon,
-    to: "/montaje",
-    ariaLabel: "Gestión de montaje musical",
+    to: '/maestro/montaje/obras', // Actualizada la ruta
+    ariaLabel: 'Gestión de montaje musical',
   },
   {
-    name: "Horarios",
+    name: 'Horarios',
     icon: ClockIcon,
-    to: "/teacher/schedule",
-    ariaLabel: "Ver horarios",
+    to: '/teacher/schedule',
+    ariaLabel: 'Ver horarios',
   },
   // {
   //   name: 'Alumnos',
@@ -54,74 +55,74 @@ export const teacherMenuItems = [
   //   to: '/students',
   //   ariaLabel: 'Gestionar alumnos'
   // },
-]
+];
 
 // Menú para directores/administradores: rutas que coinciden con las definidas en el router
 export const adminMenuItems = [
   {
-    name: "Inicio",
+    name: 'Inicio',
     icon: HomeIcon,
-    to: "/",
-    ariaLabel: "Panel de control",
+    to: '/',
+    ariaLabel: 'Panel de control',
   },
   {
-    name: "Alumnos",
+    name: 'Alumnos',
     icon: UserGroupIcon,
-    to: "/students",
-    ariaLabel: "Gestionar alumnos",
+    to: '/students',
+    ariaLabel: 'Gestionar alumnos',
   },
   {
-    name: "Maestros",
+    name: 'Maestros',
     icon: AcademicCapIcon,
-    to: "/teachers",
-    ariaLabel: "Gestionar maestros",
+    to: '/teachers',
+    ariaLabel: 'Gestionar maestros',
   },
   {
-    name: "Instrumentos",
+    name: 'Instrumentos',
     icon: MusicalNoteIcon,
-    to: "/instrumentos",
-    ariaLabel: "Gestionar instrumentos",
+    to: '/instrumentos',
+    ariaLabel: 'Gestionar instrumentos',
   },
   {
-    name: "Montaje",
+    name: 'Montaje',
     icon: SparklesIcon,
-    to: "/montaje",
-    ariaLabel: "Gestión de montaje musical",
+    to: '/montaje',
+    ariaLabel: 'Gestión de montaje musical',
   },
   {
-    name: "Analytics",
+    name: 'Analytics',
     icon: ChartBarIcon,
-    to: "/analytics",
-    ariaLabel: "Ver análisis",
+    to: '/analytics',
+    ariaLabel: 'Ver análisis',
   },
   {
-    name: "Attendance",
+    name: 'Attendance',
     icon: ClipboardDocumentCheckIcon,
-    to: "/teacher/attendance",
-    ariaLabel: "Gestionar asistencias",
+    to: '/teacher/attendance',
+    ariaLabel: 'Gestionar asistencias',
   },
   {
-    name: "Observaciones",
+    name: 'Observaciones',
     icon: ChatBubbleLeftRightIcon,
-    to: "/attendance/observations",
-    ariaLabel: "Ver todas las observaciones de clase",
+    to: '/attendance/observations',
+    ariaLabel: 'Ver todas las observaciones de clase',
   },
   {
-    name: "Clases",
+    name: 'Clases',
     icon: BookOpenIcon,
-    to: "/classes",
-    ariaLabel: "Gestionar clases",
+    to: '/classes',
+    ariaLabel: 'Gestionar clases',
   },
   {
-    name: "Horarios",
+    name: 'Horarios',
     icon: CalendarDaysIcon,
-    to: "/schedule",
-    ariaLabel: "Gestionar horarios",
+    to: '/schedule',
+    ariaLabel: 'Gestionar horarios',
   },
   {
-    name: "Perfil",
+    name: 'Perfil',
     icon: UserCircleIcon,
-    to: "/profile",
-    ariaLabel: "Mi perfil",
+    to: '/profile',
+    ariaLabel: 'Mi perfil',
   },
-]
+];

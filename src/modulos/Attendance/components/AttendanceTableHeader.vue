@@ -1,18 +1,3 @@
-<script setup lang="ts">
-import {CheckCircleIcon, XCircleIcon, ClockIcon} from "@heroicons/vue/24/outline"
-
-const props = defineProps<{
-  isDisabled: boolean
-}>()
-
-const emit = defineEmits<{
-  (e: "mark-all-present"): void
-  (e: "mark-all-absent"): void
-  (e: "mark-all-late"): void
-  (e: "reset-all"): void
-}>()
-</script>
-
 <template>
   <thead class="bg-gray-50 dark:bg-gray-800">
     <tr>
@@ -76,3 +61,18 @@ const emit = defineEmits<{
     </tr>
   </thead>
 </template>
+
+<script setup lang="ts">
+import { CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/vue/24/outline';
+
+const props = defineProps<{
+  isDisabled: boolean
+}>();
+
+const emit = defineEmits<{
+  (e: 'mark-all-present'): void
+  (e: 'mark-all-absent'): void
+  (e: 'mark-all-late'): void
+  (e: 'reset-all'): void
+}>();
+</script>

@@ -77,8 +77,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, PropType} from "vue"
-import type {ClassData} from "../../types/class" // Adjust path as necessary
+import { ref, PropType } from 'vue';
+import type { ClassData } from '../../types/class'; // Adjust path as necessary
 
 // Define observation history entry interface
 interface ClassHistoryEntry {
@@ -94,23 +94,23 @@ const props = defineProps({
     type: Object as PropType<ClassData | null>,
     default: null,
   },
-})
+});
 
-const loadingHistory = ref(false)
+const loadingHistory = ref(false);
 
-const emit = defineEmits(["add-observation"])
+const emit = defineEmits(['add-observation']);
 
 const formatDate = (dateString: string | Date): string => {
-  if (!dateString) return "Fecha no disponible"
-  const date = new Date(dateString)
-  return date.toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+  if (!dateString) return 'Fecha no disponible';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 </script>
 
 <style scoped>

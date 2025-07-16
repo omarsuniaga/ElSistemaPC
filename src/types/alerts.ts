@@ -1,14 +1,14 @@
 export type AlertType =
-  | "consecutive_absences"
-  | "low_attendance_rate"
-  | "improvement"
-  | "first_absence"
-  | "late_pattern"
-  | "perfect_attendance"
+  | 'consecutive_absences'
+  | 'low_attendance_rate'
+  | 'improvement'
+  | 'first_absence'
+  | 'late_pattern'
+  | 'perfect_attendance'
 
-export type AlertPriority = "high" | "medium" | "low"
+export type AlertPriority = 'high' | 'medium' | 'low'
 
-export type AlertStatus = "pending" | "sent" | "read" | "dismissed"
+export type AlertStatus = 'pending' | 'sent' | 'read' | 'dismissed'
 
 export interface AttendanceAlert {
   id: string

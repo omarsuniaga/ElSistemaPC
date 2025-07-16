@@ -169,113 +169,113 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useAttendanceStore} from "../store/attendances"
-import {useStudentsStore} from "../../modulos/Students/store/students"
-import {exportToExcel} from "@/utils/exportToExcel"
-import {useClassesStore} from "../../modulos/Classes/store/classes"
-import {format, parseISO} from "date-fns"
-import {es} from "date-fns/locale"
-import {jsPDF} from "jspdf"
-import "jspdf-autotable"
+import { ref, computed, onMounted } from 'vue';
+import { useAttendanceStore } from '../store/attendances';
+import { useStudentsStore } from '../../modulos/Students/store/students';
+import { exportToExcel } from '@/utils/exportToExcel';
+import { useClassesStore } from '../../modulos/Classes/store/classes';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
     required: true,
   },
-})
+});
 
-const emit = defineEmits(["update:modelValue", "close"])
+const emit = defineEmits(['update:modelValue', 'close']);
 
 const close = () => {
-  emit("update:modelValue", false)
-  emit("close")
-}
+  emit('update:modelValue', false);
+  emit('close');
+};
 
 // Stores
-const attendanceStore = useAttendanceStore()
-const studentsStore = useStudentsStore()
-const classesStore = useClassesStore()
+const attendanceStore = useAttendanceStore();
+const studentsStore = useStudentsStore();
+const classesStore = useClassesStore();
 
 // Estado local
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const isExporting = ref(false)
-const exportFormat = ref("excel")
-const includeStats = ref(true)
-const includeCharts = ref(true)
-const groupByClass = ref(false)
-const groupByStudent = ref(false)
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const isExporting = ref(false);
+const exportFormat = ref('excel');
+const includeStats = ref(true);
+const includeCharts = ref(true);
+const groupByClass = ref(false);
+const groupByStudent = ref(false);
 
 // Filtros
 const filters = ref({
-  startDate: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd"),
-  endDate: format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), "yyyy-MM-dd"),
-  class: "",
-  student: "",
-})
+  startDate: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd'),
+  endDate: format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), 'yyyy-MM-dd'),
+  class: '',
+  student: '',
+});
 
 // Nombre del formato seleccionado
 const exportFormatName = computed(() => {
   switch (exportFormat.value) {
-    case "excel":
-      return "Excel (.xlsx)"
-    case "pdf":
-      return "PDF"
-    case "csv":
-      return "CSV"
-    default:
-      return "Reporte"
+  case 'excel':
+    return 'Excel (.xlsx)';
+  case 'pdf':
+    return 'PDF';
+  case 'csv':
+    return 'CSV';
+  default:
+    return 'Reporte';
   }
-})
+});
 
 // Datos
-const classes = computed(() => classesStore.classes)
+const classes = computed(() => classesStore.classes);
 
-const students = computed(() => studentsStore.students)
+const students = computed(() => studentsStore.students);
 
 // Filtra estudiantes dependiendo de la clase seleccionada
 const filteredStudents = computed(() => {
-  if (!filters.value.class) return students.value
+  if (!filters.value.class) return students.value;
 
   return students.value.filter((student) => {
-    const foundClass = classesStore.classes.find((c) => c.name === filters.value.class)
-    return foundClass && foundClass.studentIds.includes(Number(student.id))
-  })
-})
+    const foundClass = classesStore.classes.find((c) => c.name === filters.value.class);
+    return foundClass && foundClass.studentIds.includes(Number(student.id));
+  });
+});
 
 // Registros filtrados
 const filteredRecords = computed(() => {
-  let records = attendanceStore.records
+  let records = attendanceStore.records;
 
   // Filtro por rango de fechas
   records = records.filter((record) => {
-    return record.Fecha >= filters.value.startDate && record.Fecha <= filters.value.endDate
-  })
+    return record.Fecha >= filters.value.startDate && record.Fecha <= filters.value.endDate;
+  });
 
   // Filtro por clase
   if (filters.value.class) {
-    records = records.filter((record) => record.classId === filters.value.class)
+    records = records.filter((record) => record.classId === filters.value.class);
   }
 
   // Filtro por estudiante
   if (filters.value.student) {
-    records = records.filter((record) => record.studentId === filters.value.student)
+    records = records.filter((record) => record.studentId === filters.value.student);
   }
 
   // Ordenar por fecha
   return [...records].sort((a, b) => {
-    return new Date(a.Fecha).getTime() - new Date(b.Fecha).getTime()
-  })
-})
+    return new Date(a.Fecha).getTime() - new Date(b.Fecha).getTime();
+  });
+});
 
 // Estadísticas calculadas
 const stats = computed(() => {
-  const present = filteredRecords.value.filter((r) => r.status === "Presente").length
-  const absent = filteredRecords.value.filter((r) => r.status === "Ausente").length
-  const late = filteredRecords.value.filter((r) => r.status === "Tardanza").length
-  const justified = filteredRecords.value.filter((r) => r.status === "Justificado").length
+  const present = filteredRecords.value.filter((r) => r.status === 'Presente').length;
+  const absent = filteredRecords.value.filter((r) => r.status === 'Ausente').length;
+  const late = filteredRecords.value.filter((r) => r.status === 'Tardanza').length;
+  const justified = filteredRecords.value.filter((r) => r.status === 'Justificado').length;
 
   return {
     present,
@@ -287,37 +287,37 @@ const stats = computed(() => {
       filteredRecords.value.length > 0
         ? Math.round((present / filteredRecords.value.length) * 100)
         : 0,
-  }
-})
+  };
+});
 
 // Formatear fecha
 const formatDate = (dateString: string) => {
   try {
-    return format(parseISO(dateString), "PPP", {locale: es})
+    return format(parseISO(dateString), 'PPP', { locale: es });
   } catch (error) {
-    return dateString
+    return dateString;
   }
-}
+};
 
 // Obtener nombre del estudiante
 const getStudentName = (studentId: string): string => {
-  const student = studentsStore.students.find((s) => s.id === studentId)
-  if (!student) return "Estudiante desconocido"
-  return `${student.nombre} ${student.apellido}`
-}
+  const student = studentsStore.students.find((s) => s.id === studentId);
+  if (!student) return 'Estudiante desconocido';
+  return `${student.nombre} ${student.apellido}`;
+};
 
 // Exportar datos
 const exportData = async () => {
   if (filteredRecords.value.length === 0) {
-    error.value = "No hay datos para exportar"
-    return
+    error.value = 'No hay datos para exportar';
+    return;
   }
 
-  isExporting.value = true
-  error.value = null
+  isExporting.value = true;
+  error.value = null;
 
   try {
-    const reportTitle = `Reporte de Asistencias - ${formatDate(filters.value.startDate)} a ${formatDate(filters.value.endDate)}`
+    const reportTitle = `Reporte de Asistencias - ${formatDate(filters.value.startDate)} a ${formatDate(filters.value.endDate)}`;
 
     // Preparar datos para exportar
     const exportData = filteredRecords.value.map((record) => ({
@@ -325,174 +325,174 @@ const exportData = async () => {
       Clase: record.classId,
       Fecha: formatDate(record.Fecha),
       Estado: record.status,
-      Justificacion: record.justification || "-",
-      Observaciones: record.observaciones || "-",
-    }))
+      Justificacion: record.justification || '-',
+      Observaciones: record.observaciones || '-',
+    }));
 
     // Dependiendo del formato seleccionado
-    if (exportFormat.value === "excel") {
-      await exportToExcel(exportData, reportTitle)
-    } else if (exportFormat.value === "pdf") {
-      await exportToPdf(exportData, reportTitle)
-    } else if (exportFormat.value === "csv") {
-      await exportToCsv(exportData, reportTitle)
+    if (exportFormat.value === 'excel') {
+      await exportToExcel(exportData, reportTitle);
+    } else if (exportFormat.value === 'pdf') {
+      await exportToPdf(exportData, reportTitle);
+    } else if (exportFormat.value === 'csv') {
+      await exportToCsv(exportData, reportTitle);
     }
   } catch (err) {
-    console.error("Error al exportar:", err)
-    error.value = `Ocurrió un error durante la exportación: ${err.message || err}`
+    console.error('Error al exportar:', err);
+    error.value = `Ocurrió un error durante la exportación: ${err.message || err}`;
   } finally {
-    isExporting.value = false
+    isExporting.value = false;
   }
-}
+};
 
 // Exportar a PDF
 const exportToPdf = (data, title) => {
   try {
     // Crear documento PDF
-    const doc = new jsPDF()
+    const doc = new jsPDF();
 
     // Añadir título
-    doc.setFontSize(18)
-    doc.text(title, 14, 20)
+    doc.setFontSize(18);
+    doc.text(title, 14, 20);
 
     // Añadir filtros aplicados
-    doc.setFontSize(11)
+    doc.setFontSize(11);
     doc.text(
       `Periodo: ${formatDate(filters.value.startDate)} - ${formatDate(filters.value.endDate)}`,
       14,
-      30
-    )
+      30,
+    );
 
     if (filters.value.class) {
-      doc.text(`Clase: ${filters.value.class}`, 14, 35)
+      doc.text(`Clase: ${filters.value.class}`, 14, 35);
     }
 
     if (filters.value.student) {
-      doc.text(`Estudiante: ${getStudentName(filters.value.student)}`, 14, 40)
+      doc.text(`Estudiante: ${getStudentName(filters.value.student)}`, 14, 40);
     }
 
-    let yPosition = 45
+    let yPosition = 45;
 
     // Si se incluyen estadísticas, añadirlas
     if (includeStats.value) {
-      doc.setFontSize(14)
-      doc.text("Estadísticas Generales", 14, (yPosition += 10))
+      doc.setFontSize(14);
+      doc.text('Estadísticas Generales', 14, (yPosition += 10));
 
       const statsData = [
-        ["Métrica", "Valor"],
-        ["Total de registros", stats.value.total.toString()],
-        ["Presentes", stats.value.present.toString()],
-        ["Ausentes", stats.value.absent.toString()],
-        ["Tardanzas", stats.value.late.toString()],
-        ["Justificados", stats.value.justified.toString()],
-        ["Tasa de asistencia", `${stats.value.attendanceRate}%`],
-      ]
+        ['Métrica', 'Valor'],
+        ['Total de registros', stats.value.total.toString()],
+        ['Presentes', stats.value.present.toString()],
+        ['Ausentes', stats.value.absent.toString()],
+        ['Tardanzas', stats.value.late.toString()],
+        ['Justificados', stats.value.justified.toString()],
+        ['Tasa de asistencia', `${stats.value.attendanceRate}%`],
+      ];
 
       doc.autoTable({
         startY: (yPosition += 5),
         head: [statsData[0]],
         body: statsData.slice(1),
-        theme: "grid",
-        headStyles: {fillColor: [41, 128, 185], textColor: 255},
-      })
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      });
 
-      yPosition = doc.lastAutoTable.finalY + 15
+      yPosition = doc.lastAutoTable.finalY + 15;
     }
 
     // Añadir tabla principal
-    doc.setFontSize(14)
-    doc.text("Registros de Asistencia", 14, yPosition)
+    doc.setFontSize(14);
+    doc.text('Registros de Asistencia', 14, yPosition);
 
     doc.autoTable({
       startY: yPosition + 5,
-      head: [["Estudiante", "Clase", "Fecha", "Estado", "Justificación", "Observaciones"]],
+      head: [['Estudiante', 'Clase', 'Fecha', 'Estado', 'Justificación', 'Observaciones']],
       body: data.map((row) => [
         row.Estudiante,
         row.Clase,
         row.Fecha,
         row.Estado,
-        row.Justificacion || "-",
-        row.Observaciones || "-",
+        row.Justificacion || '-',
+        row.Observaciones || '-',
       ]),
-      theme: "grid",
-      headStyles: {fillColor: [41, 128, 185], textColor: 255},
-    })
+      theme: 'grid',
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+    });
 
     // Si estamos agrupando por días y hay observaciones, añadir sección específica
     if (groupByStudent.value && includeStats.value) {
-      const studentGroups = {}
+      const studentGroups = {};
       filteredRecords.value.forEach((record) => {
         if (!studentGroups[record.studentId]) {
-          studentGroups[record.studentId] = []
+          studentGroups[record.studentId] = [];
         }
-        studentGroups[record.studentId].push(record)
-      })
+        studentGroups[record.studentId].push(record);
+      });
 
-      let currentY = doc.lastAutoTable.finalY + 15
+      let currentY = doc.lastAutoTable.finalY + 15;
 
-      doc.setFontSize(14)
-      doc.text("Observaciones por Estudiante", 14, currentY)
-      currentY += 10
+      doc.setFontSize(14);
+      doc.text('Observaciones por Estudiante', 14, currentY);
+      currentY += 10;
 
       Object.entries(studentGroups).forEach(([studentId, records]) => {
-        const studentName = getStudentName(studentId)
-        const observations = records.filter((r) => r.observaciones && r.observaciones.trim() !== "")
+        const studentName = getStudentName(studentId);
+        const observations = records.filter((r) => r.observaciones && r.observaciones.trim() !== '');
 
         if (observations.length > 0) {
-          doc.setFontSize(12)
-          doc.text(studentName, 14, currentY)
-          currentY += 5
+          doc.setFontSize(12);
+          doc.text(studentName, 14, currentY);
+          currentY += 5;
 
           doc.autoTable({
             startY: currentY,
-            head: [["Fecha", "Estado", "Observaciones"]],
+            head: [['Fecha', 'Estado', 'Observaciones']],
             body: observations.map((r) => [formatDate(r.Fecha), r.status, r.observaciones]),
-            theme: "striped",
-            headStyles: {fillColor: [41, 128, 185], textColor: 255},
-          })
+            theme: 'striped',
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+          });
 
-          currentY = doc.lastAutoTable.finalY + 10
+          currentY = doc.lastAutoTable.finalY + 10;
         }
-      })
+      });
     }
 
     // Si estamos agrupando por clase, añadir sección específica por clase
     if (groupByClass.value) {
-      const classGroups = {}
+      const classGroups = {};
       filteredRecords.value.forEach((record) => {
         if (!classGroups[record.classId]) {
-          classGroups[record.classId] = []
+          classGroups[record.classId] = [];
         }
-        classGroups[record.classId].push(record)
-      })
+        classGroups[record.classId].push(record);
+      });
 
-      let currentY = doc.lastAutoTable.finalY + 15
+      let currentY = doc.lastAutoTable.finalY + 15;
 
-      doc.setFontSize(14)
-      doc.text("Registros por Clase", 14, currentY)
-      currentY += 10
+      doc.setFontSize(14);
+      doc.text('Registros por Clase', 14, currentY);
+      currentY += 10;
 
       Object.entries(classGroups).forEach(([className, records]) => {
         if (doc.internal.pageSize.height - currentY < 40) {
-          doc.addPage()
-          currentY = 20
+          doc.addPage();
+          currentY = 20;
         }
 
-        doc.setFontSize(12)
-        doc.text(className, 14, currentY)
-        currentY += 5
+        doc.setFontSize(12);
+        doc.text(className, 14, currentY);
+        currentY += 5;
 
         // Estadísticas por clase
         const classStats = {
-          present: records.filter((r) => r.status === "Presente").length,
-          absent: records.filter((r) => r.status === "Ausente").length,
-          late: records.filter((r) => r.status === "Tardanza").length,
-          justified: records.filter((r) => r.status === "Justificado").length,
-        }
+          present: records.filter((r) => r.status === 'Presente').length,
+          absent: records.filter((r) => r.status === 'Ausente').length,
+          late: records.filter((r) => r.status === 'Tardanza').length,
+          justified: records.filter((r) => r.status === 'Justificado').length,
+        };
 
         doc.autoTable({
           startY: currentY,
-          head: [["Total", "Presentes", "Ausentes", "Tardanzas", "Justificados"]],
+          head: [['Total', 'Presentes', 'Ausentes', 'Tardanzas', 'Justificados']],
           body: [
             [
               records.length,
@@ -502,141 +502,141 @@ const exportToPdf = (data, title) => {
               classStats.justified,
             ],
           ],
-          theme: "striped",
-          headStyles: {fillColor: [41, 128, 185], textColor: 255},
-        })
+          theme: 'striped',
+          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        });
 
-        currentY = doc.lastAutoTable.finalY + 10
-      })
+        currentY = doc.lastAutoTable.finalY + 10;
+      });
     }
 
     // Guardar PDF
-    doc.save(`${title.replace(/\s+/g, "_")}.pdf`)
+    doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
 
-    return true
+    return true;
   } catch (error) {
-    console.error("Error exportando a PDF:", error)
-    throw error
+    console.error('Error exportando a PDF:', error);
+    throw error;
   }
-}
+};
 
 // Exportar a Excel
 const exportToExcel = (data, title) => {
   try {
     // Crear workbook y worksheet
-    const workbook = XLSX.utils.book_new()
-    const worksheet = XLSX.utils.json_to_sheet(data)
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(data);
 
     // Añadir worksheet al workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Asistencias")
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Asistencias');
 
     // Si se incluyen estadísticas, agregar hoja de estadísticas
     if (includeStats.value) {
       const statsData = [
-        {Métrica: "Total de registros", Valor: stats.value.total},
-        {Métrica: "Presentes", Valor: stats.value.present},
-        {Métrica: "Ausentes", Valor: stats.value.absent},
-        {Métrica: "Tardanzas", Valor: stats.value.late},
-        {Métrica: "Justificados", Valor: stats.value.justified},
-        {Métrica: "Tasa de asistencia", Valor: `${stats.value.attendanceRate}%`},
-      ]
+        { Métrica: 'Total de registros', Valor: stats.value.total },
+        { Métrica: 'Presentes', Valor: stats.value.present },
+        { Métrica: 'Ausentes', Valor: stats.value.absent },
+        { Métrica: 'Tardanzas', Valor: stats.value.late },
+        { Métrica: 'Justificados', Valor: stats.value.justified },
+        { Métrica: 'Tasa de asistencia', Valor: `${stats.value.attendanceRate}%` },
+      ];
 
-      const statsWorksheet = XLSX.utils.json_to_sheet(statsData)
-      XLSX.utils.book_append_sheet(workbook, statsWorksheet, "Estadísticas")
+      const statsWorksheet = XLSX.utils.json_to_sheet(statsData);
+      XLSX.utils.book_append_sheet(workbook, statsWorksheet, 'Estadísticas');
     }
 
     // Si agrupamos por clase, agregar hojas por clase
     if (groupByClass.value) {
-      const classGroups = {}
+      const classGroups = {};
       filteredRecords.value.forEach((record) => {
         if (!classGroups[record.classId]) {
-          classGroups[record.classId] = []
+          classGroups[record.classId] = [];
         }
-        classGroups[record.classId].push(record)
-      })
+        classGroups[record.classId].push(record);
+      });
 
       Object.entries(classGroups).forEach(([className, records]) => {
         const classData = records.map((record) => ({
           Estudiante: getStudentName(record.studentId),
           Fecha: formatDate(record.Fecha),
           Estado: record.status,
-          Justificacion: record.justification || "-",
-          Observaciones: record.observaciones || "-",
-        }))
+          Justificacion: record.justification || '-',
+          Observaciones: record.observaciones || '-',
+        }));
 
-        const classSheet = XLSX.utils.json_to_sheet(classData)
-        XLSX.utils.book_append_sheet(workbook, classSheet, className.substring(0, 30)) // Excel tiene límite de longitud para nombres de hoja
-      })
+        const classSheet = XLSX.utils.json_to_sheet(classData);
+        XLSX.utils.book_append_sheet(workbook, classSheet, className.substring(0, 30)); // Excel tiene límite de longitud para nombres de hoja
+      });
     }
 
     // Si agrupamos por estudiante, agregar hojas por estudiante
     if (groupByStudent.value) {
-      const studentGroups = {}
+      const studentGroups = {};
       filteredRecords.value.forEach((record) => {
         if (!studentGroups[record.studentId]) {
-          studentGroups[record.studentId] = []
+          studentGroups[record.studentId] = [];
         }
-        studentGroups[record.studentId].push(record)
-      })
+        studentGroups[record.studentId].push(record);
+      });
 
       Object.entries(studentGroups).forEach(([studentId, records]) => {
-        const studentName = getStudentName(studentId).substring(0, 30)
+        const studentName = getStudentName(studentId).substring(0, 30);
         const studentData = records.map((record) => ({
           Clase: record.classId,
           Fecha: formatDate(record.Fecha),
           Estado: record.status,
-          Justificacion: record.justification || "-",
-          Observaciones: record.observaciones || "-",
-        }))
+          Justificacion: record.justification || '-',
+          Observaciones: record.observaciones || '-',
+        }));
 
-        const studentSheet = XLSX.utils.json_to_sheet(studentData)
-        XLSX.utils.book_append_sheet(workbook, studentSheet, studentName)
-      })
+        const studentSheet = XLSX.utils.json_to_sheet(studentData);
+        XLSX.utils.book_append_sheet(workbook, studentSheet, studentName);
+      });
     }
 
     // Guardar archivo
-    XLSX.writeFile(workbook, `${title.replace(/\s+/g, "_")}.xlsx`)
+    XLSX.writeFile(workbook, `${title.replace(/\s+/g, '_')}.xlsx`);
 
-    return true
+    return true;
   } catch (error) {
-    console.error("Error exportando a Excel:", error)
-    throw error
+    console.error('Error exportando a Excel:', error);
+    throw error;
   }
-}
+};
 
 // Exportar a CSV
 const exportToCsv = (data, title) => {
   try {
     // Convertir datos a CSV
-    const worksheet = XLSX.utils.json_to_sheet(data)
-    const csvOutput = XLSX.utils.sheet_to_csv(worksheet)
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
 
     // Crear blob
-    const blob = new Blob([csvOutput], {type: "text/csv;charset=utf-8;"})
+    const blob = new Blob([csvOutput], { type: 'text/csv;charset=utf-8;' });
 
     // Crear link para descarga
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
 
-    link.setAttribute("href", url)
-    link.setAttribute("download", `${title.replace(/\s+/g, "_")}.csv`)
-    link.style.visibility = "hidden"
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${title.replace(/\s+/g, '_')}.csv`);
+    link.style.visibility = 'hidden';
 
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-    return true
+    return true;
   } catch (error) {
-    console.error("Error exportando a CSV:", error)
-    throw error
+    console.error('Error exportando a CSV:', error);
+    throw error;
   }
-}
+};
 
 // Cargar datos al montar el componente
 onMounted(async () => {
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
     // Asegurarse de que todos los datos estén cargados
@@ -644,12 +644,12 @@ onMounted(async () => {
       classesStore.fetchClasses(),
       studentsStore.fetchStudents(),
       attendanceStore.fetchAttendance(),
-    ])
+    ]);
   } catch (err) {
-    console.error("Error al cargar datos:", err)
-    error.value = "Error al cargar los datos para el reporte"
+    console.error('Error al cargar datos:', err);
+    error.value = 'Error al cargar los datos para el reporte';
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-})
+});
 </script>

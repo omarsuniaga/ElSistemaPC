@@ -79,39 +79,39 @@
 </template>
 
 <script lang="ts" setup>
-import {ref} from "vue"
-import type {InstrumentFirestore, InstrumentAccessory} from "../../../types/instrumento"
-import {createInstrument, updateInstrument} from "../service/instruments"
-import {useRouter} from "vue-router"
+import { ref } from 'vue';
+import type { InstrumentFirestore, InstrumentAccessory } from '../../../types/instrumento';
+import { createInstrument, updateInstrument } from '../service/instruments';
+import { useRouter } from 'vue-router';
 
-const router = useRouter()
-const saving = ref(false)
-const saveError = ref<string | null>(null)
+const router = useRouter();
+const saving = ref(false);
+const saveError = ref<string | null>(null);
 
-const props = defineProps<{instrument?: InstrumentFirestore}>()
-const emit = defineEmits(["save", "cancel"])
+const props = defineProps<{instrument?: InstrumentFirestore}>();
+const emit = defineEmits(['save', 'cancel']);
 
-const isEdit = !!props.instrument
+const isEdit = !!props.instrument;
 
-const familias = ["cuerdas", "maderas", "metales", "percusion", "coro", "accesorios"]
+const familias = ['cuerdas', 'maderas', 'metales', 'percusion', 'coro', 'accesorios'];
 
 const form = ref<InstrumentFirestore>({
-  nombre: props.instrument?.nombre || "",
-  serial: props.instrument?.serial || "",
-  marca: props.instrument?.marca || "",
-  model: props.instrument?.model || "",
-  size: props.instrument?.size || "",
-  state: props.instrument?.state || "",
-  familia: props.instrument?.familia || "",
+  nombre: props.instrument?.nombre || '',
+  serial: props.instrument?.serial || '',
+  marca: props.instrument?.marca || '',
+  model: props.instrument?.model || '',
+  size: props.instrument?.size || '',
+  state: props.instrument?.state || '',
+  familia: props.instrument?.familia || '',
   accesorios: props.instrument?.accesorios ? [...props.instrument.accesorios] : [],
-})
+});
 
 function addAccesorio() {
-  form.value.accesorios = form.value.accesorios || []
-  form.value.accesorios.push({nombre: "", estado: "", observaciones: ""})
+  form.value.accesorios = form.value.accesorios || [];
+  form.value.accesorios.push({ nombre: '', estado: '', observaciones: '' });
 }
 function removeAccesorio(i: number) {
-  form.value.accesorios?.splice(i, 1)
+  form.value.accesorios?.splice(i, 1);
 }
 
 async function onSubmit() {
@@ -122,24 +122,24 @@ async function onSubmit() {
     !form.value.state ||
     !form.value.familia
   )
-    return
-  saving.value = true
-  saveError.value = null
+    return;
+  saving.value = true;
+  saveError.value = null;
   try {
     if (isEdit && props.instrument?.id) {
-      await updateInstrument(props.instrument.id, form.value)
+      await updateInstrument(props.instrument.id, form.value);
     } else {
-      await createInstrument(form.value)
+      await createInstrument(form.value);
     }
-    router.push({name: "InstrumentList"})
+    router.push({ name: 'InstrumentList' });
   } catch (e: any) {
-    saveError.value = e.message || "Error al guardar"
+    saveError.value = e.message || 'Error al guardar';
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 function onCancel() {
-  router.push({name: "InstrumentList"})
+  router.push({ name: 'InstrumentList' });
 }
 </script>

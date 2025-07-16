@@ -1023,7 +1023,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
+import { ref, computed, onMounted, watch } from 'vue';
 import {
   format,
   startOfWeek,
@@ -1033,14 +1033,14 @@ import {
   subWeeks,
   parseISO,
   differenceInMinutes,
-} from "date-fns"
-import {es} from "date-fns/locale"
-import {ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon} from "@heroicons/vue/24/outline"
-import {Dialog, DialogPanel} from "@headlessui/vue"
-import {useAttendanceStore} from "../../../Attendance/store/attendance"
-import {useClassesStore} from "../../../Classes/store/classes"
-import {useTeachersStore} from "../../store/teachers"
-import {useStudentsStore} from "../../../Students/store/students"
+} from 'date-fns';
+import { es } from 'date-fns/locale';
+import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from '@heroicons/vue/24/outline';
+import { Dialog, DialogPanel } from '@headlessui/vue';
+import { useAttendanceStore } from '../../../Attendance/store/attendance';
+import { useClassesStore } from '../../../Classes/store/classes';
+import { useTeachersStore } from '../../store/teachers';
+import { useStudentsStore } from '../../../Students/store/students';
 
 import {
   safeGet,
@@ -1049,50 +1049,50 @@ import {
   safeFind,
   safeMath,
   isValidArray,
-} from "@/utils/safeAccess"
-import {useEmergencyClasses} from "@/composables/useEmergencyClasses"
+} from '@/utils/safeAccess';
+import { useEmergencyClasses } from '@/composables/useEmergencyClasses';
 
 // Emergency classes composable
-const {fetchEmergencyClasses} = useEmergencyClasses()
+const { fetchEmergencyClasses } = useEmergencyClasses();
 
 // Stores
-const attendanceStore = useAttendanceStore()
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
+const attendanceStore = useAttendanceStore();
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
 
 // Estado reactivo
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const weekStart = ref(startOfWeek(new Date(), {weekStartsOn: 1})) // Lunes como inicio de semana
-const weekEnd = ref(endOfWeek(new Date(), {weekStartsOn: 1})) // Domingo como fin de semana
-const selectedDay = ref(0) // 0 = Lunes, 1 = Martes, etc.
-const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+const weekStart = ref(startOfWeek(new Date(), { weekStartsOn: 1 })); // Lunes como inicio de semana
+const weekEnd = ref(endOfWeek(new Date(), { weekStartsOn: 1 })); // Domingo como fin de semana
+const selectedDay = ref(0); // 0 = Lunes, 1 = Martes, etc.
+const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const daysMapReverse = {
-  0: "lunes",
-  1: "martes",
-  2: "miercoles",
-  3: "jueves",
-  4: "viernes",
-  5: "sabado",
-  6: "domingo",
-}
+  0: 'lunes',
+  1: 'martes',
+  2: 'miercoles',
+  3: 'jueves',
+  4: 'viernes',
+  5: 'sabado',
+  6: 'domingo',
+};
 const clasesPorDia = ref<any[][]>(
   Array(7)
     .fill(null)
-    .map(() => [])
-)
-const totalClases = ref(0)
-const totalClasesEmergentes = ref(0)
-const asistenciaPromedio = ref(0)
-const diaMayorAsistencia = ref("")
-const diaMenorAsistencia = ref("")
-const claseMasAlumnos = ref<{nombre: string; cantidad: number}>({nombre: "", cantidad: 0})
-const claseMenosAlumnos = ref<{nombre: string; cantidad: number}>({nombre: "", cantidad: 0})
-const totalObservaciones = ref(0)
-const observacionesDestacadas = ref<any[]>([])
-const showObservacionesModal = ref(false)
-const observacionesClaseSeleccionada = ref<any[]>([])
+    .map(() => []),
+);
+const totalClases = ref(0);
+const totalClasesEmergentes = ref(0);
+const asistenciaPromedio = ref(0);
+const diaMayorAsistencia = ref('');
+const diaMenorAsistencia = ref('');
+const claseMasAlumnos = ref<{nombre: string; cantidad: number}>({ nombre: '', cantidad: 0 });
+const claseMenosAlumnos = ref<{nombre: string; cantidad: number}>({ nombre: '', cantidad: 0 });
+const totalObservaciones = ref(0);
+const observacionesDestacadas = ref<any[]>([]);
+const showObservacionesModal = ref(false);
+const observacionesClaseSeleccionada = ref<any[]>([]);
 
 // Datos de asistencia por día
 const dayDataMap = ref<
@@ -1101,14 +1101,14 @@ const dayDataMap = ref<
     {registros: any[]; presentes: number; ausentes: number; tardanzas: number; justificados: number}
   >
 >({
-  lunes: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-  martes: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-  miercoles: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-  jueves: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-  viernes: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-  sabado: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-  domingo: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-})
+  lunes: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+  martes: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+  miercoles: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+  jueves: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+  viernes: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+  sabado: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+  domingo: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+});
 
 // Totales acumulados de la semana
 const weekTotals = ref<{
@@ -1121,33 +1121,33 @@ const weekTotals = ref<{
   ausentes: 0,
   tardanzas: 0,
   justificados: 0,
-})
+});
 
 // Estado para el sistema de notificaciones WhatsApp
-const estudiantesAusentes = ref<any[]>([])
-const estudiantesTardios = ref<any[]>([])
-const estudiantesJustificados = ref<any[]>([])
+const estudiantesAusentes = ref<any[]>([]);
+const estudiantesTardios = ref<any[]>([]);
+const estudiantesJustificados = ref<any[]>([]);
 const estudiantesConInasistencias = computed(() => [
   ...estudiantesAusentes.value,
   ...estudiantesTardios.value,
   ...estudiantesJustificados.value,
-])
+]);
 
 // Modales
-const showModalSeleccionMasiva = ref(false)
-const showModalPlantillas = ref(false)
-const showModalDetalleEstudiante = ref(false)
-const estudianteDetalle = ref<any>(null)
+const showModalSeleccionMasiva = ref(false);
+const showModalPlantillas = ref(false);
+const showModalDetalleEstudiante = ref(false);
+const estudianteDetalle = ref<any>(null);
 
 // Estado de envío
-const isEnviandoNotificaciones = ref(false)
-const estudiantesSeleccionados = ref<string[]>([])
-const seleccionarTodos = ref(false)
+const isEnviandoNotificaciones = ref(false);
+const estudiantesSeleccionados = ref<string[]>([]);
+const seleccionarTodos = ref(false);
 
 // Estados para listas desplegables
-const showEstudiantesAusentes = ref(true) // Iniciamos con ausentes visible
-const showEstudiantesTardios = ref(false)
-const showEstudiantesJustificados = ref(false)
+const showEstudiantesAusentes = ref(true); // Iniciamos con ausentes visible
+const showEstudiantesTardios = ref(false);
+const showEstudiantesJustificados = ref(false);
 
 // Computed para saber si todas las listas están abiertas
 const todasListasAbiertas = computed(() => {
@@ -1155,15 +1155,15 @@ const todasListasAbiertas = computed(() => {
     showEstudiantesAusentes.value &&
     showEstudiantesTardios.value &&
     showEstudiantesJustificados.value
-  )
-})
+  );
+});
 
 // Plantillas de mensajes WhatsApp
 const plantillasAusentes = ref([
   {
-    nivel: "Informativo",
+    nivel: 'Informativo',
     falta: 1,
-    tono: "Cordial",
+    tono: 'Cordial',
     mensaje: `Hola! 👋
 
 Espero que esté bien. Le escribo para informarle que {nombre} no asistió a su clase de {instrumento} el día de hoy en {clase}.
@@ -1176,9 +1176,9 @@ Saludos cordiales,
 Academia Musical`,
   },
   {
-    nivel: "Recordatorio",
+    nivel: 'Recordatorio',
     falta: 2,
-    tono: "Amable pero atento",
+    tono: 'Amable pero atento',
     mensaje: `Hola! 👋
 
 Le escribo para informarle que {nombre} ha faltado a 2 clases de {instrumento} esta semana en {clase}.
@@ -1193,9 +1193,9 @@ Saludos,
 Academia Musical`,
   },
   {
-    nivel: "Preocupación",
+    nivel: 'Preocupación',
     falta: 3,
-    tono: "Preocupado",
+    tono: 'Preocupado',
     mensaje: `Estimado/a padre/madre de familia,
 
 Nos dirigimos a usted con preocupación, ya que {nombre} ha faltado a 3 clases de {instrumento} esta semana en {clase}.
@@ -1210,9 +1210,9 @@ Atentamente,
 Academia Musical`,
   },
   {
-    nivel: "Formal",
+    nivel: 'Formal',
     falta: 4,
-    tono: "Formal y estricto",
+    tono: 'Formal y estricto',
     mensaje: `Estimado/a padre/madre de familia,
 
 Por medio de la presente, le informamos formalmente que {nombre} ha faltado a 4 o más clases de {instrumento} esta semana en {clase}.
@@ -1227,13 +1227,13 @@ Sin otro particular,
 Dirección Académica
 Academia Musical`,
   },
-])
+]);
 
 const plantillasTardios = ref([
   {
-    nivel: "Recordatorio",
+    nivel: 'Recordatorio',
     falta: 1,
-    tono: "Amable",
+    tono: 'Amable',
     mensaje: `Hola! 👋
 
 Solo quería recordarle que {nombre} llegó tarde a su clase de {instrumento} hoy en {clase}.
@@ -1246,9 +1246,9 @@ Saludos,
 Academia Musical`,
   },
   {
-    nivel: "Atención",
+    nivel: 'Atención',
     falta: 2,
-    tono: "Cordial pero firme",
+    tono: 'Cordial pero firme',
     mensaje: `Hola!
 
 Le escribo porque {nombre} ha llegado tarde a 2 clases de {instrumento} esta semana en {clase}.
@@ -1263,9 +1263,9 @@ Saludos,
 Academia Musical`,
   },
   {
-    nivel: "Insistencia",
+    nivel: 'Insistencia',
     falta: 3,
-    tono: "Firme",
+    tono: 'Firme',
     mensaje: `Estimado/a padre/madre de familia,
 
 Nos vemos en la necesidad de comunicarle que {nombre} ha llegado tarde a 3 clases de {instrumento} esta semana en {clase}.
@@ -1280,9 +1280,9 @@ Atentamente,
 Academia Musical`,
   },
   {
-    nivel: "Formal",
+    nivel: 'Formal',
     falta: 4,
-    tono: "Estricto",
+    tono: 'Estricto',
     mensaje: `Estimado/a padre/madre de familia,
 
 Por medio de la presente le comunicamos que {nombre} ha presentado tardanzas reiteradas (4 o más) en sus clases de {instrumento} en {clase} durante esta semana.
@@ -1295,7 +1295,7 @@ Sin otro particular,
 Dirección Académica
 Academia Musical`,
   },
-])
+]);
 
 const plantillaJustificado = ref({
   mensaje: `Hola! 👋
@@ -1310,167 +1310,167 @@ Agradecemos que nos haya informado. Entendemos que {motivo}.
 
 Saludos cordiales,
 Academia Musical`,
-})
+});
 
 // Rango de fechas formateado
 const formattedWeekRange = computed(() => {
-  const start = format(weekStart.value, "d 'de' MMMM", {locale: es})
-  const end = format(weekEnd.value, "d 'de' MMMM, yyyy", {locale: es})
-  return `${start} - ${end}`
-})
+  const start = format(weekStart.value, 'd \'de\' MMMM', { locale: es });
+  const end = format(weekEnd.value, 'd \'de\' MMMM, yyyy', { locale: es });
+  return `${start} - ${end}`;
+});
 
 // Computed properties para el template
 const claseConMasAlumnos = computed(() => ({
-  nombre: safeGet(claseMasAlumnos.value, "nombre", ""),
-  cantidad: safeGet(claseMasAlumnos.value, "cantidad", 0),
-}))
+  nombre: safeGet(claseMasAlumnos.value, 'nombre', ''),
+  cantidad: safeGet(claseMasAlumnos.value, 'cantidad', 0),
+}));
 
 const claseConMenosAlumnos = computed(() => ({
-  nombre: safeGet(claseMenosAlumnos.value, "nombre", ""),
-  cantidad: safeGet(claseMenosAlumnos.value, "cantidad", 0),
-}))
+  nombre: safeGet(claseMenosAlumnos.value, 'nombre', ''),
+  cantidad: safeGet(claseMenosAlumnos.value, 'cantidad', 0),
+}));
 
 // Cambiar a la semana anterior
 const previousWeek = () => {
-  weekStart.value = subWeeks(weekStart.value, 1)
-  weekEnd.value = subWeeks(weekEnd.value, 1)
-  cargarDatosSemana()
-}
+  weekStart.value = subWeeks(weekStart.value, 1);
+  weekEnd.value = subWeeks(weekEnd.value, 1);
+  cargarDatosSemana();
+};
 
 // Cambiar a la semana siguiente
 const nextWeek = () => {
-  weekStart.value = addWeeks(weekStart.value, 1)
-  weekEnd.value = addWeeks(weekEnd.value, 1)
-  cargarDatosSemana()
-}
+  weekStart.value = addWeeks(weekStart.value, 1);
+  weekEnd.value = addWeeks(weekEnd.value, 1);
+  cargarDatosSemana();
+};
 
 // Volver a la semana actual
 const setCurrentWeek = () => {
-  weekStart.value = startOfWeek(new Date(), {weekStartsOn: 1})
-  weekEnd.value = endOfWeek(new Date(), {weekStartsOn: 1})
-  cargarDatosSemana()
-}
+  weekStart.value = startOfWeek(new Date(), { weekStartsOn: 1 });
+  weekEnd.value = endOfWeek(new Date(), { weekStartsOn: 1 });
+  cargarDatosSemana();
+};
 
 // Formatear hora
 const formatTime = (timeString: string) => {
-  if (!timeString) return "N/A"
-  return timeString
-}
+  if (!timeString) return 'N/A';
+  return timeString;
+};
 
 // Formatear fecha
 const formatDate = (dateString: string) => {
-  if (!dateString) return "N/A"
+  if (!dateString) return 'N/A';
   try {
-    return format(parseISO(dateString), "d 'de' MMMM", {locale: es})
+    return format(parseISO(dateString), 'd \'de\' MMMM', { locale: es });
   } catch (e) {
-    return dateString
+    return dateString;
   }
-}
+};
 
 // Calcular duración de una clase
 const calcularDuracion = (horario: any) => {
-  if (!horario || !horario.startTime || !horario.endTime) return "N/A"
+  if (!horario || !horario.startTime || !horario.endTime) return 'N/A';
 
   try {
     // Convertir las horas a objetos Date para calcular la diferencia
-    const startDate = new Date(`2000-01-01T${horario.startTime}`)
-    const endDate = new Date(`2000-01-01T${horario.endTime}`)
+    const startDate = new Date(`2000-01-01T${horario.startTime}`);
+    const endDate = new Date(`2000-01-01T${horario.endTime}`);
 
-    const minutes = differenceInMinutes(endDate, startDate)
-    const hours = Math.floor(minutes / 60)
-    const remainingMinutes = minutes % 60
+    const minutes = differenceInMinutes(endDate, startDate);
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
 
     if (hours > 0) {
-      return `${hours}h ${remainingMinutes > 0 ? remainingMinutes + "min" : ""}`
+      return `${hours}h ${remainingMinutes > 0 ? remainingMinutes + 'min' : ''}`;
     } else {
-      return `${minutes}min`
+      return `${minutes}min`;
     }
   } catch (e) {
-    return "N/A"
+    return 'N/A';
   }
-}
+};
 
 // Calcular porcentaje de asistencia de forma segura
 const calcularPorcentajeAsistenciaSafe = (clase: any) => {
   return safeMath(() => {
-    const studentIds = safeGet(clase, "studentIds", [])
-    const totalStudents = safeArrayLength(studentIds)
+    const studentIds = safeGet(clase, 'studentIds', []);
+    const totalStudents = safeArrayLength(studentIds);
 
-    if (totalStudents === 0) return 0
+    if (totalStudents === 0) return 0;
 
-    const presentes = safeGet(clase, "asistencia.presentes", 0)
-    return Math.round((presentes * 100) / totalStudents)
-  }, 0)
-}
+    const presentes = safeGet(clase, 'asistencia.presentes', 0);
+    return Math.round((presentes * 100) / totalStudents);
+  }, 0);
+};
 
 // Obtener nombre del maestro de forma segura
 const obtenerNombreMaestro = (teacherId: string) => {
-  if (!teacherId) return "Sin asignar"
+  if (!teacherId) return 'Sin asignar';
 
-  const teachers = safeStoreAccess(teachersStore, "teachers", [])
-  const teacher = safeFind(teachers, (t: any) => safeGet(t, "id") === teacherId)
+  const teachers = safeStoreAccess(teachersStore, 'teachers', []);
+  const teacher = safeFind(teachers, (t: any) => safeGet(t, 'id') === teacherId);
 
-  return teacher ? safeGet(teacher, "name", "Desconocido").trim() : "Desconocido"
-}
+  return teacher ? safeGet(teacher, 'name', 'Desconocido').trim() : 'Desconocido';
+};
 
 // Mostrar observaciones de una clase de forma segura
 const mostrarObservaciones = (clase: any) => {
-  const observaciones = safeGet(clase, "observaciones", [])
-  observacionesClaseSeleccionada.value = isValidArray(observaciones) ? observaciones : []
-  showObservacionesModal.value = true
-}
+  const observaciones = safeGet(clase, 'observaciones', []);
+  observacionesClaseSeleccionada.value = isValidArray(observaciones) ? observaciones : [];
+  showObservacionesModal.value = true;
+};
 
 // Exportar reporte
 const exportarReporte = () => {
   // Implementación de exportación (PDF, Excel, etc.)
-  console.log("Exportando reporte...")
+  console.log('Exportando reporte...');
   // Aquí iría la lógica para generar y descargar el reporte
-}
+};
 
 // Cargar datos de la semana seleccionada
 // Funciones para el sistema de notificaciones WhatsApp
 const obtenerDatosNotificaciones = async () => {
   try {
-    isLoading.value = true
-    console.log("🔍 Obteniendo datos de notificaciones para la semana")
+    isLoading.value = true;
+    console.log('🔍 Obteniendo datos de notificaciones para la semana');
 
     // Formatear fechas para consultas
-    const startDate = format(weekStart.value, "yyyy-MM-dd")
-    const endDate = format(weekEnd.value, "yyyy-MM-dd")
+    const startDate = format(weekStart.value, 'yyyy-MM-dd');
+    const endDate = format(weekEnd.value, 'yyyy-MM-dd');
 
     // 1. Obtener todos los estudiantes
-    const estudiantes = studentsStore.items
-    console.log(`👥 Total estudiantes: ${estudiantes.length}`)
+    const estudiantes = studentsStore.items;
+    console.log(`👥 Total estudiantes: ${estudiantes.length}`);
 
     // 2. Obtener todas las clases del rango de fechas
-    await classesStore.fetchClasses()
-    const clases = classesStore.classes
+    await classesStore.fetchClasses();
+    const clases = classesStore.classes;
 
     // 3. Obtener documentos de asistencia para la semana
-    await attendanceStore.fetchAttendanceDocuments(startDate, endDate)
-    const asistenciaDocs = attendanceStore.attendanceDocuments
-    console.log(`📊 Documentos de asistencia cargados: ${asistenciaDocs.length}`)
+    await attendanceStore.fetchAttendanceDocuments(startDate, endDate);
+    const asistenciaDocs = attendanceStore.attendanceDocuments;
+    console.log(`📊 Documentos de asistencia cargados: ${asistenciaDocs.length}`);
 
     // 4. Extraer todos los registros de asistencia
     const registrosAsistencia = await procesarDocumentosAsistencia(
       asistenciaDocs,
       clases,
-      estudiantes
-    )
-    console.log(`📝 Total registros de asistencia procesados: ${registrosAsistencia.length}`)
+      estudiantes,
+    );
+    console.log(`📝 Total registros de asistencia procesados: ${registrosAsistencia.length}`);
 
     // 5. Agrupar datos por día de la semana
-    agruparAsistenciaPorDia(registrosAsistencia)
+    agruparAsistenciaPorDia(registrosAsistencia);
 
     // 6. Procesar datos para notificaciones
-    procesarDatosAsistencia(estudiantes, clases, registrosAsistencia)
+    procesarDatosAsistencia(estudiantes, clases, registrosAsistencia);
   } catch (error: any) {
-    console.error("❌ Error obteniendo datos de notificaciones:", error)
-    error.value = `Error al cargar notificaciones: ${error.message}`
+    console.error('❌ Error obteniendo datos de notificaciones:', error);
+    error.value = `Error al cargar notificaciones: ${error.message}`;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 /**
  * Procesa los documentos de asistencia para extraer registros individuales
@@ -1479,24 +1479,24 @@ const obtenerDatosNotificaciones = async () => {
 const procesarDocumentosAsistencia = async (
   asistenciaDocs: any[],
   clases: any[],
-  _estudiantes: any[]
+  _estudiantes: any[],
 ): Promise<any[]> => {
-  console.log("🔄 Procesando documentos de asistencia...")
-  const registrosAsistencia = []
-  const clasesMap = new Map()
+  console.log('🔄 Procesando documentos de asistencia...');
+  const registrosAsistencia = [];
+  const clasesMap = new Map();
 
   // Crear mapa de clases para acceso rápido
   clases.forEach((clase) => {
-    clasesMap.set(clase.id, clase)
-  })
+    clasesMap.set(clase.id, clase);
+  });
 
   // Procesar cada documento de asistencia
   asistenciaDocs.forEach((doc) => {
     // Obtener información de la clase
     const claseInfo = clasesMap.get(doc.classId) || {
-      name: "Clase sin nombre",
-      instrument: "Instrumento desconocido",
-    }
+      name: 'Clase sin nombre',
+      instrument: 'Instrumento desconocido',
+    };
 
     // Procesar presentes
     if (doc.data.presentes && Array.isArray(doc.data.presentes)) {
@@ -1505,14 +1505,14 @@ const procesarDocumentosAsistencia = async (
           studentId,
           fecha: doc.fecha,
           classId: doc.classId,
-          estado: "presente",
+          estado: 'presente',
           clase: {
             id: doc.classId,
             name: claseInfo.name,
             instrument: claseInfo.instrument,
           },
-        })
-      })
+        });
+      });
     }
 
     // Procesar ausentes
@@ -1522,15 +1522,15 @@ const procesarDocumentosAsistencia = async (
           studentId,
           fecha: doc.fecha,
           classId: doc.classId,
-          estado: "ausente",
-          observaciones: "",
+          estado: 'ausente',
+          observaciones: '',
           clase: {
             id: doc.classId,
             name: claseInfo.name,
             instrument: claseInfo.instrument,
           },
-        })
-      })
+        });
+      });
     }
 
     // Procesar tardanzas
@@ -1540,205 +1540,205 @@ const procesarDocumentosAsistencia = async (
           studentId,
           fecha: doc.fecha,
           classId: doc.classId,
-          estado: "tarde",
+          estado: 'tarde',
           minutosRetraso: 0, // Podría calcularse si se tiene la información
           clase: {
             id: doc.classId,
             name: claseInfo.name,
             instrument: claseInfo.instrument,
           },
-        })
-      })
+        });
+      });
     }
 
     // Procesar justificaciones
     if (doc.data.justificacion && Array.isArray(doc.data.justificacion)) {
       doc.data.justificacion.forEach((justificacion) => {
         // Extraer studentId del objeto de justificación
-        const studentId = justificacion.studentId || justificacion.id
+        const studentId = justificacion.studentId || justificacion.id;
         if (studentId) {
           registrosAsistencia.push({
             studentId,
             fecha: doc.fecha,
             classId: doc.classId,
-            estado: "justificado",
-            observaciones: justificacion.reason || "Sin motivo especificado",
+            estado: 'justificado',
+            observaciones: justificacion.reason || 'Sin motivo especificado',
             clase: {
               id: doc.classId,
               name: claseInfo.name,
               instrument: claseInfo.instrument,
             },
-          })
+          });
         }
-      })
+      });
     }
-  })
+  });
 
-  return registrosAsistencia
-}
+  return registrosAsistencia;
+};
 
 /**
  * Agrupa los registros de asistencia por día de la semana
  */
 const agruparAsistenciaPorDia = (registrosAsistencia: any[]): void => {
-  console.log("📅 Agrupando asistencia por día de la semana...")
+  console.log('📅 Agrupando asistencia por día de la semana...');
 
   // Inicializar datos por día
   dayDataMap.value = {
-    lunes: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-    martes: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-    miercoles: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-    jueves: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-    viernes: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-    sabado: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-    domingo: {registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0},
-  }
+    lunes: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+    martes: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+    miercoles: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+    jueves: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+    viernes: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+    sabado: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+    domingo: { registros: [], presentes: 0, ausentes: 0, tardanzas: 0, justificados: 0 },
+  };
 
   // Mapear días de la semana (0 = domingo, 1 = lunes, etc.)
   const daysMap: Record<number, string> = {
-    0: "domingo",
-    1: "lunes",
-    2: "martes",
-    3: "miercoles",
-    4: "jueves",
-    5: "viernes",
-    6: "sabado",
-  }
+    0: 'domingo',
+    1: 'lunes',
+    2: 'martes',
+    3: 'miercoles',
+    4: 'jueves',
+    5: 'viernes',
+    6: 'sabado',
+  };
 
   // Agrupar registros por día
   registrosAsistencia.forEach((registro) => {
     // Convertir fecha a Date si es string
-    const fecha = typeof registro.fecha === "string" ? new Date(registro.fecha) : registro.fecha
+    const fecha = typeof registro.fecha === 'string' ? new Date(registro.fecha) : registro.fecha;
 
-    const diaSemana = fecha.getDay()
-    const dia = daysMap[diaSemana]
+    const diaSemana = fecha.getDay();
+    const dia = daysMap[diaSemana];
 
     // Agregar registro al día correspondiente
-    dayDataMap.value[dia].registros.push(registro)
+    dayDataMap.value[dia].registros.push(registro);
 
     // Actualizar contadores
-    if (registro.estado === "presente") {
-      dayDataMap.value[dia].presentes++
-    } else if (registro.estado === "ausente") {
-      dayDataMap.value[dia].ausentes++
-    } else if (registro.estado === "tarde") {
-      dayDataMap.value[dia].tardanzas++
-    } else if (registro.estado === "justificado") {
-      dayDataMap.value[dia].justificados++
+    if (registro.estado === 'presente') {
+      dayDataMap.value[dia].presentes++;
+    } else if (registro.estado === 'ausente') {
+      dayDataMap.value[dia].ausentes++;
+    } else if (registro.estado === 'tarde') {
+      dayDataMap.value[dia].tardanzas++;
+    } else if (registro.estado === 'justificado') {
+      dayDataMap.value[dia].justificados++;
     }
-  })
+  });
 
   // Calcular totales para la semana
   weekTotals.value = {
     presentes: Object.values(dayDataMap.value).reduce(
       (sum: number, day: any) => sum + day.presentes,
-      0
+      0,
     ),
     ausentes: Object.values(dayDataMap.value).reduce(
       (sum: number, day: any) => sum + day.ausentes,
-      0
+      0,
     ),
     tardanzas: Object.values(dayDataMap.value).reduce(
       (sum: number, day: any) => sum + day.tardanzas,
-      0
+      0,
     ),
     justificados: Object.values(dayDataMap.value).reduce(
       (sum: number, day: any) => sum + day.justificados,
-      0
+      0,
     ),
-  }
+  };
 
-  console.log("✅ Datos agrupados por día:", dayDataMap.value)
-  console.log("📊 Totales de la semana:", weekTotals.value)
-}
+  console.log('✅ Datos agrupados por día:', dayDataMap.value);
+  console.log('📊 Totales de la semana:', weekTotals.value);
+};
 
 const procesarDatosAsistencia = (estudiantes: any[], clases: any[], asistencias: any[]) => {
   // Reiniciar arrays
-  estudiantesAusentes.value = []
-  estudiantesTardios.value = []
-  estudiantesJustificados.value = []
+  estudiantesAusentes.value = [];
+  estudiantesTardios.value = [];
+  estudiantesJustificados.value = [];
 
   // Agrupar asistencias por estudiante
-  const asistenciasPorEstudiante = new Map()
+  const asistenciasPorEstudiante = new Map();
 
   asistencias.forEach((asistencia: any) => {
-    if (!asistencia.studentId) return
+    if (!asistencia.studentId) return;
 
-    const estudianteId = asistencia.studentId
+    const estudianteId = asistencia.studentId;
     if (!asistenciasPorEstudiante.has(estudianteId)) {
       asistenciasPorEstudiante.set(estudianteId, {
         ausencias: [],
         tardanzas: [],
         justificaciones: [],
-      })
+      });
     }
 
-    const registrosEstudiante = asistenciasPorEstudiante.get(estudianteId)
+    const registrosEstudiante = asistenciasPorEstudiante.get(estudianteId);
 
     // Clasificar según el estado
-    if (asistencia.estado === "ausente") {
-      registrosEstudiante.ausencias.push(asistencia)
-    } else if (asistencia.estado === "tarde") {
-      registrosEstudiante.tardanzas.push(asistencia)
-    } else if (asistencia.estado === "justificado") {
-      registrosEstudiante.justificaciones.push(asistencia)
+    if (asistencia.estado === 'ausente') {
+      registrosEstudiante.ausencias.push(asistencia);
+    } else if (asistencia.estado === 'tarde') {
+      registrosEstudiante.tardanzas.push(asistencia);
+    } else if (asistencia.estado === 'justificado') {
+      registrosEstudiante.justificaciones.push(asistencia);
     }
-  })
+  });
 
-  console.log(`👥 Estudiantes con registros de asistencia: ${asistenciasPorEstudiante.size}`)
+  console.log(`👥 Estudiantes con registros de asistencia: ${asistenciasPorEstudiante.size}`);
 
   // Procesar cada estudiante
   estudiantes.forEach((estudiante: any) => {
-    const estudianteId = estudiante.id
-    if (!asistenciasPorEstudiante.has(estudianteId)) return
+    const estudianteId = estudiante.id;
+    if (!asistenciasPorEstudiante.has(estudianteId)) return;
 
-    const registros = asistenciasPorEstudiante.get(estudianteId)
-    const ausentesTotales = registros.ausencias.length
-    const tardesTotales = registros.tardanzas.length
-    const justificadosTotales = registros.justificaciones.length
+    const registros = asistenciasPorEstudiante.get(estudianteId);
+    const ausentesTotales = registros.ausencias.length;
+    const tardesTotales = registros.tardanzas.length;
+    const justificadosTotales = registros.justificaciones.length;
 
     // Preparar detalles para cada tipo de asistencia
     const ausenciasDetalle = registros.ausencias.map((ausencia: any) => ({
       fecha: ausencia.fecha,
-      clase: ausencia.clase?.name || "Clase no encontrada",
-      instrumento: ausencia.clase?.instrument || "N/A",
-      motivo: ausencia.observaciones || "",
-    }))
+      clase: ausencia.clase?.name || 'Clase no encontrada',
+      instrumento: ausencia.clase?.instrument || 'N/A',
+      motivo: ausencia.observaciones || '',
+    }));
 
     const tardesDetalle = registros.tardanzas.map((tardanza: any) => ({
       fecha: tardanza.fecha,
-      clase: tardanza.clase?.name || "Clase no encontrada",
-      instrumento: tardanza.clase?.instrument || "N/A",
+      clase: tardanza.clase?.name || 'Clase no encontrada',
+      instrumento: tardanza.clase?.instrument || 'N/A',
       minutosRetraso: tardanza.minutosRetraso || 0,
-    }))
+    }));
 
     const justificadosDetalle = registros.justificaciones.map((justificacion: any) => ({
       fecha: justificacion.fecha,
-      clase: justificacion.clase?.name || "Clase no encontrada",
-      instrumento: justificacion.clase?.instrument || "N/A",
-      motivo: justificacion.observaciones || "Sin motivo especificado",
-    }))
+      clase: justificacion.clase?.name || 'Clase no encontrada',
+      instrumento: justificacion.clase?.instrument || 'N/A',
+      motivo: justificacion.observaciones || 'Sin motivo especificado',
+    }));
 
     // Obtener información completa del estudiante
     const infoEstudiante = {
       id: estudiante.id,
-      firstName: estudiante.nombre || "",
-      lastName: estudiante.apellido || "",
-      name: `${estudiante.nombre || ""} ${estudiante.apellido || ""}`.trim(),
-      instrument: estudiante.instrumento || "N/A",
-      className: estudiante.clase || "",
-      parentPhone: estudiante.telefonoPadre || estudiante.telefonoMadre || "",
-      fatherPhone: estudiante.telefonoPadre || "",
-      motherPhone: estudiante.telefonoMadre || "",
+      firstName: estudiante.nombre || '',
+      lastName: estudiante.apellido || '',
+      name: `${estudiante.nombre || ''} ${estudiante.apellido || ''}`.trim(),
+      instrument: estudiante.instrumento || 'N/A',
+      className: estudiante.clase || '',
+      parentPhone: estudiante.telefonoPadre || estudiante.telefonoMadre || '',
+      fatherPhone: estudiante.telefonoPadre || '',
+      motherPhone: estudiante.telefonoMadre || '',
       contacto: {
-        telefono: estudiante.telefonoPadre || estudiante.telefonoMadre || "",
+        telefono: estudiante.telefonoPadre || estudiante.telefonoMadre || '',
       },
       faltasSemana: ausentesTotales,
       tardesSemana: tardesTotales,
       justificadasSemana: justificadosTotales,
       faltasGlobales: estudiante.faltasGlobales || ausentesTotales,
       tardesGlobales: estudiante.tardesGlobales || tardesTotales,
-    }
+    };
 
     // Agregar a las listas correspondientes si hay incidencias
     if (ausentesTotales > 0) {
@@ -1747,9 +1747,9 @@ const procesarDatosAsistencia = (estudiantes: any[], clases: any[], asistencias:
         totalAusencias: ausentesTotales,
         ausenciasDetalle,
         nivelGravedad: obtenerNivelGravedad(ausentesTotales),
-        plantillaSugerida: obtenerPlantillaSugerida("ausente", ausentesTotales),
-        tipo: "ausente",
-      })
+        plantillaSugerida: obtenerPlantillaSugerida('ausente', ausentesTotales),
+        tipo: 'ausente',
+      });
     }
 
     if (tardesTotales > 0) {
@@ -1758,9 +1758,9 @@ const procesarDatosAsistencia = (estudiantes: any[], clases: any[], asistencias:
         totalTardes: tardesTotales,
         tardesDetalle,
         nivelGravedad: obtenerNivelGravedad(tardesTotales),
-        plantillaSugerida: obtenerPlantillaSugerida("tarde", tardesTotales),
-        tipo: "tarde",
-      })
+        plantillaSugerida: obtenerPlantillaSugerida('tarde', tardesTotales),
+        tipo: 'tarde',
+      });
     }
 
     if (justificadosTotales > 0) {
@@ -1768,231 +1768,231 @@ const procesarDatosAsistencia = (estudiantes: any[], clases: any[], asistencias:
         ...infoEstudiante,
         totalJustificados: justificadosTotales,
         justificadosDetalle,
-        motivoJustificacion: justificadosDetalle.length > 0 ? justificadosDetalle[0].motivo : "",
-        tipo: "justificado",
-      })
+        motivoJustificacion: justificadosDetalle.length > 0 ? justificadosDetalle[0].motivo : '',
+        tipo: 'justificado',
+      });
     }
-  })
+  });
 
   // Ordenar por nivel de gravedad (más ausencias/tardes primero)
-  estudiantesAusentes.value.sort((a: any, b: any) => b.totalAusencias - a.totalAusencias)
-  estudiantesTardios.value.sort((a: any, b: any) => b.totalTardes - a.totalTardes)
+  estudiantesAusentes.value.sort((a: any, b: any) => b.totalAusencias - a.totalAusencias);
+  estudiantesTardios.value.sort((a: any, b: any) => b.totalTardes - a.totalTardes);
 
   // Mostrar automáticamente las listas que tienen estudiantes
-  showEstudiantesAusentes.value = estudiantesAusentes.value.length > 0
-  showEstudiantesTardios.value = estudiantesTardios.value.length > 0
-  showEstudiantesJustificados.value = estudiantesJustificados.value.length > 0
+  showEstudiantesAusentes.value = estudiantesAusentes.value.length > 0;
+  showEstudiantesTardios.value = estudiantesTardios.value.length > 0;
+  showEstudiantesJustificados.value = estudiantesJustificados.value.length > 0;
 
-  console.log(`🔴 Estudiantes ausentes: ${estudiantesAusentes.value.length}`)
-  console.log(`🟡 Estudiantes tardíos: ${estudiantesTardios.value.length}`)
-  console.log(`🔵 Estudiantes justificados: ${estudiantesJustificados.value.length}`)
-}
+  console.log(`🔴 Estudiantes ausentes: ${estudiantesAusentes.value.length}`);
+  console.log(`🟡 Estudiantes tardíos: ${estudiantesTardios.value.length}`);
+  console.log(`🔵 Estudiantes justificados: ${estudiantesJustificados.value.length}`);
+};
 
 const obtenerNivelGravedad = (cantidad: number): number => {
-  if (cantidad <= 1) return 1 // Informativo
-  if (cantidad === 2) return 2 // Recordatorio/Atención
-  if (cantidad === 3) return 3 // Preocupación/Insistencia
-  return 4 // Formal/Estricto
-}
+  if (cantidad <= 1) return 1; // Informativo
+  if (cantidad === 2) return 2; // Recordatorio/Atención
+  if (cantidad === 3) return 3; // Preocupación/Insistencia
+  return 4; // Formal/Estricto
+};
 
-const obtenerPlantillaSugerida = (tipo: "ausente" | "tarde", cantidad: number) => {
-  const nivel = obtenerNivelGravedad(cantidad)
-  const plantillas = tipo === "ausente" ? plantillasAusentes.value : plantillasTardios.value
-  return plantillas.find((p: any) => p.falta === nivel) || plantillas[0]
-}
+const obtenerPlantillaSugerida = (tipo: 'ausente' | 'tarde', cantidad: number) => {
+  const nivel = obtenerNivelGravedad(cantidad);
+  const plantillas = tipo === 'ausente' ? plantillasAusentes.value : plantillasTardios.value;
+  return plantillas.find((p: any) => p.falta === nivel) || plantillas[0];
+};
 
 const personalizarMensaje = (plantilla: string, estudiante: any, detalles: any) => {
   return plantilla
-    .replace(/{nombre}/g, estudiante.firstName + " " + estudiante.lastName)
-    .replace(/{instrumento}/g, detalles.instrumento || "N/A")
-    .replace(/{clase}/g, detalles.clase || "N/A")
-    .replace(/{motivo}/g, detalles.motivo || "Sin especificar")
-}
+    .replace(/{nombre}/g, estudiante.firstName + ' ' + estudiante.lastName)
+    .replace(/{instrumento}/g, detalles.instrumento || 'N/A')
+    .replace(/{clase}/g, detalles.clase || 'N/A')
+    .replace(/{motivo}/g, detalles.motivo || 'Sin especificar');
+};
 
 const toggleSeleccionTodos = () => {
   if (seleccionarTodos.value) {
-    estudiantesSeleccionados.value = estudiantesConInasistencias.value.map((e: any) => e.id)
+    estudiantesSeleccionados.value = estudiantesConInasistencias.value.map((e: any) => e.id);
   } else {
-    estudiantesSeleccionados.value = []
+    estudiantesSeleccionados.value = [];
   }
-}
+};
 
 const _toggleSeleccionEstudiante = (estudianteId: string) => {
-  const index = estudiantesSeleccionados.value.indexOf(estudianteId)
+  const index = estudiantesSeleccionados.value.indexOf(estudianteId);
   if (index > -1) {
-    estudiantesSeleccionados.value.splice(index, 1)
+    estudiantesSeleccionados.value.splice(index, 1);
   } else {
-    estudiantesSeleccionados.value.push(estudianteId)
+    estudiantesSeleccionados.value.push(estudianteId);
   }
 
   // Actualizar estado de seleccionar todos
   seleccionarTodos.value =
-    estudiantesSeleccionados.value.length === estudiantesConInasistencias.value.length
-}
+    estudiantesSeleccionados.value.length === estudiantesConInasistencias.value.length;
+};
 
 const abrirModalSeleccionMasiva = () => {
-  showModalSeleccionMasiva.value = true
-}
+  showModalSeleccionMasiva.value = true;
+};
 
 const _abrirModalPlantillas = () => {
-  showModalPlantillas.value = true
-}
+  showModalPlantillas.value = true;
+};
 
 const abrirDetalleEstudiante = (estudiante: any) => {
-  estudianteDetalle.value = estudiante
-  showModalDetalleEstudiante.value = true
-}
+  estudianteDetalle.value = estudiante;
+  showModalDetalleEstudiante.value = true;
+};
 
 const enviarNotificacionIndividual = async (estudiante: any) => {
   try {
-    isEnviandoNotificaciones.value = true
+    isEnviandoNotificaciones.value = true;
 
     // Determinar tipo de mensaje y plantilla
-    let mensaje = ""
+    let mensaje = '';
     if (estudiante.totalAusencias > 0) {
-      const plantilla = estudiante.plantillaSugerida
-      mensaje = personalizarMensaje(plantilla.mensaje, estudiante, estudiante.ausenciasDetalle[0])
+      const plantilla = estudiante.plantillaSugerida;
+      mensaje = personalizarMensaje(plantilla.mensaje, estudiante, estudiante.ausenciasDetalle[0]);
     } else if (estudiante.totalTardes > 0) {
-      const plantilla = estudiante.plantillaSugerida
-      mensaje = personalizarMensaje(plantilla.mensaje, estudiante, estudiante.tardesDetalle[0])
+      const plantilla = estudiante.plantillaSugerida;
+      mensaje = personalizarMensaje(plantilla.mensaje, estudiante, estudiante.tardesDetalle[0]);
     } else if (estudiante.totalJustificados > 0) {
       mensaje = personalizarMensaje(
         plantillaJustificado.value.mensaje,
         estudiante,
-        estudiante.justificadosDetalle[0]
-      )
+        estudiante.justificadosDetalle[0],
+      );
     }
 
     // Aquí iría la integración con WhatsApp API
-    await enviarMensajeWhatsApp(estudiante.contacto?.telefono, mensaje)
+    await enviarMensajeWhatsApp(estudiante.contacto?.telefono, mensaje);
 
-    console.log(`Mensaje enviado a ${estudiante.firstName} ${estudiante.lastName}`)
+    console.log(`Mensaje enviado a ${estudiante.firstName} ${estudiante.lastName}`);
   } catch (error: any) {
-    console.error("Error enviando notificación individual:", error)
+    console.error('Error enviando notificación individual:', error);
   } finally {
-    isEnviandoNotificaciones.value = false
+    isEnviandoNotificaciones.value = false;
   }
-}
+};
 
 const enviarNotificacionesMasivas = async () => {
   try {
-    isEnviandoNotificaciones.value = true
+    isEnviandoNotificaciones.value = true;
 
     const estudiantesAEnviar = estudiantesConInasistencias.value.filter((e: any) =>
-      estudiantesSeleccionados.value.includes(e.id)
-    )
+      estudiantesSeleccionados.value.includes(e.id),
+    );
 
     for (const estudiante of estudiantesAEnviar) {
-      await enviarNotificacionIndividual(estudiante)
+      await enviarNotificacionIndividual(estudiante);
       // Pequeña pausa entre mensajes para no saturar
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
-    showModalSeleccionMasiva.value = false
-    estudiantesSeleccionados.value = []
-    seleccionarTodos.value = false
+    showModalSeleccionMasiva.value = false;
+    estudiantesSeleccionados.value = [];
+    seleccionarTodos.value = false;
   } catch (error: any) {
-    console.error("Error enviando notificaciones masivas:", error)
+    console.error('Error enviando notificaciones masivas:', error);
   } finally {
-    isEnviandoNotificaciones.value = false
+    isEnviandoNotificaciones.value = false;
   }
-}
+};
 
 const enviarMensajeWhatsApp = async (telefono: string, mensaje: string) => {
   // Placeholder para la integración con WhatsApp
   // Aquí se implementaría la conexión con WhatsApp Business API o Baileys
-  console.log(`Enviando mensaje a ${telefono}:`, mensaje)
+  console.log(`Enviando mensaje a ${telefono}:`, mensaje);
 
   // Simular envío
-  return new Promise((resolve) => setTimeout(resolve, 500))
-}
+  return new Promise((resolve) => setTimeout(resolve, 500));
+};
 
 // Funciones de utilidad para la UI
 const verPlantillasMensajes = () => {
-  showModalPlantillas.value = true
-}
+  showModalPlantillas.value = true;
+};
 
 const verDetalleEstudiante = (estudiante: any) => {
-  abrirDetalleEstudiante(estudiante)
-}
+  abrirDetalleEstudiante(estudiante);
+};
 
 const enviarWhatsAppIndividual = async (estudiante: any, _tipo: string) => {
-  await enviarNotificacionIndividual(estudiante)
-}
+  await enviarNotificacionIndividual(estudiante);
+};
 
 const toggleSeleccionarTodos = () => {
-  toggleSeleccionTodos()
-}
+  toggleSeleccionTodos();
+};
 
 // Funciones para controlar listas desplegables
 const toggleEstudiantesAusentes = () => {
-  showEstudiantesAusentes.value = !showEstudiantesAusentes.value
-}
+  showEstudiantesAusentes.value = !showEstudiantesAusentes.value;
+};
 
 const toggleEstudiantesTardios = () => {
-  showEstudiantesTardios.value = !showEstudiantesTardios.value
-}
+  showEstudiantesTardios.value = !showEstudiantesTardios.value;
+};
 
 const toggleEstudiantesJustificados = () => {
-  showEstudiantesJustificados.value = !showEstudiantesJustificados.value
-}
+  showEstudiantesJustificados.value = !showEstudiantesJustificados.value;
+};
 
 const toggleTodasLasListas = () => {
-  const nuevoEstado = !todasListasAbiertas.value
-  showEstudiantesAusentes.value = nuevoEstado
-  showEstudiantesTardios.value = nuevoEstado
-  showEstudiantesJustificados.value = nuevoEstado
-}
+  const nuevoEstado = !todasListasAbiertas.value;
+  showEstudiantesAusentes.value = nuevoEstado;
+  showEstudiantesTardios.value = nuevoEstado;
+  showEstudiantesJustificados.value = nuevoEstado;
+};
 
 const getNivelMensajeClass = (cantidad: number): string => {
-  const nivel = obtenerNivelGravedad(cantidad)
+  const nivel = obtenerNivelGravedad(cantidad);
   const classes = {
-    1: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    2: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    3: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-    4: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  }
-  return classes[nivel as keyof typeof classes] || classes[1]
-}
+    1: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    2: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    3: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+    4: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  };
+  return classes[nivel as keyof typeof classes] || classes[1];
+};
 
 const getNivelMensajeTexto = (cantidad: number): string => {
-  const nivel = obtenerNivelGravedad(cantidad)
+  const nivel = obtenerNivelGravedad(cantidad);
   const textos = {
-    1: "Informativo",
-    2: "Recordatorio",
-    3: "Preocupación",
-    4: "Formal",
-  }
-  return textos[nivel as keyof typeof textos] || textos[1]
-}
+    1: 'Informativo',
+    2: 'Recordatorio',
+    3: 'Preocupación',
+    4: 'Formal',
+  };
+  return textos[nivel as keyof typeof textos] || textos[1];
+};
 
 const getTipoInasistenciaClass = (tipo: string): string => {
   const classes = {
-    ausente: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    tarde: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    justificado: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  }
-  return classes[tipo as keyof typeof classes] || classes.ausente
-}
+    ausente: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+    tarde: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    justificado: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  };
+  return classes[tipo as keyof typeof classes] || classes.ausente;
+};
 
 const getTipoInasistenciaTexto = (tipo: string): string => {
   const textos = {
-    ausente: "Ausente",
-    tarde: "Tardío",
-    justificado: "Justificado",
-  }
-  return textos[tipo as keyof typeof textos] || "Ausente"
-}
+    ausente: 'Ausente',
+    tarde: 'Tardío',
+    justificado: 'Justificado',
+  };
+  return textos[tipo as keyof typeof textos] || 'Ausente';
+};
 
 // Funciones principales del reporte semanal
 const cargarDatosSemana = async () => {
   try {
-    isLoading.value = true
-    error.value = null
+    isLoading.value = true;
+    error.value = null;
 
     // Formatear fechas para consultas
-    const startDate = format(weekStart.value, "yyyy-MM-dd")
-    const endDate = format(weekEnd.value, "yyyy-MM-dd")
+    const startDate = format(weekStart.value, 'yyyy-MM-dd');
+    const endDate = format(weekEnd.value, 'yyyy-MM-dd');
 
     // Cargar datos necesarios
     await Promise.all([
@@ -2001,47 +2001,47 @@ const cargarDatosSemana = async () => {
       studentsStore.fetchStudents(),
       attendanceStore.fetchAttendanceDocuments(startDate, endDate),
       fetchEmergencyClasses(), // Cargar clases emergentes
-    ])
+    ]);
 
     // Procesar clases por día de la semana
-    procesarClasesPorDia()
+    procesarClasesPorDia();
 
     // Procesar clases emergentes para la semana
-    await procesarClasesEmergentes()
+    await procesarClasesEmergentes();
 
     // Calcular estadísticas
-    calcularEstadisticas()
+    calcularEstadisticas();
   } catch (err: any) {
-    console.error("Error al cargar datos de la semana:", err)
-    error.value = `Error al cargar datos: ${err.message}`
+    console.error('Error al cargar datos de la semana:', err);
+    error.value = `Error al cargar datos: ${err.message}`;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Procesar clases por día de la semana
 const procesarClasesPorDia = () => {
   // Reiniciar arrays
   clasesPorDia.value = Array(7)
     .fill(null)
-    .map(() => [])
+    .map(() => []);
 
   // Obtener todas las clases programadas
-  const clasesScheduled = classesStore.getScheduledClasses
+  const clasesScheduled = classesStore.getScheduledClasses;
 
   // Procesar cada clase
   clasesScheduled.forEach((clase) => {
-    if (!clase.schedule) return
+    if (!clase.schedule) return;
 
     // Procesar cada slot de horario - handle both single schedule and slots array
-    const schedule = clase.schedule as any // Type assertion to avoid complex type checking
-    const slots = Array.isArray(schedule) ? schedule : schedule.slots ? schedule.slots : [schedule]
+    const schedule = clase.schedule as any; // Type assertion to avoid complex type checking
+    const slots = Array.isArray(schedule) ? schedule : schedule.slots ? schedule.slots : [schedule];
 
     slots.forEach((slot: any) => {
       // Determinar el día de la semana (0 = Lunes, 6 = Domingo)
-      let dayIndex: number
+      let dayIndex: number;
 
-      if (typeof slot.day === "string") {
+      if (typeof slot.day === 'string') {
         const dayMap: Record<string, number> = {
           lunes: 0,
           martes: 1,
@@ -2050,16 +2050,16 @@ const procesarClasesPorDia = () => {
           viernes: 4,
           sábado: 5,
           domingo: 6,
-        }
-        dayIndex = dayMap[slot.day.toLowerCase()] ?? -1
-      } else if (typeof slot.day === "number") {
+        };
+        dayIndex = dayMap[slot.day.toLowerCase()] ?? -1;
+      } else if (typeof slot.day === 'number') {
         // Ajustar el índice si es necesario (si 0 = Domingo en el sistema)
-        dayIndex = slot.day === 0 ? 6 : slot.day - 1
+        dayIndex = slot.day === 0 ? 6 : slot.day - 1;
       } else {
-        return
+        return;
       }
 
-      if (dayIndex < 0 || dayIndex > 6) return
+      if (dayIndex < 0 || dayIndex > 6) return;
 
       // Crear objeto de clase con datos adicionales
       const claseConDatos = {
@@ -2074,78 +2074,78 @@ const procesarClasesPorDia = () => {
         },
         maestroAsistio: false,
         observaciones: [] as any[],
-      }
+      };
 
       // Buscar registros de asistencia para esta clase
-      const fechaClase = format(addDays(weekStart.value, dayIndex), "yyyy-MM-dd")
+      const fechaClase = format(addDays(weekStart.value, dayIndex), 'yyyy-MM-dd');
       const asistenciasClase = attendanceStore.attendanceDocuments.filter(
-        (doc) => doc.classId === clase.id && doc.fecha === fechaClase
-      )
+        (doc) => doc.classId === clase.id && doc.fecha === fechaClase,
+      );
 
       // Si hay registros de asistencia, procesar datos
       if (asistenciasClase.length > 0) {
-        const doc = asistenciasClase[0]
+        const doc = asistenciasClase[0];
 
         // Contar presentes y ausentes
-        let presentes = 0
-        let ausentes = 0
+        let presentes = 0;
+        let ausentes = 0;
 
         // Check data structure for attendance
         if (doc.data) {
-          if (doc.data.presentes) presentes = doc.data.presentes.length
-          if (doc.data.ausentes) ausentes = doc.data.ausentes.length
+          if (doc.data.presentes) presentes = doc.data.presentes.length;
+          if (doc.data.ausentes) ausentes = doc.data.ausentes.length;
         }
 
-        claseConDatos.asistencia = {presentes, ausentes}
-        claseConDatos.maestroAsistio = true
+        claseConDatos.asistencia = { presentes, ausentes };
+        claseConDatos.maestroAsistio = true;
 
         // Obtener observaciones
         if (doc.data.observations) {
-          claseConDatos.observaciones = doc.data.observations as any[]
+          claseConDatos.observaciones = doc.data.observations as any[];
         }
       }
 
       // Añadir a la lista del día correspondiente
-      clasesPorDia.value[dayIndex].push(claseConDatos)
-    })
-  })
-}
+      clasesPorDia.value[dayIndex].push(claseConDatos);
+    });
+  });
+};
 
 // Procesar clases emergentes para la semana
 const procesarClasesEmergentes = async () => {
   try {
     // Obtener clases emergentes para el rango de fechas de la semana
-    const startDate = format(weekStart.value, "yyyy-MM-dd")
-    const endDate = format(weekEnd.value, "yyyy-MM-dd")
+    const startDate = format(weekStart.value, 'yyyy-MM-dd');
+    const endDate = format(weekEnd.value, 'yyyy-MM-dd');
 
-    console.log("🚨 [AdminReporte] Cargando clases emergentes del", startDate, "al", endDate)
+    console.log('🚨 [AdminReporte] Cargando clases emergentes del', startDate, 'al', endDate);
 
     // Obtener clases emergentes usando el composable
-    const {getEmergencyClassesForDate} = useEmergencyClasses()
+    const { getEmergencyClassesForDate } = useEmergencyClasses();
 
     // Recorrer cada día de la semana
     for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
-      const currentDate = format(addDays(weekStart.value, dayOffset), "yyyy-MM-dd")
+      const currentDate = format(addDays(weekStart.value, dayOffset), 'yyyy-MM-dd');
 
       try {
-        const emergencyClasses = await getEmergencyClassesForDate(currentDate)
+        const emergencyClasses = await getEmergencyClassesForDate(currentDate);
 
         console.log(
-          `🚨 [AdminReporte] Día ${dayOffset} (${currentDate}): ${emergencyClasses.length} clases emergentes`
-        )
+          `🚨 [AdminReporte] Día ${dayOffset} (${currentDate}): ${emergencyClasses.length} clases emergentes`,
+        );
 
         // Procesar cada clase emergente
         emergencyClasses.forEach((emergencyClass) => {
           // Crear objeto de clase compatible con el formato de clases regulares
           const claseEmergente = {
             id: emergencyClass.id,
-            name: emergencyClass.className || "Clase Emergente",
-            className: emergencyClass.className || "Clase Emergente",
+            name: emergencyClass.className || 'Clase Emergente',
+            className: emergencyClass.className || 'Clase Emergente',
             teacherId: emergencyClass.teacherId,
             studentIds: emergencyClass.selectedStudents || [],
             horario: {
-              startTime: emergencyClass.startTime || "00:00",
-              endTime: emergencyClass.endTime || "23:59",
+              startTime: emergencyClass.startTime || '00:00',
+              endTime: emergencyClass.endTime || '23:59',
             },
             asistencia: {
               presentes: 0,
@@ -2154,133 +2154,133 @@ const procesarClasesEmergentes = async () => {
             maestroAsistio: false,
             observaciones: [] as any[], // Tipado explícito para evitar errores
             isEmergencyClass: true, // Marcar como clase emergente
-            reason: emergencyClass.reason || "Sin razón especificada",
-          }
+            reason: emergencyClass.reason || 'Sin razón especificada',
+          };
 
           // Buscar registros de asistencia para esta clase emergente
-          const attendanceDocs = attendanceStore.attendanceDocuments
+          const attendanceDocs = attendanceStore.attendanceDocuments;
           const dayAttendanceDoc = attendanceDocs.find(
-            (doc) => doc.fecha === currentDate && doc.classId === emergencyClass.id
-          )
+            (doc) => doc.fecha === currentDate && doc.classId === emergencyClass.id,
+          );
 
           if (dayAttendanceDoc) {
             // Procesar datos de asistencia si existen
-            const data = dayAttendanceDoc.data
+            const data = dayAttendanceDoc.data;
             if (data) {
-              claseEmergente.asistencia.presentes = data.presentes?.length || 0
-              claseEmergente.asistencia.ausentes = data.ausentes?.length || 0
-              claseEmergente.maestroAsistio = !!(data as any).maestroAsistio
+              claseEmergente.asistencia.presentes = data.presentes?.length || 0;
+              claseEmergente.asistencia.ausentes = data.ausentes?.length || 0;
+              claseEmergente.maestroAsistio = !!(data as any).maestroAsistio;
 
               if (data.observations && Array.isArray(data.observations)) {
-                claseEmergente.observaciones = data.observations
+                claseEmergente.observaciones = data.observations;
               }
             }
           }
 
           // Añadir a la lista del día correspondiente
-          clasesPorDia.value[dayOffset].push(claseEmergente)
-        })
+          clasesPorDia.value[dayOffset].push(claseEmergente);
+        });
       } catch (error) {
         console.warn(
           `🚨 [AdminReporte] Error cargando clases emergentes para ${currentDate}:`,
-          error
-        )
+          error,
+        );
       }
     }
 
-    console.log("🚨 [AdminReporte] Procesamiento de clases emergentes completado")
+    console.log('🚨 [AdminReporte] Procesamiento de clases emergentes completado');
   } catch (error) {
-    console.error("🚨 [AdminReporte] Error general en procesarClasesEmergentes:", error)
+    console.error('🚨 [AdminReporte] Error general en procesarClasesEmergentes:', error);
   }
-}
+};
 
 // Calcular estadísticas generales
 const calcularEstadisticas = () => {
   // Total de clases en la semana
-  totalClases.value = clasesPorDia.value.reduce((sum, clases) => sum + clases.length, 0)
+  totalClases.value = clasesPorDia.value.reduce((sum, clases) => sum + clases.length, 0);
 
   // Contar clases emergentes
   totalClasesEmergentes.value = clasesPorDia.value.reduce((sum, clases) => {
-    return sum + clases.filter((clase) => clase.isEmergencyClass).length
-  }, 0)
+    return sum + clases.filter((clase) => clase.isEmergencyClass).length;
+  }, 0);
 
   // Asistencia promedio
-  let totalPresentes = 0
-  let totalEstudiantes = 0
+  let totalPresentes = 0;
+  let totalEstudiantes = 0;
 
   clasesPorDia.value.forEach((clases) => {
     clases.forEach((clase) => {
-      totalPresentes += clase.asistencia?.presentes || 0
-      totalEstudiantes += clase.studentIds?.length || 0
-    })
-  })
+      totalPresentes += clase.asistencia?.presentes || 0;
+      totalEstudiantes += clase.studentIds?.length || 0;
+    });
+  });
 
   asistenciaPromedio.value =
-    totalEstudiantes > 0 ? Math.round((totalPresentes / totalEstudiantes) * 100) : 0
+    totalEstudiantes > 0 ? Math.round((totalPresentes / totalEstudiantes) * 100) : 0;
 
   // Día con mayor y menor asistencia
   const asistenciaPorDia = clasesPorDia.value
     .map((clases, index) => {
-      const presentes = clases.reduce((sum, clase) => sum + (clase.asistencia?.presentes || 0), 0)
-      const total = clases.reduce((sum, clase) => sum + (clase.studentIds?.length || 0), 0)
-      const porcentaje = total > 0 ? (presentes / total) * 100 : 0
+      const presentes = clases.reduce((sum, clase) => sum + (clase.asistencia?.presentes || 0), 0);
+      const total = clases.reduce((sum, clase) => sum + (clase.studentIds?.length || 0), 0);
+      const porcentaje = total > 0 ? (presentes / total) * 100 : 0;
 
       return {
         dia: diasSemana[index],
         porcentaje,
         presentes,
         total,
-      }
+      };
     })
-    .filter((dia) => dia.total > 0) // Solo considerar días con clases
+    .filter((dia) => dia.total > 0); // Solo considerar días con clases
 
   if (asistenciaPorDia.length > 0) {
     const maxAsistencia = asistenciaPorDia.reduce(
       (max, dia) => (dia.porcentaje > max.porcentaje ? dia : max),
-      asistenciaPorDia[0]
-    )
+      asistenciaPorDia[0],
+    );
 
     const minAsistencia = asistenciaPorDia.reduce(
       (min, dia) => (dia.porcentaje < min.porcentaje ? dia : min),
-      asistenciaPorDia[0]
-    )
+      asistenciaPorDia[0],
+    );
 
-    diaMayorAsistencia.value = maxAsistencia.dia
-    diaMenorAsistencia.value = minAsistencia.dia
+    diaMayorAsistencia.value = maxAsistencia.dia;
+    diaMenorAsistencia.value = minAsistencia.dia;
   } else {
-    diaMayorAsistencia.value = "N/A"
-    diaMenorAsistencia.value = "N/A"
+    diaMayorAsistencia.value = 'N/A';
+    diaMenorAsistencia.value = 'N/A';
   }
 
   // Clase con más y menos alumnos
-  const todasLasClases = classesStore.classes.filter((c) => c.studentIds && c.studentIds.length > 0)
+  const todasLasClases = classesStore.classes.filter((c) => c.studentIds && c.studentIds.length > 0);
 
   if (todasLasClases.length > 0) {
     const maxAlumnos = todasLasClases.reduce(
       (max, clase) =>
         (clase.studentIds?.length || 0) > (max.studentIds?.length || 0) ? clase : max,
-      todasLasClases[0]
-    )
+      todasLasClases[0],
+    );
 
     const minAlumnos = todasLasClases.reduce(
       (min, clase) =>
         (clase.studentIds?.length || 0) < (min.studentIds?.length || 0) ? clase : min,
-      todasLasClases[0]
-    )
+      todasLasClases[0],
+    );
 
     claseMasAlumnos.value = {
       nombre: maxAlumnos.name,
       cantidad: maxAlumnos.studentIds?.length || 0,
-    }
+    };
 
     claseMenosAlumnos.value = {
       nombre: minAlumnos.name,
       cantidad: minAlumnos.studentIds?.length || 0,
-    }
+    };
   }
 
   // Procesar observaciones
-  let todasObservaciones: any[] = []
+  let todasObservaciones: any[] = [];
 
   clasesPorDia.value.forEach((clases) => {
     clases.forEach((clase) => {
@@ -2290,35 +2290,35 @@ const calcularEstadisticas = () => {
             ...obs,
             className: clase.name,
             classId: clase.id,
-          }))
-        )
+          })),
+        );
       }
-    })
-  })
+    });
+  });
 
-  totalObservaciones.value = todasObservaciones.length
+  totalObservaciones.value = todasObservaciones.length;
 
   // Seleccionar observaciones destacadas (limitamos a 5 para mostrar)
   observacionesDestacadas.value = todasObservaciones
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-    .slice(0, 5)
-}
+    .slice(0, 5);
+};
 
 // Inicializar datos al montar el componente
 onMounted(async () => {
   // Establecer el día seleccionado al día actual de la semana (0 = Lunes, 6 = Domingo)
-  const today = new Date()
-  const currentDayIndex = (today.getDay() + 6) % 7 // Convertir de Domingo=0 a Lunes=0
-  selectedDay.value = currentDayIndex
+  const today = new Date();
+  const currentDayIndex = (today.getDay() + 6) % 7; // Convertir de Domingo=0 a Lunes=0
+  selectedDay.value = currentDayIndex;
 
-  console.log(`🗓️ Día actual: ${diasSemana[selectedDay.value]} (índice: ${selectedDay.value})`)
+  console.log(`🗓️ Día actual: ${diasSemana[selectedDay.value]} (índice: ${selectedDay.value})`);
 
-  await cargarDatosSemana()
-  await obtenerDatosNotificaciones()
-})
+  await cargarDatosSemana();
+  await obtenerDatosNotificaciones();
+});
 
 // Observar cambios en la semana seleccionada
 watch([weekStart, weekEnd], () => {
-  cargarDatosSemana()
-})
+  cargarDatosSemana();
+});
 </script>

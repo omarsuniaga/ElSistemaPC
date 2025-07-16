@@ -282,7 +282,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 import {
   UsersIcon,
   CheckCircleIcon,
@@ -294,26 +294,26 @@ import {
   DocumentArrowDownIcon,
   EyeIcon,
   PencilIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
-import {useAdminStudentsStore} from "../store/adminStudents"
-import {advancedStudentsService} from "../services/advancedStudentsService"
-import type {StudentMetrics} from "../services/advancedStudentsService"
+import { useAdminStudentsStore } from '../store/adminStudents';
+import { advancedStudentsService } from '../services/advancedStudentsService';
+import type { StudentMetrics } from '../services/advancedStudentsService';
 
 // Store
-const studentsStore = useAdminStudentsStore()
+const studentsStore = useAdminStudentsStore();
 
 // State
-const isLoading = ref(false)
-const isExporting = ref(false)
-const searchQuery = ref("")
-const showImportModal = ref(false)
+const isLoading = ref(false);
+const isExporting = ref(false);
+const searchQuery = ref('');
+const showImportModal = ref(false);
 
 // Filters
 const filters = ref({
-  status: "",
-  instrument: "",
-})
+  status: '',
+  instrument: '',
+});
 
 // Data
 const metrics = ref<StudentMetrics>({
@@ -325,107 +325,107 @@ const metrics = ref<StudentMetrics>({
   riskStudents: 0,
   topPerformers: 0,
   revenueImpact: 0,
-})
+});
 
 // Computed
-const students = computed(() => studentsStore.students)
-const totalStudents = computed(() => students.value.length)
+const students = computed(() => studentsStore.students);
+const totalStudents = computed(() => students.value.length);
 
 const availableInstruments = computed(() => {
   const instruments = students.value
     .flatMap((s) => s.instruments || [])
     .filter(Boolean)
-    .filter((value, index, self) => self.indexOf(value) === index)
-  return instruments.sort()
-})
+    .filter((value, index, self) => self.indexOf(value) === index);
+  return instruments.sort();
+});
 
 const filteredStudents = computed(() => {
-  let filtered = students.value
+  let filtered = students.value;
   // Search filter
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(
       (student) =>
         student.name.toLowerCase().includes(query) ||
         student.email.toLowerCase().includes(query) ||
         (student.instruments &&
-          student.instruments.some((inst) => inst.toLowerCase().includes(query)))
-    )
+          student.instruments.some((inst) => inst.toLowerCase().includes(query))),
+    );
   }
 
   // Status filter
   if (filters.value.status) {
-    if (filters.value.status === "active") {
-      filtered = filtered.filter((s) => s.status === "active")
-    } else if (filters.value.status === "inactive") {
-      filtered = filtered.filter((s) => s.status === "inactive")
+    if (filters.value.status === 'active') {
+      filtered = filtered.filter((s) => s.status === 'active');
+    } else if (filters.value.status === 'inactive') {
+      filtered = filtered.filter((s) => s.status === 'inactive');
     }
   }
   // Instrument filter
   if (filters.value.instrument) {
     filtered = filtered.filter(
-      (s) => s.instruments && s.instruments.includes(filters.value.instrument)
-    )
+      (s) => s.instruments && s.instruments.includes(filters.value.instrument),
+    );
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 // Methods
 const loadData = async () => {
-  isLoading.value = true
+  isLoading.value = true;
   try {
-    await studentsStore.loadStudents()
+    await studentsStore.loadStudents();
 
     // Load metrics
-    metrics.value = await advancedStudentsService.getStudentMetrics()
+    metrics.value = await advancedStudentsService.getStudentMetrics();
   } catch (error) {
-    console.error("Error loading data:", error)
+    console.error('Error loading data:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const refreshData = () => {
-  loadData()
-}
+  loadData();
+};
 
 const exportStudents = async () => {
-  isExporting.value = true
+  isExporting.value = true;
   try {
     const blob = await advancedStudentsService.exportStudentsToExcel({
-      active: filters.value.status === "active" ? true : undefined,
+      active: filters.value.status === 'active' ? true : undefined,
       instrument: filters.value.instrument || undefined,
-    })
+    });
 
     // Download file
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `estudiantes_${new Date().toISOString().split("T")[0]}.xlsx`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `estudiantes_${new Date().toISOString().split('T')[0]}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   } catch (error) {
-    console.error("Error exporting students:", error)
+    console.error('Error exporting students:', error);
   } finally {
-    isExporting.value = false
+    isExporting.value = false;
   }
-}
+};
 
 const viewStudentDetails = (student: any) => {
-  console.log("View student details:", student)
-}
+  console.log('View student details:', student);
+};
 
 const editStudent = (student: any) => {
-  console.log("Edit student:", student)
-}
+  console.log('Edit student:', student);
+};
 
 // Initialize
 onMounted(() => {
-  loadData()
-})
+  loadData();
+});
 </script>
 
 <style scoped>

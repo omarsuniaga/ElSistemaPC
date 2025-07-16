@@ -412,88 +412,88 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRBACManagement, type Role, type Permission} from "@/composables/useRBACManagement"
-import {PlusIcon, ExclamationTriangleIcon} from "@heroicons/vue/24/outline"
+import { ref, computed, onMounted } from 'vue';
+import { useRBACManagement, type Role, type Permission } from '@/composables/useRBACManagement';
+import { PlusIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 
 // Composables
-const {roles, permissions, loading, error, loadRoles, loadPermissions, saveRoles, savePermissions} =
-  useRBACManagement()
+const { roles, permissions, loading, error, loadRoles, loadPermissions, saveRoles, savePermissions } =
+  useRBACManagement();
 
 // Reactive data
-const activeTab = ref("roles")
-const showRoleModal = ref(false)
-const showPermissionModal = ref(false)
-const editingRole = ref<Role | null>(null)
-const editingPermission = ref<Permission | null>(null)
+const activeTab = ref('roles');
+const showRoleModal = ref(false);
+const showPermissionModal = ref(false);
+const editingRole = ref<Role | null>(null);
+const editingPermission = ref<Permission | null>(null);
 
 // Form data
 const roleForm = ref({
-  id: "",
-  name: "",
-  description: "",
+  id: '',
+  name: '',
+  description: '',
   permissions: [] as string[],
   isActive: true,
-})
+});
 
 const permissionForm = ref({
-  id: "",
-  name: "",
-  description: "",
-  module: "",
-  action: "",
-  resource: "",
-})
+  id: '',
+  name: '',
+  description: '',
+  module: '',
+  action: '',
+  resource: '',
+});
 
 // Computed
 const tabs = computed(() => [
-  {id: "roles", name: "Roles"},
-  {id: "permissions", name: "Permisos"},
-])
+  { id: 'roles', name: 'Roles' },
+  { id: 'permissions', name: 'Permisos' },
+]);
 
 const permissionsByModule = computed(() => {
-  const grouped: Record<string, Permission[]> = {}
+  const grouped: Record<string, Permission[]> = {};
   permissions.value.forEach((permission) => {
     if (!grouped[permission.module]) {
-      grouped[permission.module] = []
+      grouped[permission.module] = [];
     }
-    grouped[permission.module].push(permission)
-  })
-  return grouped
-})
+    grouped[permission.module].push(permission);
+  });
+  return grouped;
+});
 
 // Methods
 const openRoleModal = (role?: Role) => {
   if (role) {
-    editingRole.value = role
+    editingRole.value = role;
     roleForm.value = {
       id: role.id,
       name: role.name,
       description: role.description,
       permissions: [...role.permissions],
       isActive: role.isActive,
-    }
+    };
   } else {
-    editingRole.value = null
+    editingRole.value = null;
     roleForm.value = {
-      id: "",
-      name: "",
-      description: "",
+      id: '',
+      name: '',
+      description: '',
       permissions: [],
       isActive: true,
-    }
+    };
   }
-  showRoleModal.value = true
-}
+  showRoleModal.value = true;
+};
 
 const closeRoleModal = () => {
-  showRoleModal.value = false
-  editingRole.value = null
-}
+  showRoleModal.value = false;
+  editingRole.value = null;
+};
 
 const openPermissionModal = (permission?: Permission) => {
   if (permission) {
-    editingPermission.value = permission
+    editingPermission.value = permission;
     permissionForm.value = {
       id: permission.id,
       name: permission.name,
@@ -501,25 +501,25 @@ const openPermissionModal = (permission?: Permission) => {
       module: permission.module,
       action: permission.action,
       resource: permission.resource,
-    }
+    };
   } else {
-    editingPermission.value = null
+    editingPermission.value = null;
     permissionForm.value = {
-      id: "",
-      name: "",
-      description: "",
-      module: "",
-      action: "",
-      resource: "",
-    }
+      id: '',
+      name: '',
+      description: '',
+      module: '',
+      action: '',
+      resource: '',
+    };
   }
-  showPermissionModal.value = true
-}
+  showPermissionModal.value = true;
+};
 
 const closePermissionModal = () => {
-  showPermissionModal.value = false
-  editingPermission.value = null
-}
+  showPermissionModal.value = false;
+  editingPermission.value = null;
+};
 
 const saveRole = async () => {
   try {
@@ -528,73 +528,73 @@ const saveRole = async () => {
       id: roleForm.value.id || generateId(),
       createdAt: editingRole.value?.createdAt || new Date(),
       updatedAt: new Date(),
-    }
+    };
 
     if (editingRole.value) {
       // Update existing role
-      const index = roles.value.findIndex((r) => r.id === editingRole.value!.id)
+      const index = roles.value.findIndex((r) => r.id === editingRole.value!.id);
       if (index !== -1) {
-        roles.value[index] = roleData
+        roles.value[index] = roleData;
       }
     } else {
       // Add new role
-      roles.value.push(roleData)
+      roles.value.push(roleData);
     }
 
-    await saveRoles()
-    closeRoleModal()
+    await saveRoles();
+    closeRoleModal();
   } catch (err) {
-    console.error("Error saving role:", err)
-    error.value = "Error al guardar el rol"
+    console.error('Error saving role:', err);
+    error.value = 'Error al guardar el rol';
   }
-}
+};
 
 const savePermission = async () => {
   try {
     const permissionData = {
       ...permissionForm.value,
       id: permissionForm.value.id || generateId(),
-    }
+    };
 
     if (editingPermission.value) {
       // Update existing permission
-      const index = permissions.value.findIndex((p) => p.id === editingPermission.value!.id)
+      const index = permissions.value.findIndex((p) => p.id === editingPermission.value!.id);
       if (index !== -1) {
-        permissions.value[index] = permissionData
+        permissions.value[index] = permissionData;
       }
     } else {
       // Add new permission
-      permissions.value.push(permissionData)
+      permissions.value.push(permissionData);
     }
 
-    await savePermissions()
-    closePermissionModal()
+    await savePermissions();
+    closePermissionModal();
   } catch (err) {
-    console.error("Error saving permission:", err)
-    error.value = "Error al guardar el permiso"
+    console.error('Error saving permission:', err);
+    error.value = 'Error al guardar el permiso';
   }
-}
+};
 
 const toggleRoleStatus = async (role: Role) => {
   try {
-    const index = roles.value.findIndex((r) => r.id === role.id)
+    const index = roles.value.findIndex((r) => r.id === role.id);
     if (index !== -1) {
-      roles.value[index].isActive = !roles.value[index].isActive
-      roles.value[index].updatedAt = new Date()
-      await saveRoles()
+      roles.value[index].isActive = !roles.value[index].isActive;
+      roles.value[index].updatedAt = new Date();
+      await saveRoles();
     }
   } catch (err) {
-    console.error("Error toggling role status:", err)
-    error.value = "Error al cambiar el estado del rol"
+    console.error('Error toggling role status:', err);
+    error.value = 'Error al cambiar el estado del rol';
   }
-}
+};
 
 const generateId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2)
-}
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+};
 
 // Lifecycle
 onMounted(async () => {
-  await Promise.all([loadRoles(), loadPermissions()])
-})
+  await Promise.all([loadRoles(), loadPermissions()]);
+});
 </script>

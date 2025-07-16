@@ -214,7 +214,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
+import { ref, computed } from 'vue';
 import {
   ChevronUpDownIcon,
   ChevronUpIcon,
@@ -224,70 +224,70 @@ import {
   AcademicCapIcon,
   XMarkIcon,
   CheckIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Props
 const props = defineProps<{
   teachers: any[]
   loading?: boolean
-}>()
+}>();
 
 // Emits
 defineEmits<{
-  "view-teacher": [teacher: any]
-  "edit-teacher": [teacher: any]
-  "assign-classes": [teacher: any]
-  "toggle-status": [teacher: any]
-}>()
+  'view-teacher': [teacher: any]
+  'edit-teacher': [teacher: any]
+  'assign-classes': [teacher: any]
+  'toggle-status': [teacher: any]
+}>();
 
 // Sorting
-const sortField = ref<string>("nombre")
-const sortOrder = ref<"asc" | "desc">("asc")
+const sortField = ref<string>('nombre');
+const sortOrder = ref<'asc' | 'desc'>('asc');
 
 const handleSort = (field: string) => {
   if (sortField.value === field) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc"
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
   } else {
-    sortField.value = field
-    sortOrder.value = "asc"
+    sortField.value = field;
+    sortOrder.value = 'asc';
   }
-}
+};
 
 const sortedTeachers = computed(() => {
-  const teachers = [...props.teachers]
+  const teachers = [...props.teachers];
 
   return teachers.sort((a, b) => {
-    let aValue: any = a[sortField.value]
-    let bValue: any = b[sortField.value]
+    let aValue: any = a[sortField.value];
+    let bValue: any = b[sortField.value];
 
     // Handle specific field types
-    if (sortField.value === "name") {
-      aValue = `${a.nombre} ${a.apellido}`.toLowerCase()
-      bValue = `${b.nombre} ${b.apellido}`.toLowerCase()
+    if (sortField.value === 'name') {
+      aValue = `${a.nombre} ${a.apellido}`.toLowerCase();
+      bValue = `${b.nombre} ${b.apellido}`.toLowerCase();
     }
 
     if (aValue < bValue) {
-      return sortOrder.value === "asc" ? -1 : 1
+      return sortOrder.value === 'asc' ? -1 : 1;
     }
     if (aValue > bValue) {
-      return sortOrder.value === "asc" ? 1 : -1
+      return sortOrder.value === 'asc' ? 1 : -1;
     }
-    return 0
-  })
-})
+    return 0;
+  });
+});
 
 // Helper functions
 const getInitials = (firstName: string, lastName: string) => {
-  return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase()
-}
+  return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+};
 
 const getTeacherSpecialties = (teacher: any) => {
   // This should be adapted based on your teacher data structure
-  return teacher.especialidades || teacher.instruments || []
-}
+  return teacher.especialidades || teacher.instruments || [];
+};
 
 const getTeacherClassCount = (teacher: any) => {
   // This should be adapted based on your teacher data structure
-  return teacher.clases?.length || teacher.classCount || 0
-}
+  return teacher.clases?.length || teacher.classCount || 0;
+};
 </script>

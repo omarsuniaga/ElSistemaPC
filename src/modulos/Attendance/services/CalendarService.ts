@@ -3,8 +3,8 @@
  * Arquitectura limpia con responsabilidades bien definidas
  */
 
-import { format, parseISO } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import type {
   DayOfWeek,
   SpanishDayName,
@@ -12,8 +12,8 @@ import type {
   DayClassItem,
   DayClassesResult,
   ClassFilterParams,
-  ClassTimeSlot
-} from '../types/calendar.types'
+  ClassTimeSlot,
+} from '../types/calendar.types';
 
 /**
  * Mapeo de días JavaScript a nombres en español
@@ -25,8 +25,8 @@ const DAY_NAMES: Record<DayOfWeek, SpanishDayName> = {
   3: 'miércoles',
   4: 'jueves',
   5: 'viernes',
-  6: 'sábado'
-}
+  6: 'sábado',
+};
 
 /**
  * Mapeo de nombres en español a números JavaScript
@@ -38,8 +38,8 @@ const SPANISH_DAY_TO_NUMBER: Record<string, DayOfWeek> = {
   'miércoles': 3, 'Miércoles': 3, 'miercoles': 3, 'Miercoles': 3,
   'jueves': 4, 'Jueves': 4,
   'viernes': 5, 'Viernes': 5,
-  'sábado': 6, 'Sábado': 6, 'sabado': 6, 'Sabado': 6
-}
+  'sábado': 6, 'Sábado': 6, 'sabado': 6, 'Sabado': 6,
+};
 
 export class CalendarService {
   /**
@@ -49,11 +49,11 @@ export class CalendarService {
    */
   static getDayOfWeek(dateString: string): DayOfWeek {
     try {
-      const date = parseISO(dateString)
-      return date.getDay() as DayOfWeek
+      const date = parseISO(dateString);
+      return date.getDay() as DayOfWeek;
     } catch (error) {
-      console.error('[CalendarService] Error parsing date:', dateString, error)
-      throw new Error(`Invalid date format: ${dateString}`)
+      console.error('[CalendarService] Error parsing date:', dateString, error);
+      throw new Error(`Invalid date format: ${dateString}`);
     }
   }
 
@@ -63,8 +63,8 @@ export class CalendarService {
    * @returns Nombre del día en español
    */
   static getDayName(dateString: string): SpanishDayName {
-    const dayNumber = this.getDayOfWeek(dateString)
-    return DAY_NAMES[dayNumber]
+    const dayNumber = this.getDayOfWeek(dateString);
+    return DAY_NAMES[dayNumber];
   }
 
   /**
@@ -75,13 +75,13 @@ export class CalendarService {
    */
   static isClassScheduledForDay(classItem: ClassItem, targetDay: DayOfWeek): boolean {
     if (!classItem.schedule?.slots || !Array.isArray(classItem.schedule.slots)) {
-      return false
+      return false;
     }
 
     return classItem.schedule.slots.some((slot: ClassTimeSlot) => {
-      const slotDayNumber = SPANISH_DAY_TO_NUMBER[slot.day.toLowerCase()]
-      return slotDayNumber === targetDay
-    })
+      const slotDayNumber = SPANISH_DAY_TO_NUMBER[slot.day.toLowerCase()];
+      return slotDayNumber === targetDay;
+    });
   }
 
   /**
@@ -91,7 +91,7 @@ export class CalendarService {
    * @returns true si es el maestro principal
    */
   static isPrimaryTeacher(classItem: ClassItem, teacherId: string): boolean {
-    return classItem.teacherId === teacherId
+    return classItem.teacherId === teacherId;
   }
 
   /**
@@ -102,15 +102,15 @@ export class CalendarService {
    */
   static isCollaboratingTeacher(classItem: ClassItem, teacherId: string): boolean {
     if (!classItem.teachers || !Array.isArray(classItem.teachers)) {
-      return false
+      return false;
     }
 
     return classItem.teachers.some(teacher => {
       if (typeof teacher === 'string') {
-        return teacher === teacherId
+        return teacher === teacherId;
       }
-      return teacher.teacherId === teacherId
-    })
+      return teacher.teacherId === teacherId;
+    });
   }
 
   /**
@@ -121,14 +121,14 @@ export class CalendarService {
    */
   static getTeacherPermissions(classItem: ClassItem, teacherId: string) {
     if (!classItem.teachers || !Array.isArray(classItem.teachers)) {
-      return undefined
+      return undefined;
     }
 
     const teacher = classItem.teachers.find(t => 
-      typeof t === 'object' && t.teacherId === teacherId
-    )
+      typeof t === 'object' && t.teacherId === teacherId,
+    );
 
-    return typeof teacher === 'object' ? teacher.permissions : undefined
+    return typeof teacher === 'object' ? teacher.permissions : undefined;
   }
 
   /**
@@ -139,39 +139,39 @@ export class CalendarService {
    */
   static async getClassesForDay(
     allClasses: ClassItem[], 
-    params: ClassFilterParams
+    params: ClassFilterParams,
   ): Promise<DayClassesResult> {
-    const { date, teacherId, includeSharedClasses = true } = params
+    const { date, teacherId, includeSharedClasses = true } = params;
     
     try {
-      const dayOfWeek = this.getDayOfWeek(date)
-      const dayName = this.getDayName(date)
+      const dayOfWeek = this.getDayOfWeek(date);
+      const dayName = this.getDayName(date);
       
-      console.log(`[CalendarService] Filtering classes for ${date} (${dayName}, day ${dayOfWeek})`)
-      console.log(`[CalendarService] Teacher: ${teacherId}`)
-      console.log(`[CalendarService] Total classes to check: ${allClasses.length}`)
+      console.log(`[CalendarService] Filtering classes for ${date} (${dayName}, day ${dayOfWeek})`);
+      console.log(`[CalendarService] Teacher: ${teacherId}`);
+      console.log(`[CalendarService] Total classes to check: ${allClasses.length}`);
 
-      const filteredClasses: DayClassItem[] = []
+      const filteredClasses: DayClassItem[] = [];
 
       for (const classItem of allClasses) {
         // Verificar si la clase está programada para este día
-        const isScheduledForDay = this.isClassScheduledForDay(classItem, dayOfWeek)
+        const isScheduledForDay = this.isClassScheduledForDay(classItem, dayOfWeek);
         
         if (!isScheduledForDay) {
-          continue
+          continue;
         }
 
         // Verificar rol del maestro
-        const isPrimary = this.isPrimaryTeacher(classItem, teacherId)
-        const isCollaborator = includeSharedClasses && this.isCollaboratingTeacher(classItem, teacherId)
+        const isPrimary = this.isPrimaryTeacher(classItem, teacherId);
+        const isCollaborator = includeSharedClasses && this.isCollaboratingTeacher(classItem, teacherId);
 
         if (!isPrimary && !isCollaborator) {
-          continue
+          continue;
         }
 
         // Obtener permisos
-        const permissions = this.getTeacherPermissions(classItem, teacherId)
-        const canTakeAttendance = isPrimary || (permissions?.canTakeAttendance !== false)
+        const permissions = this.getTeacherPermissions(classItem, teacherId);
+        const canTakeAttendance = isPrimary || (permissions?.canTakeAttendance !== false);
 
         // Crear objeto de clase para el día
         const dayClass: DayClassItem = {
@@ -179,12 +179,12 @@ export class CalendarService {
           userRole: isPrimary ? 'primary' : 'collaborator',
           canTakeAttendance,
           hasAttendanceRecord: false, // Se actualizará con datos reales
-          attendanceId: undefined
-        }
+          attendanceId: undefined,
+        };
 
-        filteredClasses.push(dayClass)
+        filteredClasses.push(dayClass);
 
-        console.log(`[CalendarService] ✅ Added class: ${classItem.name} (role: ${dayClass.userRole})`)
+        console.log(`[CalendarService] ✅ Added class: ${classItem.name} (role: ${dayClass.userRole})`);
       }
 
       const result: DayClassesResult = {
@@ -194,16 +194,16 @@ export class CalendarService {
         classes: filteredClasses,
         totalClasses: filteredClasses.length,
         classesWithAttendance: 0, // Se calculará con datos reales
-        classesPending: filteredClasses.length
-      }
+        classesPending: filteredClasses.length,
+      };
 
-      console.log(`[CalendarService] ✅ Filter complete: ${result.totalClasses} classes found`)
+      console.log(`[CalendarService] ✅ Filter complete: ${result.totalClasses} classes found`);
       
-      return result
+      return result;
 
     } catch (error) {
-      console.error('[CalendarService] Error filtering classes:', error)
-      throw new Error(`Failed to filter classes for ${date}: ${error}`)
+      console.error('[CalendarService] Error filtering classes:', error);
+      throw new Error(`Failed to filter classes for ${date}: ${error}`);
     }
   }
 
@@ -213,8 +213,8 @@ export class CalendarService {
    * @returns true si el formato es válido
    */
   static isValidDateFormat(dateString: string): boolean {
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-    return dateRegex.test(dateString)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    return dateRegex.test(dateString);
   }
 
   /**
@@ -225,11 +225,11 @@ export class CalendarService {
    */
   static formatDate(dateString: string, formatStr: string = 'EEEE, d MMMM yyyy'): string {
     try {
-      const date = parseISO(dateString)
-      return format(date, formatStr, { locale: es })
+      const date = parseISO(dateString);
+      return format(date, formatStr, { locale: es });
     } catch (error) {
-      console.error('[CalendarService] Error formatting date:', error)
-      return dateString
+      console.error('[CalendarService] Error formatting date:', error);
+      return dateString;
     }
   }
 
@@ -240,23 +240,23 @@ export class CalendarService {
    * @param teacherId - ID del maestro
    */
   static debugClassFilter(classItem: ClassItem, targetDay: DayOfWeek, teacherId: string): void {
-    console.group(`[CalendarService] Debug: ${classItem.name}`)
+    console.group(`[CalendarService] Debug: ${classItem.name}`);
     
     console.log('📋 Class info:', {
       id: classItem.id,
       name: classItem.name,
       primaryTeacher: classItem.teacherId,
-      collaborators: classItem.teachers?.length || 0
-    })
+      collaborators: classItem.teachers?.length || 0,
+    });
 
     console.log('🗓️ Schedule:', {
       slots: classItem.schedule?.slots?.length || 0,
-      days: classItem.schedule?.slots?.map(s => s.day) || []
-    })
+      days: classItem.schedule?.slots?.map(s => s.day) || [],
+    });
 
-    const isScheduled = this.isClassScheduledForDay(classItem, targetDay)
-    const isPrimary = this.isPrimaryTeacher(classItem, teacherId)
-    const isCollaborator = this.isCollaboratingTeacher(classItem, teacherId)
+    const isScheduled = this.isClassScheduledForDay(classItem, targetDay);
+    const isPrimary = this.isPrimaryTeacher(classItem, teacherId);
+    const isCollaborator = this.isCollaboratingTeacher(classItem, teacherId);
 
     console.log('✅ Checks:', {
       targetDay,
@@ -264,9 +264,9 @@ export class CalendarService {
       isScheduledForDay: isScheduled,
       isPrimaryTeacher: isPrimary,
       isCollaboratingTeacher: isCollaborator,
-      shouldInclude: isScheduled && (isPrimary || isCollaborator)
-    })
+      shouldInclude: isScheduled && (isPrimary || isCollaborator),
+    });
 
-    console.groupEnd()
+    console.groupEnd();
   }
 }

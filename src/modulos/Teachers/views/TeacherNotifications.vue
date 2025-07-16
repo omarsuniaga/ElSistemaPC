@@ -140,16 +140,16 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {BellIcon, ExclamationTriangleIcon} from "@heroicons/vue/24/outline"
-import {useGeneralNotifications} from "../composables/useGeneralNotifications"
-import {useToast} from "../../../composables/useToast"
-import NotificationCard from "../components/NotificationCard.vue"
-import AssignStudentToClassModal from "../components/AssignStudentToClassModal.vue"
-import type {GeneralNotification} from "../services/generalNotifications"
+import { ref, computed } from 'vue';
+import { BellIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
+import { useGeneralNotifications } from '../composables/useGeneralNotifications';
+import { useToast } from '../../../composables/useToast';
+import NotificationCard from '../components/NotificationCard.vue';
+import AssignStudentToClassModal from '../components/AssignStudentToClassModal.vue';
+import type { GeneralNotification } from '../services/generalNotifications';
 
 // Composables
-const toast = useToast()
+const toast = useToast();
 const {
   notifications,
   unreadCount,
@@ -161,107 +161,107 @@ const {
   markAsRead,
   dismiss,
   takeAction,
-} = useGeneralNotifications()
+} = useGeneralNotifications();
 
 // Estado local
-const selectedFilter = ref<"all" | "unread" | "student-registration" | "announcements">("all")
-const showAssignModal = ref(false)
-const selectedStudent = ref<any>(null)
-const selectedNotification = ref<GeneralNotification | null>(null)
+const selectedFilter = ref<'all' | 'unread' | 'student-registration' | 'announcements'>('all');
+const showAssignModal = ref(false);
+const selectedStudent = ref<any>(null);
+const selectedNotification = ref<GeneralNotification | null>(null);
 
 // Computed
 const filteredNotifications = computed(() => {
   switch (selectedFilter.value) {
-    case "unread":
-      return notifications.value.filter((n) => n.status === "unread")
-    case "student-registration":
-      return notifications.value.filter((n) => n.type === "student-registration")
-    case "announcements":
-      return notifications.value.filter((n) => n.type === "general-announcement")
-    default:
-      return notifications.value
+  case 'unread':
+    return notifications.value.filter((n) => n.status === 'unread');
+  case 'student-registration':
+    return notifications.value.filter((n) => n.type === 'student-registration');
+  case 'announcements':
+    return notifications.value.filter((n) => n.type === 'general-announcement');
+  default:
+    return notifications.value;
   }
-})
+});
 
 // Métodos
 const getEmptyStateMessage = () => {
   switch (selectedFilter.value) {
-    case "unread":
-      return "No tienes notificaciones sin leer"
-    case "student-registration":
-      return "No hay registros de nuevos estudiantes"
-    case "announcements":
-      return "No hay anuncios disponibles"
-    default:
-      return "No tienes notificaciones"
+  case 'unread':
+    return 'No tienes notificaciones sin leer';
+  case 'student-registration':
+    return 'No hay registros de nuevos estudiantes';
+  case 'announcements':
+    return 'No hay anuncios disponibles';
+  default:
+    return 'No tienes notificaciones';
   }
-}
+};
 
 const getEmptyStateSubMessage = () => {
   switch (selectedFilter.value) {
-    case "unread":
-      return "Todas tus notificaciones están marcadas como leídas."
-    case "student-registration":
-      return "Cuando se registren nuevos estudiantes, aparecerán aquí."
-    case "announcements":
-      return "Los anuncios importantes aparecerán en esta sección."
-    default:
-      return "Cuando recibas notificaciones, aparecerán aquí."
+  case 'unread':
+    return 'Todas tus notificaciones están marcadas como leídas.';
+  case 'student-registration':
+    return 'Cuando se registren nuevos estudiantes, aparecerán aquí.';
+  case 'announcements':
+    return 'Los anuncios importantes aparecerán en esta sección.';
+  default:
+    return 'Cuando recibas notificaciones, aparecerán aquí.';
   }
-}
+};
 
 const handleMarkAsRead = async (notificationId: string) => {
-  const result = await markAsRead(notificationId)
+  const result = await markAsRead(notificationId);
   if (result.success) {
-    toast.success("Notificación marcada como leída")
+    toast.success('Notificación marcada como leída');
   } else {
-    toast.error(result.error || "Error al marcar como leída")
+    toast.error(result.error || 'Error al marcar como leída');
   }
-}
+};
 
 const handleDismiss = async (notificationId: string) => {
-  const result = await dismiss(notificationId)
+  const result = await dismiss(notificationId);
   if (result.success) {
-    toast.info("Notificación desestimada")
+    toast.info('Notificación desestimada');
   } else {
-    toast.error(result.error || "Error al desestimar")
+    toast.error(result.error || 'Error al desestimar');
   }
-}
+};
 
 const handleAssignToClass = (notification: GeneralNotification) => {
-  selectedNotification.value = notification
-  selectedStudent.value = notification.studentData
-  showAssignModal.value = true
-}
+  selectedNotification.value = notification;
+  selectedStudent.value = notification.studentData;
+  showAssignModal.value = true;
+};
 
 const handleActionTaken = async (notificationId: string, actionDetails?: any) => {
-  const result = await takeAction(notificationId, actionDetails)
+  const result = await takeAction(notificationId, actionDetails);
   if (result.success) {
-    toast.success("Acción registrada correctamente")
+    toast.success('Acción registrada correctamente');
   } else {
-    toast.error(result.error || "Error al registrar acción")
+    toast.error(result.error || 'Error al registrar acción');
   }
-}
+};
 
 const handleCloseAssignModal = () => {
-  showAssignModal.value = false
-  selectedStudent.value = null
-  selectedNotification.value = null
-}
+  showAssignModal.value = false;
+  selectedStudent.value = null;
+  selectedNotification.value = null;
+};
 
 const handleStudentAssigned = async (assignmentData: any) => {
   if (selectedNotification.value?.id) {
     await handleActionTaken(selectedNotification.value.id, {
-      action: "student-assigned-to-class",
+      action: 'student-assigned-to-class',
       classId: assignmentData.classId,
       className: assignmentData.className,
       assignedAt: new Date(),
-    })
+    });
   }
 
-  toast.success("Estudiante asignado a la clase exitosamente")
-  handleCloseAssignModal()
-}
+  toast.success('Estudiante asignado a la clase exitosamente');
+  handleCloseAssignModal();
+};
 </script>
 
 <style scoped>

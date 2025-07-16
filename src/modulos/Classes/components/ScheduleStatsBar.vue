@@ -68,8 +68,8 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {getActiveTimeRange, type AppConfig} from "../service/appConfig"
+import { computed } from 'vue';
+import { getActiveTimeRange, type AppConfig } from '../service/appConfig';
 
 interface Props {
   config: AppConfig
@@ -78,29 +78,29 @@ interface Props {
   onShowAllDay: () => void
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const timeRange = computed(() => {
-  const {start, end} = getActiveTimeRange(props.config)
-  const startAmPm = start >= 12 ? "PM" : "AM"
-  const endAmPm = end >= 12 ? "PM" : "AM"
-  const startHour = start % 12 || 12
-  const endHour = end % 12 || 12
+  const { start, end } = getActiveTimeRange(props.config);
+  const startAmPm = start >= 12 ? 'PM' : 'AM';
+  const endAmPm = end >= 12 ? 'PM' : 'AM';
+  const startHour = start % 12 || 12;
+  const endHour = end % 12 || 12;
 
-  return `${startHour}:00 ${startAmPm} - ${endHour}:00 ${endAmPm}`
-})
+  return `${startHour}:00 ${startAmPm} - ${endHour}:00 ${endAmPm}`;
+});
 
 const viewModeText = computed(() => {
-  return props.config.viewMode === "standard" ? "Estándar" : "Con solapamiento"
-})
+  return props.config.viewMode === 'standard' ? 'Estándar' : 'Con solapamiento';
+});
 
 const resetFilters = () => {
-  props.onResetFilters()
-}
+  props.onResetFilters();
+};
 
 const showAllDay = () => {
-  props.onShowAllDay()
-}
+  props.onShowAllDay();
+};
 </script>
 
 <style scoped>

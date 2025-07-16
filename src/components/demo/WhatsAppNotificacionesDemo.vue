@@ -161,10 +161,10 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted} from "vue"
-import WhatsAppNotificacionesModal from "@/components/WhatsAppNotificacionesModal.vue"
-import {useWhatsAppNotificacionesModal} from "@/composables/useWhatsAppNotificacionesModal"
-import {getMessageStatistics} from "@/services/attendanceNotifications"
+import { ref, onMounted } from 'vue';
+import WhatsAppNotificacionesModal from '@/components/WhatsAppNotificacionesModal.vue';
+import { useWhatsAppNotificacionesModal } from '@/composables/useWhatsAppNotificacionesModal';
+import { getMessageStatistics } from '@/services/attendanceNotifications';
 
 // Composable para el modal
 const {
@@ -172,50 +172,50 @@ const {
   openModal,
   closeModal,
   handleMessagesSent: baseHandleMessagesSent,
-} = useWhatsAppNotificacionesModal()
+} = useWhatsAppNotificacionesModal();
 
 // State
 const stats = ref({
   ausentes: 0,
   tarde: 0,
   justificado: 0,
-})
+});
 
-const recentMessages = ref<any[]>([])
+const recentMessages = ref<any[]>([]);
 
 // Methods
 const loadStats = async () => {
   try {
     // Cargar estadísticas de la semana actual
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setDate(endDate.getDate() - 7)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 7);
 
     const messageStats = await getMessageStatistics(
-      startDate.toISOString().split("T")[0],
-      endDate.toISOString().split("T")[0]
-    )
+      startDate.toISOString().split('T')[0],
+      endDate.toISOString().split('T')[0],
+    );
 
     // Procesar estadísticas por tipo
     messageStats.forEach((stat) => {
-      if (stat.type.includes("ausente")) stats.value.ausentes = stat.count
-      if (stat.type.includes("tarde")) stats.value.tarde = stat.count
-      if (stat.type.includes("justificado")) stats.value.justificado = stat.count
-    })
+      if (stat.type.includes('ausente')) stats.value.ausentes = stat.count;
+      if (stat.type.includes('tarde')) stats.value.tarde = stat.count;
+      if (stat.type.includes('justificado')) stats.value.justificado = stat.count;
+    });
   } catch (error) {
-    console.error("Error loading stats:", error)
+    console.error('Error loading stats:', error);
   }
-}
+};
 
 const formatDate = (date: Date | string) => {
-  const d = new Date(date)
-  return d.toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+  const d = new Date(date);
+  return d.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const handleMessagesSent = (result: {
   success: number
@@ -223,28 +223,28 @@ const handleMessagesSent = (result: {
   messages: any[]
 }) => {
   // Llamar al handler base del composable
-  baseHandleMessagesSent(result)
+  baseHandleMessagesSent(result);
 
   // Agregar mensajes al historial local
   const newMessages = result.messages.map((msg) => ({
     id: Date.now() + Math.random(),
-    studentName: msg.studentName || "Estudiante",
-    type: msg.type || "Notificación",
-    sentTo: msg.recipient || "Destinatario",
+    studentName: msg.studentName || 'Estudiante',
+    type: msg.type || 'Notificación',
+    sentTo: msg.recipient || 'Destinatario',
     success: msg.success || false,
     timestamp: new Date(),
-  }))
+  }));
 
-  recentMessages.value.unshift(...newMessages.slice(0, 5))
+  recentMessages.value.unshift(...newMessages.slice(0, 5));
 
   // Recargar estadísticas
-  loadStats()
-}
+  loadStats();
+};
 
 // Lifecycle
 onMounted(() => {
-  loadStats()
-})
+  loadStats();
+});
 </script>
 
 <style scoped>

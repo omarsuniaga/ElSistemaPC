@@ -260,12 +260,12 @@ Ejemplos:
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, nextTick, onMounted, onUnmounted} from "vue"
-import {useStudentsStore} from "../../modulos/Students/store/students"
-import {useCalificacionesStore} from "../../stores/calificaciones"
-import {useAuthStore} from "../../stores/auth"
-import type {Student} from "../../modulos/Students/types/student"
-import type {TaggedContent} from "../../stores/calificaciones"
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { useStudentsStore } from '../../modulos/Students/store/students';
+import { useCalificacionesStore } from '../../stores/calificaciones';
+import { useAuthStore } from '../../stores/auth';
+import type { Student } from '../../modulos/Students/types/student';
+import type { TaggedContent } from '../../stores/calificaciones';
 
 // Props
 const props = defineProps<{
@@ -275,385 +275,385 @@ const props = defineProps<{
   initialText?: string
   initialType?: string
   initialPriority?: string
-}>()
+}>();
 
 // Emits
 const emit = defineEmits<{
-  (e: "observation-saved", data: any): void
-  (e: "form-updated", data: any): void
-  (e: "cancel"): void
-}>()
+  (e: 'observation-saved', data: any): void
+  (e: 'form-updated', data: any): void
+  (e: 'cancel'): void
+}>();
 
 // Stores
-const studentsStore = useStudentsStore()
-const calificacionesStore = useCalificacionesStore()
-const authStore = useAuthStore()
+const studentsStore = useStudentsStore();
+const calificacionesStore = useCalificacionesStore();
+const authStore = useAuthStore();
 
 // Referencias del DOM
-const textareaRef = ref<HTMLTextAreaElement>()
+const textareaRef = ref<HTMLTextAreaElement>();
 
 // Estado del formulario
 const observationForm = ref({
-  type: props.initialType || "general",
-  priority: props.initialPriority || "media",
+  type: props.initialType || 'general',
+  priority: props.initialPriority || 'media',
   requiresFollowUp: false,
-})
+});
 
-const observationText = ref(props.initialText || "")
-const saving = ref(false)
+const observationText = ref(props.initialText || '');
+const saving = ref(false);
 
 // Estado del autocompletado
-const showAutocomplete = ref(false)
-const currentAutocompleteType = ref<"student" | "tag" | null>(null)
-const currentAutocompleteQuery = ref("")
-const autocompletePosition = ref({top: "0px", left: "0px", width: "200px"})
-const autocompleteSelectedIndex = ref(0)
-const cursorPosition = ref(0)
+const showAutocomplete = ref(false);
+const currentAutocompleteType = ref<'student' | 'tag' | null>(null);
+const currentAutocompleteQuery = ref('');
+const autocompletePosition = ref({ top: '0px', left: '0px', width: '200px' });
+const autocompleteSelectedIndex = ref(0);
+const cursorPosition = ref(0);
 
 // Estudiantes y contenido etiquetado
-const taggedStudents = ref<Student[]>([])
-const taggedContent = ref<TaggedContent[]>([])
+const taggedStudents = ref<Student[]>([]);
+const taggedContent = ref<TaggedContent[]>([]);
 
 // Computed properties
 const studentsInClass = computed(() => {
-  const classInfo = studentsStore.getStudentsByClass(props.classId)
-  return classInfo || []
-})
+  const classInfo = studentsStore.getStudentsByClass(props.classId);
+  return classInfo || [];
+});
 
 const filteredStudents = computed(() => {
-  if (currentAutocompleteType.value !== "student") return []
+  if (currentAutocompleteType.value !== 'student') return [];
 
-  const query = currentAutocompleteQuery.value.toLowerCase()
+  const query = currentAutocompleteQuery.value.toLowerCase();
   return studentsInClass.value
     .filter((student) => {
-      const fullName = `${student.nombre} ${student.apellido}`.toLowerCase()
-      return fullName.includes(query) && !isStudentTagged(student.id)
+      const fullName = `${student.nombre} ${student.apellido}`.toLowerCase();
+      return fullName.includes(query) && !isStudentTagged(student.id);
     })
-    .slice(0, 8)
-})
+    .slice(0, 8);
+});
 
 const filteredTags = computed(() => {
-  if (currentAutocompleteType.value !== "tag") return []
+  if (currentAutocompleteType.value !== 'tag') return [];
 
-  const suggestions = calificacionesStore.getTagsSuggestions(currentAutocompleteQuery.value)
-  return suggestions.filter((tag) => !isContentTagged(tag.id))
-})
+  const suggestions = calificacionesStore.getTagsSuggestions(currentAutocompleteQuery.value);
+  return suggestions.filter((tag) => !isContentTagged(tag.id));
+});
 
 const textareaHeight = computed(() => {
-  const lines = observationText.value.split("\n").length
-  return `${Math.max(200, lines * 24)}px`
-})
+  const lines = observationText.value.split('\n').length;
+  return `${Math.max(200, lines * 24)}px`;
+});
 
 const highlightedText = computed(() => {
-  if (!observationText.value) return ""
+  if (!observationText.value) return '';
 
-  let highlighted = observationText.value
+  let highlighted = observationText.value;
 
   // Destacar menciones de estudiantes (@)
   highlighted = highlighted.replace(
     /@(\w+)/g,
-    '<span class="bg-blue-200 text-blue-800 px-1 rounded">@$1</span>'
-  )
+    '<span class="bg-blue-200 text-blue-800 px-1 rounded">@$1</span>',
+  );
 
   // Destacar hashtags (#)
   highlighted = highlighted.replace(
     /#(\w+)/g,
-    '<span class="bg-green-200 text-green-800 px-1 rounded">#$1</span>'
-  )
+    '<span class="bg-green-200 text-green-800 px-1 rounded">#$1</span>',
+  );
 
   // Destacar viñetas (::)
   highlighted = highlighted.replace(
     /^:: (.+)$/gm,
-    '<span class="bg-yellow-200 text-yellow-800 px-1 rounded">• $1</span>'
-  )
+    '<span class="bg-yellow-200 text-yellow-800 px-1 rounded">• $1</span>',
+  );
 
-  return highlighted
-})
+  return highlighted;
+});
 
 const processedContent = computed(() => {
-  if (!observationText.value) return ""
+  if (!observationText.value) return '';
 
-  let processed = observationText.value
+  let processed = observationText.value;
 
   // Convertir viñetas
-  processed = processed.replace(/^:: (.+)$/gm, "• $1")
+  processed = processed.replace(/^:: (.+)$/gm, '• $1');
 
   // Procesar menciones de estudiantes
   taggedStudents.value.forEach((student) => {
-    const mention = `@${student.nombre}${student.apellido}`
-    const replacement = `<strong class="text-blue-600">@${student.nombre} ${student.apellido}</strong>`
-    processed = processed.replace(new RegExp(mention, "g"), replacement)
-  })
+    const mention = `@${student.nombre}${student.apellido}`;
+    const replacement = `<strong class="text-blue-600">@${student.nombre} ${student.apellido}</strong>`;
+    processed = processed.replace(new RegExp(mention, 'g'), replacement);
+  });
 
   // Procesar hashtags
   taggedContent.value.forEach((tag) => {
-    const hashtag = `#${tag.name}`
-    const replacement = `<strong class="text-green-600">#${tag.name}</strong>`
-    processed = processed.replace(new RegExp(hashtag, "g"), replacement)
-  })
+    const hashtag = `#${tag.name}`;
+    const replacement = `<strong class="text-green-600">#${tag.name}</strong>`;
+    processed = processed.replace(new RegExp(hashtag, 'g'), replacement);
+  });
 
   // Convertir saltos de línea
-  processed = processed.replace(/\n/g, "<br>")
+  processed = processed.replace(/\n/g, '<br>');
 
-  return processed
-})
+  return processed;
+});
 
 const canSave = computed(() => {
-  return observationText.value.trim().length > 10 && !saving.value
-})
+  return observationText.value.trim().length > 10 && !saving.value;
+});
 
 // Métodos de utilidad
 const isStudentTagged = (studentId: string): boolean => {
-  return taggedStudents.value.some((s) => s.id === studentId)
-}
+  return taggedStudents.value.some((s) => s.id === studentId);
+};
 
 const isContentTagged = (tagId: string): boolean => {
-  return taggedContent.value.some((t) => t.id === tagId)
-}
+  return taggedContent.value.some((t) => t.id === tagId);
+};
 
 const getTagTypeLabel = (type: string): string => {
   const labels = {
-    obra: "Obra",
-    metodo: "Método",
-    leccion: "Lección",
-    ejercicio: "Ejercicio",
-    otro: "Otro",
-  }
-  return labels[type] || "Desconocido"
-}
+    obra: 'Obra',
+    metodo: 'Método',
+    leccion: 'Lección',
+    ejercicio: 'Ejercicio',
+    otro: 'Otro',
+  };
+  return labels[type] || 'Desconocido';
+};
 
 const getTagTypeEmoji = (type: string): string => {
   const emojis = {
-    obra: "🎵",
-    metodo: "📚",
-    leccion: "📖",
-    ejercicio: "🏋️",
-    otro: "🏷️",
-  }
-  return emojis[type] || "🏷️"
-}
+    obra: '🎵',
+    metodo: '📚',
+    leccion: '📖',
+    ejercicio: '🏋️',
+    otro: '🏷️',
+  };
+  return emojis[type] || '🏷️';
+};
 
 // Manejo del texto y autocompletado
 const handleTextInput = (event: Event): void => {
-  const target = event.target as HTMLTextAreaElement
-  const text = target.value
-  const cursorPos = target.selectionStart
+  const target = event.target as HTMLTextAreaElement;
+  const text = target.value;
+  const cursorPos = target.selectionStart;
 
-  cursorPosition.value = cursorPos
-  checkForAutocomplete(text, cursorPos)
-  extractTaggedContent(text)
-}
+  cursorPosition.value = cursorPos;
+  checkForAutocomplete(text, cursorPos);
+  extractTaggedContent(text);
+};
 
 const handleKeyDown = (event: KeyboardEvent): void => {
-  const target = event.target as HTMLTextAreaElement
+  const target = event.target as HTMLTextAreaElement;
 
   // Manejar viñetas con ::
   if (
-    event.key === "Enter" &&
-    target.value.slice(target.selectionStart - 2, target.selectionStart) === "::"
+    event.key === 'Enter' &&
+    target.value.slice(target.selectionStart - 2, target.selectionStart) === '::'
   ) {
-    event.preventDefault()
-    const before = target.value.slice(0, target.selectionStart - 2)
-    const after = target.value.slice(target.selectionStart)
-    observationText.value = before + ":: " + after
+    event.preventDefault();
+    const before = target.value.slice(0, target.selectionStart - 2);
+    const after = target.value.slice(target.selectionStart);
+    observationText.value = before + ':: ' + after;
 
     nextTick(() => {
-      target.setSelectionRange(before.length + 3, before.length + 3)
-    })
-    return
+      target.setSelectionRange(before.length + 3, before.length + 3);
+    });
+    return;
   }
 
   // Navegación en autocompletado
   if (showAutocomplete.value) {
-    const maxIndex = Math.max(filteredStudents.value.length, filteredTags.value.length) - 1
+    const maxIndex = Math.max(filteredStudents.value.length, filteredTags.value.length) - 1;
 
-    if (event.key === "ArrowDown") {
-      event.preventDefault()
-      autocompleteSelectedIndex.value = Math.min(autocompleteSelectedIndex.value + 1, maxIndex)
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault()
-      autocompleteSelectedIndex.value = Math.max(autocompleteSelectedIndex.value - 1, 0)
-    } else if (event.key === "Enter") {
-      event.preventDefault()
-      selectAutocompleteItem()
-    } else if (event.key === "Escape") {
-      hideAutocomplete()
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      autocompleteSelectedIndex.value = Math.min(autocompleteSelectedIndex.value + 1, maxIndex);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      autocompleteSelectedIndex.value = Math.max(autocompleteSelectedIndex.value - 1, 0);
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      selectAutocompleteItem();
+    } else if (event.key === 'Escape') {
+      hideAutocomplete();
     }
   }
-}
+};
 
 const handleTextClick = (): void => {
   if (textareaRef.value) {
-    cursorPosition.value = textareaRef.value.selectionStart
-    checkForAutocomplete(observationText.value, cursorPosition.value)
+    cursorPosition.value = textareaRef.value.selectionStart;
+    checkForAutocomplete(observationText.value, cursorPosition.value);
   }
-}
+};
 
 const checkForAutocomplete = (text: string, cursorPos: number): void => {
-  const beforeCursor = text.slice(0, cursorPos)
+  const beforeCursor = text.slice(0, cursorPos);
 
   // Buscar @ más reciente
-  const lastAtIndex = beforeCursor.lastIndexOf("@")
-  const lastHashIndex = beforeCursor.lastIndexOf("#")
+  const lastAtIndex = beforeCursor.lastIndexOf('@');
+  const lastHashIndex = beforeCursor.lastIndexOf('#');
 
   // Determinar cuál símbolo está más cerca del cursor
-  const lastSymbolIndex = Math.max(lastAtIndex, lastHashIndex)
+  const lastSymbolIndex = Math.max(lastAtIndex, lastHashIndex);
 
   if (lastSymbolIndex === -1) {
-    hideAutocomplete()
-    return
+    hideAutocomplete();
+    return;
   }
 
-  const textAfterSymbol = beforeCursor.slice(lastSymbolIndex + 1)
+  const textAfterSymbol = beforeCursor.slice(lastSymbolIndex + 1);
 
   // Verificar que no hay espacios después del símbolo
-  if (textAfterSymbol.includes(" ") || textAfterSymbol.includes("\n")) {
-    hideAutocomplete()
-    return
+  if (textAfterSymbol.includes(' ') || textAfterSymbol.includes('\n')) {
+    hideAutocomplete();
+    return;
   }
 
   if (lastSymbolIndex === lastAtIndex) {
     // Autocompletado de estudiantes
-    currentAutocompleteType.value = "student"
-    currentAutocompleteQuery.value = textAfterSymbol
-    showAutocompleteDropdown()
+    currentAutocompleteType.value = 'student';
+    currentAutocompleteQuery.value = textAfterSymbol;
+    showAutocompleteDropdown();
   } else if (lastSymbolIndex === lastHashIndex) {
     // Autocompletado de contenido
-    currentAutocompleteType.value = "tag"
-    currentAutocompleteQuery.value = textAfterSymbol
-    showAutocompleteDropdown()
+    currentAutocompleteType.value = 'tag';
+    currentAutocompleteQuery.value = textAfterSymbol;
+    showAutocompleteDropdown();
   }
-}
+};
 
 const showAutocompleteDropdown = (): void => {
-  showAutocomplete.value = true
-  autocompleteSelectedIndex.value = 0
+  showAutocomplete.value = true;
+  autocompleteSelectedIndex.value = 0;
 
   nextTick(() => {
-    updateAutocompletePosition()
-  })
-}
+    updateAutocompletePosition();
+  });
+};
 
 const hideAutocomplete = (): void => {
-  showAutocomplete.value = false
-  currentAutocompleteType.value = null
-  currentAutocompleteQuery.value = ""
-}
+  showAutocomplete.value = false;
+  currentAutocompleteType.value = null;
+  currentAutocompleteQuery.value = '';
+};
 
 const updateAutocompletePosition = (): void => {
-  if (!textareaRef.value) return
+  if (!textareaRef.value) return;
 
-  const textarea = textareaRef.value
-  const rect = textarea.getBoundingClientRect()
+  const textarea = textareaRef.value;
+  const rect = textarea.getBoundingClientRect();
 
   // Posición aproximada basada en el cursor
   autocompletePosition.value = {
     top: `${rect.bottom + 5}px`,
     left: `${rect.left}px`,
     width: `${Math.min(300, rect.width)}px`,
-  }
-}
+  };
+};
 
 const selectAutocompleteItem = (): void => {
-  if (currentAutocompleteType.value === "student" && filteredStudents.value.length > 0) {
-    const student = filteredStudents.value[autocompleteSelectedIndex.value]
-    if (student) insertStudentMention(student)
-  } else if (currentAutocompleteType.value === "tag" && filteredTags.value.length > 0) {
-    const tag = filteredTags.value[autocompleteSelectedIndex.value]
-    if (tag) insertTagMention(tag)
+  if (currentAutocompleteType.value === 'student' && filteredStudents.value.length > 0) {
+    const student = filteredStudents.value[autocompleteSelectedIndex.value];
+    if (student) insertStudentMention(student);
+  } else if (currentAutocompleteType.value === 'tag' && filteredTags.value.length > 0) {
+    const tag = filteredTags.value[autocompleteSelectedIndex.value];
+    if (tag) insertTagMention(tag);
   }
-}
+};
 
 const insertStudentMention = (student: Student): void => {
-  const mention = `@${student.nombre}${student.apellido}`
-  replaceMentionInText("@", mention)
+  const mention = `@${student.nombre}${student.apellido}`;
+  replaceMentionInText('@', mention);
 
   if (!isStudentTagged(student.id)) {
-    taggedStudents.value.push(student)
+    taggedStudents.value.push(student);
   }
 
-  hideAutocomplete()
-}
+  hideAutocomplete();
+};
 
 const insertTagMention = (tag: TaggedContent): void => {
-  const hashtag = `#${tag.name}`
-  replaceMentionInText("#", hashtag)
+  const hashtag = `#${tag.name}`;
+  replaceMentionInText('#', hashtag);
 
   if (!isContentTagged(tag.id)) {
-    taggedContent.value.push(tag)
+    taggedContent.value.push(tag);
   }
 
-  hideAutocomplete()
-}
+  hideAutocomplete();
+};
 
 const replaceMentionInText = (symbol: string, replacement: string): void => {
-  const text = observationText.value
-  const beforeCursor = text.slice(0, cursorPosition.value)
-  const afterCursor = text.slice(cursorPosition.value)
+  const text = observationText.value;
+  const beforeCursor = text.slice(0, cursorPosition.value);
+  const afterCursor = text.slice(cursorPosition.value);
 
-  const lastSymbolIndex = beforeCursor.lastIndexOf(symbol)
+  const lastSymbolIndex = beforeCursor.lastIndexOf(symbol);
 
   if (lastSymbolIndex !== -1) {
-    const before = beforeCursor.slice(0, lastSymbolIndex)
-    const newText = before + replacement + " " + afterCursor
-    observationText.value = newText
+    const before = beforeCursor.slice(0, lastSymbolIndex);
+    const newText = before + replacement + ' ' + afterCursor;
+    observationText.value = newText;
 
     nextTick(() => {
-      const newCursorPos = before.length + replacement.length + 1
+      const newCursorPos = before.length + replacement.length + 1;
       if (textareaRef.value) {
-        textareaRef.value.setSelectionRange(newCursorPos, newCursorPos)
-        textareaRef.value.focus()
+        textareaRef.value.setSelectionRange(newCursorPos, newCursorPos);
+        textareaRef.value.focus();
       }
-    })
+    });
   }
-}
+};
 
 const extractTaggedContent = (text: string): void => {
   // Esta función se puede expandir para extraer automáticamente
   // menciones que no fueron añadidas por autocompletado
-}
+};
 
 const createNewTag = async (): Promise<void> => {
-  if (!currentAutocompleteQuery.value.trim()) return
+  if (!currentAutocompleteQuery.value.trim()) return;
 
   try {
     const newTag = await calificacionesStore.createOrUpdateTag(
       currentAutocompleteQuery.value,
-      "otro", // Tipo por defecto
-      authStore.user?.uid || "unknown"
-    )
+      'otro', // Tipo por defecto
+      authStore.user?.uid || 'unknown',
+    );
 
-    insertTagMention(newTag)
+    insertTagMention(newTag);
   } catch (error) {
-    console.error("Error al crear nuevo tag:", error)
+    console.error('Error al crear nuevo tag:', error);
   }
-}
+};
 
 const removeStudentTag = (studentId: string): void => {
-  taggedStudents.value = taggedStudents.value.filter((s) => s.id !== studentId)
-}
+  taggedStudents.value = taggedStudents.value.filter((s) => s.id !== studentId);
+};
 
 const removeContentTag = (tagId: string): void => {
-  taggedContent.value = taggedContent.value.filter((t) => t.id !== tagId)
-}
+  taggedContent.value = taggedContent.value.filter((t) => t.id !== tagId);
+};
 
 const clearForm = (): void => {
-  observationText.value = ""
-  taggedStudents.value = []
-  taggedContent.value = []
+  observationText.value = '';
+  taggedStudents.value = [];
+  taggedContent.value = [];
   observationForm.value = {
-    type: "general",
-    priority: "media",
+    type: 'general',
+    priority: 'media',
     requiresFollowUp: false,
-  }
-  hideAutocomplete()
-}
+  };
+  hideAutocomplete();
+};
 
 const saveObservation = async (): Promise<void> => {
-  if (!canSave.value) return
+  if (!canSave.value) return;
 
   try {
-    saving.value = true
+    saving.value = true;
 
     // Preparar datos de la observación
     const observationData = {
@@ -666,9 +666,9 @@ const saveObservation = async (): Promise<void> => {
       requiresFollowUp: observationForm.value.requiresFollowUp,
       taggedStudents: taggedStudents.value.map((s) => s.id),
       taggedContent: taggedContent.value.map((t) => t.name),
-      author: authStore.user?.email || "Usuario",
-      authorId: authStore.user?.uid || "unknown",
-    }
+      author: authStore.user?.email || 'Usuario',
+      authorId: authStore.user?.uid || 'unknown',
+    };
 
     // Guardar comentarios para estudiantes etiquetados
     for (const student of taggedStudents.value) {
@@ -678,56 +678,56 @@ const saveObservation = async (): Promise<void> => {
         props.classId,
         props.className,
         props.selectedDate,
-        authStore.user?.uid || "unknown",
-        authStore.user?.email || "Usuario",
+        authStore.user?.uid || 'unknown',
+        authStore.user?.email || 'Usuario',
         observationText.value,
-        taggedContent.value.map((t) => t.name)
-      )
+        taggedContent.value.map((t) => t.name),
+      );
     }
 
-    emit("observation-saved", observationData)
-    clearForm()
+    emit('observation-saved', observationData);
+    clearForm();
   } catch (error) {
-    console.error("Error al guardar observación:", error)
+    console.error('Error al guardar observación:', error);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  await calificacionesStore.initialize()
+  await calificacionesStore.initialize();
 
   // Cargar estudiantes de la clase si no están disponibles
   if (studentsInClass.value.length === 0) {
-    await studentsStore.fetchStudents()
+    await studentsStore.fetchStudents();
   }
-})
+});
 
 onUnmounted(() => {
-  hideAutocomplete()
-})
+  hideAutocomplete();
+});
 
 // Watchers
 watch(
   () => props.initialText,
   (newText) => {
     if (newText) {
-      observationText.value = newText
+      observationText.value = newText;
     }
-  }
-)
+  },
+);
 
 watch(
   () => observationText.value,
   () => {
-    emit("form-updated", {
+    emit('form-updated', {
       text: observationText.value,
       taggedStudents: taggedStudents.value.length,
       taggedContent: taggedContent.value.length,
-    })
-  }
-)
+    });
+  },
+);
 </script>
 
 <style scoped>

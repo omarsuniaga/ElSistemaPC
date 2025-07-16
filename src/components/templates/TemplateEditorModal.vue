@@ -314,12 +314,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
+import { ref, computed, watch } from 'vue';
 import {
   templateManager,
   type MessageTemplate,
   type TemplateVariable,
-} from "../../services/templates/templateManager"
+} from '../../services/templates/templateManager';
 
 // Props
 interface Props {
@@ -330,23 +330,23 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   template: null,
   isEditing: false,
-})
+});
 
 // Emits
 const emit = defineEmits<{
   close: []
   save: []
-}>()
+}>();
 
 // Estado reactivo
-const saving = ref(false)
+const saving = ref(false);
 
 // Datos del formulario
 const formData = ref<Partial<MessageTemplate>>({
-  name: "",
-  description: "",
-  content: "",
-  category: "general",
+  name: '',
+  description: '',
+  content: '',
+  category: 'general',
   escalationLevel: null,
   isActive: true,
   allowEditVariables: true,
@@ -356,99 +356,99 @@ const formData = ref<Partial<MessageTemplate>>({
     successRate: 0,
     lastUsed: null,
   },
-})
+});
 
 // Variables globales disponibles
 const availableVariables = ref([
-  {key: "{studentName}", description: "Nombre del estudiante"},
-  {key: "{className}", description: "Nombre de la clase"},
-  {key: "{date}", description: "Fecha actual"},
-  {key: "{time}", description: "Hora actual"},
-  {key: "{academyName}", description: "Nombre de la academia"},
-  {key: "{teacherName}", description: "Nombre del profesor"},
-  {key: "{parentName}", description: "Nombre del representante"},
-  {key: "{phoneNumber}", description: "Número de teléfono"},
-])
+  { key: '{studentName}', description: 'Nombre del estudiante' },
+  { key: '{className}', description: 'Nombre de la clase' },
+  { key: '{date}', description: 'Fecha actual' },
+  { key: '{time}', description: 'Hora actual' },
+  { key: '{academyName}', description: 'Nombre de la academia' },
+  { key: '{teacherName}', description: 'Nombre del profesor' },
+  { key: '{parentName}', description: 'Nombre del representante' },
+  { key: '{phoneNumber}', description: 'Número de teléfono' },
+]);
 
 // Computed
 const detectedVariables = computed(() => {
-  const content = formData.value.content || ""
-  const matches = content.match(/\{[^}]+\}/g)
-  return matches ? [...new Set(matches)] : []
-})
+  const content = formData.value.content || '';
+  const matches = content.match(/\{[^}]+\}/g);
+  return matches ? [...new Set(matches)] : [];
+});
 
 const previewContent = computed(() => {
-  let content = formData.value.content || ""
+  let content = formData.value.content || '';
 
   // Reemplazar variables con valores de ejemplo
-  content = content.replace(/\{studentName\}/g, "María González")
-  content = content.replace(/\{className\}/g, "Violín Intermedio")
-  content = content.replace(/\{date\}/g, new Date().toLocaleDateString("es-ES"))
+  content = content.replace(/\{studentName\}/g, 'María González');
+  content = content.replace(/\{className\}/g, 'Violín Intermedio');
+  content = content.replace(/\{date\}/g, new Date().toLocaleDateString('es-ES'));
   content = content.replace(
     /\{time\}/g,
-    new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit"})
-  )
-  content = content.replace(/\{academyName\}/g, "Academia Musical El Sistema")
-  content = content.replace(/\{teacherName\}/g, "Prof. Carlos Rodríguez")
-  content = content.replace(/\{parentName\}/g, "Ana María González")
-  content = content.replace(/\{phoneNumber\}/g, "+58 414-123-4567")
+    new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+  );
+  content = content.replace(/\{academyName\}/g, 'Academia Musical El Sistema');
+  content = content.replace(/\{teacherName\}/g, 'Prof. Carlos Rodríguez');
+  content = content.replace(/\{parentName\}/g, 'Ana María González');
+  content = content.replace(/\{phoneNumber\}/g, '+58 414-123-4567');
 
   // Reemplazar variables personalizadas con sus valores por defecto
   if (formData.value.variables) {
     formData.value.variables.forEach((variable: TemplateVariable) => {
-      const regex = new RegExp(`\\{${variable.key}\\}`, "g")
-      content = content.replace(regex, variable.defaultValue || `[${variable.key}]`)
-    })
+      const regex = new RegExp(`\\{${variable.key}\\}`, 'g');
+      content = content.replace(regex, variable.defaultValue || `[${variable.key}]`);
+    });
   }
 
-  return content || "Escribe tu mensaje aquí..."
-})
+  return content || 'Escribe tu mensaje aquí...';
+});
 
 // Métodos
 const insertVariable = (variableKey: string): void => {
   const textarea = document.querySelector(
-    'textarea[v-model="formData.content"]'
-  ) as HTMLTextAreaElement
+    'textarea[v-model="formData.content"]',
+  ) as HTMLTextAreaElement;
   if (textarea) {
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const content = formData.value.content || ""
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const content = formData.value.content || '';
 
-    formData.value.content = content.substring(0, start) + variableKey + content.substring(end)
+    formData.value.content = content.substring(0, start) + variableKey + content.substring(end);
 
     // Restaurar el foco y la posición del cursor
     setTimeout(() => {
-      textarea.focus()
-      textarea.setSelectionRange(start + variableKey.length, start + variableKey.length)
-    }, 0)
+      textarea.focus();
+      textarea.setSelectionRange(start + variableKey.length, start + variableKey.length);
+    }, 0);
   }
-}
+};
 
 const addVariable = (): void => {
   if (!formData.value.variables) {
-    formData.value.variables = []
+    formData.value.variables = [];
   }
   formData.value.variables.push({
-    key: "",
-    description: "",
-    defaultValue: "",
-  })
-}
+    key: '',
+    description: '',
+    defaultValue: '',
+  });
+};
 
 const removeVariable = (index: number): void => {
   if (formData.value.variables) {
-    formData.value.variables.splice(index, 1)
+    formData.value.variables.splice(index, 1);
   }
-}
+};
 
 const handleSave = async (): Promise<void> => {
-  saving.value = true
+  saving.value = true;
 
   try {
     // Validar campos requeridos
     if (!formData.value.name || !formData.value.content) {
-      alert("❌ Por favor completa todos los campos requeridos")
-      return
+      alert('❌ Por favor completa todos los campos requeridos');
+      return;
     }
 
     // Preparar datos para guardar
@@ -458,39 +458,39 @@ const handleSave = async (): Promise<void> => {
       isSystem: false,
       createdAt: props.isEditing ? props.template?.createdAt : new Date(),
       updatedAt: new Date(),
-    } as MessageTemplate
+    } as MessageTemplate;
 
     // Guardar plantilla
-    let success = false
+    let success = false;
     if (props.isEditing && templateData.id) {
-      success = await templateManager.updateTemplate(templateData.id, templateData)
+      success = await templateManager.updateTemplate(templateData.id, templateData);
     } else {
-      const newId = await templateManager.createTemplate(templateData)
-      success = !!newId
+      const newId = await templateManager.createTemplate(templateData);
+      success = !!newId;
     }
 
     if (success) {
-      alert("✅ Plantilla guardada exitosamente")
-      emit("save")
+      alert('✅ Plantilla guardada exitosamente');
+      emit('save');
     } else {
-      alert("❌ Error guardando la plantilla")
+      alert('❌ Error guardando la plantilla');
     }
   } catch (error) {
-    console.error("Error guardando plantilla:", error)
-    alert("❌ Error guardando la plantilla")
+    console.error('Error guardando plantilla:', error);
+    alert('❌ Error guardando la plantilla');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 // Watchers
 watch(
   () => props.template,
   (newTemplate) => {
     if (newTemplate) {
-      formData.value = {...newTemplate}
+      formData.value = { ...newTemplate };
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 </script>

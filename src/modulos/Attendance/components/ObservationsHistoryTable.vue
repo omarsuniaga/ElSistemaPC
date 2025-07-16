@@ -435,260 +435,260 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useAttendanceStore} from "../store/attendance"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useTeachersStore} from "../../Teachers/store/teachers" // Import teachers store
-import {useAuthStore} from "../../../stores/auth" // Import auth store
-import {format, isValid, parseISO, isAfter, isBefore, isEqual} from "date-fns"
-import {es} from "date-fns/locale"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useAttendanceStore } from '../store/attendance';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useTeachersStore } from '../../Teachers/store/teachers'; // Import teachers store
+import { useAuthStore } from '../../../stores/auth'; // Import auth store
+import { format, isValid, parseISO, isAfter, isBefore, isEqual } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 // Props
 interface Props {
   teacherFilter?: string
   initialClassFilter?: string
 }
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Stores
-const attendanceStore = useAttendanceStore()
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore() // Instantiate teachers store
+const attendanceStore = useAttendanceStore();
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore(); // Instantiate teachers store
 
 // Function to get teacher name from teacher ID
 const getTeacherName = (teacherId: string): string => {
-  if (!teacherId) return "Sistema"
+  if (!teacherId) return 'Sistema';
 
   // If it's 'Sistema', return as is
-  if (teacherId === "Sistema") return "Sistema"
+  if (teacherId === 'Sistema') return 'Sistema';
 
   // Try to find teacher by ID in the teachers store
-  const teacher = teachersStore.getTeacherById(teacherId)
+  const teacher = teachersStore.getTeacherById(teacherId);
   if (teacher) {
-    return teacher.name
+    return teacher.name;
   }
   // If not found, try to find by auth UID (fallback)
-  const teacherByUid = teachersStore.teachers.find((t) => t.uid === teacherId)
+  const teacherByUid = teachersStore.teachers.find((t) => t.uid === teacherId);
   if (teacherByUid) {
-    return teacherByUid.name
+    return teacherByUid.name;
   }
 
   // Return the original ID if no teacher found
-  return teacherId || "Sistema"
-}
+  return teacherId || 'Sistema';
+};
 
 // States
-const loading = ref(false)
-const error = ref<string | null>(null)
-const observations = ref<any[]>([])
+const loading = ref(false);
+const error = ref<string | null>(null);
+const observations = ref<any[]>([]);
 
 // Filters
-const selectedClassFilter = ref(props.initialClassFilter || "")
-const startDate = ref("")
-const endDate = ref("")
-const searchQuery = ref("")
+const selectedClassFilter = ref(props.initialClassFilter || '');
+const startDate = ref('');
+const endDate = ref('');
+const searchQuery = ref('');
 
 // Pagination
-const itemsPerPage = ref(10)
-const currentPage = ref(1)
+const itemsPerPage = ref(10);
+const currentPage = ref(1);
 
 // Computed properties
 const classes = computed(() => {
   return classesStore.classes.filter((c) => {
-    if (!props.teacherFilter) return true
-    return c.teacherId === props.teacherFilter
-  })
-})
+    if (!props.teacherFilter) return true;
+    return c.teacherId === props.teacherFilter;
+  });
+});
 
 // Filter observations
 const filteredObservations = computed(() => {
-  let filtered = [...observations.value]
+  let filtered = [...observations.value];
 
   // Filter by class
   if (selectedClassFilter.value) {
-    filtered = filtered.filter((obs) => obs.classId === selectedClassFilter.value)
+    filtered = filtered.filter((obs) => obs.classId === selectedClassFilter.value);
   }
 
   // Filter by date range
   if (startDate.value && endDate.value) {
     filtered = filtered.filter((obs) => {
-      const obsDate = parseISO(obs.date)
-      const start = parseISO(startDate.value)
-      const end = parseISO(endDate.value)
+      const obsDate = parseISO(obs.date);
+      const start = parseISO(startDate.value);
+      const end = parseISO(endDate.value);
 
-      if (!isValid(obsDate) || !isValid(start) || !isValid(end)) return true
+      if (!isValid(obsDate) || !isValid(start) || !isValid(end)) return true;
 
       return (
         (isAfter(obsDate, start) || isEqual(obsDate, start)) &&
         (isBefore(obsDate, end) || isEqual(obsDate, end))
-      )
-    })
+      );
+    });
   } else if (startDate.value) {
     filtered = filtered.filter((obs) => {
-      const obsDate = parseISO(obs.date)
-      const start = parseISO(startDate.value)
+      const obsDate = parseISO(obs.date);
+      const start = parseISO(startDate.value);
 
-      if (!isValid(obsDate) || !isValid(start)) return true
+      if (!isValid(obsDate) || !isValid(start)) return true;
 
-      return isAfter(obsDate, start) || isEqual(obsDate, start)
-    })
+      return isAfter(obsDate, start) || isEqual(obsDate, start);
+    });
   } else if (endDate.value) {
     filtered = filtered.filter((obs) => {
-      const obsDate = parseISO(obs.date)
-      const end = parseISO(endDate.value)
+      const obsDate = parseISO(obs.date);
+      const end = parseISO(endDate.value);
 
-      if (!isValid(obsDate) || !isValid(end)) return true
+      if (!isValid(obsDate) || !isValid(end)) return true;
 
-      return isBefore(obsDate, end) || isEqual(obsDate, end)
-    })
+      return isBefore(obsDate, end) || isEqual(obsDate, end);
+    });
   }
 
   // Filter by search query
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter((obs) => {
-      const text = (typeof obs.text === "string" ? obs.text : "").toLowerCase()
-      const className = getClassName(obs.classId).toLowerCase()
-      const author = (obs.author || "").toLowerCase()
+      const text = (typeof obs.text === 'string' ? obs.text : '').toLowerCase();
+      const className = getClassName(obs.classId).toLowerCase();
+      const author = (obs.author || '').toLowerCase();
 
-      return text.includes(query) || className.includes(query) || author.includes(query)
-    })
+      return text.includes(query) || className.includes(query) || author.includes(query);
+    });
   }
 
   // Sort by newest first
   filtered.sort((a, b) => {
-    const dateA = parseISO(a.date)
-    const dateB = parseISO(b.date)
+    const dateA = parseISO(a.date);
+    const dateB = parseISO(b.date);
 
-    if (!isValid(dateA) || !isValid(dateB)) return 0
+    if (!isValid(dateA) || !isValid(dateB)) return 0;
 
-    return dateB.getTime() - dateA.getTime()
-  })
+    return dateB.getTime() - dateA.getTime();
+  });
 
-  return filtered
-})
+  return filtered;
+});
 
 // Pagination calculations
 const totalPages = computed(() => {
-  return Math.max(1, Math.ceil(filteredObservations.value.length / itemsPerPage.value))
-})
+  return Math.max(1, Math.ceil(filteredObservations.value.length / itemsPerPage.value));
+});
 
 const paginationStart = computed(() => {
-  return (currentPage.value - 1) * itemsPerPage.value
-})
+  return (currentPage.value - 1) * itemsPerPage.value;
+});
 
 const paginationEnd = computed(() => {
-  return Math.min(paginationStart.value + itemsPerPage.value, filteredObservations.value.length)
-})
+  return Math.min(paginationStart.value + itemsPerPage.value, filteredObservations.value.length);
+});
 
 const paginatedObservations = computed(() => {
-  return filteredObservations.value.slice(paginationStart.value, paginationEnd.value)
-})
+  return filteredObservations.value.slice(paginationStart.value, paginationEnd.value);
+});
 
 // Generate page numbers to display (show max 5 pages)
 const pageNumbers = computed(() => {
-  const maxPagesToShow = 5
-  const pages = []
+  const maxPagesToShow = 5;
+  const pages = [];
 
   if (totalPages.value <= maxPagesToShow) {
     // If total pages is less than maxPagesToShow, show all pages
     for (let i = 1; i <= totalPages.value; i++) {
-      pages.push(i)
+      pages.push(i);
     }
   } else {
     // Always include first page
-    pages.push(1)
+    pages.push(1);
 
-    let startPage = Math.max(2, currentPage.value - 1)
-    let endPage = Math.min(totalPages.value - 1, currentPage.value + 1)
+    let startPage = Math.max(2, currentPage.value - 1);
+    let endPage = Math.min(totalPages.value - 1, currentPage.value + 1);
 
     // Adjust if at the start or end
     if (currentPage.value <= 3) {
-      endPage = Math.min(totalPages.value - 1, maxPagesToShow - 1)
+      endPage = Math.min(totalPages.value - 1, maxPagesToShow - 1);
     } else if (currentPage.value >= totalPages.value - 2) {
-      startPage = Math.max(2, totalPages.value - maxPagesToShow + 2)
+      startPage = Math.max(2, totalPages.value - maxPagesToShow + 2);
     }
 
     // Add ellipsis if needed
     if (startPage > 2) {
-      pages.push("...")
+      pages.push('...');
     }
 
     // Add middle pages
     for (let i = startPage; i <= endPage; i++) {
-      pages.push(i)
+      pages.push(i);
     }
 
     // Add ellipsis if needed
     if (endPage < totalPages.value - 1) {
-      pages.push("...")
+      pages.push('...');
     }
 
     // Always include last page
-    pages.push(totalPages.value)
+    pages.push(totalPages.value);
   }
 
-  return pages
-})
+  return pages;
+});
 
 // Functions
 async function refreshObservations() {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
 
   try {
     // Make sure classes are loaded
     if (classesStore.classes.length === 0) {
-      await classesStore.fetchClasses()
+      await classesStore.fetchClasses();
     } // Fetch all observations
-    const authStore = useAuthStore()
-    const teacherId = authStore.user?.uid || ""
-    const allObservations = await attendanceStore.fetchAllObservationsForTeacher(teacherId)
-    observations.value = allObservations
+    const authStore = useAuthStore();
+    const teacherId = authStore.user?.uid || '';
+    const allObservations = await attendanceStore.fetchAllObservationsForTeacher(teacherId);
+    observations.value = allObservations;
 
     // Reset pagination
-    currentPage.value = 1
+    currentPage.value = 1;
   } catch (err) {
-    console.error("Error fetching observations:", err)
-    error.value = "Ocurrió un error al cargar las observaciones. Por favor, intente nuevamente."
+    console.error('Error fetching observations:', err);
+    error.value = 'Ocurrió un error al cargar las observaciones. Por favor, intente nuevamente.';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function getClassName(classId) {
-  if (!classId) return "Sin clase"
-  const classObj = classesStore.getClassById(classId)
-  return classObj ? classObj.name : `Clase ${classId}`
+  if (!classId) return 'Sin clase';
+  const classObj = classesStore.getClassById(classId);
+  return classObj ? classObj.name : `Clase ${classId}`;
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return "Sin fecha"
+  if (!dateStr) return 'Sin fecha';
 
   try {
-    const date = parseISO(dateStr)
-    if (!isValid(date)) return dateStr
+    const date = parseISO(dateStr);
+    if (!isValid(date)) return dateStr;
 
-    return format(date, "d 'de' MMMM yyyy", {locale: es})
+    return format(date, 'd \'de\' MMMM yyyy', { locale: es });
   } catch (err) {
-    return dateStr
+    return dateStr;
   }
 }
 
 function clearDateFilter() {
-  startDate.value = ""
-  endDate.value = ""
+  startDate.value = '';
+  endDate.value = '';
 }
 
 // Watchers
 watch([selectedClassFilter, startDate, endDate, searchQuery], () => {
-  currentPage.value = 1 // Reset pagination when filters change
-})
+  currentPage.value = 1; // Reset pagination when filters change
+});
 
 // Initialize component
 onMounted(() => {
-  refreshObservations()
-})
+  refreshObservations();
+});
 </script>
 
 <style scoped>

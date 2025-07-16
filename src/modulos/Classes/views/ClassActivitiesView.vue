@@ -1,198 +1,3 @@
-<script setup lang="ts">
-import {ref, onMounted, computed} from "vue"
-import {useClassesStore} from "../store/classes"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useAuthStore} from "../../../stores/auth"
-import {format} from "date-fns"
-
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  UserGroupIcon,
-  CalendarIcon,
-  ChatBubbleLeftRightIcon,
-} from "@heroicons/vue/24/outline"
-
-const authStore = useAuthStore()
-const classesStore = useClassesStore()
-const attendanceStore = useAttendanceStore()
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-
-// Estructura para las actividades
-interface Activity {
-  id: string
-  type: string
-  class: string
-  content: string
-  timestamp: string
-  presentCount?: number
-  totalCount?: number
-  author?: string
-}
-
-// Estructura para agrupar actividades por clase
-interface ClassGroup {
-  classId: string
-  className: string
-  activities: Activity[]
-}
-
-const groupedByClass = ref<ClassGroup[]>([])
-const expanded = ref<string | null>(null)
-
-const formatDateForDisplay = (dateStr: string) => {
-  if (!dateStr) return "Sin fecha"
-
-  try {
-    // Intentar convertir a fecha si es posible
-    let date
-
-    // Handle Firebase timestamp format
-    if (typeof dateStr === "object" && "seconds" in dateStr) {
-      date = new Date(dateStr.seconds * 1000)
-    } else {
-      date = new Date(dateStr)
-    }
-
-    if (isNaN(date.getTime())) {
-      return dateStr // Si no se puede convertir, devolver como está
-    }
-
-    return format(date, "dd/MM/yyyy HH:mm")
-  } catch {
-    return dateStr
-  }
-}
-
-// Función mejorada para normalizar fechas para comparación
-const normalizeDateForSort = (dateStr: string) => {
-  if (!dateStr) return 0
-
-  try {
-    // Normalizar formato de fecha para comparación
-    let timestamp
-
-    if (typeof dateStr === "object" && "seconds" in dateStr) {
-      timestamp = dateStr.seconds * 1000
-    } else {
-      timestamp = new Date(dateStr).getTime()
-    }
-
-    return isNaN(timestamp) ? 0 : timestamp
-  } catch {
-    return 0
-  }
-}
-
-const getAttendanceRate = (present: number, total: number) => {
-  if (!total) return 0
-  return Math.round((present / total) * 100)
-}
-
-const getAttendanceColor = (rate: number) => {
-  if (rate >= 80) return "text-green-600 dark:text-green-400"
-  if (rate >= 60) return "text-yellow-600 dark:text-yellow-400"
-  return "text-red-600 dark:text-red-400"
-}
-
-async function loadActivities() {
-  isLoading.value = true
-  error.value = null
-  try {
-    const teacherId = authStore.user?.uid
-    if (!teacherId) {
-      throw new Error("No hay usuario autenticado")
-    }
-
-    // Primero obtener las clases del profesor
-    await classesStore.fetchClasses()
-    const teacherClasses = classesStore.classes.filter((c) => c.teacherId === teacherId)
-    const teacherClassIds = teacherClasses.map((c) => c.id)
-
-    if (teacherClassIds.length === 0) {
-      console.log("No se encontraron clases para este profesor")
-      groupedByClass.value = []
-      return
-    }
-
-    let allObservations = []
-    try {
-      // Obtener todas las observaciones sin especificar classId
-      // allObservations = await observationActions.fetchAllObservationsForTeacher(teacherId);
-      // Instead of directly calling observationActions, dispatch an action through the store
-      await attendanceStore.fetchAllObservationsForTeacher(teacherId)
-      allObservations = attendanceStore.observationsHistory // Assuming observationsHistory is populated by the action
-    } catch (err) {
-      console.error("Error al obtener observaciones:", err)
-      // Continuar con array vacío si hay un error
-      allObservations = []
-    }
-
-    // Filtrar y agrupar observaciones solo de las clases del profesor
-    const grouped = allObservations.reduce((acc: Record<string, ClassGroup>, obs: any) => {
-      // Solo procesar si la observación pertenece a una clase del profesor
-      if (!obs.classId || !teacherClassIds.includes(obs.classId)) {
-        return acc
-      }
-
-      // Obtener la información de la clase
-      const classInfo = teacherClasses.find((c) => c.id === obs.classId)
-      if (!acc[obs.classId]) {
-        acc[obs.classId] = {
-          classId: obs.classId,
-          className: classInfo?.name || "Clase sin nombre",
-          activities: [],
-        }
-      }
-
-      // Asegurarse de que todos los campos necesarios existen
-      acc[obs.classId].activities.push({
-        id: obs.id || String(Date.now() + Math.random()),
-        type: "observation",
-        class: acc[obs.classId].className,
-        content:
-          typeof obs.text === "string"
-            ? obs.text
-            : obs.text && typeof obs.text.formattedText === "string"
-              ? obs.text.formattedText
-              : obs.observacion || "(Sin contenido)",
-        timestamp:
-          obs.date ||
-          (obs.createdAt
-            ? typeof obs.createdAt === "string"
-              ? obs.createdAt
-              : new Date(obs.createdAt.seconds * 1000).toISOString()
-            : new Date().toISOString()),
-        author: obs.author || "Profesor",
-      })
-      return acc
-    }, {})
-
-    // Ordenar las clases por la fecha más reciente de sus observaciones
-    groupedByClass.value = Object.values(grouped)
-      .map((group: ClassGroup) => ({
-        ...group,
-        activities: group.activities.sort(
-          (a, b) => normalizeDateForSort(b.timestamp) - normalizeDateForSort(a.timestamp)
-        ),
-      }))
-      .sort((a, b) => {
-        const aTime = a.activities[0] ? normalizeDateForSort(a.activities[0].timestamp) : 0
-        const bTime = b.activities[0] ? normalizeDateForSort(b.activities[0].timestamp) : 0
-        return bTime - aTime // Ordenar descendente (más reciente primero)
-      })
-  } catch (error) {
-    console.error("Error al cargar las actividades:", error)
-    error.value = error instanceof Error ? error.message : "Error al cargar las actividades"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(loadActivities)
-</script>
-
 <template>
   <div class="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
     <!-- Header -->
@@ -329,6 +134,201 @@ onMounted(loadActivities)
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue';
+import { useClassesStore } from '../store/classes';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useAuthStore } from '../../../stores/auth';
+import { format } from 'date-fns';
+
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  UserGroupIcon,
+  CalendarIcon,
+  ChatBubbleLeftRightIcon,
+} from '@heroicons/vue/24/outline';
+
+const authStore = useAuthStore();
+const classesStore = useClassesStore();
+const attendanceStore = useAttendanceStore();
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+
+// Estructura para las actividades
+interface Activity {
+  id: string
+  type: string
+  class: string
+  content: string
+  timestamp: string
+  presentCount?: number
+  totalCount?: number
+  author?: string
+}
+
+// Estructura para agrupar actividades por clase
+interface ClassGroup {
+  classId: string
+  className: string
+  activities: Activity[]
+}
+
+const groupedByClass = ref<ClassGroup[]>([]);
+const expanded = ref<string | null>(null);
+
+const formatDateForDisplay = (dateStr: string) => {
+  if (!dateStr) return 'Sin fecha';
+
+  try {
+    // Intentar convertir a fecha si es posible
+    let date;
+
+    // Handle Firebase timestamp format
+    if (typeof dateStr === 'object' && 'seconds' in dateStr) {
+      date = new Date(dateStr.seconds * 1000);
+    } else {
+      date = new Date(dateStr);
+    }
+
+    if (isNaN(date.getTime())) {
+      return dateStr; // Si no se puede convertir, devolver como está
+    }
+
+    return format(date, 'dd/MM/yyyy HH:mm');
+  } catch {
+    return dateStr;
+  }
+};
+
+// Función mejorada para normalizar fechas para comparación
+const normalizeDateForSort = (dateStr: string) => {
+  if (!dateStr) return 0;
+
+  try {
+    // Normalizar formato de fecha para comparación
+    let timestamp;
+
+    if (typeof dateStr === 'object' && 'seconds' in dateStr) {
+      timestamp = dateStr.seconds * 1000;
+    } else {
+      timestamp = new Date(dateStr).getTime();
+    }
+
+    return isNaN(timestamp) ? 0 : timestamp;
+  } catch {
+    return 0;
+  }
+};
+
+const getAttendanceRate = (present: number, total: number) => {
+  if (!total) return 0;
+  return Math.round((present / total) * 100);
+};
+
+const getAttendanceColor = (rate: number) => {
+  if (rate >= 80) return 'text-green-600 dark:text-green-400';
+  if (rate >= 60) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-red-600 dark:text-red-400';
+};
+
+async function loadActivities() {
+  isLoading.value = true;
+  error.value = null;
+  try {
+    const teacherId = authStore.user?.uid;
+    if (!teacherId) {
+      throw new Error('No hay usuario autenticado');
+    }
+
+    // Primero obtener las clases del profesor
+    await classesStore.fetchClasses();
+    const teacherClasses = classesStore.classes.filter((c) => c.teacherId === teacherId);
+    const teacherClassIds = teacherClasses.map((c) => c.id);
+
+    if (teacherClassIds.length === 0) {
+      console.log('No se encontraron clases para este profesor');
+      groupedByClass.value = [];
+      return;
+    }
+
+    let allObservations = [];
+    try {
+      // Obtener todas las observaciones sin especificar classId
+      // allObservations = await observationActions.fetchAllObservationsForTeacher(teacherId);
+      // Instead of directly calling observationActions, dispatch an action through the store
+      await attendanceStore.fetchAllObservationsForTeacher(teacherId);
+      allObservations = attendanceStore.observationsHistory; // Assuming observationsHistory is populated by the action
+    } catch (err) {
+      console.error('Error al obtener observaciones:', err);
+      // Continuar con array vacío si hay un error
+      allObservations = [];
+    }
+
+    // Filtrar y agrupar observaciones solo de las clases del profesor
+    const grouped = allObservations.reduce((acc: Record<string, ClassGroup>, obs: any) => {
+      // Solo procesar si la observación pertenece a una clase del profesor
+      if (!obs.classId || !teacherClassIds.includes(obs.classId)) {
+        return acc;
+      }
+
+      // Obtener la información de la clase
+      const classInfo = teacherClasses.find((c) => c.id === obs.classId);
+      if (!acc[obs.classId]) {
+        acc[obs.classId] = {
+          classId: obs.classId,
+          className: classInfo?.name || 'Clase sin nombre',
+          activities: [],
+        };
+      }
+
+      // Asegurarse de que todos los campos necesarios existen
+      acc[obs.classId].activities.push({
+        id: obs.id || String(Date.now() + Math.random()),
+        type: 'observation',
+        class: acc[obs.classId].className,
+        content:
+          typeof obs.text === 'string'
+            ? obs.text
+            : obs.text && typeof obs.text.formattedText === 'string'
+              ? obs.text.formattedText
+              : obs.observacion || '(Sin contenido)',
+        timestamp:
+          obs.date ||
+          (obs.createdAt
+            ? typeof obs.createdAt === 'string'
+              ? obs.createdAt
+              : new Date(obs.createdAt.seconds * 1000).toISOString()
+            : new Date().toISOString()),
+        author: obs.author || 'Profesor',
+      });
+      return acc;
+    }, {});
+
+    // Ordenar las clases por la fecha más reciente de sus observaciones
+    groupedByClass.value = Object.values(grouped)
+      .map((group: ClassGroup) => ({
+        ...group,
+        activities: group.activities.sort(
+          (a, b) => normalizeDateForSort(b.timestamp) - normalizeDateForSort(a.timestamp),
+        ),
+      }))
+      .sort((a, b) => {
+        const aTime = a.activities[0] ? normalizeDateForSort(a.activities[0].timestamp) : 0;
+        const bTime = b.activities[0] ? normalizeDateForSort(b.activities[0].timestamp) : 0;
+        return bTime - aTime; // Ordenar descendente (más reciente primero)
+      });
+  } catch (error) {
+    console.error('Error al cargar las actividades:', error);
+    error.value = error instanceof Error ? error.message : 'Error al cargar las actividades';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+onMounted(loadActivities);
+</script>
 
 <style scoped>
 .fade-enter-active,

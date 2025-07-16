@@ -1,61 +1,3 @@
-<script setup lang="ts">
-import {ref, onMounted} from "vue"
-import {useRouter, useRoute} from "vue-router"
-import {useAuthStore} from "../../stores/auth"
-import {
-  ExclamationCircleIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  CheckCircleIcon,
-} from "@heroicons/vue/24/outline"
-
-const router = useRouter()
-const route = useRoute()
-const authStore = useAuthStore()
-
-const email = ref("")
-const password = ref("")
-const error = ref("")
-const successMessage = ref("")
-const isLoading = ref(false)
-const showPassword = ref(false)
-
-// Verificar si hay un mensaje de registro exitoso
-onMounted(() => {
-  if (route.query.registered === "true") {
-    successMessage.value = "Registro exitoso. Por favor inicia sesión para continuar."
-  }
-})
-
-const setDemoCredentials = () => {
-  email.value = "demo@example.com"
-  password.value = "demo123"
-}
-
-const handleSubmit = async () => {
-  if (!email.value || !password.value) {
-    error.value = "Por favor, complete todos los campos"
-    return
-  }
-
-  error.value = ""
-  successMessage.value = ""
-  isLoading.value = true
-
-  try {
-    await authStore.login(email.value, password.value)
-    // Después de un login exitoso, el router guard se encargará de la redirección.
-    // Simplemente empujamos a la raíz y el guard decidirá el destino final.
-    router.push(route.query.redirect?.toString() || "/")
-  } catch (e: any) {
-    error.value = e.message
-    console.error("Error de login:", e)
-  } finally {
-    isLoading.value = false
-  }
-}
-</script>
-
 <template>
   <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg">
@@ -194,3 +136,61 @@ const handleSubmit = async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useAuthStore } from '../../stores/auth';
+import {
+  ExclamationCircleIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  CheckCircleIcon,
+} from '@heroicons/vue/24/outline';
+
+const router = useRouter();
+const route = useRoute();
+const authStore = useAuthStore();
+
+const email = ref('');
+const password = ref('');
+const error = ref('');
+const successMessage = ref('');
+const isLoading = ref(false);
+const showPassword = ref(false);
+
+// Verificar si hay un mensaje de registro exitoso
+onMounted(() => {
+  if (route.query.registered === 'true') {
+    successMessage.value = 'Registro exitoso. Por favor inicia sesión para continuar.';
+  }
+});
+
+const setDemoCredentials = () => {
+  email.value = 'demo@example.com';
+  password.value = 'demo123';
+};
+
+const handleSubmit = async () => {
+  if (!email.value || !password.value) {
+    error.value = 'Por favor, complete todos los campos';
+    return;
+  }
+
+  error.value = '';
+  successMessage.value = '';
+  isLoading.value = true;
+
+  try {
+    await authStore.login(email.value, password.value);
+    // Después de un login exitoso, el router guard se encargará de la redirección.
+    // Simplemente empujamos a la raíz y el guard decidirá el destino final.
+    router.push(route.query.redirect?.toString() || '/');
+  } catch (e: any) {
+    error.value = e.message;
+    console.error('Error de login:', e);
+  } finally {
+    isLoading.value = false;
+  }
+};
+</script>

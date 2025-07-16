@@ -226,170 +226,170 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {templateManager, type MessageTemplate} from "../../services/templates/templateManager"
-import TemplateEditorModal from "./TemplateEditorModal.vue"
-import TemplatePreviewModal from "./TemplatePreviewModal.vue"
+import { ref, computed, onMounted } from 'vue';
+import { templateManager, type MessageTemplate } from '../../services/templates/templateManager';
+import TemplateEditorModal from './TemplateEditorModal.vue';
+import TemplatePreviewModal from './TemplatePreviewModal.vue';
 
 // Estado reactivo
-const templates = ref<MessageTemplate[]>([])
-const loading = ref(false)
-const searchTerm = ref("")
-const selectedCategory = ref("")
-const selectedStatus = ref("")
-const showCreateModal = ref(false)
-const editingTemplate = ref<MessageTemplate | null>(null)
-const previewingTemplate = ref<MessageTemplate | null>(null)
+const templates = ref<MessageTemplate[]>([]);
+const loading = ref(false);
+const searchTerm = ref('');
+const selectedCategory = ref('');
+const selectedStatus = ref('');
+const showCreateModal = ref(false);
+const editingTemplate = ref<MessageTemplate | null>(null);
+const previewingTemplate = ref<MessageTemplate | null>(null);
 
 // Computed
 const filteredTemplates = computed(() => {
-  let filtered = templates.value
+  let filtered = templates.value;
 
   // Filtro por búsqueda
   if (searchTerm.value) {
-    const term = searchTerm.value.toLowerCase()
+    const term = searchTerm.value.toLowerCase();
     filtered = filtered.filter(
       (template) =>
         template.name.toLowerCase().includes(term) ||
         template.description.toLowerCase().includes(term) ||
-        template.content.toLowerCase().includes(term)
-    )
+        template.content.toLowerCase().includes(term),
+    );
   }
 
   // Filtro por categoría
   if (selectedCategory.value) {
-    filtered = filtered.filter((template) => template.category === selectedCategory.value)
+    filtered = filtered.filter((template) => template.category === selectedCategory.value);
   }
 
   // Filtro por estado
   if (selectedStatus.value) {
     switch (selectedStatus.value) {
-      case "active":
-        filtered = filtered.filter((template) => template.isActive)
-        break
-      case "inactive":
-        filtered = filtered.filter((template) => !template.isActive)
-        break
-      case "system":
-        filtered = filtered.filter((template) => template.isSystem)
-        break
-      case "custom":
-        filtered = filtered.filter((template) => !template.isSystem)
-        break
+    case 'active':
+      filtered = filtered.filter((template) => template.isActive);
+      break;
+    case 'inactive':
+      filtered = filtered.filter((template) => !template.isActive);
+      break;
+    case 'system':
+      filtered = filtered.filter((template) => template.isSystem);
+      break;
+    case 'custom':
+      filtered = filtered.filter((template) => !template.isSystem);
+      break;
     }
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 // Métodos
 const loadTemplates = async (): Promise<void> => {
-  loading.value = true
+  loading.value = true;
   try {
-    templates.value = await templateManager.getAllTemplates()
+    templates.value = await templateManager.getAllTemplates();
   } catch (error) {
-    console.error("Error cargando plantillas:", error)
+    console.error('Error cargando plantillas:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const getCategoryBadgeClass = (category: string): string => {
   switch (category) {
-    case "tardanza":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-    case "ausencia_justificada":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-    case "inasistencia":
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-    case "general":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+  case 'tardanza':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+  case 'ausencia_justificada':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+  case 'inasistencia':
+    return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+  case 'general':
+    return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
   }
-}
+};
 
 const getCategoryLabel = (category: string): string => {
   switch (category) {
-    case "tardanza":
-      return "Tardanza"
-    case "ausencia_justificada":
-      return "Justificada"
-    case "inasistencia":
-      return "Inasistencia"
-    case "general":
-      return "General"
-    case "custom":
-      return "Personalizada"
-    default:
-      return "Otra"
+  case 'tardanza':
+    return 'Tardanza';
+  case 'ausencia_justificada':
+    return 'Justificada';
+  case 'inasistencia':
+    return 'Inasistencia';
+  case 'general':
+    return 'General';
+  case 'custom':
+    return 'Personalizada';
+  default:
+    return 'Otra';
   }
-}
+};
 
 const getPreviewText = (template: MessageTemplate): string => {
   // Reemplazar variables con valores de ejemplo para preview
-  let preview = template.content
-  preview = preview.replace(/\{studentName\}/g, "María González")
-  preview = preview.replace(/\{className\}/g, "Violín Intermedio")
-  preview = preview.replace(/\{date\}/g, new Date().toLocaleDateString("es-ES"))
-  preview = preview.replace(/\{academyName\}/g, "Academia Musical El Sistema")
+  let preview = template.content;
+  preview = preview.replace(/\{studentName\}/g, 'María González');
+  preview = preview.replace(/\{className\}/g, 'Violín Intermedio');
+  preview = preview.replace(/\{date\}/g, new Date().toLocaleDateString('es-ES'));
+  preview = preview.replace(/\{academyName\}/g, 'Academia Musical El Sistema');
 
-  return preview.length > 150 ? preview.substring(0, 150) + "..." : preview
-}
+  return preview.length > 150 ? preview.substring(0, 150) + '...' : preview;
+};
 
 const editTemplate = (template: MessageTemplate): void => {
-  editingTemplate.value = {...template}
-}
+  editingTemplate.value = { ...template };
+};
 
 const previewTemplate = (template: MessageTemplate): void => {
-  previewingTemplate.value = template
-}
+  previewingTemplate.value = template;
+};
 
 const duplicateTemplate = async (template: MessageTemplate): Promise<void> => {
   try {
-    const newId = await templateManager.duplicateTemplate(template.id!)
+    const newId = await templateManager.duplicateTemplate(template.id!);
     if (newId) {
-      await loadTemplates()
-      alert("✅ Plantilla duplicada exitosamente")
+      await loadTemplates();
+      alert('✅ Plantilla duplicada exitosamente');
     }
   } catch (error) {
-    console.error("Error duplicando plantilla:", error)
-    alert("❌ Error duplicando plantilla")
+    console.error('Error duplicando plantilla:', error);
+    alert('❌ Error duplicando plantilla');
   }
-}
+};
 
 const deleteTemplate = async (template: MessageTemplate): Promise<void> => {
   if (!confirm(`¿Eliminar la plantilla "${template.name}"? Esta acción no se puede deshacer.`)) {
-    return
+    return;
   }
 
   try {
-    const success = await templateManager.deleteTemplate(template.id!)
+    const success = await templateManager.deleteTemplate(template.id!);
     if (success) {
-      await loadTemplates()
-      alert("✅ Plantilla eliminada exitosamente")
+      await loadTemplates();
+      alert('✅ Plantilla eliminada exitosamente');
     }
   } catch (error) {
-    console.error("Error eliminando plantilla:", error)
-    alert("❌ Error eliminando plantilla")
+    console.error('Error eliminando plantilla:', error);
+    alert('❌ Error eliminando plantilla');
   }
-}
+};
 
 const closeModal = (): void => {
-  showCreateModal.value = false
-  editingTemplate.value = null
-}
+  showCreateModal.value = false;
+  editingTemplate.value = null;
+};
 
 const handleSave = async (): Promise<void> => {
-  await loadTemplates()
-  closeModal()
-}
+  await loadTemplates();
+  closeModal();
+};
 
 // Lifecycle
 onMounted(async () => {
-  await templateManager.initializeDefaultTemplates()
-  await loadTemplates()
-})
+  await templateManager.initializeDefaultTemplates();
+  await loadTemplates();
+});
 </script>
 
 <style scoped>

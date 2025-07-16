@@ -152,52 +152,52 @@
 </template>
 
 <script>
-import {ref, computed} from "vue"
-import {format, parseISO} from "date-fns"
-import {es} from "date-fns/locale"
+import { ref, computed } from 'vue';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default {
-  name: "ClassAttendanceCard",
+  name: 'ClassAttendanceCard',
   props: {
     classData: {
       type: Object,
       required: true,
     },
   },
-  emits: ["view-details"],
-  setup(props, {emit}) {
-    const isExpanded = ref(false)
+  emits: ['view-details'],
+  setup(props, { emit }) {
+    const isExpanded = ref(false);
 
     // Estadísticas de la clase
     const classStats = computed(() => {
-      let totalPresent = 0
-      let totalAbsent = 0
-      let totalLate = 0
-      let totalJustified = 0
-      let totalSessions = 0
+      let totalPresent = 0;
+      let totalAbsent = 0;
+      let totalLate = 0;
+      let totalJustified = 0;
+      let totalSessions = 0;
 
       props.classData.students.forEach((student) => {
         Object.values(student.attendance || {}).forEach((status) => {
-          totalSessions++
+          totalSessions++;
           switch (status) {
-            case "present":
-              totalPresent++
-              break
-            case "absent":
-              totalAbsent++
-              break
-            case "late":
-              totalLate++
-              break
-            case "justified":
-              totalJustified++
-              break
+          case 'present':
+            totalPresent++;
+            break;
+          case 'absent':
+            totalAbsent++;
+            break;
+          case 'late':
+            totalLate++;
+            break;
+          case 'justified':
+            totalJustified++;
+            break;
           }
-        })
-      })
+        });
+      });
 
       const attendanceRate =
-        totalSessions > 0 ? Math.round(((totalPresent + totalLate) / totalSessions) * 100) : 0
+        totalSessions > 0 ? Math.round(((totalPresent + totalLate) / totalSessions) * 100) : 0;
 
       return {
         totalPresent,
@@ -206,86 +206,86 @@ export default {
         totalJustified,
         totalSessions,
         attendanceRate,
-      }
-    })
+      };
+    });
 
     // Sesiones recientes (últimas 5)
     const recentSessions = computed(() => {
       return props.classData.attendanceRecords
         .slice()
         .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-        .slice(0, 5)
-    })
+        .slice(0, 5);
+    });
 
     const getPercentage = (value) => {
-      if (classStats.value.totalSessions === 0) return 0
-      return Math.round((value / classStats.value.totalSessions) * 100)
-    }
+      if (classStats.value.totalSessions === 0) return 0;
+      return Math.round((value / classStats.value.totalSessions) * 100);
+    };
 
     const getAttendanceRateClass = (rate) => {
-      if (rate >= 90) return "excellent"
-      if (rate >= 80) return "good"
-      if (rate >= 70) return "average"
-      return "poor"
-    }
+      if (rate >= 90) return 'excellent';
+      if (rate >= 80) return 'good';
+      if (rate >= 70) return 'average';
+      return 'poor';
+    };
 
     const formatDate = (dateString) => {
       try {
-        const date = parseISO(dateString)
-        return format(date, "dd MMM", {locale: es})
+        const date = parseISO(dateString);
+        return format(date, 'dd MMM', { locale: es });
       } catch (error) {
-        return dateString
+        return dateString;
       }
-    }
+    };
 
     const getSessionPresent = (session) => {
-      const data = session.data || {}
-      const presentes = data.presentes || []
-      const tarde = data.tarde || []
-      return presentes.length + tarde.length
-    }
+      const data = session.data || {};
+      const presentes = data.presentes || [];
+      const tarde = data.tarde || [];
+      return presentes.length + tarde.length;
+    };
 
     const getSessionAbsent = (session) => {
-      const data = session.data || {}
-      const ausentes = data.ausentes || []
-      return ausentes.length
-    }
+      const data = session.data || {};
+      const ausentes = data.ausentes || [];
+      return ausentes.length;
+    };
 
     const getSessionRate = (session) => {
-      const present = getSessionPresent(session)
-      const absent = getSessionAbsent(session)
-      const total = present + absent
-      return total > 0 ? Math.round((present / total) * 100) : 0
-    }
+      const present = getSessionPresent(session);
+      const absent = getSessionAbsent(session);
+      const total = present + absent;
+      return total > 0 ? Math.round((present / total) * 100) : 0;
+    };
 
     const getStudentAttendanceRate = (student) => {
-      const attendanceEntries = Object.values(student.attendance || {})
-      if (attendanceEntries.length === 0) return 0
+      const attendanceEntries = Object.values(student.attendance || {});
+      if (attendanceEntries.length === 0) return 0;
 
       const presentCount = attendanceEntries.filter(
-        (status) => status === "present" || status === "late"
-      ).length
+        (status) => status === 'present' || status === 'late',
+      ).length;
 
-      return Math.round((presentCount / attendanceEntries.length) * 100)
-    }
+      return Math.round((presentCount / attendanceEntries.length) * 100);
+    };
 
     const getStatusText = (status) => {
       const texts = {
-        present: "Presente",
-        absent: "Ausente",
-        late: "Tardía",
-        justified: "Justificada",
-      }
-      return texts[status] || "Desconocido"
-    }
+        present: 'Presente',
+        absent: 'Ausente',
+        late: 'Tardía',
+        justified: 'Justificada',
+      };
+      return texts[status] || 'Desconocido';
+    };
 
     const toggleExpanded = () => {
-      isExpanded.value = !isExpanded.value
-    }
+      isExpanded.value = !isExpanded.value;
+    };
 
     const openClassDetails = () => {
-      emit("view-details", props.classData)
-    }
+      emit('view-details', props.classData);
+    };
 
     return {
       isExpanded,
@@ -301,9 +301,9 @@ export default {
       getStatusText,
       toggleExpanded,
       openClassDetails,
-    }
+    };
   },
-}
+};
 </script>
 
 <style scoped>

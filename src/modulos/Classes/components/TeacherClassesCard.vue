@@ -33,11 +33,11 @@ export default {
 
     handleAddStudent(classId) {
       alert(
-        "Esta función será implementada próximamente. Por ahora, utilice la interfaz de administración de estudiantes para añadir nuevos estudiantes a la clase."
-      )
+        'Esta función será implementada próximamente. Por ahora, utilice la interfaz de administración de estudiantes para añadir nuevos estudiantes a la clase.',
+      );
     },
   },
-}
+};
 </script>
 
 <style>

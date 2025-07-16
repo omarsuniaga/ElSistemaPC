@@ -1,29 +1,29 @@
-import {defineStore} from "pinia"
+import { defineStore } from 'pinia';
 
-export const useStudentsStore = defineStore("students", {
+export const useStudentsStore = defineStore('students', {
   state: () => ({
     studentsList: [],
     selectedStudent: null,
     loading: false,
     error: null,
     filters: {
-      instrument: "",
-      level: "",
+      instrument: '',
+      level: '',
     },
   }),
   actions: {
     async fetchStudents() {
-      this.loading = true
+      this.loading = true;
       try {
         // API call implementation
       } catch (error) {
-        this.error = error
+        this.error = error;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     setFilters(newFilters) {
-      this.filters = {...this.filters, ...newFilters}
+      this.filters = { ...this.filters, ...newFilters };
     },
   },
   getters: {
@@ -32,8 +32,8 @@ export const useStudentsStore = defineStore("students", {
         return (
           student.instrument.includes(state.filters.instrument) &&
           student.level.includes(state.filters.level)
-        )
-      })
+        );
+      });
     },
   },
-})
+});

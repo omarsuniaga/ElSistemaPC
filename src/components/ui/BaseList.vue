@@ -1,29 +1,3 @@
-<script setup lang="ts">
-import {computed} from "vue"
-
-interface Props {
-  items: any[]
-  loading?: boolean
-  error?: string | null
-  emptyMessage?: string
-  keyField?: string
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  items: () => [],
-  loading: false,
-  error: null,
-  emptyMessage: "No hay elementos para mostrar",
-  keyField: "id",
-})
-
-const emit = defineEmits<{
-  (e: "item-click", item: any): void
-}>()
-
-const hasItems = computed(() => props.items.length > 0)
-</script>
-
 <template>
   <div class="list-container">
     <!-- Estado de carga -->
@@ -92,6 +66,32 @@ const hasItems = computed(() => props.items.length > 0)
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+
+interface Props {
+  items: any[]
+  loading?: boolean
+  error?: string | null
+  emptyMessage?: string
+  keyField?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  items: () => [],
+  loading: false,
+  error: null,
+  emptyMessage: 'No hay elementos para mostrar',
+  keyField: 'id',
+});
+
+const emit = defineEmits<{
+  (e: 'item-click', item: any): void
+}>();
+
+const hasItems = computed(() => props.items.length > 0);
+</script>
 
 <style scoped>
 .list-container {

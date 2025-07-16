@@ -3,133 +3,6 @@
 Header optimizado para el formulario de asistencia con información contextual
 -->
 
-<script setup lang="ts">
-import {computed} from "vue"
-
-// Tipos
-interface ClassInfo {
-  id: string
-  name: string
-  teacher: string
-  date: string
-  time: string
-  classroom?: string
-  totalStudents: number
-}
-
-interface AttendanceStats {
-  presente: number
-  ausente: number
-  tardanza: number
-  justificado: number
-  total: number
-  attendanceRate: number
-  changedCount: number
-}
-
-// Props
-const props = defineProps<{
-  classInfo: ClassInfo
-  formattedDate: string
-  attendanceStats: AttendanceStats
-  isLoading?: boolean
-}>()
-
-// Emits
-const emit = defineEmits<{
-  back: []
-}>()
-
-/**
- * 🎯 COMPUTED PROPERTIES
- */
-
-// Estado de la asistencia basado en estadísticas
-const attendanceStatus = computed(() => {
-  const {presente, total, attendanceRate} = props.attendanceStats
-
-  if (total === 0) {
-    return {
-      type: "empty",
-      message: "Sin estudiantes",
-      color: "gray",
-      bgColor: "bg-gray-50 dark:bg-gray-800/50",
-    }
-  }
-
-  if (attendanceRate >= 90) {
-    return {
-      type: "excellent",
-      message: "Excelente asistencia",
-      color: "green",
-      bgColor: "bg-green-50 dark:bg-green-900/20",
-    }
-  } else if (attendanceRate >= 75) {
-    return {
-      type: "good",
-      message: "Buena asistencia",
-      color: "blue",
-      bgColor: "bg-blue-50 dark:bg-blue-900/20",
-    }
-  } else if (attendanceRate >= 50) {
-    return {
-      type: "regular",
-      message: "Asistencia regular",
-      color: "yellow",
-      bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
-    }
-  } else {
-    return {
-      type: "low",
-      message: "Baja asistencia",
-      color: "red",
-      bgColor: "bg-red-50 dark:bg-red-900/20",
-    }
-  }
-})
-
-// Configuración de colores para estadísticas
-const getStatColor = (type: string) => {
-  const colors = {
-    presente: "text-green-600 dark:text-green-400",
-    ausente: "text-red-600 dark:text-red-400",
-    tardanza: "text-yellow-600 dark:text-yellow-400",
-    justificado: "text-blue-600 dark:text-blue-400",
-  }
-  return colors[type as keyof typeof colors] || "text-gray-600 dark:text-gray-400"
-}
-
-// Progreso visual
-const progressConfig = computed(() => {
-  const {color} = attendanceStatus.value
-
-  const configs = {
-    green: {
-      bg: "bg-green-200 dark:bg-green-800",
-      fill: "bg-green-600 dark:bg-green-500",
-    },
-    blue: {
-      bg: "bg-blue-200 dark:bg-blue-800",
-      fill: "bg-blue-600 dark:bg-blue-500",
-    },
-    yellow: {
-      bg: "bg-yellow-200 dark:bg-yellow-800",
-      fill: "bg-yellow-600 dark:bg-yellow-500",
-    },
-    red: {
-      bg: "bg-red-200 dark:bg-red-800",
-      fill: "bg-red-600 dark:bg-red-500",
-    },
-    gray: {
-      bg: "bg-gray-200 dark:bg-gray-700",
-      fill: "bg-gray-400 dark:bg-gray-500",
-    },
-  }
-
-  return configs[color as keyof typeof configs] || configs.gray
-})
-</script>
-
 <template>
   <header
     :class="[
@@ -462,6 +335,133 @@ const progressConfig = computed(() => {
     </div>
   </header>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+
+// Tipos
+interface ClassInfo {
+  id: string
+  name: string
+  teacher: string
+  date: string
+  time: string
+  classroom?: string
+  totalStudents: number
+}
+
+interface AttendanceStats {
+  presente: number
+  ausente: number
+  tardanza: number
+  justificado: number
+  total: number
+  attendanceRate: number
+  changedCount: number
+}
+
+// Props
+const props = defineProps<{
+  classInfo: ClassInfo
+  formattedDate: string
+  attendanceStats: AttendanceStats
+  isLoading?: boolean
+}>();
+
+// Emits
+const emit = defineEmits<{
+  back: []
+}>();
+
+/**
+ * 🎯 COMPUTED PROPERTIES
+ */
+
+// Estado de la asistencia basado en estadísticas
+const attendanceStatus = computed(() => {
+  const { presente, total, attendanceRate } = props.attendanceStats;
+
+  if (total === 0) {
+    return {
+      type: 'empty',
+      message: 'Sin estudiantes',
+      color: 'gray',
+      bgColor: 'bg-gray-50 dark:bg-gray-800/50',
+    };
+  }
+
+  if (attendanceRate >= 90) {
+    return {
+      type: 'excellent',
+      message: 'Excelente asistencia',
+      color: 'green',
+      bgColor: 'bg-green-50 dark:bg-green-900/20',
+    };
+  } else if (attendanceRate >= 75) {
+    return {
+      type: 'good',
+      message: 'Buena asistencia',
+      color: 'blue',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+    };
+  } else if (attendanceRate >= 50) {
+    return {
+      type: 'regular',
+      message: 'Asistencia regular',
+      color: 'yellow',
+      bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
+    };
+  } else {
+    return {
+      type: 'low',
+      message: 'Baja asistencia',
+      color: 'red',
+      bgColor: 'bg-red-50 dark:bg-red-900/20',
+    };
+  }
+});
+
+// Configuración de colores para estadísticas
+const getStatColor = (type: string) => {
+  const colors = {
+    presente: 'text-green-600 dark:text-green-400',
+    ausente: 'text-red-600 dark:text-red-400',
+    tardanza: 'text-yellow-600 dark:text-yellow-400',
+    justificado: 'text-blue-600 dark:text-blue-400',
+  };
+  return colors[type as keyof typeof colors] || 'text-gray-600 dark:text-gray-400';
+};
+
+// Progreso visual
+const progressConfig = computed(() => {
+  const { color } = attendanceStatus.value;
+
+  const configs = {
+    green: {
+      bg: 'bg-green-200 dark:bg-green-800',
+      fill: 'bg-green-600 dark:bg-green-500',
+    },
+    blue: {
+      bg: 'bg-blue-200 dark:bg-blue-800',
+      fill: 'bg-blue-600 dark:bg-blue-500',
+    },
+    yellow: {
+      bg: 'bg-yellow-200 dark:bg-yellow-800',
+      fill: 'bg-yellow-600 dark:bg-yellow-500',
+    },
+    red: {
+      bg: 'bg-red-200 dark:bg-red-800',
+      fill: 'bg-red-600 dark:bg-red-500',
+    },
+    gray: {
+      bg: 'bg-gray-200 dark:bg-gray-700',
+      fill: 'bg-gray-400 dark:bg-gray-500',
+    },
+  };
+
+  return configs[color as keyof typeof configs] || configs.gray;
+});
+</script>
 
 <style scoped>
 /* Animaciones personalizadas */

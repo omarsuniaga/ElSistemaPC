@@ -215,7 +215,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 import {
   BeakerIcon,
   BoltIcon,
@@ -228,159 +228,159 @@ import {
   CommandLineIcon,
   ArrowDownTrayIcon,
   EyeIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
-import {useBrandingStore} from "@/stores/brandingStore"
-import {brandingTests} from "@/utils/testing/brandingTests"
-import {logger} from "@/utils/logging/logger"
+import { useBrandingStore } from '@/stores/brandingStore';
+import { brandingTests } from '@/utils/testing/brandingTests';
+import { logger } from '@/utils/logging/logger';
 
 // Store
-const brandingStore = useBrandingStore()
+const brandingStore = useBrandingStore();
 
 // Estado reactivo
-const isRunning = ref(false)
-const progress = ref(0)
-const currentTestMessage = ref("")
+const isRunning = ref(false);
+const progress = ref(0);
+const currentTestMessage = ref('');
 const testResults = ref<
   Array<{
     testName: string
-    status: "passed" | "failed" | "warning" | "info"
+    status: 'passed' | 'failed' | 'warning' | 'info'
     message: string
     duration: number
     timestamp: Date
     details?: any
   }>
->([])
+>([]);
 
 // Estadísticas computadas
-const totalTests = computed(() => testResults.value.length)
-const passedTests = computed(() => testResults.value.filter((t) => t.status === "passed").length)
-const failedTests = computed(() => testResults.value.filter((t) => t.status === "failed").length)
+const totalTests = computed(() => testResults.value.length);
+const passedTests = computed(() => testResults.value.filter((t) => t.status === 'passed').length);
+const failedTests = computed(() => testResults.value.filter((t) => t.status === 'failed').length);
 const averageTestTime = computed(() => {
-  if (testResults.value.length === 0) return 0
-  const total = testResults.value.reduce((sum, test) => sum + test.duration, 0)
-  return Math.round(total / testResults.value.length)
-})
+  if (testResults.value.length === 0) return 0;
+  const total = testResults.value.reduce((sum, test) => sum + test.duration, 0);
+  return Math.round(total / testResults.value.length);
+});
 
 const lastExecutionTime = computed(() => {
-  if (testResults.value.length === 0) return "Nunca"
-  const latest = testResults.value[testResults.value.length - 1]
-  return latest.timestamp.toLocaleTimeString("es-ES")
-})
+  if (testResults.value.length === 0) return 'Nunca';
+  const latest = testResults.value[testResults.value.length - 1];
+  return latest.timestamp.toLocaleTimeString('es-ES');
+});
 
 // Métodos de testing
 async function runQuickTest() {
-  isRunning.value = true
-  progress.value = 0
-  currentTestMessage.value = "Iniciando prueba rápida..."
+  isRunning.value = true;
+  progress.value = 0;
+  currentTestMessage.value = 'Iniciando prueba rápida...';
 
   try {
     // Simular pruebas rápidas
-    const passed = await brandingTests.quickTest()
+    const passed = await brandingTests.quickTest();
 
     testResults.value.push({
-      testName: "Prueba Rápida del Sistema",
-      status: passed ? "passed" : "failed",
+      testName: 'Prueba Rápida del Sistema',
+      status: passed ? 'passed' : 'failed',
       message: passed
-        ? "Todas las verificaciones básicas pasaron exitosamente"
-        : "Algunas verificaciones básicas fallaron",
+        ? 'Todas las verificaciones básicas pasaron exitosamente'
+        : 'Algunas verificaciones básicas fallaron',
       duration: 1000,
       timestamp: new Date(),
       details: passed
-        ? "Store, configuración, nombre de app y colores disponibles"
-        : "Revisar la consola para más detalles",
-    })
+        ? 'Store, configuración, nombre de app y colores disponibles'
+        : 'Revisar la consola para más detalles',
+    });
 
-    logger.info("BRANDING_TEST", "Prueba rápida completada", {
+    logger.info('BRANDING_TEST', 'Prueba rápida completada', {
       passed,
-    })
+    });
   } catch (error) {
-    logger.error("BRANDING_TEST", "Error en prueba rápida", error)
+    logger.error('BRANDING_TEST', 'Error en prueba rápida', error);
     testResults.value.push({
-      testName: "Error General",
-      status: "failed",
-      message: "Error inesperado durante la ejecución",
+      testName: 'Error General',
+      status: 'failed',
+      message: 'Error inesperado durante la ejecución',
       duration: 0,
       timestamp: new Date(),
       details: error,
-    })
+    });
   } finally {
-    isRunning.value = false
-    currentTestMessage.value = ""
+    isRunning.value = false;
+    currentTestMessage.value = '';
   }
 }
 
 async function runFullTest() {
-  isRunning.value = true
-  progress.value = 0
-  currentTestMessage.value = "Iniciando suite completa..."
+  isRunning.value = true;
+  progress.value = 0;
+  currentTestMessage.value = 'Iniciando suite completa...';
 
   try {
     // Ejecutar todos los tests disponibles
-    await brandingTests.runAllTests()
+    await brandingTests.runAllTests();
 
     // Los resultados se muestran en la consola
     // Aquí agregamos un resumen general
     testResults.value.push({
-      testName: "Suite Completa de Pruebas",
-      status: "info",
-      message: "Suite completa ejecutada. Ver consola del navegador para detalles completos.",
+      testName: 'Suite Completa de Pruebas',
+      status: 'info',
+      message: 'Suite completa ejecutada. Ver consola del navegador para detalles completos.',
       duration: 2000,
       timestamp: new Date(),
       details:
-        "La suite completa incluye pruebas de store, composable, CSS variables, DOM y archivos.",
-    })
+        'La suite completa incluye pruebas de store, composable, CSS variables, DOM y archivos.',
+    });
 
-    logger.info("BRANDING_TEST", "Suite completa ejecutada")
+    logger.info('BRANDING_TEST', 'Suite completa ejecutada');
   } catch (error) {
-    logger.error("BRANDING_TEST", "Error en suite completa", error)
+    logger.error('BRANDING_TEST', 'Error en suite completa', error);
   } finally {
-    isRunning.value = false
-    currentTestMessage.value = ""
+    isRunning.value = false;
+    currentTestMessage.value = '';
   }
 }
 
 async function testBrandingComponents() {
-  isRunning.value = true
-  currentTestMessage.value = "Probando componentes de branding..."
+  isRunning.value = true;
+  currentTestMessage.value = 'Probando componentes de branding...';
 
   try {
     // Test básico de componentes
-    const hasStoreAccess = !!brandingStore
-    const hasConfig = !!brandingStore.config
-    const hasTheme = !!brandingStore.config.colors
+    const hasStoreAccess = !!brandingStore;
+    const hasConfig = !!brandingStore.config;
+    const hasTheme = !!brandingStore.config.colors;
 
-    const success = hasStoreAccess && hasConfig && hasTheme
+    const success = hasStoreAccess && hasConfig && hasTheme;
 
     testResults.value.push({
-      testName: "Test de Componentes",
-      status: success ? "passed" : "failed",
+      testName: 'Test de Componentes',
+      status: success ? 'passed' : 'failed',
       message: success
-        ? "Componentes de branding funcionando correctamente"
-        : "Problemas detectados en componentes de branding",
+        ? 'Componentes de branding funcionando correctamente'
+        : 'Problemas detectados en componentes de branding',
       duration: 500,
       timestamp: new Date(),
       details: `Store: ${hasStoreAccess}, Config: ${hasConfig}, Theme: ${hasTheme}`,
-    })
+    });
   } catch (error) {
-    logger.error("BRANDING_TEST", "Error en test de componentes", error)
+    logger.error('BRANDING_TEST', 'Error en test de componentes', error);
     testResults.value.push({
-      testName: "Test de Componentes",
-      status: "failed",
-      message: "Error inesperado durante el test",
+      testName: 'Test de Componentes',
+      status: 'failed',
+      message: 'Error inesperado durante el test',
       duration: 0,
       timestamp: new Date(),
       details: error,
-    })
+    });
   } finally {
-    isRunning.value = false
-    currentTestMessage.value = ""
+    isRunning.value = false;
+    currentTestMessage.value = '';
   }
 }
 
 function clearResults() {
-  testResults.value = []
-  logger.info("BRANDING_TEST", "Resultados de testing limpiados")
+  testResults.value = [];
+  logger.info('BRANDING_TEST', 'Resultados de testing limpiados');
 }
 
 function exportResults() {
@@ -399,40 +399,40 @@ function exportResults() {
         url: window.location.href,
         brandingConfig: brandingStore.config,
       },
-    }
+    };
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: "application/json"})
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `branding-test-results-${new Date().toISOString().split("T")[0]}.json`
-    a.click()
-    URL.revokeObjectURL(url)
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `branding-test-results-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
 
-    logger.info("BRANDING_TEST", "Resultados exportados")
+    logger.info('BRANDING_TEST', 'Resultados exportados');
   } catch (error) {
-    logger.error("BRANDING_TEST", "Error exportando resultados", error)
+    logger.error('BRANDING_TEST', 'Error exportando resultados', error);
   }
 }
 
 function viewBrandingStore() {
-  console.log("🎨 Branding Store:", brandingStore)
-  console.log("📋 Config:", brandingStore.config)
-  console.log("🎨 CSS Variables:", brandingStore.cssVariables)
-  logger.info("BRANDING_TEST", "Store mostrado en consola")
+  console.log('🎨 Branding Store:', brandingStore);
+  console.log('📋 Config:', brandingStore.config);
+  console.log('🎨 CSS Variables:', brandingStore.cssVariables);
+  logger.info('BRANDING_TEST', 'Store mostrado en consola');
 }
 
 // Lifecycle
 onMounted(async () => {
   try {
     if (!brandingStore.config.appName) {
-      await brandingStore.loadBrandingConfig()
+      await brandingStore.loadBrandingConfig();
     }
-    logger.info("BRANDING_TEST", "Dashboard de testing inicializado")
+    logger.info('BRANDING_TEST', 'Dashboard de testing inicializado');
   } catch (error) {
-    logger.error("BRANDING_TEST", "Error inicializando dashboard", error)
+    logger.error('BRANDING_TEST', 'Error inicializando dashboard', error);
   }
-})
+});
 </script>
 
 <style scoped>

@@ -561,15 +561,15 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed, watch, onUnmounted} from "vue"
-import {storeToRefs} from "pinia"
-import {debounce} from "lodash-es"
-import {useClassesStore} from "@/stores/classes"
-import {useTeachersStore} from "@/stores/teachers"
-import {useStudentsStore} from "@/modulos/Students/store/students"
-import {useNotificationsStore} from "@/stores/notifications"
-import ClassFormDialog from "@/modulos/Classes/components/ClassFormDialog.vue"
-import type {ClassData} from "@/modulos/Classes/types/class"
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue';
+import { storeToRefs } from 'pinia';
+import { debounce } from 'lodash-es';
+import { useClassesStore } from '@/stores/classes';
+import { useTeachersStore } from '@/stores/teachers';
+import { useStudentsStore } from '@/modulos/Students/store/students';
+import { useNotificationsStore } from '@/stores/notifications';
+import ClassFormDialog from '@/modulos/Classes/components/ClassFormDialog.vue';
+import type { ClassData } from '@/modulos/Classes/types/class';
 
 // Heroicons
 import {
@@ -581,7 +581,7 @@ import {
   MagnifyingGlassIcon,
   XMarkIcon,
   CalendarIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Tipos
 interface Clase {
@@ -625,118 +625,118 @@ interface ClassForm {
 }
 
 // Stores
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
-const notificationsStore = useNotificationsStore()
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
+const notificationsStore = useNotificationsStore();
 
 // Estado reactivo
-const tab = ref<"classes" | "schedule">("classes")
-const showCreateDialog = ref(false)
-const showDeleteDialog = ref(false)
-const showFilters = ref(false)
-const editingClass = ref<Clase | null>(null)
-const currentClassData = ref<ClassData | null>(null)
-const loading = ref(true)
-const deleting = ref(false)
-const saving = ref(false)
+const tab = ref<'classes' | 'schedule'>('classes');
+const showCreateDialog = ref(false);
+const showDeleteDialog = ref(false);
+const showFilters = ref(false);
+const editingClass = ref<Clase | null>(null);
+const currentClassData = ref<ClassData | null>(null);
+const loading = ref(true);
+const deleting = ref(false);
+const saving = ref(false);
 
 // Paginación y rendimiento
-const currentPage = ref(1)
-const itemsPerPage = ref(12)
+const currentPage = ref(1);
+const itemsPerPage = ref(12);
 
 // Form para crear/editar clases
 const classForm = ref<ClassForm>({
-  nombre: "",
-  teacherId: "",
+  nombre: '',
+  teacherId: '',
   maestros: {
-    titular: "",
+    titular: '',
     colaboradores: [],
   },
   horario: {
-    dia: "",
-    horaInicio: "",
-    horaFin: "",
+    dia: '',
+    horaInicio: '',
+    horaFin: '',
   },
   alumnos: [],
-  contenido: "",
+  contenido: '',
   activa: true,
-})
+});
 
 // Filtros con debounce para optimizar rendimiento
-const searchQuery = ref("")
-const debouncedSearchQuery = ref("")
-const selectedInstrument = ref("")
-const selectedTeacher = ref("")
-const selectedStatus = ref("")
+const searchQuery = ref('');
+const debouncedSearchQuery = ref('');
+const selectedInstrument = ref('');
+const selectedTeacher = ref('');
+const selectedStatus = ref('');
 
 // Debounce para búsqueda (mejora rendimiento)
 const debouncedSearch = debounce((value: string) => {
-  debouncedSearchQuery.value = value
-  currentPage.value = 1 // Reset página en nueva búsqueda
-}, 300)
+  debouncedSearchQuery.value = value;
+  currentPage.value = 1; // Reset página en nueva búsqueda
+}, 300);
 
 // Watch para aplicar debounce
 watch(searchQuery, (newValue) => {
-  debouncedSearch(newValue)
-})
+  debouncedSearch(newValue);
+});
 
 // Obtener datos del store
-const {classes} = storeToRefs(classesStore)
-const {teachers} = storeToRefs(teachersStore)
+const { classes } = storeToRefs(classesStore);
+const { teachers } = storeToRefs(teachersStore);
 
 // Computed properties optimizados con memoización
 const allFilteredClasses = computed(() => {
-  let filtered = [...classes.value]
+  let filtered = [...classes.value];
 
   // Filtro por búsqueda (usando debounced query)
   if (debouncedSearchQuery.value.trim()) {
-    const query = debouncedSearchQuery.value.toLowerCase()
+    const query = debouncedSearchQuery.value.toLowerCase();
     filtered = filtered.filter(
       (cls) =>
         cls.nombre?.toLowerCase().includes(query) ||
         cls.contenido?.toLowerCase().includes(query) ||
-        getTeacherName(cls.teacherId).toLowerCase().includes(query)
-    )
+        getTeacherName(cls.teacherId).toLowerCase().includes(query),
+    );
   }
 
   // Filtro por instrumento (usando contenido como proxy)
   if (selectedInstrument.value) {
     filtered = filtered.filter((cls) =>
-      cls.contenido?.toLowerCase().includes(selectedInstrument.value.toLowerCase())
-    )
+      cls.contenido?.toLowerCase().includes(selectedInstrument.value.toLowerCase()),
+    );
   }
 
   // Filtro por maestro
   if (selectedTeacher.value) {
-    filtered = filtered.filter((cls) => cls.teacherId === selectedTeacher.value)
+    filtered = filtered.filter((cls) => cls.teacherId === selectedTeacher.value);
   }
 
   // Filtro por estado
   if (selectedStatus.value) {
     switch (selectedStatus.value) {
-      case "active":
-        // Todos son activos por defecto
-        break
-      case "inactive":
-        // Filtrar por clases que no tienen alumnos
-        filtered = filtered.filter((cls) => !cls.alumnos || cls.alumnos.length === 0)
-        break
+    case 'active':
+      // Todos son activos por defecto
+      break;
+    case 'inactive':
+      // Filtrar por clases que no tienen alumnos
+      filtered = filtered.filter((cls) => !cls.alumnos || cls.alumnos.length === 0);
+      break;
     }
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 const filteredClasses = computed(() => {
-  const filtered = allFilteredClasses.value
+  const filtered = allFilteredClasses.value;
   // Paginación para mejorar rendimiento
-  const startIndex = (currentPage.value - 1) * itemsPerPage.value
-  const endIndex = startIndex + itemsPerPage.value
-  return filtered.slice(startIndex, endIndex)
-})
+  const startIndex = (currentPage.value - 1) * itemsPerPage.value;
+  const endIndex = startIndex + itemsPerPage.value;
+  return filtered.slice(startIndex, endIndex);
+});
 
-const totalFilteredItems = computed(() => allFilteredClasses.value.length)
+const totalFilteredItems = computed(() => allFilteredClasses.value.length);
 
 const availableInstruments = computed(() => {
   // Usar contenido para extraer instrumentos
@@ -746,23 +746,23 @@ const availableInstruments = computed(() => {
       .filter(Boolean)
       .map((content) => {
         // Extraer palabras que podrían ser instrumentos
-        const words = content!.toLowerCase().split(/\s+/)
-        const instrumentList = ["piano", "guitarra", "violin", "flauta", "canto", "bateria", "bajo"]
-        return words.find((word) => instrumentList.some((inst) => word.includes(inst)))
+        const words = content!.toLowerCase().split(/\s+/);
+        const instrumentList = ['piano', 'guitarra', 'violin', 'flauta', 'canto', 'bateria', 'bajo'];
+        return words.find((word) => instrumentList.some((inst) => word.includes(inst)));
       })
-      .filter(Boolean)
-  )
-  return Array.from(instruments).sort()
-})
+      .filter(Boolean),
+  );
+  return Array.from(instruments).sort();
+});
 
 const totalStudents = computed(() => {
-  return classes.value.reduce((total, cls) => total + (cls.alumnos?.length || 0), 0)
-})
+  return classes.value.reduce((total, cls) => total + (cls.alumnos?.length || 0), 0);
+});
 
 const activeTeachers = computed(() => {
-  const teacherIds = new Set(classes.value.map((cls) => cls.teacherId).filter(Boolean))
-  return teacherIds.size
-})
+  const teacherIds = new Set(classes.value.map((cls) => cls.teacherId).filter(Boolean));
+  return teacherIds.size;
+});
 
 const hasActiveFilters = computed(() => {
   return !!(
@@ -770,52 +770,52 @@ const hasActiveFilters = computed(() => {
     selectedInstrument.value ||
     selectedTeacher.value ||
     selectedStatus.value
-  )
-})
+  );
+});
 
 // Métodos auxiliares con caché para mejorar rendimiento
-const teacherNameCache = new Map<string, string>()
+const teacherNameCache = new Map<string, string>();
 
 const getTeacherName = (teacherId?: string): string => {
-  if (!teacherId) return "Sin asignar"
+  if (!teacherId) return 'Sin asignar';
   
   // Verificar caché primero
   if (teacherNameCache.has(teacherId)) {
-    return teacherNameCache.get(teacherId)!
+    return teacherNameCache.get(teacherId)!;
   }
   
-  const teacher = teachers.value?.find((t) => t.id === teacherId)
-  const name = teacher ? teacher.name : "Maestro no encontrado"
+  const teacher = teachers.value?.find((t) => t.id === teacherId);
+  const name = teacher ? teacher.name : 'Maestro no encontrado';
   
   // Guardar en caché
-  teacherNameCache.set(teacherId, name)
+  teacherNameCache.set(teacherId, name);
   
   // Limpiar caché si es muy grande (prevenir memory leaks)
   if (teacherNameCache.size > 100) {
-    const firstKey = teacherNameCache.keys().next().value
-    if (firstKey) teacherNameCache.delete(firstKey)
+    const firstKey = teacherNameCache.keys().next().value;
+    if (firstKey) teacherNameCache.delete(firstKey);
   }
   
-  return name
-}
+  return name;
+};
 
 const getTeachersDisplay = (clase: Clase): string => {
   // Priorizar el nuevo formato con maestros
   if (clase.maestros) {
-    const titular = getTeacherName(clase.maestros.titular)
+    const titular = getTeacherName(clase.maestros.titular);
     const colaboradores = clase.maestros.colaboradores
       .map((id) => getTeacherName(id))
-      .filter((name) => name !== "Maestro no encontrado")
+      .filter((name) => name !== 'Maestro no encontrado');
     
     if (colaboradores.length > 0) {
-      return `${titular} + ${colaboradores.length} colaborador${colaboradores.length > 1 ? "es" : ""}`
+      return `${titular} + ${colaboradores.length} colaborador${colaboradores.length > 1 ? 'es' : ''}`;
     }
-    return titular
+    return titular;
   }
   
   // Fallback al formato anterior
-  return getTeacherName(clase.teacherId)
-}
+  return getTeacherName(clase.teacherId);
+};
 
 // Función para convertir Clase a ClassData
 const convertToClassData = (clase: Clase): ClassData => {
@@ -826,191 +826,191 @@ const convertToClassData = (clase: Clase): ClassData => {
     teacherId: clase.maestros?.titular || clase.teacherId,
     studentIds: clase.alumnos,
     sharedWith: clase.maestros?.colaboradores || [],
-    status: "active",
+    status: 'active',
     schedule: clase.horario
       ? {
-          day: clase.horario.dia,
-          startTime: clase.horario.horaInicio,
-          endTime: clase.horario.horaFin,
-        }
+        day: clase.horario.dia,
+        startTime: clase.horario.horaInicio,
+        endTime: clase.horario.horaFin,
+      }
       : undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
-  }
-}
+  };
+};
 
 // Función para convertir ClassData a Clase
 const convertFromClassData = (classData: Partial<ClassData>): Clase => {
-  const schedule = classData.schedule
+  const schedule = classData.schedule;
   const horario =
-    schedule && "day" in schedule
+    schedule && 'day' in schedule
       ? {
-          dia: schedule.day,
-          horaInicio: schedule.startTime,
-          horaFin: schedule.endTime,
-        }
+        dia: schedule.day,
+        horaInicio: schedule.startTime,
+        horaFin: schedule.endTime,
+      }
       : {
-          dia: "",
-          horaInicio: "",
-          horaFin: "",
-        }
+        dia: '',
+        horaInicio: '',
+        horaFin: '',
+      };
 
   return {
-    id: classData.id || "",
-    nombre: classData.name || "",
-    teacherId: classData.teacherId || "",
+    id: classData.id || '',
+    nombre: classData.name || '',
+    teacherId: classData.teacherId || '',
     maestros: {
-      titular: classData.teacherId || "",
+      titular: classData.teacherId || '',
       colaboradores: classData.sharedWith || [],
     },
     horario,
     alumnos: classData.studentIds || [],
     contenido: classData.description,
-  }
-}
+  };
+};
 
 const clearAllFilters = () => {
-  searchQuery.value = ""
-  selectedInstrument.value = ""
-  selectedTeacher.value = ""
-  selectedStatus.value = ""
-  showFilters.value = false
-  currentPage.value = 1 // Reset página al limpiar filtros
-}
+  searchQuery.value = '';
+  selectedInstrument.value = '';
+  selectedTeacher.value = '';
+  selectedStatus.value = '';
+  showFilters.value = false;
+  currentPage.value = 1; // Reset página al limpiar filtros
+};
 
 // Cargar datos iniciales con lazy loading optimizado
 const loadInitialData = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     // Cargar datos en paralelo pero con prioridades
     const [classesPromise, teachersPromise, studentsPromise] = [
       classesStore.fetchClasses(),
       teachersStore.fetchTeachers(),
       studentsStore.fetchStudents(),
-    ]
+    ];
     
     // Esperar las clases primero (datos más importantes)
-    await classesPromise
+    await classesPromise;
     
     // Luego cargar maestros y estudiantes en background
-    await Promise.allSettled([teachersPromise, studentsPromise])
+    await Promise.allSettled([teachersPromise, studentsPromise]);
   } catch (error) {
-    console.error("Error cargando datos iniciales:", error)
+    console.error('Error cargando datos iniciales:', error);
     notificationsStore.notify.error(
-      "Error",
-      "Error al cargar los datos. Por favor, inténtalo de nuevo."
-    )
+      'Error',
+      'Error al cargar los datos. Por favor, inténtalo de nuevo.',
+    );
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Lifecycle
-onMounted(loadInitialData)
+onMounted(loadInitialData);
 
 // Limpieza de memoria al desmontar el componente
 onUnmounted(() => {
   // Limpiar caché de nombres de maestros
-  teacherNameCache.clear()
+  teacherNameCache.clear();
   
   // Cancelar debounce pendiente
-  debouncedSearch.cancel()
-})
+  debouncedSearch.cancel();
+});
 
 // Métodos de la UI
 const editClass = (classItem: Clase) => {
   // Convertir a ClassData para el modal
-  currentClassData.value = convertToClassData(classItem)
-  showCreateDialog.value = true
-}
+  currentClassData.value = convertToClassData(classItem);
+  showCreateDialog.value = true;
+};
 
 const createNewClass = () => {
-  currentClassData.value = null
-  showCreateDialog.value = true
-}
+  currentClassData.value = null;
+  showCreateDialog.value = true;
+};
 
 const confirmDelete = (classItem: Clase) => {
-  editingClass.value = {...classItem}
-  showDeleteDialog.value = true
-}
+  editingClass.value = { ...classItem };
+  showDeleteDialog.value = true;
+};
 
 const closeCreateDialog = () => {
-  showCreateDialog.value = false
-  currentClassData.value = null
-  resetForm()
-}
+  showCreateDialog.value = false;
+  currentClassData.value = null;
+  resetForm();
+};
 
 const handleSaveFromDialog = async (classData: Partial<ClassData>) => {
   if (!classData.name?.trim() || !classData.teacherId) {
-    notificationsStore.notify.error("Error", "Por favor completa los campos obligatorios")
-    return
+    notificationsStore.notify.error('Error', 'Por favor completa los campos obligatorios');
+    return;
   }
 
-  saving.value = true
+  saving.value = true;
   try {
     // Convertir ClassData a Clase para usar con el store existente
-    const claseData = convertFromClassData(classData)
+    const claseData = convertFromClassData(classData);
 
     if (classData.id) {
-      await classesStore.updateClass(classData.id, claseData)
-      notificationsStore.notify.success("Éxito", "Clase actualizada correctamente")
+      await classesStore.updateClass(classData.id, claseData);
+      notificationsStore.notify.success('Éxito', 'Clase actualizada correctamente');
     } else {
-      await classesStore.addClass(claseData)
-      notificationsStore.notify.success("Éxito", "Clase creada correctamente")
+      await classesStore.addClass(claseData);
+      notificationsStore.notify.success('Éxito', 'Clase creada correctamente');
     }
 
-    closeCreateDialog()
-    await loadInitialData()
+    closeCreateDialog();
+    await loadInitialData();
   } catch (error) {
-    console.error("Error al guardar la clase:", error)
+    console.error('Error al guardar la clase:', error);
     notificationsStore.notify.error(
-      "Error",
-      classData.id ? "Error al actualizar la clase" : "Error al crear la clase"
-    )
+      'Error',
+      classData.id ? 'Error al actualizar la clase' : 'Error al crear la clase',
+    );
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const resetForm = () => {
   classForm.value = {
-    nombre: "",
-    teacherId: "",
+    nombre: '',
+    teacherId: '',
     maestros: {
-      titular: "",
+      titular: '',
       colaboradores: [],
     },
     horario: {
-      dia: "",
-      horaInicio: "",
-      horaFin: "",
+      dia: '',
+      horaInicio: '',
+      horaFin: '',
     },
     alumnos: [],
-    contenido: "",
+    contenido: '',
     activa: true,
-  }
-}
+  };
+};
 
 const deleteClass = async () => {
-  if (!editingClass.value?.id) return
+  if (!editingClass.value?.id) return;
 
-  deleting.value = true
+  deleting.value = true;
   try {
-    await classesStore.deleteClass(editingClass.value.id)
+    await classesStore.deleteClass(editingClass.value.id);
     notificationsStore.notify.success(
-      "Éxito",
-      `La clase "${editingClass.value.nombre}" ha sido eliminada.`
-    )
-    showDeleteDialog.value = false
-    editingClass.value = null
-    await loadInitialData()
+      'Éxito',
+      `La clase "${editingClass.value.nombre}" ha sido eliminada.`,
+    );
+    showDeleteDialog.value = false;
+    editingClass.value = null;
+    await loadInitialData();
   } catch (error) {
-    console.error("Error al eliminar la clase:", error)
-    notificationsStore.notify.error("Error", "Error al eliminar la clase.")
+    console.error('Error al eliminar la clase:', error);
+    notificationsStore.notify.error('Error', 'Error al eliminar la clase.');
   } finally {
-    deleting.value = false
+    deleting.value = false;
   }
-}
+};
 </script>
 
 <style scoped>

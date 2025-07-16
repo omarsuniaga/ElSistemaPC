@@ -466,9 +466,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted} from "vue"
-import {useRouter} from "vue-router"
-import {useClassMonitoring} from "../composables/useClassMonitoring"
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useClassMonitoring } from '../composables/useClassMonitoring';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -479,7 +479,7 @@ import {
   DocumentArrowDownIcon,
   MagnifyingGlassIcon,
   XMarkIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Tipos
 interface CommunicationTemplate {
@@ -491,7 +491,7 @@ interface CommunicationTemplate {
 }
 
 // Composables
-const router = useRouter()
+const router = useRouter();
 const {
   // Estado
   isLoading,
@@ -537,23 +537,23 @@ const {
 
   // Utilidades
   getStudentInitials,
-} = useClassMonitoring()
+} = useClassMonitoring();
 
 // Estado local adicional
-const selectedDateString = ref(formatDateForInput(new Date()))
-const selectedFilter = ref("most_absent")
-const searchQuery = ref("")
-const showCommunicationModal = ref(false)
-const selectedStudent = ref<any | null>(null)
-const selectedTemplate = ref<CommunicationTemplate | null>(null)
+const selectedDateString = ref(formatDateForInput(new Date()));
+const selectedFilter = ref('most_absent');
+const searchQuery = ref('');
+const showCommunicationModal = ref(false);
+const selectedStudent = ref<any | null>(null);
+const selectedTemplate = ref<CommunicationTemplate | null>(null);
 
 // Datos de plantillas de comunicación
 const communicationTemplates = ref<CommunicationTemplate[]>([
   {
-    id: "warning",
-    title: "Amonestación",
-    description: "Llamado de atención por ausencias",
-    icon: "ExclamationTriangleIcon",
+    id: 'warning',
+    title: 'Amonestación',
+    description: 'Llamado de atención por ausencias',
+    icon: 'ExclamationTriangleIcon',
     template: `Estimado/a {representante},
 
 Por medio de la presente nos dirigimos a usted para informarle sobre las ausencias de {estudiante} en las clases de {instrumento}.
@@ -567,10 +567,10 @@ Atentamente,
 Dirección - El Sistema PC`,
   },
   {
-    id: "minor_fault",
-    title: "Falta Leve",
-    description: "Reflexión sobre comportamiento",
-    icon: "ChatBubbleLeftIcon",
+    id: 'minor_fault',
+    title: 'Falta Leve',
+    description: 'Reflexión sobre comportamiento',
+    icon: 'ChatBubbleLeftIcon',
     template: `Estimado/a {representante},
 
 Nos comunicamos para conversar sobre la situación académica de {estudiante} en las clases de {instrumento}.
@@ -583,10 +583,10 @@ Cordialmente,
 Dirección Académica - El Sistema PC`,
   },
   {
-    id: "expulsion",
-    title: "Carta de Expulsión",
-    description: "Notificación de expulsión por ausencias",
-    icon: "NoSymbolIcon",
+    id: 'expulsion',
+    title: 'Carta de Expulsión',
+    description: 'Notificación de expulsión por ausencias',
+    icon: 'NoSymbolIcon',
     template: `Estimado/a {representante},
 
 Lamentablemente, después de múltiples intentos de comunicación, debemos informarle que {estudiante} será dado de baja del programa de {instrumento}.
@@ -599,10 +599,10 @@ Esta decisión es definitiva según el reglamento interno.
 Dirección - El Sistema PC`,
   },
   {
-    id: "instrument_return",
-    title: "Entrega de Instrumento",
-    description: "Solicitud de devolución de instrumento",
-    icon: "MusicalNoteIcon",
+    id: 'instrument_return',
+    title: 'Entrega de Instrumento',
+    description: 'Solicitud de devolución de instrumento',
+    icon: 'MusicalNoteIcon',
     template: `Estimado/a {representante},
 
 Por favor, proceda a la devolución del instrumento asignado a {estudiante} debido a su baja del programa.
@@ -615,10 +615,10 @@ Puede acercarse en horario de oficina (9:00 AM - 5:00 PM).
 Administración - El Sistema PC`,
   },
   {
-    id: "citation",
-    title: "Citación al Representante",
-    description: "Cita obligatoria con dirección",
-    icon: "CalendarDaysIcon",
+    id: 'citation',
+    title: 'Citación al Representante',
+    description: 'Cita obligatoria con dirección',
+    icon: 'CalendarDaysIcon',
     template: `Estimado/a {representante},
 
 Por la presente lo/la citamos a una reunión OBLIGATORIA para tratar la situación académica de {estudiante}.
@@ -630,115 +630,115 @@ Su asistencia es indispensable. Favor confirmar recepción.
 
 Dirección - El Sistema PC`,
   },
-])
+]);
 
 // Computed
 const filteredStudents = computed(() => {
-  let students = [...criticalStudents.value]
+  let students = [...criticalStudents.value];
 
   // Aplicar búsqueda
   if (searchQuery.value) {
-    students = searchStudents(searchQuery.value)
+    students = searchStudents(searchQuery.value);
   }
 
   // Aplicar filtro de ordenamiento
-  return sortStudents(selectedFilter.value, students)
-})
+  return sortStudents(selectedFilter.value, students);
+});
 
 // Métodos utilitarios
 function formatDate(date: Date): string {
-  return date.toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
+  return date.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
 function formatDateForInput(date: Date): string {
-  return date.toISOString().split("T")[0]
+  return date.toISOString().split('T')[0];
 }
 
 function getDayName(date: Date): string {
-  return date.toLocaleDateString("es-ES", {weekday: "long"})
+  return date.toLocaleDateString('es-ES', { weekday: 'long' });
 }
 
 function getInitials(name: string): string {
-  return getStudentInitials(name)
+  return getStudentInitials(name);
 }
 
 function getClassStatusColor(status: string): string {
   const colors = {
-    scheduled: "border-gray-200 dark:border-gray-600",
-    in_progress: "border-blue-300 bg-blue-50 dark:border-blue-600 dark:bg-blue-900/20",
-    completed: "border-green-300 bg-green-50 dark:border-green-600 dark:bg-green-900/20",
-    cancelled: "border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20",
-  }
-  return colors[status as keyof typeof colors] || colors.scheduled
+    scheduled: 'border-gray-200 dark:border-gray-600',
+    in_progress: 'border-blue-300 bg-blue-50 dark:border-blue-600 dark:bg-blue-900/20',
+    completed: 'border-green-300 bg-green-50 dark:border-green-600 dark:bg-green-900/20',
+    cancelled: 'border-red-300 bg-red-50 dark:border-red-600 dark:bg-red-900/20',
+  };
+  return colors[status as keyof typeof colors] || colors.scheduled;
 }
 
 function getStatusBadgeColor(status: string): string {
   const colors = {
-    scheduled: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
-    in_progress: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-    completed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-    cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  }
-  return colors[status as keyof typeof colors] || colors.scheduled
+    scheduled: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+    in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+  };
+  return colors[status as keyof typeof colors] || colors.scheduled;
 }
 
 function getStatusText(status: string): string {
   const texts = {
-    scheduled: "Programada",
-    in_progress: "En Curso",
-    completed: "Completada",
-    cancelled: "Cancelada",
-  }
-  return texts[status as keyof typeof texts] || "Desconocido"
+    scheduled: 'Programada',
+    in_progress: 'En Curso',
+    completed: 'Completada',
+    cancelled: 'Cancelada',
+  };
+  return texts[status as keyof typeof texts] || 'Desconocido';
 }
 
 function getAttendanceBarColor(percentage: number): string {
-  if (percentage >= 80) return "bg-green-500"
-  if (percentage >= 60) return "bg-yellow-500"
-  return "bg-red-500"
+  if (percentage >= 80) return 'bg-green-500';
+  if (percentage >= 60) return 'bg-yellow-500';
+  return 'bg-red-500';
 }
 
 function getAbsencesBadgeColor(absences: number, total: number): string {
-  const percentage = ((total - absences) / total) * 100
+  const percentage = ((total - absences) / total) * 100;
   if (percentage >= 80)
-    return "bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-300"
+    return 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-300';
   if (percentage >= 60)
-    return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300"
-  return "bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-300"
+    return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300';
+  return 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-300';
 }
 
 // Métodos de navegación de fechas
 function goToPreviousDay() {
-  const newDate = new Date(selectedDate.value)
-  newDate.setDate(newDate.getDate() - 1)
-  selectedDate.value = newDate
-  selectedDateString.value = formatDateForInput(newDate)
-  loadDayData(newDate)
+  const newDate = new Date(selectedDate.value);
+  newDate.setDate(newDate.getDate() - 1);
+  selectedDate.value = newDate;
+  selectedDateString.value = formatDateForInput(newDate);
+  loadDayData(newDate);
 }
 
 function goToNextDay() {
-  const newDate = new Date(selectedDate.value)
-  newDate.setDate(newDate.getDate() + 1)
-  selectedDate.value = newDate
-  selectedDateString.value = formatDateForInput(newDate)
-  loadDayData(newDate)
+  const newDate = new Date(selectedDate.value);
+  newDate.setDate(newDate.getDate() + 1);
+  selectedDate.value = newDate;
+  selectedDateString.value = formatDateForInput(newDate);
+  loadDayData(newDate);
 }
 
 function goToToday() {
-  const today = new Date()
-  selectedDate.value = today
-  selectedDateString.value = formatDateForInput(today)
-  loadDayData(today)
+  const today = new Date();
+  selectedDate.value = today;
+  selectedDateString.value = formatDateForInput(today);
+  loadDayData(today);
 }
 
 function onDateChange() {
-  selectedDate.value = new Date(selectedDateString.value)
-  loadDayData(selectedDate.value)
+  selectedDate.value = new Date(selectedDateString.value);
+  loadDayData(selectedDate.value);
 }
 
 // Métodos de filtrado
@@ -752,60 +752,60 @@ function filterStudents() {
 
 // Métodos de comunicación
 function openCommunicationModal(student: any) {
-  selectedStudent.value = student
-  selectedTemplate.value = null
-  showCommunicationModal.value = true
+  selectedStudent.value = student;
+  selectedTemplate.value = null;
+  showCommunicationModal.value = true;
 }
 
 function closeCommunicationModal() {
-  showCommunicationModal.value = false
-  selectedStudent.value = null
-  selectedTemplate.value = null
+  showCommunicationModal.value = false;
+  selectedStudent.value = null;
+  selectedTemplate.value = null;
 }
 
 function generateMessage(): string {
-  if (!selectedTemplate.value || !selectedStudent.value) return ""
+  if (!selectedTemplate.value || !selectedStudent.value) return '';
 
-  return generateCommunicationMessage(selectedStudent.value, selectedTemplate.value.template)
+  return generateCommunicationMessage(selectedStudent.value, selectedTemplate.value.template);
 }
 
 function handleSendWhatsAppMessage() {
-  if (!selectedStudent.value || !selectedTemplate.value) return
+  if (!selectedStudent.value || !selectedTemplate.value) return;
 
-  const message = generateMessage()
-  sendWhatsAppMessage(selectedStudent.value, message)
-  closeCommunicationModal()
+  const message = generateMessage();
+  sendWhatsAppMessage(selectedStudent.value, message);
+  closeCommunicationModal();
 }
 
 function viewStudentDetails(student: any) {
-  router.push(`/admin/students/${student.id}`)
+  router.push(`/admin/students/${student.id}`);
 }
 
 // Métodos de reportes
 function handleGenerateWeeklyReport() {
-  const startOfWeek = new Date(selectedDate.value)
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-  generateWeeklyReport(startOfWeek)
+  const startOfWeek = new Date(selectedDate.value);
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+  generateWeeklyReport(startOfWeek);
 }
 
 // Lifecycle
 // Lifecycle
 onMounted(async () => {
   // Inicializar fecha seleccionada
-  selectedDate.value = new Date()
-  selectedDateString.value = formatDateForInput(new Date())
+  selectedDate.value = new Date();
+  selectedDateString.value = formatDateForInput(new Date());
 
   // Cargar datos iniciales
-  await loadDayData()
+  await loadDayData();
 
   // Iniciar actualizaciones en tiempo real
-  startRealTimeUpdates()
-})
+  startRealTimeUpdates();
+});
 
 onUnmounted(() => {
   // Detener actualizaciones en tiempo real
-  stopRealTimeUpdates()
-})
+  stopRealTimeUpdates();
+});
 </script>
 
 <style scoped>

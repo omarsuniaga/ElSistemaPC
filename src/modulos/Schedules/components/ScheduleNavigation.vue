@@ -1,16 +1,3 @@
-<script setup lang="ts">
-import {ref} from "vue"
-import {useRouter} from "vue-router"
-
-const router = useRouter()
-const activeView = ref("")
-
-const navigateTo = (route: string) => {
-  router.push(route)
-  activeView.value = route
-}
-</script>
-
 <template>
   <div class="mb-6">
     <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-2">
@@ -78,3 +65,16 @@ const navigateTo = (route: string) => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+const activeView = ref('');
+
+const navigateTo = (route: string) => {
+  router.push(route);
+  activeView.value = route;
+};
+</script>

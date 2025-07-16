@@ -1,114 +1,3 @@
-<script setup lang="ts">
-import {ref} from "vue"
-import {
-  PlusCircleIcon,
-  ClockIcon,
-  UserGroupIcon,
-  PencilIcon,
-  ChatBubbleLeftRightIcon,
-  PaperClipIcon,
-  DocumentIcon,
-  PhotoIcon,
-  MicrophoneIcon,
-  XMarkIcon,
-} from "@heroicons/vue/24/outline"
-
-const props = defineProps({
-  isEditing: {
-    type: Boolean,
-    default: false,
-  },
-})
-
-const emit = defineEmits(["add-activity", "start-editing", "attach-file"])
-
-// Estado local
-const activityInput = ref("")
-const attachedFiles = ref([])
-const showAttachOptions = ref(false)
-const showActivityOptions = ref(false)
-const fileInputRef = ref(null)
-
-// Methods
-const toggleAttachOptions = () => {
-  showAttachOptions.value = !showAttachOptions.value
-  if (showAttachOptions.value) {
-    showActivityOptions.value = false
-  }
-}
-
-const toggleActivityOptions = () => {
-  showActivityOptions.value = !showActivityOptions.value
-  if (showActivityOptions.value) {
-    showAttachOptions.value = false
-  }
-}
-
-const triggerFileInput = (type) => {
-  if (fileInputRef.value) {
-    fileInputRef.value.setAttribute("data-file-type", type)
-    fileInputRef.value.click()
-  }
-}
-
-const handleFileUpload = (event) => {
-  const files = event.target.files
-  if (!files.length) return
-
-  const fileType = event.target.getAttribute("data-file-type") || "generic"
-
-  Array.from(files).forEach((file) => {
-    const fileInfo = {
-      id: Date.now() + Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      type: file.type,
-      size: formatFileSize(file.size),
-      file,
-      uploadType: fileType,
-    }
-
-    attachedFiles.value.push(fileInfo)
-  })
-
-  // Reset file input
-  if (fileInputRef.value) {
-    fileInputRef.value.value = ""
-  }
-
-  showAttachOptions.value = false
-}
-
-const removeAttachedFile = (fileId) => {
-  attachedFiles.value = attachedFiles.value.filter((file) => file.id !== fileId)
-}
-
-const formatFileSize = (bytes) => {
-  if (bytes === 0) return "0 Bytes"
-  const k = 1024
-  const sizes = ["Bytes", "KB", "MB", "GB"]
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-}
-
-const addActivity = (type = "message") => {
-  if (!activityInput.value.trim() && attachedFiles.value.length === 0 && type === "message") {
-    return
-  }
-
-  emit("add-activity", {
-    type,
-    content: activityInput.value.trim(),
-    attachments: [...attachedFiles.value],
-  })
-
-  // Clear input and files
-  activityInput.value = ""
-  attachedFiles.value = []
-  showActivityOptions.value = false
-  showAttachOptions.value = false
-}
-</script>
-
 <template>
   <div
     class="sticky bottom-10 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 p-3"
@@ -236,3 +125,114 @@ v-if="showAttachOptions"
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import {
+  PlusCircleIcon,
+  ClockIcon,
+  UserGroupIcon,
+  PencilIcon,
+  ChatBubbleLeftRightIcon,
+  PaperClipIcon,
+  DocumentIcon,
+  PhotoIcon,
+  MicrophoneIcon,
+  XMarkIcon,
+} from '@heroicons/vue/24/outline';
+
+const props = defineProps({
+  isEditing: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const emit = defineEmits(['add-activity', 'start-editing', 'attach-file']);
+
+// Estado local
+const activityInput = ref('');
+const attachedFiles = ref([]);
+const showAttachOptions = ref(false);
+const showActivityOptions = ref(false);
+const fileInputRef = ref(null);
+
+// Methods
+const toggleAttachOptions = () => {
+  showAttachOptions.value = !showAttachOptions.value;
+  if (showAttachOptions.value) {
+    showActivityOptions.value = false;
+  }
+};
+
+const toggleActivityOptions = () => {
+  showActivityOptions.value = !showActivityOptions.value;
+  if (showActivityOptions.value) {
+    showAttachOptions.value = false;
+  }
+};
+
+const triggerFileInput = (type) => {
+  if (fileInputRef.value) {
+    fileInputRef.value.setAttribute('data-file-type', type);
+    fileInputRef.value.click();
+  }
+};
+
+const handleFileUpload = (event) => {
+  const files = event.target.files;
+  if (!files.length) return;
+
+  const fileType = event.target.getAttribute('data-file-type') || 'generic';
+
+  Array.from(files).forEach((file) => {
+    const fileInfo = {
+      id: Date.now() + Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      type: file.type,
+      size: formatFileSize(file.size),
+      file,
+      uploadType: fileType,
+    };
+
+    attachedFiles.value.push(fileInfo);
+  });
+
+  // Reset file input
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+  }
+
+  showAttachOptions.value = false;
+};
+
+const removeAttachedFile = (fileId) => {
+  attachedFiles.value = attachedFiles.value.filter((file) => file.id !== fileId);
+};
+
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+const addActivity = (type = 'message') => {
+  if (!activityInput.value.trim() && attachedFiles.value.length === 0 && type === 'message') {
+    return;
+  }
+
+  emit('add-activity', {
+    type,
+    content: activityInput.value.trim(),
+    attachments: [...attachedFiles.value],
+  });
+
+  // Clear input and files
+  activityInput.value = '';
+  attachedFiles.value = [];
+  showActivityOptions.value = false;
+  showAttachOptions.value = false;
+};
+</script>

@@ -1,448 +1,4 @@
 si<!-- views/ClassesView.vue -->
-<script setup lang="ts">
-import {ref, computed, onMounted, watch, onBeforeMount} from "vue"
-import {useClassesStore} from "../store/classes"
-import {useTeachersStore} from "../../../stores/teachersUnified"
-import {useStudentsStore} from "../../Students/store/students"
-import {useInstrumentoStore} from "../../Instruments/store/instrumento"
-import type {Student} from "../../Students/types/student"
-import Modal from "../../../components/shared/Modal.vue"
-import ConfirmModal from "../../../components/ConfirmModal.vue"
-import ClassFilters from "../components/ClassFilters.vue"
-import ClassForm from "../components/ClassForm.vue"
-import StudentManagement from "../../Students/components/StudentManagement.vue"
-import StudentSelector from "../../Students/components/StudentSelector.vue"
-import ClassesDrawer from "../components/ClassesDrawer.vue"
-import {
-  PlusCircleIcon,
-  InformationCircleIcon,
-  UserGroupIcon,
-  TrashIcon,
-  BookOpenIcon,
-  EllipsisVerticalIcon,
-  ArrowLeftIcon,
-  EyeIcon,
-  PencilIcon,
-  UsersIcon,
-} from "@heroicons/vue/24/outline"
-
-interface ClassData {
-  id: string
-  name: string
-  description?: string
-  level: string
-  instrument?: string
-  teacherId: string
-  studentIds: string[]
-  schedule: {days: string[]; startTime: string; endTime: string}
-  classroom?: string
-  createdAt?: string
-  updatedAt?: string
-}
-
-// Stores
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
-const instrumentoStore = useInstrumentoStore()
-
-// UI state
-const showAddModal = ref(false)
-const showEditModal = ref(false)
-const showDeleteModal = ref(false)
-const showStudentsModal = ref(false)
-const showAddStudentModal = ref(false)
-const showInfoModal = ref(false)
-const showClassDrawer = ref(false)
-const isLoading = ref(false)
-const errorMessage = ref("")
-const successMessage = ref("")
-const activeDropdown = ref<string | null>(null)
-const classesLoaded = ref(false)
-
-// Selection state
-const selectedGroupId = ref<string | null>(null)
-const selectedGroupName = ref("")
-const selectedStudent = ref<string | null>(null)
-const selectedStudentIds = ref<string[]>([])
-const selectedClass = ref<ClassData | undefined>(undefined)
-const searchQuery = ref("")
-
-// Filter options
-const levelOptions = ["Iniciación", "Básico", "Intermedio", "Avanzado"]
-const filters = ref({
-  instrument: "",
-  level: "",
-  teacherId: "",
-})
-
-// Computed properties
-const filteredGroups = computed(() => {
-  let groups = classesStore.classes || []
-
-  if (filters.value.instrument) {
-    groups = groups.filter((g) => g.instrument === filters.value.instrument)
-  }
-
-  if (filters.value.level) {
-    groups = groups.filter((g) => g.level === filters.value.level)
-  }
-
-  if (filters.value.teacherId) {
-    groups = groups.filter((g) => g.teacherId === filters.value.teacherId)
-  }
-
-  return groups
-})
-
-const selectedGroupStudents = computed(() => {
-  if (!selectedGroupId.value) return []
-
-  const group = classesStore.classes.find((g) => String(g.id) === String(selectedGroupId.value))
-  return group && group.studentIds
-    ? studentsStore.students
-        .filter((s) => group.studentIds?.includes(s.id))
-        .map(
-          (s): Student => ({
-            id: s.id,
-            nombre: s.nombre || "",
-            apellido: s.apellido || "",
-            edad: s.edad?.toString() || "",
-            nac: s.nac || "",
-            email: s.email || "",
-            tlf: s.tlf || "",
-            sexo: s.sexo || "",
-            madre: s.madre || "",
-            padre: s.padre || "",
-            tlf_madre: s.tlf_madre || "",
-            tlf_padre: s.tlf_padre || "",
-            grupo: s.grupo || [],
-            instrumento: s.instrumento || "",
-            colegio_trabajo: (s as any).colegio_trabajo || "",
-            horario_colegio_trabajo: (s as any).horario_colegio_trabajo || "",
-            clase: (s as any).clase || "",
-            propiedadExtra1: (s as any).propiedadExtra1 || "",
-            propiedadExtra2: (s as any).propiedadExtra2 || "",
-            propiedadExtra3: (s as any).propiedadExtra3 || "",
-          })
-        )
-    : []
-})
-
-const students = computed(() => {
-  return studentsStore.students.filter((s) => {
-    const fullName = `${s.nombre || ""} ${s.apellido || ""}`.toLowerCase()
-    return fullName.includes(searchQuery.value.toLowerCase())
-  })
-})
-
-const availableStudents = computed(() => {
-  return students.value.map(
-    (s): Student => ({
-      id: s.id,
-      nombre: s.nombre || "",
-      apellido: s.apellido || "",
-      edad: s.edad?.toString() || "",
-      nac: s.nac || "",
-      email: s.email || "",
-      tlf: s.tlf || "",
-      sexo: s.sexo || "",
-      madre: s.madre || "",
-      padre: s.padre || "",
-      tlf_madre: s.tlf_madre || "",
-      tlf_padre: s.tlf_padre || "",
-      grupo: s.grupo || [],
-      instrumento: s.instrumento || "",
-      colegio_trabajo: (s as any).colegio_trabajo || "",
-      horario_colegio_trabajo: (s as any).horario_colegio_trabajo || "",
-      clase: s.clase || "",
-      propiedadExtra1: (s as any).propiedadExtra1 || "",
-      propiedadExtra2: (s as any).propiedadExtra2 || "",
-      propiedadExtra3: (s as any).propiedadExtra3 || "",
-    })
-  )
-})
-
-const getTeacherName = (teacherId?: string): string => {
-  if (!teacherId) return "Sin profesor asignado"
-  const teacher = teachersStore.teachers.find((t) => t.id === teacherId)
-  return teacher?.name ?? "Profesor no encontrado"
-}
-
-// UI state for responsive design
-const isMobile = ref(false)
-const showMobileDetail = ref(false)
-
-// Check if device is mobile on component mount and window resize
-const checkIsMobile = () => {
-  isMobile.value = window.innerWidth < 768 // md breakpoint
-}
-
-onBeforeMount(() => {
-  checkIsMobile()
-  window.addEventListener("resize", checkIsMobile)
-})
-
-// Loading and data fetching
-onMounted(async () => {
-  isLoading.value = true
-  try {
-    await classesStore.fetchClasses()
-    console.log(`Se encontraron ${classesStore.classes.length} clases en Firestore`)
-    classesLoaded.value = true
-
-    await Promise.all([
-      teachersStore.fetchTeachers(),
-      studentsStore.fetchStudents(),
-      instrumentoStore.fetchInstruments(),
-    ])
-  } catch (error) {
-    errorMessage.value = `Error al cargar los datos: ${error}`
-    console.error("Error al cargar los datos:", error)
-  } finally {
-    isLoading.value = false
-  }
-})
-
-const reloadClasses = async () => {
-  try {
-    isLoading.value = true
-    await classesStore.fetchClasses()
-    console.log(`Clases actualizadas: ${classesStore.classes.length} clases cargadas`)
-    successMessage.value = "Clases actualizadas"
-  } catch (error) {
-    errorMessage.value = "Error al actualizar las clases"
-    console.error(error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Class operations
-async function handleSubmit(formData: any) {
-  isLoading.value = true
-  errorMessage.value = ""
-
-  try {
-    const classData: ClassData = {
-      ...formData,
-      level: formData.level || "Iniciación",
-      teacherId: formData.teacherId,
-      studentIds: formData.studentIds || [],
-      schedule: {
-        days: Array.isArray(formData.schedule?.days) ? formData.schedule.days : [],
-        startTime:
-          typeof formData.schedule?.startTime === "string" ? formData.schedule.startTime : "",
-        endTime: typeof formData.schedule?.endTime === "string" ? formData.schedule.endTime : "",
-      },
-      updatedAt: new Date().toISOString(),
-    }
-
-    if (showEditModal.value) {
-      if (!formData.id) {
-        throw new Error("ID de clase no válido")
-      }
-
-      const existingClass = classesStore.classes.find((c) => c.id === formData.id)
-      if (!existingClass) {
-        throw new Error(`No se encontró la clase con ID ${formData.id}`)
-      }
-
-      await classesStore.updateClass({
-        ...classData,
-        id: formData.id,
-        createdAt: formData.createdAt
-          ? new Date(formData.createdAt)
-          : existingClass.createdAt || new Date(),
-        updatedAt: new Date(),
-      })
-      successMessage.value = "Clase actualizada correctamente"
-    } else {
-      await classesStore.addClass({
-        ...classData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      successMessage.value = "Clase creada correctamente"
-    }
-
-    closeModal()
-    await classesStore.fetchClasses() // Recargar la lista de clases
-  } catch (err: any) {
-    console.error("❌ Error en handleSubmit:", err)
-    errorMessage.value = `Error: ${err.message}`
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleEdit = (groupId: string) => {
-  const group = classesStore.classes.find((g) => String(g.id) === String(groupId))
-  if (!group) return
-  selectedGroupId.value = groupId
-  showEditModal.value = true
-  activeDropdown.value = null
-}
-
-const handleDelete = (groupId: string) => {
-  selectedGroupId.value = groupId
-  showDeleteModal.value = true
-  activeDropdown.value = null
-}
-
-const confirmDelete = async () => {
-  if (!selectedGroupId.value) return
-
-  try {
-    isLoading.value = true
-    console.log("🗑️ Eliminando grupo con ID:", selectedGroupId.value)
-
-    await classesStore.removeClass(selectedGroupId.value)
-
-    successMessage.value = "Grupo eliminado exitosamente"
-    showDeleteModal.value = false
-  } catch (error) {
-    errorMessage.value = "Error al eliminar el grupo"
-    console.error("❌ Error en confirmDelete:", error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Updated handleView for responsive behavior
-const handleView = (classItem: ClassData) => {
-  selectedClass.value = classItem
-  if (isMobile.value) {
-    showMobileDetail.value = true
-  } else {
-    showClassDrawer.value = true
-  }
-  closeDropdowns()
-}
-
-const goBackToList = () => {
-  showMobileDetail.value = false
-}
-
-// Student management
-const showStudentList = (groupId: string) => {
-  selectedGroupId.value = groupId
-  const group = classesStore.classes.find((g) => String(g.id) === String(groupId))
-  if (group) {
-    selectedGroupName.value = group.name || "Grupo sin nombre"
-  }
-  showStudentsModal.value = true
-  activeDropdown.value = null
-}
-
-const removeStudentFromGroup = async (studentId: string) => {
-  if (!selectedGroupId.value) return
-  try {
-    isLoading.value = true
-    const classItem = classesStore.classes.find(
-      (c) => String(c.id) === String(selectedGroupId.value)
-    )
-    if (!classItem) {
-      throw new Error("Clase no encontrada")
-    }
-    const updatedStudentIds = (classItem.studentIds || []).filter((id) => id !== studentId)
-    await classesStore.updateClass({
-      ...classItem,
-      studentIds: updatedStudentIds,
-      createdAt: classItem.createdAt ? new Date(classItem.createdAt) : undefined,
-      updatedAt: new Date(),
-    })
-    successMessage.value = "Estudiante removido exitosamente"
-  } catch (error: any) {
-    errorMessage.value = "Error al remover el estudiante"
-    console.error("Error:", error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const selectStudent = (studentId: string) => {
-  selectedStudent.value = studentId
-  searchQuery.value = ""
-  if (!selectedStudentIds.value.includes(studentId)) {
-    selectedStudentIds.value.push(studentId)
-  }
-}
-
-const addSelectedStudents = async () => {
-  if (!selectedGroupId.value || selectedStudentIds.value.length === 0) return
-  try {
-    isLoading.value = true
-    const classItem = classesStore.classes.find(
-      (c) => String(c.id) === String(selectedGroupId.value)
-    )
-    if (classItem) {
-      const updatedIds = [...(classItem.studentIds || []), ...selectedStudentIds.value]
-      await classesStore.updateClass({
-        ...classItem,
-        studentIds: updatedIds,
-        updatedAt: new Date(),
-      })
-    }
-    successMessage.value = "Estudiantes agregados exitosamente"
-    showAddStudentModal.value = false
-    selectedStudentIds.value = []
-  } catch (error) {
-    errorMessage.value = "Error al agregar estudiantes"
-    console.error("Error:", error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const showAddStudentForm = () => {
-  selectedStudentIds.value = []
-  showAddStudentModal.value = true
-}
-
-const removeSelectedStudent = (studentId: string) => {
-  selectedStudentIds.value = selectedStudentIds.value.filter((id) => id !== studentId)
-}
-
-// UI interactions
-const toggleDropdown = (id: string, event: Event) => {
-  event.stopPropagation()
-  activeDropdown.value = activeDropdown.value === id ? null : id
-}
-
-const closeDropdowns = () => {
-  activeDropdown.value = null
-}
-
-const openInfoModal = () => {
-  showInfoModal.value = true
-}
-
-const closeModal = () => {
-  showAddModal.value = false
-  showEditModal.value = false
-  showAddStudentModal.value = false
-  showInfoModal.value = false
-  selectedGroupId.value = null
-  selectedStudentIds.value = []
-}
-
-const clearMessages = () => {
-  if (successMessage.value) {
-    setTimeout(() => {
-      successMessage.value = ""
-    }, 3000)
-  }
-  if (errorMessage.value) {
-    setTimeout(() => {
-      errorMessage.value = ""
-    }, 3000)
-  }
-}
-
-watch([successMessage, errorMessage], clearMessages)
-</script>
-
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
     <!-- Mobile view navigation when showing details -->
@@ -966,3 +522,447 @@ watch([successMessage, errorMessage], clearMessages)
     />
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch, onBeforeMount } from 'vue';
+import { useClassesStore } from '../store/classes';
+import { useTeachersStore } from '../../../stores/teachersUnified';
+import { useStudentsStore } from '../../Students/store/students';
+import { useInstrumentoStore } from '../../Instruments/store/instrumento';
+import type { Student } from '../../Students/types/student';
+import Modal from '../../../components/shared/Modal.vue';
+import ConfirmModal from '../../../components/ConfirmModal.vue';
+import ClassFilters from '../components/ClassFilters.vue';
+import ClassForm from '../components/ClassForm.vue';
+import StudentManagement from '../../Students/components/StudentManagement.vue';
+import StudentSelector from '../../Students/components/StudentSelector.vue';
+import ClassesDrawer from '../components/ClassesDrawer.vue';
+import {
+  PlusCircleIcon,
+  InformationCircleIcon,
+  UserGroupIcon,
+  TrashIcon,
+  BookOpenIcon,
+  EllipsisVerticalIcon,
+  ArrowLeftIcon,
+  EyeIcon,
+  PencilIcon,
+  UsersIcon,
+} from '@heroicons/vue/24/outline';
+
+interface ClassData {
+  id: string
+  name: string
+  description?: string
+  level: string
+  instrument?: string
+  teacherId: string
+  studentIds: string[]
+  schedule: {days: string[]; startTime: string; endTime: string}
+  classroom?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+// Stores
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
+const instrumentoStore = useInstrumentoStore();
+
+// UI state
+const showAddModal = ref(false);
+const showEditModal = ref(false);
+const showDeleteModal = ref(false);
+const showStudentsModal = ref(false);
+const showAddStudentModal = ref(false);
+const showInfoModal = ref(false);
+const showClassDrawer = ref(false);
+const isLoading = ref(false);
+const errorMessage = ref('');
+const successMessage = ref('');
+const activeDropdown = ref<string | null>(null);
+const classesLoaded = ref(false);
+
+// Selection state
+const selectedGroupId = ref<string | null>(null);
+const selectedGroupName = ref('');
+const selectedStudent = ref<string | null>(null);
+const selectedStudentIds = ref<string[]>([]);
+const selectedClass = ref<ClassData | undefined>(undefined);
+const searchQuery = ref('');
+
+// Filter options
+const levelOptions = ['Iniciación', 'Básico', 'Intermedio', 'Avanzado'];
+const filters = ref({
+  instrument: '',
+  level: '',
+  teacherId: '',
+});
+
+// Computed properties
+const filteredGroups = computed(() => {
+  let groups = classesStore.classes || [];
+
+  if (filters.value.instrument) {
+    groups = groups.filter((g) => g.instrument === filters.value.instrument);
+  }
+
+  if (filters.value.level) {
+    groups = groups.filter((g) => g.level === filters.value.level);
+  }
+
+  if (filters.value.teacherId) {
+    groups = groups.filter((g) => g.teacherId === filters.value.teacherId);
+  }
+
+  return groups;
+});
+
+const selectedGroupStudents = computed(() => {
+  if (!selectedGroupId.value) return [];
+
+  const group = classesStore.classes.find((g) => String(g.id) === String(selectedGroupId.value));
+  return group && group.studentIds
+    ? studentsStore.students
+      .filter((s) => group.studentIds?.includes(s.id))
+      .map(
+        (s): Student => ({
+          id: s.id,
+          nombre: s.nombre || '',
+          apellido: s.apellido || '',
+          edad: s.edad?.toString() || '',
+          nac: s.nac || '',
+          email: s.email || '',
+          tlf: s.tlf || '',
+          sexo: s.sexo || '',
+          madre: s.madre || '',
+          padre: s.padre || '',
+          tlf_madre: s.tlf_madre || '',
+          tlf_padre: s.tlf_padre || '',
+          grupo: s.grupo || [],
+          instrumento: s.instrumento || '',
+          colegio_trabajo: (s as any).colegio_trabajo || '',
+          horario_colegio_trabajo: (s as any).horario_colegio_trabajo || '',
+          clase: (s as any).clase || '',
+          propiedadExtra1: (s as any).propiedadExtra1 || '',
+          propiedadExtra2: (s as any).propiedadExtra2 || '',
+          propiedadExtra3: (s as any).propiedadExtra3 || '',
+        }),
+      )
+    : [];
+});
+
+const students = computed(() => {
+  return studentsStore.students.filter((s) => {
+    const fullName = `${s.nombre || ''} ${s.apellido || ''}`.toLowerCase();
+    return fullName.includes(searchQuery.value.toLowerCase());
+  });
+});
+
+const availableStudents = computed(() => {
+  return students.value.map(
+    (s): Student => ({
+      id: s.id,
+      nombre: s.nombre || '',
+      apellido: s.apellido || '',
+      edad: s.edad?.toString() || '',
+      nac: s.nac || '',
+      email: s.email || '',
+      tlf: s.tlf || '',
+      sexo: s.sexo || '',
+      madre: s.madre || '',
+      padre: s.padre || '',
+      tlf_madre: s.tlf_madre || '',
+      tlf_padre: s.tlf_padre || '',
+      grupo: s.grupo || [],
+      instrumento: s.instrumento || '',
+      colegio_trabajo: (s as any).colegio_trabajo || '',
+      horario_colegio_trabajo: (s as any).horario_colegio_trabajo || '',
+      clase: s.clase || '',
+      propiedadExtra1: (s as any).propiedadExtra1 || '',
+      propiedadExtra2: (s as any).propiedadExtra2 || '',
+      propiedadExtra3: (s as any).propiedadExtra3 || '',
+    }),
+  );
+});
+
+const getTeacherName = (teacherId?: string): string => {
+  if (!teacherId) return 'Sin profesor asignado';
+  const teacher = teachersStore.teachers.find((t) => t.id === teacherId);
+  return teacher?.name ?? 'Profesor no encontrado';
+};
+
+// UI state for responsive design
+const isMobile = ref(false);
+const showMobileDetail = ref(false);
+
+// Check if device is mobile on component mount and window resize
+const checkIsMobile = () => {
+  isMobile.value = window.innerWidth < 768; // md breakpoint
+};
+
+onBeforeMount(() => {
+  checkIsMobile();
+  window.addEventListener('resize', checkIsMobile);
+});
+
+// Loading and data fetching
+onMounted(async () => {
+  isLoading.value = true;
+  try {
+    await classesStore.fetchClasses();
+    console.log(`Se encontraron ${classesStore.classes.length} clases en Firestore`);
+    classesLoaded.value = true;
+
+    await Promise.all([
+      teachersStore.fetchTeachers(),
+      studentsStore.fetchStudents(),
+      instrumentoStore.fetchInstruments(),
+    ]);
+  } catch (error) {
+    errorMessage.value = `Error al cargar los datos: ${error}`;
+    console.error('Error al cargar los datos:', error);
+  } finally {
+    isLoading.value = false;
+  }
+});
+
+const reloadClasses = async () => {
+  try {
+    isLoading.value = true;
+    await classesStore.fetchClasses();
+    console.log(`Clases actualizadas: ${classesStore.classes.length} clases cargadas`);
+    successMessage.value = 'Clases actualizadas';
+  } catch (error) {
+    errorMessage.value = 'Error al actualizar las clases';
+    console.error(error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Class operations
+async function handleSubmit(formData: any) {
+  isLoading.value = true;
+  errorMessage.value = '';
+
+  try {
+    const classData: ClassData = {
+      ...formData,
+      level: formData.level || 'Iniciación',
+      teacherId: formData.teacherId,
+      studentIds: formData.studentIds || [],
+      schedule: {
+        days: Array.isArray(formData.schedule?.days) ? formData.schedule.days : [],
+        startTime:
+          typeof formData.schedule?.startTime === 'string' ? formData.schedule.startTime : '',
+        endTime: typeof formData.schedule?.endTime === 'string' ? formData.schedule.endTime : '',
+      },
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (showEditModal.value) {
+      if (!formData.id) {
+        throw new Error('ID de clase no válido');
+      }
+
+      const existingClass = classesStore.classes.find((c) => c.id === formData.id);
+      if (!existingClass) {
+        throw new Error(`No se encontró la clase con ID ${formData.id}`);
+      }
+
+      await classesStore.updateClass({
+        ...classData,
+        id: formData.id,
+        createdAt: formData.createdAt
+          ? new Date(formData.createdAt)
+          : existingClass.createdAt || new Date(),
+        updatedAt: new Date(),
+      });
+      successMessage.value = 'Clase actualizada correctamente';
+    } else {
+      await classesStore.addClass({
+        ...classData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      successMessage.value = 'Clase creada correctamente';
+    }
+
+    closeModal();
+    await classesStore.fetchClasses(); // Recargar la lista de clases
+  } catch (err: any) {
+    console.error('❌ Error en handleSubmit:', err);
+    errorMessage.value = `Error: ${err.message}`;
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+const handleEdit = (groupId: string) => {
+  const group = classesStore.classes.find((g) => String(g.id) === String(groupId));
+  if (!group) return;
+  selectedGroupId.value = groupId;
+  showEditModal.value = true;
+  activeDropdown.value = null;
+};
+
+const handleDelete = (groupId: string) => {
+  selectedGroupId.value = groupId;
+  showDeleteModal.value = true;
+  activeDropdown.value = null;
+};
+
+const confirmDelete = async () => {
+  if (!selectedGroupId.value) return;
+
+  try {
+    isLoading.value = true;
+    console.log('🗑️ Eliminando grupo con ID:', selectedGroupId.value);
+
+    await classesStore.removeClass(selectedGroupId.value);
+
+    successMessage.value = 'Grupo eliminado exitosamente';
+    showDeleteModal.value = false;
+  } catch (error) {
+    errorMessage.value = 'Error al eliminar el grupo';
+    console.error('❌ Error en confirmDelete:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Updated handleView for responsive behavior
+const handleView = (classItem: ClassData) => {
+  selectedClass.value = classItem;
+  if (isMobile.value) {
+    showMobileDetail.value = true;
+  } else {
+    showClassDrawer.value = true;
+  }
+  closeDropdowns();
+};
+
+const goBackToList = () => {
+  showMobileDetail.value = false;
+};
+
+// Student management
+const showStudentList = (groupId: string) => {
+  selectedGroupId.value = groupId;
+  const group = classesStore.classes.find((g) => String(g.id) === String(groupId));
+  if (group) {
+    selectedGroupName.value = group.name || 'Grupo sin nombre';
+  }
+  showStudentsModal.value = true;
+  activeDropdown.value = null;
+};
+
+const removeStudentFromGroup = async (studentId: string) => {
+  if (!selectedGroupId.value) return;
+  try {
+    isLoading.value = true;
+    const classItem = classesStore.classes.find(
+      (c) => String(c.id) === String(selectedGroupId.value),
+    );
+    if (!classItem) {
+      throw new Error('Clase no encontrada');
+    }
+    const updatedStudentIds = (classItem.studentIds || []).filter((id) => id !== studentId);
+    await classesStore.updateClass({
+      ...classItem,
+      studentIds: updatedStudentIds,
+      createdAt: classItem.createdAt ? new Date(classItem.createdAt) : undefined,
+      updatedAt: new Date(),
+    });
+    successMessage.value = 'Estudiante removido exitosamente';
+  } catch (error: any) {
+    errorMessage.value = 'Error al remover el estudiante';
+    console.error('Error:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const selectStudent = (studentId: string) => {
+  selectedStudent.value = studentId;
+  searchQuery.value = '';
+  if (!selectedStudentIds.value.includes(studentId)) {
+    selectedStudentIds.value.push(studentId);
+  }
+};
+
+const addSelectedStudents = async () => {
+  if (!selectedGroupId.value || selectedStudentIds.value.length === 0) return;
+  try {
+    isLoading.value = true;
+    const classItem = classesStore.classes.find(
+      (c) => String(c.id) === String(selectedGroupId.value),
+    );
+    if (classItem) {
+      const updatedIds = [...(classItem.studentIds || []), ...selectedStudentIds.value];
+      await classesStore.updateClass({
+        ...classItem,
+        studentIds: updatedIds,
+        updatedAt: new Date(),
+      });
+    }
+    successMessage.value = 'Estudiantes agregados exitosamente';
+    showAddStudentModal.value = false;
+    selectedStudentIds.value = [];
+  } catch (error) {
+    errorMessage.value = 'Error al agregar estudiantes';
+    console.error('Error:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const showAddStudentForm = () => {
+  selectedStudentIds.value = [];
+  showAddStudentModal.value = true;
+};
+
+const removeSelectedStudent = (studentId: string) => {
+  selectedStudentIds.value = selectedStudentIds.value.filter((id) => id !== studentId);
+};
+
+// UI interactions
+const toggleDropdown = (id: string, event: Event) => {
+  event.stopPropagation();
+  activeDropdown.value = activeDropdown.value === id ? null : id;
+};
+
+const closeDropdowns = () => {
+  activeDropdown.value = null;
+};
+
+const openInfoModal = () => {
+  showInfoModal.value = true;
+};
+
+const closeModal = () => {
+  showAddModal.value = false;
+  showEditModal.value = false;
+  showAddStudentModal.value = false;
+  showInfoModal.value = false;
+  selectedGroupId.value = null;
+  selectedStudentIds.value = [];
+};
+
+const clearMessages = () => {
+  if (successMessage.value) {
+    setTimeout(() => {
+      successMessage.value = '';
+    }, 3000);
+  }
+  if (errorMessage.value) {
+    setTimeout(() => {
+      errorMessage.value = '';
+    }, 3000);
+  }
+};
+
+watch([successMessage, errorMessage], clearMessages);
+</script>

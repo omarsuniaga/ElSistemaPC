@@ -498,9 +498,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted, shallowRef, nextTick} from "vue"
-import {debounce} from "lodash-es"
-import {Dialog, DialogPanel, TransitionRoot, TransitionChild, DialogTitle} from "@headlessui/vue"
+import { ref, computed, watch, onMounted, shallowRef, nextTick } from 'vue';
+import { debounce } from 'lodash-es';
+import { Dialog, DialogPanel, TransitionRoot, TransitionChild, DialogTitle } from '@headlessui/vue';
 import {
   MagnifyingGlassIcon,
   XMarkIcon,
@@ -511,11 +511,11 @@ import {
   DocumentTextIcon,
   PlusIcon,
   UserCircleIcon,
-} from "@heroicons/vue/24/outline"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useStudentsStore} from "../../Students/store/students"
-import {useNotification} from "@/composables/useNotification"
-import type {ClassData} from "../types/class"
+} from '@heroicons/vue/24/outline';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useStudentsStore } from '../../Students/store/students';
+import { useNotification } from '@/composables/useNotification';
+import type { ClassData } from '../types/class';
 
 interface Props {
   open: boolean
@@ -524,46 +524,46 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   classData: null,
-})
+});
 
 const emit = defineEmits<{
-  (e: "save", data: Partial<ClassData>): void
-  (e: "close"): void
-}>()
+  (e: 'save', data: Partial<ClassData>): void
+  (e: 'close'): void
+}>();
 
 // Stores and composables
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
-const {showNotification} = useNotification()
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
+const { showNotification } = useNotification();
 
 // Reactive state
-const saving = ref(false)
-const studentSearchTerm = ref("")
-const selectedSharedTeacher = ref("")
+const saving = ref(false);
+const studentSearchTerm = ref('');
+const selectedSharedTeacher = ref('');
 
 // Data loading
-const teachers = shallowRef<any[]>([])
-const students = shallowRef<any[]>([])
+const teachers = shallowRef<any[]>([]);
+const students = shallowRef<any[]>([]);
 const loading = ref({
   students: false,
-})
+});
 
 // Available instruments
 const instruments = [
-  "Piano",
-  "Guitarra",
-  "Violín",
-  "Violonchelo",
-  "Flauta",
-  "Clarinete",
-  "Saxofón",
-  "Trompeta",
-  "Batería",
-  "Bajo",
-  "Canto",
-  "Ukulele",
-  "Mandolina",
-]
+  'Piano',
+  'Guitarra',
+  'Violín',
+  'Violonchelo',
+  'Flauta',
+  'Clarinete',
+  'Saxofón',
+  'Trompeta',
+  'Batería',
+  'Bajo',
+  'Canto',
+  'Ukulele',
+  'Mandolina',
+];
 
 // Form structure
 interface ScheduleSlot {
@@ -582,59 +582,59 @@ interface FormData {
   sharedWith: string[]
   permissions: Record<string, string[]>
   schedules: ScheduleSlot[]
-  status: "active" | "inactive" | "suspended"
+  status: 'active' | 'inactive' | 'suspended'
 }
 
 const formData = ref<FormData>({
-  name: "",
-  description: "",
-  instrument: "",
-  level: "",
-  teacherId: "",
+  name: '',
+  description: '',
+  instrument: '',
+  level: '',
+  teacherId: '',
   studentIds: [],
   sharedWith: [],
   permissions: {},
-  schedules: [{day: "", startTime: "", endTime: ""}],
-  status: "active",
-})
+  schedules: [{ day: '', startTime: '', endTime: '' }],
+  status: 'active',
+});
 
 // Computed properties
-const isEditing = computed(() => !!props.classData?.id)
+const isEditing = computed(() => !!props.classData?.id);
 
 const isFormValid = computed(() => {
-  return formData.value.name.trim() !== "" && formData.value.teacherId !== ""
-})
+  return formData.value.name.trim() !== '' && formData.value.teacherId !== '';
+});
 
 const availableSharedTeachers = computed(() =>
   teachers.value.filter(
     (teacher) =>
-      teacher.id !== formData.value.teacherId && !formData.value.sharedWith.includes(teacher.id)
-  )
-)
+      teacher.id !== formData.value.teacherId && !formData.value.sharedWith.includes(teacher.id),
+  ),
+);
 
 // Search functionality
 const debouncedSearch = debounce((term: string) => {
   // Implement search logic if needed
-}, 300)
+}, 300);
 
 watch(studentSearchTerm, (newTerm) => {
-  debouncedSearch(newTerm)
-})
+  debouncedSearch(newTerm);
+});
 
 const filteredStudents = computed(() => {
-  if (!studentSearchTerm.value.trim()) return students.value
+  if (!studentSearchTerm.value.trim()) return students.value;
 
-  const searchTerm = studentSearchTerm.value.toLowerCase()
+  const searchTerm = studentSearchTerm.value.toLowerCase();
   return students.value.filter((student) => {
     // Helper function to safely check string fields
     const safeStringIncludes = (value: any) => {
-      return value && typeof value === "string" && value.toLowerCase().includes(searchTerm)
-    }
+      return value && typeof value === 'string' && value.toLowerCase().includes(searchTerm);
+    };
 
     // Helper function to safely check numeric fields
     const safeNumberIncludes = (value: any) => {
-      return value && value.toString().includes(searchTerm)
-    }
+      return value && value.toString().includes(searchTerm);
+    };
 
     return (
       safeStringIncludes(student.nombre) ||
@@ -642,100 +642,100 @@ const filteredStudents = computed(() => {
       safeStringIncludes(student.instrumento) ||
       safeStringIncludes(student.nivel) ||
       safeNumberIncludes(student.codigo_estudiante)
-    )
-  })
-})
+    );
+  });
+});
 
 // Methods
 const loadData = async () => {
-  loading.value.students = true
+  loading.value.students = true;
   try {
-    await Promise.all([teachersStore.fetchTeachers(), studentsStore.fetchStudents()])
+    await Promise.all([teachersStore.fetchTeachers(), studentsStore.fetchStudents()]);
 
-    teachers.value = teachersStore.teachers || []
+    teachers.value = teachersStore.teachers || [];
 
     // Normalize student data to ensure all properties are correct types
     students.value = (studentsStore.students || []).map((student) => ({
       ...student,
-      nombre: student.nombre ? String(student.nombre) : "",
-      apellido: student.apellido ? String(student.apellido) : "",
-      instrumento: student.instrumento ? String(student.instrumento) : "",
-      nivel: student.nivel ? String(student.nivel) : "",
-      codigo_estudiante: student.codigo_estudiante || "",
-    }))
+      nombre: student.nombre ? String(student.nombre) : '',
+      apellido: student.apellido ? String(student.apellido) : '',
+      instrumento: student.instrumento ? String(student.instrumento) : '',
+      nivel: student.nivel ? String(student.nivel) : '',
+      codigo_estudiante: student.codigo_estudiante || '',
+    }));
   } catch (error) {
-    console.error("Error loading data:", error)
-    showNotification("Error al cargar datos", "error")
+    console.error('Error loading data:', error);
+    showNotification('Error al cargar datos', 'error');
   } finally {
-    loading.value.students = false
+    loading.value.students = false;
   }
-}
+};
 
 const getTeacherName = (teacherId: string): string => {
-  const teacher = teachers.value.find((t) => t.id === teacherId)
-  return teacher ? teacher.name : "Maestro no encontrado"
-}
+  const teacher = teachers.value.find((t) => t.id === teacherId);
+  return teacher ? teacher.name : 'Maestro no encontrado';
+};
 
 const getTeacherPermissionLevel = (teacherId: string): string => {
-  const permissions = formData.value.permissions[teacherId]
-  if (!permissions || permissions.length === 0) return "read"
+  const permissions = formData.value.permissions[teacherId];
+  if (!permissions || permissions.length === 0) return 'read';
 
-  if (permissions.includes("manage")) return "manage"
-  if (permissions.includes("write")) return "write"
-  return "read"
-}
+  if (permissions.includes('manage')) return 'manage';
+  if (permissions.includes('write')) return 'write';
+  return 'read';
+};
 
 const updateTeacherPermission = (teacherId: string, permissionLevel: string) => {
   switch (permissionLevel) {
-    case "read":
-      formData.value.permissions[teacherId] = ["read"]
-      break
-    case "write":
-      formData.value.permissions[teacherId] = ["read", "write"]
-      break
-    case "manage":
-      formData.value.permissions[teacherId] = ["read", "write", "manage"]
-      break
-    default:
-      formData.value.permissions[teacherId] = ["read"]
+  case 'read':
+    formData.value.permissions[teacherId] = ['read'];
+    break;
+  case 'write':
+    formData.value.permissions[teacherId] = ['read', 'write'];
+    break;
+  case 'manage':
+    formData.value.permissions[teacherId] = ['read', 'write', 'manage'];
+    break;
+  default:
+    formData.value.permissions[teacherId] = ['read'];
   }
-}
+};
 
 const addSharedTeacher = () => {
   if (
     selectedSharedTeacher.value &&
     !formData.value.sharedWith.includes(selectedSharedTeacher.value)
   ) {
-    formData.value.sharedWith.push(selectedSharedTeacher.value)
-    formData.value.permissions[selectedSharedTeacher.value] = ["read"]
-    selectedSharedTeacher.value = ""
+    formData.value.sharedWith.push(selectedSharedTeacher.value);
+    formData.value.permissions[selectedSharedTeacher.value] = ['read'];
+    selectedSharedTeacher.value = '';
   }
-}
+};
 
 const removeSharedTeacher = (teacherId: string) => {
-  formData.value.sharedWith = formData.value.sharedWith.filter((id) => id !== teacherId)
-  delete formData.value.permissions[teacherId]
-}
+  formData.value.sharedWith = formData.value.sharedWith.filter((id) => id !== teacherId);
+  delete formData.value.permissions[teacherId];
+};
 
 const addScheduleSlot = () => {
-  formData.value.schedules.push({day: "", startTime: "", endTime: ""})
-}
+  formData.value.schedules.push({ day: '', startTime: '', endTime: '' });
+};
 
 const removeScheduleSlot = (index: number) => {
   if (formData.value.schedules.length > 1) {
-    formData.value.schedules.splice(index, 1)
+    formData.value.schedules.splice(index, 1);
   }
-}
+};
 
 const handleSubmit = async () => {
-  if (!isFormValid.value) return
+  if (!isFormValid.value) return;
 
-  saving.value = true
+  saving.value = true;
   try {
     // Convertir schedules a schedule.slots para compatibilidad con el store
     const scheduleSlots = formData.value.schedules.filter(
-      (slot) => slot.day && slot.startTime && slot.endTime
-    )
+      (slot) => slot.day && slot.startTime && slot.endTime,
+    );
 
     const classDataToSave: Partial<ClassData> = {
       ...formData.value,
@@ -746,90 +746,90 @@ const handleSubmit = async () => {
       schedule: {
         slots: scheduleSlots,
       },
-    }
+    };
 
     // Eliminar el campo schedules ya que lo convertimos a schedule.slots
-    delete (classDataToSave as any).schedules
+    delete (classDataToSave as any).schedules;
 
-    console.log("📤 Datos enviados desde ClassFormDialog:", {
+    console.log('📤 Datos enviados desde ClassFormDialog:', {
       schedule: classDataToSave.schedule,
       slots: classDataToSave.schedule?.slots,
       slotsCount: classDataToSave.schedule?.slots?.length,
-    })
+    });
 
-    emit("save", classDataToSave)
-    handleClose()
+    emit('save', classDataToSave);
+    handleClose();
   } catch (error) {
-    console.error("Error saving class:", error)
-    showNotification("Error al guardar la clase", "error")
+    console.error('Error saving class:', error);
+    showNotification('Error al guardar la clase', 'error');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const handleClose = () => {
-  emit("close")
-  resetForm()
-}
+  emit('close');
+  resetForm();
+};
 
 const resetForm = () => {
   formData.value = {
-    name: "",
-    description: "",
-    instrument: "",
-    level: "",
-    teacherId: "",
+    name: '',
+    description: '',
+    instrument: '',
+    level: '',
+    teacherId: '',
     studentIds: [],
     sharedWith: [],
     permissions: {},
-    schedules: [{day: "", startTime: "", endTime: ""}],
-    status: "active",
-  }
-  studentSearchTerm.value = ""
-  selectedSharedTeacher.value = ""
-}
+    schedules: [{ day: '', startTime: '', endTime: '' }],
+    status: 'active',
+  };
+  studentSearchTerm.value = '';
+  selectedSharedTeacher.value = '';
+};
 
 const loadFormData = () => {
   if (props.classData) {
     formData.value = {
-      name: props.classData.name || "",
-      description: props.classData.description || "",
-      instrument: props.classData.instrument || "",
-      level: props.classData.level || "",
-      teacherId: props.classData.teacherId || "",
+      name: props.classData.name || '',
+      description: props.classData.description || '',
+      instrument: props.classData.instrument || '',
+      level: props.classData.level || '',
+      teacherId: props.classData.teacherId || '',
       studentIds: props.classData.studentIds || [],
       sharedWith: props.classData.sharedWith || [],
       permissions: props.classData.permissions || {},
       schedules:
         props.classData.schedule?.slots?.length > 0
           ? props.classData.schedule.slots.map((slot) => ({
-              day: slot.day || "",
-              startTime: slot.startTime || "",
-              endTime: slot.endTime || "",
-            }))
-          : [{day: "", startTime: "", endTime: ""}],
-      status: props.classData.status || "active",
-    }
+            day: slot.day || '',
+            startTime: slot.startTime || '',
+            endTime: slot.endTime || '',
+          }))
+          : [{ day: '', startTime: '', endTime: '' }],
+      status: props.classData.status || 'active',
+    };
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadData()
-})
+  loadData();
+});
 
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      loadFormData()
+      loadFormData();
       nextTick(() => {
-        const nameInput = document.getElementById("name")
-        if (nameInput) nameInput.focus()
-      })
+        const nameInput = document.getElementById('name');
+        if (nameInput) nameInput.focus();
+      });
     }
-  }
-)
+  },
+);
 </script>
 
 <style scoped>

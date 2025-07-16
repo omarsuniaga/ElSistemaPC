@@ -3,8 +3,8 @@
  * Fase 2 - Iniciativa 5: Code Quality & TypeScript Strict Mode
  */
 
-import {ref, computed} from "vue"
-import {defineStore} from "pinia"
+import { ref, computed } from 'vue';
+import { defineStore } from 'pinia';
 
 // ==================== TIPOS ====================
 
@@ -46,10 +46,10 @@ interface PrettierConfig {
   useTabs: boolean
   semi: boolean
   singleQuote: boolean
-  quoteProps: "as-needed" | "consistent" | "preserve"
-  trailingComma: "none" | "es5" | "all"
+  quoteProps: 'as-needed' | 'consistent' | 'preserve'
+  trailingComma: 'none' | 'es5' | 'all'
   bracketSpacing: boolean
-  arrowParens: "avoid" | "always"
+  arrowParens: 'avoid' | 'always'
 }
 
 interface TestingTypes {
@@ -145,15 +145,15 @@ interface DuplicateMetrics {
 interface QualityGate {
   name: string
   conditions: QualityCondition[]
-  status: "passed" | "failed" | "warning"
+  status: 'passed' | 'failed' | 'warning'
 }
 
 interface QualityCondition {
   metric: string
-  operator: "GT" | "LT" | "EQ" | "NE"
+  operator: 'GT' | 'LT' | 'EQ' | 'NE'
   threshold: number
   actual: number
-  status: "passed" | "failed"
+  status: 'passed' | 'failed'
 }
 
 interface CodeReview {
@@ -163,7 +163,7 @@ interface CodeReview {
   qualityGates: QualityGate[]
   recommendations: string[]
   score: number
-  trend: "improving" | "stable" | "declining"
+  trend: 'improving' | 'stable' | 'declining'
 }
 
 // ==================== CONFIGURACIÓN PREDETERMINADA ====================
@@ -181,17 +181,17 @@ const DEFAULT_CODE_QUALITY_CONFIG: CodeQualityConfig = {
   eslint: {
     enabled: true,
     rules: {
-      "@typescript-eslint/no-unused-vars": ["error", {argsIgnorePattern: "^_"}],
-      "@typescript-eslint/explicit-function-return-type": "error",
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/prefer-nullish-coalescing": "error",
-      "@typescript-eslint/prefer-optional-chain": "error",
-      "vue/component-definition-name-casing": ["error", "PascalCase"],
-      "vue/component-name-in-template-casing": ["error", "PascalCase"],
-      "vue/define-props-declaration": "error",
-      "vue/define-emits-declaration": "error",
-      "vue/no-unused-properties": "warn",
-      "vue/require-typed-ref": "error",
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/explicit-function-return-type': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/prefer-nullish-coalescing': 'error',
+      '@typescript-eslint/prefer-optional-chain': 'error',
+      'vue/component-definition-name-casing': ['error', 'PascalCase'],
+      'vue/component-name-in-template-casing': ['error', 'PascalCase'],
+      'vue/define-props-declaration': 'error',
+      'vue/define-emits-declaration': 'error',
+      'vue/no-unused-properties': 'warn',
+      'vue/require-typed-ref': 'error',
     },
   },
   prettier: {
@@ -202,10 +202,10 @@ const DEFAULT_CODE_QUALITY_CONFIG: CodeQualityConfig = {
       useTabs: false,
       semi: false,
       singleQuote: false,
-      quoteProps: "as-needed",
-      trailingComma: "es5",
+      quoteProps: 'as-needed',
+      trailingComma: 'es5',
       bracketSpacing: true,
-      arrowParens: "always",
+      arrowParens: 'always',
     },
   },
   testing: {
@@ -226,58 +226,58 @@ const DEFAULT_CODE_QUALITY_CONFIG: CodeQualityConfig = {
     maintainability: true,
     duplicates: true,
   },
-}
+};
 
 // ==================== QUALITY GATES ====================
 
 const DEFAULT_QUALITY_GATES: QualityGate[] = [
   {
-    name: "TypeScript Compliance",
+    name: 'TypeScript Compliance',
     conditions: [
-      {metric: "typescript_errors", operator: "EQ", threshold: 0, actual: 0, status: "passed"},
-      {metric: "types_coverage", operator: "GT", threshold: 90, actual: 0, status: "failed"},
+      { metric: 'typescript_errors', operator: 'EQ', threshold: 0, actual: 0, status: 'passed' },
+      { metric: 'types_coverage', operator: 'GT', threshold: 90, actual: 0, status: 'failed' },
     ],
-    status: "failed",
+    status: 'failed',
   },
   {
-    name: "Code Coverage",
+    name: 'Code Coverage',
     conditions: [
-      {metric: "coverage_lines", operator: "GT", threshold: 80, actual: 0, status: "failed"},
-      {metric: "coverage_functions", operator: "GT", threshold: 80, actual: 0, status: "failed"},
+      { metric: 'coverage_lines', operator: 'GT', threshold: 80, actual: 0, status: 'failed' },
+      { metric: 'coverage_functions', operator: 'GT', threshold: 80, actual: 0, status: 'failed' },
     ],
-    status: "failed",
+    status: 'failed',
   },
   {
-    name: "Code Quality",
+    name: 'Code Quality',
     conditions: [
-      {metric: "eslint_errors", operator: "EQ", threshold: 0, actual: 0, status: "passed"},
-      {metric: "complexity_average", operator: "LT", threshold: 10, actual: 0, status: "passed"},
-      {metric: "duplicates_percentage", operator: "LT", threshold: 3, actual: 0, status: "passed"},
+      { metric: 'eslint_errors', operator: 'EQ', threshold: 0, actual: 0, status: 'passed' },
+      { metric: 'complexity_average', operator: 'LT', threshold: 10, actual: 0, status: 'passed' },
+      { metric: 'duplicates_percentage', operator: 'LT', threshold: 3, actual: 0, status: 'passed' },
     ],
-    status: "passed",
+    status: 'passed',
   },
   {
-    name: "Maintainability",
+    name: 'Maintainability',
     conditions: [
-      {metric: "maintainability_index", operator: "GT", threshold: 70, actual: 0, status: "failed"},
-      {metric: "technical_debt_ratio", operator: "LT", threshold: 5, actual: 0, status: "failed"},
+      { metric: 'maintainability_index', operator: 'GT', threshold: 70, actual: 0, status: 'failed' },
+      { metric: 'technical_debt_ratio', operator: 'LT', threshold: 5, actual: 0, status: 'failed' },
     ],
-    status: "failed",
+    status: 'failed',
   },
-]
+];
 
 // ==================== STORE DE CALIDAD DE CÓDIGO ====================
 
-export const useCodeQualityStore = defineStore("codeQuality", () => {
+export const useCodeQualityStore = defineStore('codeQuality', () => {
   // Estado
-  const config = ref<CodeQualityConfig>(DEFAULT_CODE_QUALITY_CONFIG)
+  const config = ref<CodeQualityConfig>(DEFAULT_CODE_QUALITY_CONFIG);
   const metrics = ref<CodeQualityMetrics>({
     typescript: {
       errors: 0,
       warnings: 0,
       strictModeCompliance: 0,
       typesCoverage: 0,
-      files: {total: 0, withErrors: 0, withWarnings: 0},
+      files: { total: 0, withErrors: 0, withWarnings: 0 },
     },
     eslint: {
       errors: 0,
@@ -285,20 +285,20 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
       fixableErrors: 0,
       fixableWarnings: 0,
       rules: {},
-      files: {total: 0, withIssues: 0},
+      files: { total: 0, withIssues: 0 },
     },
     testing: {
-      coverage: {lines: 0, functions: 0, branches: 0, statements: 0},
-      tests: {total: 0, passing: 0, failing: 0, skipped: 0},
-      performance: {averageTime: 0, slowestTest: 0},
+      coverage: { lines: 0, functions: 0, branches: 0, statements: 0 },
+      tests: { total: 0, passing: 0, failing: 0, skipped: 0 },
+      performance: { averageTime: 0, slowestTest: 0 },
     },
     complexity: {
-      cyclomatic: {average: 0, max: 0, files: []},
-      cognitive: {average: 0, max: 0, files: []},
+      cyclomatic: { average: 0, max: 0, files: [] },
+      cognitive: { average: 0, max: 0, files: [] },
     },
     maintainability: {
       index: 0,
-      technical_debt: {ratio: 0, hours: 0},
+      technical_debt: { ratio: 0, hours: 0 },
       code_smells: 0,
       hotspots: [],
     },
@@ -308,10 +308,10 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
       files: [],
       percentage: 0,
     },
-  })
-  const qualityGates = ref<QualityGate[]>(JSON.parse(JSON.stringify(DEFAULT_QUALITY_GATES)))
-  const reviews = ref<CodeReview[]>([])
-  const isAnalyzing = ref(false)
+  });
+  const qualityGates = ref<QualityGate[]>(JSON.parse(JSON.stringify(DEFAULT_QUALITY_GATES)));
+  const reviews = ref<CodeReview[]>([]);
+  const isAnalyzing = ref(false);
 
   // Computed
   const overallScore = computed(() => {
@@ -322,104 +322,104 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
       complexity: 15,
       maintainability: 10,
       duplicates: 5,
-    }
+    };
 
-    let score = 0
+    let score = 0;
 
     // TypeScript score
-    const tsErrors = metrics.value.typescript.errors
-    const tsScore = Math.max(0, 100 - tsErrors * 10)
-    score += (tsScore * weights.typescript) / 100
+    const tsErrors = metrics.value.typescript.errors;
+    const tsScore = Math.max(0, 100 - tsErrors * 10);
+    score += (tsScore * weights.typescript) / 100;
 
     // ESLint score
-    const eslintErrors = metrics.value.eslint.errors
-    const eslintScore = Math.max(0, 100 - eslintErrors * 5)
-    score += (eslintScore * weights.eslint) / 100
+    const eslintErrors = metrics.value.eslint.errors;
+    const eslintScore = Math.max(0, 100 - eslintErrors * 5);
+    score += (eslintScore * weights.eslint) / 100;
 
     // Testing score
-    const coverage = metrics.value.testing.coverage.lines
-    const testingScore = Math.min(100, coverage)
-    score += (testingScore * weights.testing) / 100
+    const coverage = metrics.value.testing.coverage.lines;
+    const testingScore = Math.min(100, coverage);
+    score += (testingScore * weights.testing) / 100;
 
     // Complexity score
-    const complexity = metrics.value.complexity.cyclomatic.average
-    const complexityScore = Math.max(0, 100 - Math.max(0, complexity - 5) * 10)
-    score += (complexityScore * weights.complexity) / 100
+    const complexity = metrics.value.complexity.cyclomatic.average;
+    const complexityScore = Math.max(0, 100 - Math.max(0, complexity - 5) * 10);
+    score += (complexityScore * weights.complexity) / 100;
 
     // Maintainability score
-    const maintainability = metrics.value.maintainability.index
-    score += (maintainability * weights.maintainability) / 100
+    const maintainability = metrics.value.maintainability.index;
+    score += (maintainability * weights.maintainability) / 100;
 
     // Duplicates score
-    const duplicates = metrics.value.duplicates.percentage
-    const duplicatesScore = Math.max(0, 100 - duplicates * 10)
-    score += (duplicatesScore * weights.duplicates) / 100
+    const duplicates = metrics.value.duplicates.percentage;
+    const duplicatesScore = Math.max(0, 100 - duplicates * 10);
+    score += (duplicatesScore * weights.duplicates) / 100;
 
-    return Math.round(score)
-  })
+    return Math.round(score);
+  });
 
   const qualityStatus = computed(() => {
-    const score = overallScore.value
-    if (score >= 90) return "excellent"
-    if (score >= 75) return "good"
-    if (score >= 60) return "needs-improvement"
-    return "poor"
-  })
+    const score = overallScore.value;
+    if (score >= 90) return 'excellent';
+    if (score >= 75) return 'good';
+    if (score >= 60) return 'needs-improvement';
+    return 'poor';
+  });
 
   const passedGates = computed(
-    () => qualityGates.value.filter((gate) => gate.status === "passed").length
-  )
+    () => qualityGates.value.filter((gate) => gate.status === 'passed').length,
+  );
 
   const failedGates = computed(
-    () => qualityGates.value.filter((gate) => gate.status === "failed").length
-  )
+    () => qualityGates.value.filter((gate) => gate.status === 'failed').length,
+  );
 
   const criticalIssues = computed(() => {
-    const issues: string[] = []
+    const issues: string[] = [];
 
     if (metrics.value.typescript.errors > 0) {
-      issues.push(`${metrics.value.typescript.errors} errores de TypeScript`)
+      issues.push(`${metrics.value.typescript.errors} errores de TypeScript`);
     }
 
     if (metrics.value.eslint.errors > 0) {
-      issues.push(`${metrics.value.eslint.errors} errores de ESLint`)
+      issues.push(`${metrics.value.eslint.errors} errores de ESLint`);
     }
 
     if (metrics.value.testing.coverage.lines < config.value.testing.coverage.threshold) {
-      issues.push(`Cobertura de pruebas baja: ${metrics.value.testing.coverage.lines}%`)
+      issues.push(`Cobertura de pruebas baja: ${metrics.value.testing.coverage.lines}%`);
     }
 
     if (metrics.value.complexity.cyclomatic.average > 10) {
-      issues.push(`Complejidad alta: ${metrics.value.complexity.cyclomatic.average}`)
+      issues.push(`Complejidad alta: ${metrics.value.complexity.cyclomatic.average}`);
     }
 
-    return issues
-  })
+    return issues;
+  });
 
   // ==================== ANÁLISIS PRINCIPAL ====================
 
   async function analyzeCodeQuality(): Promise<CodeReview> {
     if (isAnalyzing.value) {
-      throw new Error("Análisis ya en progreso")
+      throw new Error('Análisis ya en progreso');
     }
 
-    console.log("🔧 Iniciando análisis de calidad de código...")
-    isAnalyzing.value = true
+    console.log('🔧 Iniciando análisis de calidad de código...');
+    isAnalyzing.value = true;
 
     try {
       // Simular análisis progresivo
-      await analyzeTypeScript()
-      await analyzeESLint()
-      await analyzeTesting()
-      await analyzeComplexity()
-      await analyzeMaintainability()
-      await analyzeDuplicates()
+      await analyzeTypeScript();
+      await analyzeESLint();
+      await analyzeTesting();
+      await analyzeComplexity();
+      await analyzeMaintainability();
+      await analyzeDuplicates();
 
       // Actualizar quality gates
-      updateQualityGates()
+      updateQualityGates();
 
       // Generar recomendaciones
-      const recommendations = generateRecommendations()
+      const recommendations = generateRecommendations();
 
       // Crear review
       const review: CodeReview = {
@@ -430,29 +430,29 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
         recommendations,
         score: overallScore.value,
         trend: calculateTrend(),
-      }
+      };
 
-      reviews.value.push(review)
+      reviews.value.push(review);
 
       // Mantener solo las últimas 10 reviews
       if (reviews.value.length > 10) {
-        reviews.value = reviews.value.slice(-10)
+        reviews.value = reviews.value.slice(-10);
       }
 
-      console.log(`✅ Análisis completado. Score: ${review.score}`)
-      return review
+      console.log(`✅ Análisis completado. Score: ${review.score}`);
+      return review;
     } finally {
-      isAnalyzing.value = false
+      isAnalyzing.value = false;
     }
   }
 
   // ==================== ANÁLISIS TYPESCRIPT ====================
 
   async function analyzeTypeScript(): Promise<void> {
-    console.log("🔍 Analizando TypeScript...")
+    console.log('🔍 Analizando TypeScript...');
 
     // Simular análisis de TypeScript
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // En una aplicación real, esto ejecutaría tsc --noEmit y analizaría la salida
     metrics.value.typescript = {
@@ -465,15 +465,15 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
         withErrors: Math.floor(Math.random() * 3),
         withWarnings: Math.floor(Math.random() * 8),
       },
-    }
+    };
   }
 
   // ==================== ANÁLISIS ESLINT ====================
 
   async function analyzeESLint(): Promise<void> {
-    console.log("🔍 Analizando ESLint...")
+    console.log('🔍 Analizando ESLint...');
 
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     // En una aplicación real, esto ejecutaría ESLint y analizaría la salida
     metrics.value.eslint = {
@@ -482,23 +482,23 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
       fixableErrors: Math.floor(Math.random() * 5),
       fixableWarnings: Math.floor(Math.random() * 10),
       rules: {
-        "@typescript-eslint/no-unused-vars": Math.floor(Math.random() * 3),
-        "@typescript-eslint/no-explicit-any": Math.floor(Math.random() * 5),
-        "vue/component-definition-name-casing": Math.floor(Math.random() * 2),
+        '@typescript-eslint/no-unused-vars': Math.floor(Math.random() * 3),
+        '@typescript-eslint/no-explicit-any': Math.floor(Math.random() * 5),
+        'vue/component-definition-name-casing': Math.floor(Math.random() * 2),
       },
       files: {
         total: 42,
         withIssues: Math.floor(Math.random() * 15),
       },
-    }
+    };
   }
 
   // ==================== ANÁLISIS DE TESTING ====================
 
   async function analyzeTesting(): Promise<void> {
-    console.log("🔍 Analizando Testing...")
+    console.log('🔍 Analizando Testing...');
 
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    await new Promise((resolve) => setTimeout(resolve, 400));
 
     // En una aplicación real, esto ejecutaría los tests y analizaría coverage
     metrics.value.testing = {
@@ -518,22 +518,22 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
         averageTime: 150 + Math.floor(Math.random() * 100),
         slowestTest: 500 + Math.floor(Math.random() * 300),
       },
-    }
+    };
   }
 
   // ==================== ANÁLISIS DE COMPLEJIDAD ====================
 
   async function analyzeComplexity(): Promise<void> {
-    console.log("🔍 Analizando Complejidad...")
+    console.log('🔍 Analizando Complejidad...');
 
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     // En una aplicación real, esto usaría herramientas como complexity-report
     const complexFiles = [
-      {file: "src/composables/useStudents.ts", complexity: 8},
-      {file: "src/views/ClassManagement.vue", complexity: 12},
-      {file: "src/stores/attendance.ts", complexity: 6},
-    ]
+      { file: 'src/composables/useStudents.ts', complexity: 8 },
+      { file: 'src/views/ClassManagement.vue', complexity: 12 },
+      { file: 'src/stores/attendance.ts', complexity: 6 },
+    ];
 
     metrics.value.complexity = {
       cyclomatic: {
@@ -544,17 +544,17 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
       cognitive: {
         average: 7 + Math.floor(Math.random() * 6),
         max: 15 + Math.floor(Math.random() * 10),
-        files: complexFiles.map((f) => ({...f, complexity: f.complexity + 2})),
+        files: complexFiles.map((f) => ({ ...f, complexity: f.complexity + 2 })),
       },
-    }
+    };
   }
 
   // ==================== ANÁLISIS DE MANTENIBILIDAD ====================
 
   async function analyzeMaintainability(): Promise<void> {
-    console.log("🔍 Analizando Mantenibilidad...")
+    console.log('🔍 Analizando Mantenibilidad...');
 
-    await new Promise((resolve) => setTimeout(resolve, 350))
+    await new Promise((resolve) => setTimeout(resolve, 350));
 
     // En una aplicación real, esto usaría herramientas como SonarQube
     metrics.value.maintainability = {
@@ -565,32 +565,32 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
       },
       code_smells: Math.floor(Math.random() * 15),
       hotspots: [
-        {file: "src/utils/whatsappService.ts", issues: 3},
-        {file: "src/components/StudentForm.vue", issues: 2},
+        { file: 'src/utils/whatsappService.ts', issues: 3 },
+        { file: 'src/components/StudentForm.vue', issues: 2 },
       ],
-    }
+    };
   }
 
   // ==================== ANÁLISIS DE DUPLICADOS ====================
 
   async function analyzeDuplicates(): Promise<void> {
-    console.log("🔍 Analizando Duplicados...")
+    console.log('🔍 Analizando Duplicados...');
 
-    await new Promise((resolve) => setTimeout(resolve, 250))
+    await new Promise((resolve) => setTimeout(resolve, 250));
 
     // En una aplicación real, esto usaría herramientas como jscpd
-    const duplicateLines = Math.floor(Math.random() * 100)
-    const totalLines = 5000 // Estimado
+    const duplicateLines = Math.floor(Math.random() * 100);
+    const totalLines = 5000; // Estimado
 
     metrics.value.duplicates = {
       lines: duplicateLines,
       blocks: Math.floor(duplicateLines / 10),
       files: [
-        {file: "src/components/StudentCard.vue", duplicates: 2},
-        {file: "src/components/TeacherCard.vue", duplicates: 2},
+        { file: 'src/components/StudentCard.vue', duplicates: 2 },
+        { file: 'src/components/TeacherCard.vue', duplicates: 2 },
       ],
       percentage: (duplicateLines / totalLines) * 100,
-    }
+    };
   }
 
   // ==================== QUALITY GATES ====================
@@ -600,155 +600,155 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
       gate.conditions.forEach((condition) => {
         // Actualizar valor actual basado en métricas
         switch (condition.metric) {
-          case "typescript_errors":
-            condition.actual = metrics.value.typescript.errors
-            break
-          case "types_coverage":
-            condition.actual = metrics.value.typescript.typesCoverage
-            break
-          case "coverage_lines":
-            condition.actual = metrics.value.testing.coverage.lines
-            break
-          case "coverage_functions":
-            condition.actual = metrics.value.testing.coverage.functions
-            break
-          case "eslint_errors":
-            condition.actual = metrics.value.eslint.errors
-            break
-          case "complexity_average":
-            condition.actual = metrics.value.complexity.cyclomatic.average
-            break
-          case "duplicates_percentage":
-            condition.actual = metrics.value.duplicates.percentage
-            break
-          case "maintainability_index":
-            condition.actual = metrics.value.maintainability.index
-            break
-          case "technical_debt_ratio":
-            condition.actual = metrics.value.maintainability.technical_debt.ratio
-            break
+        case 'typescript_errors':
+          condition.actual = metrics.value.typescript.errors;
+          break;
+        case 'types_coverage':
+          condition.actual = metrics.value.typescript.typesCoverage;
+          break;
+        case 'coverage_lines':
+          condition.actual = metrics.value.testing.coverage.lines;
+          break;
+        case 'coverage_functions':
+          condition.actual = metrics.value.testing.coverage.functions;
+          break;
+        case 'eslint_errors':
+          condition.actual = metrics.value.eslint.errors;
+          break;
+        case 'complexity_average':
+          condition.actual = metrics.value.complexity.cyclomatic.average;
+          break;
+        case 'duplicates_percentage':
+          condition.actual = metrics.value.duplicates.percentage;
+          break;
+        case 'maintainability_index':
+          condition.actual = metrics.value.maintainability.index;
+          break;
+        case 'technical_debt_ratio':
+          condition.actual = metrics.value.maintainability.technical_debt.ratio;
+          break;
         }
 
         // Evaluar condición
-        condition.status = evaluateCondition(condition) ? "passed" : "failed"
-      })
+        condition.status = evaluateCondition(condition) ? 'passed' : 'failed';
+      });
 
       // Evaluar gate general
-      gate.status = gate.conditions.every((c) => c.status === "passed") ? "passed" : "failed"
-    })
+      gate.status = gate.conditions.every((c) => c.status === 'passed') ? 'passed' : 'failed';
+    });
   }
 
   function evaluateCondition(condition: QualityCondition): boolean {
     switch (condition.operator) {
-      case "GT":
-        return condition.actual > condition.threshold
-      case "LT":
-        return condition.actual < condition.threshold
-      case "EQ":
-        return condition.actual === condition.threshold
-      case "NE":
-        return condition.actual !== condition.threshold
-      default:
-        return false
+    case 'GT':
+      return condition.actual > condition.threshold;
+    case 'LT':
+      return condition.actual < condition.threshold;
+    case 'EQ':
+      return condition.actual === condition.threshold;
+    case 'NE':
+      return condition.actual !== condition.threshold;
+    default:
+      return false;
     }
   }
 
   // ==================== RECOMENDACIONES ====================
 
   function generateRecommendations(): string[] {
-    const recommendations: string[] = []
+    const recommendations: string[] = [];
 
     // TypeScript recommendations
     if (metrics.value.typescript.errors > 0) {
-      recommendations.push(`🔧 Corregir ${metrics.value.typescript.errors} errores de TypeScript`)
+      recommendations.push(`🔧 Corregir ${metrics.value.typescript.errors} errores de TypeScript`);
     }
 
     if (metrics.value.typescript.typesCoverage < 90) {
-      recommendations.push("📝 Mejorar cobertura de tipos agregando anotaciones explícitas")
+      recommendations.push('📝 Mejorar cobertura de tipos agregando anotaciones explícitas');
     }
 
     // ESLint recommendations
     if (metrics.value.eslint.errors > 0) {
-      recommendations.push(`🔧 Corregir ${metrics.value.eslint.errors} errores de ESLint`)
+      recommendations.push(`🔧 Corregir ${metrics.value.eslint.errors} errores de ESLint`);
     }
 
     if (metrics.value.eslint.fixableErrors > 0) {
       recommendations.push(
-        `⚡ Ejecutar ESLint --fix para corregir ${metrics.value.eslint.fixableErrors} errores automáticamente`
-      )
+        `⚡ Ejecutar ESLint --fix para corregir ${metrics.value.eslint.fixableErrors} errores automáticamente`,
+      );
     }
 
     // Testing recommendations
     if (metrics.value.testing.coverage.lines < config.value.testing.coverage.threshold) {
       recommendations.push(
-        `🧪 Aumentar cobertura de pruebas al ${config.value.testing.coverage.threshold}%`
-      )
+        `🧪 Aumentar cobertura de pruebas al ${config.value.testing.coverage.threshold}%`,
+      );
     }
 
     if (metrics.value.testing.tests.failing > 0) {
-      recommendations.push(`❌ Corregir ${metrics.value.testing.tests.failing} pruebas fallidas`)
+      recommendations.push(`❌ Corregir ${metrics.value.testing.tests.failing} pruebas fallidas`);
     }
 
     // Complexity recommendations
     if (metrics.value.complexity.cyclomatic.average > 10) {
       recommendations.push(
-        "🔄 Refactorizar funciones complejas para reducir complejidad ciclomática"
-      )
+        '🔄 Refactorizar funciones complejas para reducir complejidad ciclomática',
+      );
     }
 
     // Maintainability recommendations
     if (metrics.value.maintainability.index < 70) {
-      recommendations.push("🏗️ Mejorar índice de mantenibilidad refactorizando código legacy")
+      recommendations.push('🏗️ Mejorar índice de mantenibilidad refactorizando código legacy');
     }
 
     if (metrics.value.maintainability.code_smells > 5) {
-      recommendations.push("🧹 Eliminar code smells identificados")
+      recommendations.push('🧹 Eliminar code smells identificados');
     }
 
     // Duplicates recommendations
     if (metrics.value.duplicates.percentage > 3) {
-      recommendations.push("📋 Extraer código duplicado a funciones/componentes reutilizables")
+      recommendations.push('📋 Extraer código duplicado a funciones/componentes reutilizables');
     }
 
-    return recommendations
+    return recommendations;
   }
 
   // ==================== UTILIDADES ====================
 
   function generateReviewId(): string {
-    return `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    return `review_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  function calculateTrend(): "improving" | "stable" | "declining" {
-    if (reviews.value.length < 2) return "stable"
+  function calculateTrend(): 'improving' | 'stable' | 'declining' {
+    if (reviews.value.length < 2) return 'stable';
 
-    const current = overallScore.value
-    const previous = reviews.value[reviews.value.length - 1].score
+    const current = overallScore.value;
+    const previous = reviews.value[reviews.value.length - 1].score;
 
-    if (current > previous + 5) return "improving"
-    if (current < previous - 5) return "declining"
-    return "stable"
+    if (current > previous + 5) return 'improving';
+    if (current < previous - 5) return 'declining';
+    return 'stable';
   }
 
   async function fixAutomaticIssues(): Promise<void> {
-    console.log("🔧 Ejecutando correcciones automáticas...")
+    console.log('🔧 Ejecutando correcciones automáticas...');
 
     // Simular ESLint --fix
     if (metrics.value.eslint.fixableErrors > 0 || metrics.value.eslint.fixableWarnings > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      metrics.value.eslint.errors -= metrics.value.eslint.fixableErrors
-      metrics.value.eslint.warnings -= metrics.value.eslint.fixableWarnings
-      metrics.value.eslint.fixableErrors = 0
-      metrics.value.eslint.fixableWarnings = 0
+      metrics.value.eslint.errors -= metrics.value.eslint.fixableErrors;
+      metrics.value.eslint.warnings -= metrics.value.eslint.fixableWarnings;
+      metrics.value.eslint.fixableErrors = 0;
+      metrics.value.eslint.fixableWarnings = 0;
 
-      console.log("✅ Correcciones automáticas de ESLint aplicadas")
+      console.log('✅ Correcciones automáticas de ESLint aplicadas');
     }
 
     // Simular Prettier formatting
     if (config.value.prettier.enabled) {
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      console.log("✅ Formato de código aplicado con Prettier")
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      console.log('✅ Formato de código aplicado con Prettier');
     }
   }
 
@@ -761,13 +761,13 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
       qualityGates: qualityGates.value,
       recommendations: generateRecommendations(),
       criticalIssues: criticalIssues.value,
-    }
+    };
 
-    return JSON.stringify(report, null, 2)
+    return JSON.stringify(report, null, 2);
   }
 
   function updateConfig(newConfig: Partial<CodeQualityConfig>): void {
-    config.value = {...config.value, ...newConfig}
+    config.value = { ...config.value, ...newConfig };
   }
 
   function resetMetrics(): void {
@@ -777,7 +777,7 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
         warnings: 0,
         strictModeCompliance: 0,
         typesCoverage: 0,
-        files: {total: 0, withErrors: 0, withWarnings: 0},
+        files: { total: 0, withErrors: 0, withWarnings: 0 },
       },
       eslint: {
         errors: 0,
@@ -785,20 +785,20 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
         fixableErrors: 0,
         fixableWarnings: 0,
         rules: {},
-        files: {total: 0, withIssues: 0},
+        files: { total: 0, withIssues: 0 },
       },
       testing: {
-        coverage: {lines: 0, functions: 0, branches: 0, statements: 0},
-        tests: {total: 0, passing: 0, failing: 0, skipped: 0},
-        performance: {averageTime: 0, slowestTest: 0},
+        coverage: { lines: 0, functions: 0, branches: 0, statements: 0 },
+        tests: { total: 0, passing: 0, failing: 0, skipped: 0 },
+        performance: { averageTime: 0, slowestTest: 0 },
       },
       complexity: {
-        cyclomatic: {average: 0, max: 0, files: []},
-        cognitive: {average: 0, max: 0, files: []},
+        cyclomatic: { average: 0, max: 0, files: [] },
+        cognitive: { average: 0, max: 0, files: [] },
       },
       maintainability: {
         index: 0,
-        technical_debt: {ratio: 0, hours: 0},
+        technical_debt: { ratio: 0, hours: 0 },
         code_smells: 0,
         hotspots: [],
       },
@@ -808,7 +808,7 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
         files: [],
         percentage: 0,
       },
-    }
+    };
   }
 
   // ==================== RETURN ====================
@@ -837,34 +837,34 @@ export const useCodeQualityStore = defineStore("codeQuality", () => {
     updateConfig,
     resetMetrics,
     generateRecommendations,
-  }
-})
+  };
+});
 
 // ==================== COMPOSABLE ====================
 
 export function useCodeQuality() {
-  const store = useCodeQualityStore()
+  const store = useCodeQualityStore();
 
   return {
     ...store,
 
     // Métodos de conveniencia
     quickAnalysis: async () => {
-      await store.analyzeCodeQuality()
-      return store.overallScore
+      await store.analyzeCodeQuality();
+      return store.overallScore;
     },
 
     getQualityGrade: () => {
-      const score = store.overallScore
-      if (score >= 90) return "A"
-      if (score >= 80) return "B"
-      if (score >= 70) return "C"
-      if (score >= 60) return "D"
-      return "F"
+      const score = store.overallScore;
+      if (score >= 90) return 'A';
+      if (score >= 80) return 'B';
+      if (score >= 70) return 'C';
+      if (score >= 60) return 'D';
+      return 'F';
     },
 
     getPriorityIssues: () => {
-      return store.criticalIssues.slice(0, 3)
+      return store.criticalIssues.slice(0, 3);
     },
-  }
+  };
 }

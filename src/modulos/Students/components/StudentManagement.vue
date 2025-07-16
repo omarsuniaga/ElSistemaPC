@@ -1,27 +1,3 @@
-<script setup lang="ts">
-import {ref} from "vue"
-import {XMarkIcon} from "@heroicons/vue/24/outline"
-import {UserGroupIcon} from "@heroicons/vue/24/outline"
-import type {Student} from "../types"
-import {usePermissions} from "@/modulos/Auth/composables/usePermissions"
-import {PermissionAction, ResourceType} from "@/modulos/Auth/types/permissions"
-import PermissionGuard from "@/modulos/Auth/components/PermissionGuard.vue"
-
-const props = defineProps<{
-  groupName: string
-  students: Student[]
-  isLoading: boolean
-}>()
-
-const emit = defineEmits<{
-  (e: "remove-student", studentId: string): void
-  (e: "add-student"): void
-}>()
-
-// Usar el composable de permisos
-const {hasPermission, canUpdate, canCreate} = usePermissions()
-</script>
-
 <template>
   <div class="space-y-4">
     <!-- Cabecera del grupo -->
@@ -103,3 +79,27 @@ const {hasPermission, canUpdate, canCreate} = usePermissions()
     </PermissionGuard>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
+import { UserGroupIcon } from '@heroicons/vue/24/outline';
+import type { Student } from '../types';
+import { usePermissions } from '@/modulos/Auth/composables/usePermissions';
+import { PermissionAction, ResourceType } from '@/modulos/Auth/types/permissions';
+import PermissionGuard from '@/modulos/Auth/components/PermissionGuard.vue';
+
+const props = defineProps<{
+  groupName: string
+  students: Student[]
+  isLoading: boolean
+}>();
+
+const emit = defineEmits<{
+  (e: 'remove-student', studentId: string): void
+  (e: 'add-student'): void
+}>();
+
+// Usar el composable de permisos
+const { hasPermission, canUpdate, canCreate } = usePermissions();
+</script>

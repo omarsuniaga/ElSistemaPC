@@ -327,9 +327,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import type {HistorialCambio} from "../types"
-import {formatDate} from "../utils"
+import { ref, computed } from 'vue';
+import type { HistorialCambio } from '../types';
+import { formatDate } from '../utils';
 
 interface Props {
   history: HistorialCambio[]
@@ -338,126 +338,126 @@ interface Props {
 }
 
 interface Emits {
-  (e: "load-more"): void
-  (e: "export", filters: any): void
+  (e: 'load-more'): void
+  (e: 'export', filters: any): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
-const selectedEntity = ref("")
-const selectedAction = ref("")
-const dateFrom = ref("")
-const dateTo = ref("")
-const expandedChanges = ref<string[]>([])
+const selectedEntity = ref('');
+const selectedAction = ref('');
+const dateFrom = ref('');
+const dateTo = ref('');
+const expandedChanges = ref<string[]>([]);
 
 const filteredHistory = computed(() => {
-  let filtered = props.history
+  let filtered = props.history;
 
   if (selectedEntity.value) {
-    filtered = filtered.filter((h) => h.tipoEntidad === selectedEntity.value)
+    filtered = filtered.filter((h) => h.tipoEntidad === selectedEntity.value);
   }
 
   if (selectedAction.value) {
-    filtered = filtered.filter((h) => h.accion === selectedAction.value)
+    filtered = filtered.filter((h) => h.accion === selectedAction.value);
   }
 
   if (dateFrom.value) {
-    const fromDate = new Date(dateFrom.value)
-    filtered = filtered.filter((h) => new Date(h.timestamp) >= fromDate)
+    const fromDate = new Date(dateFrom.value);
+    filtered = filtered.filter((h) => new Date(h.timestamp) >= fromDate);
   }
 
   if (dateTo.value) {
-    const toDate = new Date(dateTo.value)
-    toDate.setHours(23, 59, 59, 999) // End of day
-    filtered = filtered.filter((h) => new Date(h.timestamp) <= toDate)
+    const toDate = new Date(dateTo.value);
+    toDate.setHours(23, 59, 59, 999); // End of day
+    filtered = filtered.filter((h) => new Date(h.timestamp) <= toDate);
   }
 
-  return filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-})
+  return filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+});
 
 const groupedHistory = computed(() => {
-  const groups: Record<string, HistorialCambio[]> = {}
+  const groups: Record<string, HistorialCambio[]> = {};
 
   filteredHistory.value.forEach((event) => {
-    const date = new Date(event.timestamp).toDateString()
+    const date = new Date(event.timestamp).toDateString();
     if (!groups[date]) {
-      groups[date] = []
+      groups[date] = [];
     }
-    groups[date].push(event)
-  })
+    groups[date].push(event);
+  });
 
-  return groups
-})
+  return groups;
+});
 
 const getActionCount = (action: string) => {
-  return filteredHistory.value.filter((h) => h.accion === action).length
-}
+  return filteredHistory.value.filter((h) => h.accion === action).length;
+};
 
 const getActionLabel = (action: string) => {
   switch (action) {
-    case "created":
-      return "Creó"
-    case "updated":
-      return "Actualizó"
-    case "deleted":
-      return "Eliminó"
-    case "evaluated":
-      return "Evaluó"
-    default:
-      return action
+  case 'created':
+    return 'Creó';
+  case 'updated':
+    return 'Actualizó';
+  case 'deleted':
+    return 'Eliminó';
+  case 'evaluated':
+    return 'Evaluó';
+  default:
+    return action;
   }
-}
+};
 
 const getEntityTypeLabel = (type: string) => {
   switch (type) {
-    case "obra":
-      return "obra"
-    case "plan":
-      return "plan"
-    case "frase":
-      return "frase"
-    case "evaluacion":
-      return "evaluación"
-    default:
-      return type
+  case 'obra':
+    return 'obra';
+  case 'plan':
+    return 'plan';
+  case 'frase':
+    return 'frase';
+  case 'evaluacion':
+    return 'evaluación';
+  default:
+    return type;
   }
-}
+};
 
 const getActionIconClass = (action: string) => {
   switch (action) {
-    case "created":
-      return "bg-blue-100 text-blue-600"
-    case "updated":
-      return "bg-yellow-100 text-yellow-600"
-    case "deleted":
-      return "bg-red-100 text-red-600"
-    case "evaluated":
-      return "bg-green-100 text-green-600"
-    default:
-      return "bg-gray-100 text-gray-600"
+  case 'created':
+    return 'bg-blue-100 text-blue-600';
+  case 'updated':
+    return 'bg-yellow-100 text-yellow-600';
+  case 'deleted':
+    return 'bg-red-100 text-red-600';
+  case 'evaluated':
+    return 'bg-green-100 text-green-600';
+  default:
+    return 'bg-gray-100 text-gray-600';
   }
-}
+};
 
 const formatTime = (timestamp: string) => {
   return new Date(timestamp).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const toggleChangesVisibility = (eventId: string) => {
-  const index = expandedChanges.value.indexOf(eventId)
+  const index = expandedChanges.value.indexOf(eventId);
   if (index > -1) {
-    expandedChanges.value.splice(index, 1)
+    expandedChanges.value.splice(index, 1);
   } else {
-    expandedChanges.value.push(eventId)
+    expandedChanges.value.push(eventId);
   }
-}
+};
 
 const loadMoreHistory = () => {
-  emit("load-more")
-}
+  emit('load-more');
+};
 
 const exportHistory = () => {
   const filters = {
@@ -465,7 +465,7 @@ const exportHistory = () => {
     action: selectedAction.value,
     dateFrom: dateFrom.value,
     dateTo: dateTo.value,
-  }
-  emit("export", filters)
-}
+  };
+  emit('export', filters);
+};
 </script>

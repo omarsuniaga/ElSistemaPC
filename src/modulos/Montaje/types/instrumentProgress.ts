@@ -86,5 +86,5 @@ export const COLOR_ESTADOS_COMPASS: Record<EstadoCompass, { hex: string, class: 
   [EstadoCompass.LOGRADO]: { hex: '#c8e6c9', class: 'bg-green-100' },
   [EstadoCompass.DOMINADO]: { hex: '#4caf50', class: 'bg-green-500' },
   [EstadoCompass.COMPLETADO]: { hex: '#1b5e20', class: 'bg-green-800' },
-  [EstadoCompass.NO_TRABAJADO]: { hex: '#d32f2f', class: 'bg-red-500' }
+  [EstadoCompass.NO_TRABAJADO]: { hex: '#d32f2f', class: 'bg-red-500' },
 };

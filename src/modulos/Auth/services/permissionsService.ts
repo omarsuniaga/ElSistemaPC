@@ -1,4 +1,4 @@
-import {db} from "@/firebase"
+import { db } from '@/firebase';
 import {
   doc,
   getDoc,
@@ -9,7 +9,7 @@ import {
   query,
   where,
   getDocs,
-} from "firebase/firestore"
+} from 'firebase/firestore';
 import {
   UserRole,
   Permission,
@@ -19,12 +19,12 @@ import {
   FirestoreRoleConfig,
   defaultPermissionConfigs,
   ROLE_PERMISSIONS,
-} from "../types/permissions"
+} from '../types/permissions';
 
 // Firestore collections
-const PERMISSIONS_COLLECTION = "permissions"
-const ROLES_COLLECTION = "roles"
-const USER_PERMISSIONS_COLLECTION = "userPermissions"
+const PERMISSIONS_COLLECTION = 'permissions';
+const ROLES_COLLECTION = 'roles';
+const USER_PERMISSIONS_COLLECTION = 'userPermissions';
 
 export interface UserPermissionOverride {
   userId: string
@@ -53,13 +53,13 @@ export class PermissionsService {
     try {
       // Set up default permission configurations
       for (const [resource, config] of Object.entries(defaultPermissionConfigs)) {
-        const permissionDoc = doc(db, PERMISSIONS_COLLECTION, resource)
-        await setDoc(permissionDoc, config, {merge: true})
+        const permissionDoc = doc(db, PERMISSIONS_COLLECTION, resource);
+        await setDoc(permissionDoc, config, { merge: true });
       }
 
       // Set up default role configurations
       for (const role of Object.values(UserRole)) {
-        const roleDoc = doc(db, ROLES_COLLECTION, role)
+        const roleDoc = doc(db, ROLES_COLLECTION, role);
         const roleConfig: FirestoreRoleConfig = {
           name: role,
           displayName: this.getRoleDisplayName(role),
@@ -67,14 +67,14 @@ export class PermissionsService {
           isActive: true,
           createdAt: new Date(),
           updatedAt: new Date(),
-        }
-        await setDoc(roleDoc, roleConfig, {merge: true})
+        };
+        await setDoc(roleDoc, roleConfig, { merge: true });
       }
 
-      return {success: true, data: "Permissions initialized successfully"}
+      return { success: true, data: 'Permissions initialized successfully' };
     } catch (error) {
-      console.error("Error initializing permissions:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error initializing permissions:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -82,25 +82,25 @@ export class PermissionsService {
    * Get permission configuration for a resource
    */
   async getPermissionConfig(
-    resource: ResourceType
+    resource: ResourceType,
   ): Promise<PermissionServiceResult<FirestorePermissionConfig>> {
     try {
-      const permissionDoc = doc(db, PERMISSIONS_COLLECTION, resource)
-      const docSnap = await getDoc(permissionDoc)
+      const permissionDoc = doc(db, PERMISSIONS_COLLECTION, resource);
+      const docSnap = await getDoc(permissionDoc);
 
       if (docSnap.exists()) {
-        return {success: true, data: docSnap.data() as FirestorePermissionConfig}
+        return { success: true, data: docSnap.data() as FirestorePermissionConfig };
       } else {
         // Return default config if not found
-        const defaultConfig = defaultPermissionConfigs[resource]
+        const defaultConfig = defaultPermissionConfigs[resource];
         if (defaultConfig) {
-          return {success: true, data: defaultConfig}
+          return { success: true, data: defaultConfig };
         }
-        return {success: false, error: `Permission config not found for resource: ${resource}`}
+        return { success: false, error: `Permission config not found for resource: ${resource}` };
       }
     } catch (error) {
-      console.error("Error getting permission config:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error getting permission config:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -108,19 +108,19 @@ export class PermissionsService {
    * Update permission configuration for a resource
    */ async updatePermissionConfig(
     resource: ResourceType,
-    config: Partial<FirestorePermissionConfig>
+    config: Partial<FirestorePermissionConfig>,
   ): Promise<PermissionServiceResult> {
     try {
-      const permissionDoc = doc(db, PERMISSIONS_COLLECTION, resource)
+      const permissionDoc = doc(db, PERMISSIONS_COLLECTION, resource);
       await updateDoc(permissionDoc, {
         ...config,
         updatedAt: new Date(),
-      })
+      });
 
-      return {success: true, data: "Permission config updated successfully"}
+      return { success: true, data: 'Permission config updated successfully' };
     } catch (error) {
-      console.error("Error updating permission config:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error updating permission config:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -129,17 +129,17 @@ export class PermissionsService {
    */
   async getRoleConfig(role: UserRole): Promise<PermissionServiceResult<FirestoreRoleConfig>> {
     try {
-      const roleDoc = doc(db, ROLES_COLLECTION, role)
-      const docSnap = await getDoc(roleDoc)
+      const roleDoc = doc(db, ROLES_COLLECTION, role);
+      const docSnap = await getDoc(roleDoc);
 
       if (docSnap.exists()) {
-        return {success: true, data: docSnap.data() as FirestoreRoleConfig}
+        return { success: true, data: docSnap.data() as FirestoreRoleConfig };
       } else {
-        return {success: false, error: `Role config not found: ${role}`}
+        return { success: false, error: `Role config not found: ${role}` };
       }
     } catch (error) {
-      console.error("Error getting role config:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error getting role config:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -148,19 +148,19 @@ export class PermissionsService {
    */
   async updateRoleConfig(
     role: UserRole,
-    config: Partial<FirestoreRoleConfig>
+    config: Partial<FirestoreRoleConfig>,
   ): Promise<PermissionServiceResult> {
     try {
-      const roleDoc = doc(db, ROLES_COLLECTION, role)
+      const roleDoc = doc(db, ROLES_COLLECTION, role);
       await updateDoc(roleDoc, {
         ...config,
         updatedAt: new Date(),
-      })
+      });
 
-      return {success: true, data: "Role config updated successfully"}
+      return { success: true, data: 'Role config updated successfully' };
     } catch (error) {
-      console.error("Error updating role config:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error updating role config:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -172,7 +172,7 @@ export class PermissionsService {
     resource: ResourceType,
     action: PermissionAction,
     grantedBy: string,
-    reason?: string
+    reason?: string,
   ): Promise<PermissionServiceResult> {
     try {
       const permissionOverride: UserPermissionOverride = {
@@ -183,15 +183,15 @@ export class PermissionsService {
         reason,
         grantedBy,
         grantedAt: new Date(),
-      }
+      };
 
-      const overrideDoc = doc(db, USER_PERMISSIONS_COLLECTION, `${userId}_${resource}_${action}`)
-      await setDoc(overrideDoc, permissionOverride)
+      const overrideDoc = doc(db, USER_PERMISSIONS_COLLECTION, `${userId}_${resource}_${action}`);
+      await setDoc(overrideDoc, permissionOverride);
 
-      return {success: true, data: "Permission granted successfully"}
+      return { success: true, data: 'Permission granted successfully' };
     } catch (error) {
-      console.error("Error granting user permission:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error granting user permission:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -200,16 +200,16 @@ export class PermissionsService {
    */ async revokeUserPermission(
     userId: string,
     resource: ResourceType,
-    action: PermissionAction
+    action: PermissionAction,
   ): Promise<PermissionServiceResult> {
     try {
-      const overrideDoc = doc(db, USER_PERMISSIONS_COLLECTION, `${userId}_${resource}_${action}`)
-      await deleteDoc(overrideDoc)
+      const overrideDoc = doc(db, USER_PERMISSIONS_COLLECTION, `${userId}_${resource}_${action}`);
+      await deleteDoc(overrideDoc);
 
-      return {success: true, data: "Permission revoked successfully"}
+      return { success: true, data: 'Permission revoked successfully' };
     } catch (error) {
-      console.error("Error revoking user permission:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error revoking user permission:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -217,22 +217,22 @@ export class PermissionsService {
    * Get user permission overrides
    */
   async getUserPermissionOverrides(
-    userId: string
+    userId: string,
   ): Promise<PermissionServiceResult<UserPermissionOverride[]>> {
     try {
-      const q = query(collection(db, USER_PERMISSIONS_COLLECTION), where("userId", "==", userId))
+      const q = query(collection(db, USER_PERMISSIONS_COLLECTION), where('userId', '==', userId));
 
-      const querySnapshot = await getDocs(q)
-      const overrides: UserPermissionOverride[] = []
+      const querySnapshot = await getDocs(q);
+      const overrides: UserPermissionOverride[] = [];
 
       querySnapshot.forEach((doc) => {
-        overrides.push(doc.data() as UserPermissionOverride)
-      })
+        overrides.push(doc.data() as UserPermissionOverride);
+      });
 
-      return {success: true, data: overrides}
+      return { success: true, data: overrides };
     } catch (error) {
-      console.error("Error getting user permission overrides:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error getting user permission overrides:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -242,28 +242,28 @@ export class PermissionsService {
     userId: string,
     userRole: UserRole,
     resource: ResourceType,
-    action: PermissionAction
+    action: PermissionAction,
   ): Promise<PermissionServiceResult<boolean>> {
     try {
       // First check for user-specific override
-      const overrideDoc = doc(db, USER_PERMISSIONS_COLLECTION, `${userId}_${resource}_${action}`)
-      const overrideSnap = await getDoc(overrideDoc)
+      const overrideDoc = doc(db, USER_PERMISSIONS_COLLECTION, `${userId}_${resource}_${action}`);
+      const overrideSnap = await getDoc(overrideDoc);
 
       if (overrideSnap.exists()) {
-        const override = overrideSnap.data() as UserPermissionOverride
-        return {success: true, data: override.granted}
+        const override = overrideSnap.data() as UserPermissionOverride;
+        return { success: true, data: override.granted };
       }
 
       // Fall back to role-based permissions
-      const rolePermissions = ROLE_PERMISSIONS[userRole] || []
+      const rolePermissions = ROLE_PERMISSIONS[userRole] || [];
       const hasPermission = rolePermissions.some(
-        (permission) => permission.resource === resource && permission.action === action
-      )
+        (permission) => permission.resource === resource && permission.action === action,
+      );
 
-      return {success: true, data: hasPermission}
+      return { success: true, data: hasPermission };
     } catch (error) {
-      console.error("Error checking user permission:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error checking user permission:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -272,18 +272,18 @@ export class PermissionsService {
    */
   async getAllRoles(): Promise<PermissionServiceResult<FirestoreRoleConfig[]>> {
     try {
-      const q = query(collection(db, ROLES_COLLECTION))
-      const querySnapshot = await getDocs(q)
-      const roles: FirestoreRoleConfig[] = []
+      const q = query(collection(db, ROLES_COLLECTION));
+      const querySnapshot = await getDocs(q);
+      const roles: FirestoreRoleConfig[] = [];
 
       querySnapshot.forEach((doc) => {
-        roles.push(doc.data() as FirestoreRoleConfig)
-      })
+        roles.push(doc.data() as FirestoreRoleConfig);
+      });
 
-      return {success: true, data: roles}
+      return { success: true, data: roles };
     } catch (error) {
-      console.error("Error getting all roles:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error getting all roles:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -292,20 +292,20 @@ export class PermissionsService {
    */
   async getAllPermissions(): Promise<
     PermissionServiceResult<Record<string, FirestorePermissionConfig>>
-  > {
+    > {
     try {
-      const q = query(collection(db, PERMISSIONS_COLLECTION))
-      const querySnapshot = await getDocs(q)
-      const permissions: Record<string, FirestorePermissionConfig> = {}
+      const q = query(collection(db, PERMISSIONS_COLLECTION));
+      const querySnapshot = await getDocs(q);
+      const permissions: Record<string, FirestorePermissionConfig> = {};
 
       querySnapshot.forEach((doc) => {
-        permissions[doc.id] = doc.data() as FirestorePermissionConfig
-      })
+        permissions[doc.id] = doc.data() as FirestorePermissionConfig;
+      });
 
-      return {success: true, data: permissions}
+      return { success: true, data: permissions };
     } catch (error) {
-      console.error("Error getting all permissions:", error)
-      return {success: false, error: error instanceof Error ? error.message : "Unknown error"}
+      console.error('Error getting all permissions:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -316,7 +316,7 @@ export class PermissionsService {
     return (
       Object.values(ResourceType).includes(permission.resource) &&
       Object.values(PermissionAction).includes(permission.action)
-    )
+    );
   }
 
   /**
@@ -324,16 +324,16 @@ export class PermissionsService {
    */
   private getRoleDisplayName(role: UserRole): string {
     const displayNames: Record<UserRole, string> = {
-      [UserRole.MAESTRO]: "Maestro",
-      [UserRole.DIRECTOR]: "Director",
-      [UserRole.ADMINISTRADOR]: "Administrador",
-      [UserRole.SUPERUSUARIO]: "Superusuario",
-      [UserRole.COLABORADOR]: "Colaborador",
-      [UserRole.MONITOR]: "Monitor",
-    }
-    return displayNames[role] || role
+      [UserRole.MAESTRO]: 'Maestro',
+      [UserRole.DIRECTOR]: 'Director',
+      [UserRole.ADMINISTRADOR]: 'Administrador',
+      [UserRole.SUPERUSUARIO]: 'Superusuario',
+      [UserRole.COLABORADOR]: 'Colaborador',
+      [UserRole.MONITOR]: 'Monitor',
+    };
+    return displayNames[role] || role;
   }
 }
 
 // Singleton instance
-export const permissionsService = new PermissionsService()
+export const permissionsService = new PermissionsService();

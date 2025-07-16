@@ -1,348 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {format, subMonths, startOfMonth, endOfMonth} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAnalyticsStore} from "../store/analytics"
-import {useStudentsStore} from "../../Students/store/students"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useContentsStore} from "../../Contents/store/contents"
-import {useInstrumentoStore} from "../../Instruments/store/instrumento"
-
-// Componentes generales
-import PerformanceKpi from "../components/PerformanceKpi.vue"
-import ChartContainer from "../components/ChartContainer.vue"
-
-// Componentes de análisis específicos
-import StudentAnalytics from "../components/StudentAnalytics.vue"
-import TeacherAnalytics from "../components/TeacherAnalytics.vue"
-import AttendanceAnalytics from "../components/AttendanceAnalytics.vue"
-import AnalysisPanel from "../components/AnalysisPanel.vue"
-import ReportGenerator from "../components/ReportGenerator.vue"
-
-// Íconos
-import {
-  UserIcon,
-  UsersIcon,
-  UserPlusIcon,
-  ChartBarIcon,
-  CalendarIcon,
-  AcademicCapIcon,
-} from "@heroicons/vue/24/outline"
-import {Line, Doughnut} from "vue-chartjs"
-
-// Stores
-const analyticsStore = useAnalyticsStore()
-const studentsStore = useStudentsStore()
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-const attendanceStore = useAttendanceStore()
-const contentsStore = useContentsStore()
-const instrumentsStore = useInstrumentoStore()
-
-// Dashboard state
-const isLoading = ref(true)
-const error = ref("")
-const activeTab = ref("overview")
-
-// Lista de pestañas disponibles
-const tabs = [
-  {id: "overview", label: "Resumen"},
-  {id: "students", label: "Alumnos"},
-  {id: "teachers", label: "Maestros"},
-  {id: "attendance", label: "Asistencias"},
-  {id: "academic", label: "Contenidos y Evaluaciones"},
-  {id: "reports", label: "Informes"},
-]
-
-// Filtros de tiempo
-const timeRange = ref({
-  startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
-  endDate: format(endOfMonth(new Date()), "yyyy-MM-dd"),
-  selectedRange: "currentMonth",
-})
-
-// Opciones de rango de tiempo
-const timeRangeOptions = [
-  {value: "last3Months", label: "Últimos 3 meses"},
-  {value: "last6Months", label: "Últimos 6 meses"},
-  {value: "lastYear", label: "Último año"},
-  {value: "currentMonth", label: "Mes actual"},
-  {value: "custom", label: "Personalizado"},
-]
-
-// Ejemplo de computed agregando datos cruzados
-const dashboardData = ref({
-  totalStudents: 0,
-  totalTeachers: 0,
-  totalClasses: 0,
-  totalInstruments: 0,
-  averageAttendance: 0,
-  averagePerformance: 0,
-  studentsGrowth: 0,
-  instruments: {
-    distribution: [],
-    availableCount: 0,
-    assignedCount: 0,
-    needsRepairCount: 0,
-    mostPopular: "",
-  },
-  classes: {
-    bySize: [],
-    byHours: [],
-    byContent: [],
-    mostPopular: "",
-  },
-  teachers: {
-    byClasses: [],
-    byStudents: [],
-    byHours: [],
-    topPerformer: "",
-  },
-  attendance: {
-    byMonth: [],
-    byClass: [],
-    byDay: [],
-  },
-  performance: {
-    distribution: {excellent: 0, good: 0, average: 0, needsImprovement: 0},
-    byClass: [],
-    trend: [],
-  },
-  students: {
-    atRisk: [],
-    topPerformers: [],
-    byInstrument: [],
-    byLevel: [],
-  },
-})
-
-// Computed que agrega datos cruzados
-const aggregatedData = computed(() => {
-  return {
-    totalStudents: dashboardData.value.totalStudents,
-    totalTeachers: dashboardData.value.totalTeachers,
-    totalClasses: dashboardData.value.totalClasses,
-    averageAttendance: dashboardData.value.averageAttendance,
-    averagePerformance: dashboardData.value.averagePerformance,
-    studentsGrowth: dashboardData.value.studentsGrowth,
-  }
-})
-
-// Filter state
-const filters = ref({
-  teacherId: "",
-  classId: "",
-  instrument: "",
-  level: "",
-})
-
-// Cargar datos del dashboard
-const loadDashboardData = async () => {
-  isLoading.value = true
-  error.value = ""
-
-  try {
-    await Promise.all([
-      studentsStore.fetchStudents(),
-      teachersStore.fetchTeachers(),
-      classesStore.fetchClasses(),
-      attendanceStore.fetchAttendance(),
-      contentsStore.fetchContents(),
-      instrumentsStore.fetchInstruments(),
-      analyticsStore.fetchAnalytics(),
-    ])
-
-    // Datos básicos
-    dashboardData.value.totalStudents = studentsStore.students.length
-    dashboardData.value.totalTeachers = teachersStore.teachers.length
-    dashboardData.value.totalClasses = classesStore.classes.length
-    dashboardData.value.totalInstruments = instrumentsStore.instruments.length
-
-    // Datos de asistencia
-    dashboardData.value.averageAttendance = analyticsStore.attendanceMetrics.averageRate || 0
-
-    // Datos de rendimiento
-    dashboardData.value.averagePerformance = analyticsStore.studentMetrics.averagePerformance || 0
-
-    // Crecimiento de estudiantes (simulado)
-    dashboardData.value.studentsGrowth = analyticsStore.studentMetrics.growth || 5.2
-
-    // Distribución de rendimiento
-    dashboardData.value.performance.distribution = analyticsStore.studentMetrics
-      .performanceDistribution || {
-      excellent: 25,
-      good: 45,
-      average: 20,
-      needsImprovement: 10,
-    }
-
-    // Datos para gráficos de asistencia
-    if (analyticsStore.attendanceMetrics.weekdayAttendance) {
-      // Si existen datos reales, usarlos
-    }
-  } catch (err) {
-    console.error("Error loading dashboard data:", err)
-    error.value = "Error cargando datos del dashboard"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Método para cambiar de pestaña
-const changeTab = (tabId: string) => {
-  activeTab.value = tabId
-}
-
-// Método para aplicar filtros de fecha
-const applyTimeFilter = () => {
-  if (timeRange.value.selectedRange === "currentMonth") {
-    timeRange.value.startDate = format(startOfMonth(new Date()), "yyyy-MM-dd")
-    timeRange.value.endDate = format(endOfMonth(new Date()), "yyyy-MM-dd")
-  } else if (timeRange.value.selectedRange === "last3Months") {
-    timeRange.value.startDate = format(startOfMonth(subMonths(new Date(), 3)), "yyyy-MM-dd")
-    timeRange.value.endDate = format(new Date(), "yyyy-MM-dd")
-  } else if (timeRange.value.selectedRange === "last6Months") {
-    timeRange.value.startDate = format(startOfMonth(subMonths(new Date(), 6)), "yyyy-MM-dd")
-    timeRange.value.endDate = format(new Date(), "yyyy-MM-dd")
-  } else if (timeRange.value.selectedRange === "lastYear") {
-    timeRange.value.startDate = format(startOfMonth(subMonths(new Date(), 12)), "yyyy-MM-dd")
-    timeRange.value.endDate = format(new Date(), "yyyy-MM-dd")
-  }
-
-  // Vuelve a cargar datos con el nuevo filtro
-  loadDashboardData()
-}
-
-// Manejador para el cambio de periodo desde AnalysisPanel
-const handlePeriodChange = (data: {
-  period: string
-  dateRange: {startDate: string; endDate: string} | null
-}) => {
-  // Mapear el periodId a los rangos de tiempo correspondientes
-  if (data.period === "current") {
-    timeRange.value.selectedRange = "currentMonth"
-  } else if (data.period === "last") {
-    timeRange.value.selectedRange = "last3Months"
-  } else if (data.period === "custom") {
-    timeRange.value.selectedRange = "custom"
-    // Si hay un rango de fechas personalizado, actualizarlo
-    if (data.dateRange) {
-      timeRange.value.startDate = data.dateRange.startDate
-      timeRange.value.endDate = data.dateRange.endDate
-    }
-  }
-
-  applyTimeFilter()
-}
-
-// Observar cambios en el filtro de tiempo
-watch(
-  () => timeRange.value.selectedRange,
-  (newValue) => {
-    if (newValue !== "custom") {
-      applyTimeFilter()
-    }
-  }
-)
-
-// Chart configuration options
-const commonChartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "top" as const,
-    },
-    tooltip: {
-      mode: "index",
-      intersect: false,
-    },
-  },
-})
-
-// Chart data
-const attendanceByDayChart = computed(() => {
-  return {
-    labels: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"],
-    datasets: [
-      {
-        label: "Asistencia",
-        data: [90, 85, 88, 92, 87], // Sample data
-        backgroundColor: "rgba(99, 102, 241, 0.5)",
-        borderColor: "rgb(99, 102, 241)",
-        borderWidth: 1,
-      },
-    ],
-  }
-})
-
-const performanceDistributionChart = computed(() => {
-  return {
-    labels: ["Excelente", "Bueno", "Promedio", "Necesita Mejorar"],
-    datasets: [
-      {
-        label: "Distribución de Rendimiento",
-        data: [
-          dashboardData.value.performance.distribution.excellent,
-          dashboardData.value.performance.distribution.good,
-          dashboardData.value.performance.distribution.average,
-          dashboardData.value.performance.distribution.needsImprovement,
-        ],
-        backgroundColor: [
-          "rgba(34, 197, 94, 0.6)",
-          "rgba(59, 130, 246, 0.6)",
-          "rgba(250, 204, 21, 0.6)",
-          "rgba(239, 68, 68, 0.6)",
-        ],
-        borderWidth: 1,
-      },
-    ],
-  }
-})
-
-// Datos para el panel de análisis en la pestaña académica
-const attendanceByDayOfWeek = computed(() => {
-  return {
-    labels: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"],
-    datasets: [
-      {
-        label: "Tasa de Asistencia (%)",
-        data: [90, 87, 90, 88, 86, 91, 85],
-        backgroundColor: "rgba(99, 102, 241, 0.5)",
-        borderColor: "rgb(99, 102, 241)",
-        borderWidth: 1,
-      },
-    ],
-  }
-})
-
-const studentPerformance = computed(() => performanceDistributionChart.value)
-
-const atRiskStudents = computed(() => [
-  {id: "1", name: "Juan Pérez", instrument: "Guitarra", performance: 62},
-  {id: "2", name: "María Gómez", instrument: "Piano", performance: 58},
-  {id: "3", name: "Carlos López", instrument: "Violín", performance: 65},
-])
-
-const bestAttendanceClasses = computed(() => [
-  {id: "1", name: "Guitarra Nivel 3", total: 30, attendanceRate: 95},
-  {id: "2", name: "Piano Avanzado", total: 25, attendanceRate: 92},
-  {id: "3", name: "Teoría Musical", total: 40, attendanceRate: 88},
-])
-
-const lowestPerformanceIndicators = computed(() => [
-  {name: "Lectura a primera vista", subject: "Piano", score: 67},
-  {name: "Técnicas avanzadas", subject: "Guitarra", score: 65},
-  {name: "Armonización", subject: "Teoría", score: 70},
-])
-
-onMounted(async () => {
-  await loadDashboardData()
-})
-</script>
-
 <template>
   <div class="analytics-dashboard p-4 space-y-6">
     <header class="flex justify-between items-center flex-wrap gap-4">
@@ -641,3 +296,348 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAnalyticsStore } from '../store/analytics';
+import { useStudentsStore } from '../../Students/store/students';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useContentsStore } from '../../Contents/store/contents';
+import { useInstrumentoStore } from '../../Instruments/store/instrumento';
+
+// Componentes generales
+import PerformanceKpi from '../components/PerformanceKpi.vue';
+import ChartContainer from '../components/ChartContainer.vue';
+
+// Componentes de análisis específicos
+import StudentAnalytics from '../components/StudentAnalytics.vue';
+import TeacherAnalytics from '../components/TeacherAnalytics.vue';
+import AttendanceAnalytics from '../components/AttendanceAnalytics.vue';
+import AnalysisPanel from '../components/AnalysisPanel.vue';
+import ReportGenerator from '../components/ReportGenerator.vue';
+
+// Íconos
+import {
+  UserIcon,
+  UsersIcon,
+  UserPlusIcon,
+  ChartBarIcon,
+  CalendarIcon,
+  AcademicCapIcon,
+} from '@heroicons/vue/24/outline';
+import { Line, Doughnut } from 'vue-chartjs';
+
+// Stores
+const analyticsStore = useAnalyticsStore();
+const studentsStore = useStudentsStore();
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+const attendanceStore = useAttendanceStore();
+const contentsStore = useContentsStore();
+const instrumentsStore = useInstrumentoStore();
+
+// Dashboard state
+const isLoading = ref(true);
+const error = ref('');
+const activeTab = ref('overview');
+
+// Lista de pestañas disponibles
+const tabs = [
+  { id: 'overview', label: 'Resumen' },
+  { id: 'students', label: 'Alumnos' },
+  { id: 'teachers', label: 'Maestros' },
+  { id: 'attendance', label: 'Asistencias' },
+  { id: 'academic', label: 'Contenidos y Evaluaciones' },
+  { id: 'reports', label: 'Informes' },
+];
+
+// Filtros de tiempo
+const timeRange = ref({
+  startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+  endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+  selectedRange: 'currentMonth',
+});
+
+// Opciones de rango de tiempo
+const timeRangeOptions = [
+  { value: 'last3Months', label: 'Últimos 3 meses' },
+  { value: 'last6Months', label: 'Últimos 6 meses' },
+  { value: 'lastYear', label: 'Último año' },
+  { value: 'currentMonth', label: 'Mes actual' },
+  { value: 'custom', label: 'Personalizado' },
+];
+
+// Ejemplo de computed agregando datos cruzados
+const dashboardData = ref({
+  totalStudents: 0,
+  totalTeachers: 0,
+  totalClasses: 0,
+  totalInstruments: 0,
+  averageAttendance: 0,
+  averagePerformance: 0,
+  studentsGrowth: 0,
+  instruments: {
+    distribution: [],
+    availableCount: 0,
+    assignedCount: 0,
+    needsRepairCount: 0,
+    mostPopular: '',
+  },
+  classes: {
+    bySize: [],
+    byHours: [],
+    byContent: [],
+    mostPopular: '',
+  },
+  teachers: {
+    byClasses: [],
+    byStudents: [],
+    byHours: [],
+    topPerformer: '',
+  },
+  attendance: {
+    byMonth: [],
+    byClass: [],
+    byDay: [],
+  },
+  performance: {
+    distribution: { excellent: 0, good: 0, average: 0, needsImprovement: 0 },
+    byClass: [],
+    trend: [],
+  },
+  students: {
+    atRisk: [],
+    topPerformers: [],
+    byInstrument: [],
+    byLevel: [],
+  },
+});
+
+// Computed que agrega datos cruzados
+const aggregatedData = computed(() => {
+  return {
+    totalStudents: dashboardData.value.totalStudents,
+    totalTeachers: dashboardData.value.totalTeachers,
+    totalClasses: dashboardData.value.totalClasses,
+    averageAttendance: dashboardData.value.averageAttendance,
+    averagePerformance: dashboardData.value.averagePerformance,
+    studentsGrowth: dashboardData.value.studentsGrowth,
+  };
+});
+
+// Filter state
+const filters = ref({
+  teacherId: '',
+  classId: '',
+  instrument: '',
+  level: '',
+});
+
+// Cargar datos del dashboard
+const loadDashboardData = async () => {
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    await Promise.all([
+      studentsStore.fetchStudents(),
+      teachersStore.fetchTeachers(),
+      classesStore.fetchClasses(),
+      attendanceStore.fetchAttendance(),
+      contentsStore.fetchContents(),
+      instrumentsStore.fetchInstruments(),
+      analyticsStore.fetchAnalytics(),
+    ]);
+
+    // Datos básicos
+    dashboardData.value.totalStudents = studentsStore.students.length;
+    dashboardData.value.totalTeachers = teachersStore.teachers.length;
+    dashboardData.value.totalClasses = classesStore.classes.length;
+    dashboardData.value.totalInstruments = instrumentsStore.instruments.length;
+
+    // Datos de asistencia
+    dashboardData.value.averageAttendance = analyticsStore.attendanceMetrics.averageRate || 0;
+
+    // Datos de rendimiento
+    dashboardData.value.averagePerformance = analyticsStore.studentMetrics.averagePerformance || 0;
+
+    // Crecimiento de estudiantes (simulado)
+    dashboardData.value.studentsGrowth = analyticsStore.studentMetrics.growth || 5.2;
+
+    // Distribución de rendimiento
+    dashboardData.value.performance.distribution = analyticsStore.studentMetrics
+      .performanceDistribution || {
+      excellent: 25,
+      good: 45,
+      average: 20,
+      needsImprovement: 10,
+    };
+
+    // Datos para gráficos de asistencia
+    if (analyticsStore.attendanceMetrics.weekdayAttendance) {
+      // Si existen datos reales, usarlos
+    }
+  } catch (err) {
+    console.error('Error loading dashboard data:', err);
+    error.value = 'Error cargando datos del dashboard';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Método para cambiar de pestaña
+const changeTab = (tabId: string) => {
+  activeTab.value = tabId;
+};
+
+// Método para aplicar filtros de fecha
+const applyTimeFilter = () => {
+  if (timeRange.value.selectedRange === 'currentMonth') {
+    timeRange.value.startDate = format(startOfMonth(new Date()), 'yyyy-MM-dd');
+    timeRange.value.endDate = format(endOfMonth(new Date()), 'yyyy-MM-dd');
+  } else if (timeRange.value.selectedRange === 'last3Months') {
+    timeRange.value.startDate = format(startOfMonth(subMonths(new Date(), 3)), 'yyyy-MM-dd');
+    timeRange.value.endDate = format(new Date(), 'yyyy-MM-dd');
+  } else if (timeRange.value.selectedRange === 'last6Months') {
+    timeRange.value.startDate = format(startOfMonth(subMonths(new Date(), 6)), 'yyyy-MM-dd');
+    timeRange.value.endDate = format(new Date(), 'yyyy-MM-dd');
+  } else if (timeRange.value.selectedRange === 'lastYear') {
+    timeRange.value.startDate = format(startOfMonth(subMonths(new Date(), 12)), 'yyyy-MM-dd');
+    timeRange.value.endDate = format(new Date(), 'yyyy-MM-dd');
+  }
+
+  // Vuelve a cargar datos con el nuevo filtro
+  loadDashboardData();
+};
+
+// Manejador para el cambio de periodo desde AnalysisPanel
+const handlePeriodChange = (data: {
+  period: string
+  dateRange: {startDate: string; endDate: string} | null
+}) => {
+  // Mapear el periodId a los rangos de tiempo correspondientes
+  if (data.period === 'current') {
+    timeRange.value.selectedRange = 'currentMonth';
+  } else if (data.period === 'last') {
+    timeRange.value.selectedRange = 'last3Months';
+  } else if (data.period === 'custom') {
+    timeRange.value.selectedRange = 'custom';
+    // Si hay un rango de fechas personalizado, actualizarlo
+    if (data.dateRange) {
+      timeRange.value.startDate = data.dateRange.startDate;
+      timeRange.value.endDate = data.dateRange.endDate;
+    }
+  }
+
+  applyTimeFilter();
+};
+
+// Observar cambios en el filtro de tiempo
+watch(
+  () => timeRange.value.selectedRange,
+  (newValue) => {
+    if (newValue !== 'custom') {
+      applyTimeFilter();
+    }
+  },
+);
+
+// Chart configuration options
+const commonChartOptions = ref({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top' as const,
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+    },
+  },
+});
+
+// Chart data
+const attendanceByDayChart = computed(() => {
+  return {
+    labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
+    datasets: [
+      {
+        label: 'Asistencia',
+        data: [90, 85, 88, 92, 87], // Sample data
+        backgroundColor: 'rgba(99, 102, 241, 0.5)',
+        borderColor: 'rgb(99, 102, 241)',
+        borderWidth: 1,
+      },
+    ],
+  };
+});
+
+const performanceDistributionChart = computed(() => {
+  return {
+    labels: ['Excelente', 'Bueno', 'Promedio', 'Necesita Mejorar'],
+    datasets: [
+      {
+        label: 'Distribución de Rendimiento',
+        data: [
+          dashboardData.value.performance.distribution.excellent,
+          dashboardData.value.performance.distribution.good,
+          dashboardData.value.performance.distribution.average,
+          dashboardData.value.performance.distribution.needsImprovement,
+        ],
+        backgroundColor: [
+          'rgba(34, 197, 94, 0.6)',
+          'rgba(59, 130, 246, 0.6)',
+          'rgba(250, 204, 21, 0.6)',
+          'rgba(239, 68, 68, 0.6)',
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+});
+
+// Datos para el panel de análisis en la pestaña académica
+const attendanceByDayOfWeek = computed(() => {
+  return {
+    labels: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
+    datasets: [
+      {
+        label: 'Tasa de Asistencia (%)',
+        data: [90, 87, 90, 88, 86, 91, 85],
+        backgroundColor: 'rgba(99, 102, 241, 0.5)',
+        borderColor: 'rgb(99, 102, 241)',
+        borderWidth: 1,
+      },
+    ],
+  };
+});
+
+const studentPerformance = computed(() => performanceDistributionChart.value);
+
+const atRiskStudents = computed(() => [
+  { id: '1', name: 'Juan Pérez', instrument: 'Guitarra', performance: 62 },
+  { id: '2', name: 'María Gómez', instrument: 'Piano', performance: 58 },
+  { id: '3', name: 'Carlos López', instrument: 'Violín', performance: 65 },
+]);
+
+const bestAttendanceClasses = computed(() => [
+  { id: '1', name: 'Guitarra Nivel 3', total: 30, attendanceRate: 95 },
+  { id: '2', name: 'Piano Avanzado', total: 25, attendanceRate: 92 },
+  { id: '3', name: 'Teoría Musical', total: 40, attendanceRate: 88 },
+]);
+
+const lowestPerformanceIndicators = computed(() => [
+  { name: 'Lectura a primera vista', subject: 'Piano', score: 67 },
+  { name: 'Técnicas avanzadas', subject: 'Guitarra', score: 65 },
+  { name: 'Armonización', subject: 'Teoría', score: 70 },
+]);
+
+onMounted(async () => {
+  await loadDashboardData();
+});
+</script>

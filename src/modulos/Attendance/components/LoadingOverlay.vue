@@ -1,15 +1,15 @@
-<script setup lang="ts">
-defineProps<{
-  message?: string
-}>()
-</script>
-
 <template>
   <div class="loading-overlay">
     <div class="loader" />
     <p>{{ message || "Cargando datos..." }}</p>
   </div>
 </template>
+
+<script setup lang="ts">
+defineProps<{
+  message?: string
+}>();
+</script>
 
 <style scoped>
 .loading-overlay {

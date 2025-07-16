@@ -28,72 +28,72 @@
 </template>
 
 <script setup lang="ts">
-import {ref, watch} from "vue"
-import {XMarkIcon} from "@heroicons/vue/24/outline"
-import Calendar from "../../../components/Calendar.vue"
+import { ref, watch } from 'vue';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
+import Calendar from '../../../components/Calendar.vue';
 
-import {useAttendanceStore} from "../store/attendance"
+import { useAttendanceStore } from '../store/attendance';
 
-const attendanceStore = useAttendanceStore()
+const attendanceStore = useAttendanceStore();
 
 const props = defineProps<{
   modelValue: boolean
   initialDate: string
   markedDates?: string[]
   classId?: string
-}>()
+}>();
 
 const emit = defineEmits<{
-  (e: "update:modelValue", value: boolean): void
-  (e: "select", date: string): void
-  (e: "month-change", month: Date): void
-}>()
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'select', date: string): void
+  (e: 'month-change', month: Date): void
+}>();
 
-const selectedDate = ref(props.initialDate)
-const currentMonth = ref(new Date())
+const selectedDate = ref(props.initialDate);
+const currentMonth = ref(new Date());
 
 // Actualizar selectedDate si cambia initialDate
 watch(
   () => props.initialDate,
   (newDate) => {
-    selectedDate.value = newDate
-  }
-)
+    selectedDate.value = newDate;
+  },
+);
 
 // Manejar selección de fecha en el calendario
 const handleSelect = (date: any) => {
-  if (typeof date === "string") {
-    selectedDate.value = date
+  if (typeof date === 'string') {
+    selectedDate.value = date;
   } else if (date && date.date) {
-    selectedDate.value = date.date
+    selectedDate.value = date.date;
   }
-}
+};
 
 // Manejar cambio de mes en el calendario
 const handleMonthChange = (newMonth: Date) => {
-  currentMonth.value = newMonth
-  emit("month-change", newMonth)
+  currentMonth.value = newMonth;
+  emit('month-change', newMonth);
   // Cargar registros de asistencia para el nuevo mes
   if (props.classId) {
     attendanceStore.fetchAttendanceRecords({
       classId: props.classId,
       startDate: newMonth,
       endDate: new Date(newMonth.getFullYear(), newMonth.getMonth() + 1, 0),
-    })
+    });
   } else {
     attendanceStore.fetchAllAttendanceDates(
       new Date(newMonth.getFullYear(), newMonth.getMonth(), 1),
-      new Date(newMonth.getFullYear(), newMonth.getMonth() + 1, 0)
-    )
+      new Date(newMonth.getFullYear(), newMonth.getMonth() + 1, 0),
+    );
   }
-}
+};
 
 const confirmSelection = () => {
-  emit("select", selectedDate.value)
-  close()
-}
+  emit('select', selectedDate.value);
+  close();
+};
 
 const close = () => {
-  emit("update:modelValue", false)
-}
+  emit('update:modelValue', false);
+};
 </script>

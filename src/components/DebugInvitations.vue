@@ -62,53 +62,53 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {useAuthStore} from "../stores/auth"
-import {useTeacherNotifications} from "../modulos/Teachers/composables/useTeacherNotifications"
-import {createClassInvitationNotification} from "../modulos/Teachers/services/teacherNotifications"
+import { ref, computed } from 'vue';
+import { useAuthStore } from '../stores/auth';
+import { useTeacherNotifications } from '../modulos/Teachers/composables/useTeacherNotifications';
+import { createClassInvitationNotification } from '../modulos/Teachers/services/teacherNotifications';
 
-const showDebug = ref(false)
-const isDev = ref(import.meta.env.DEV)
+const showDebug = ref(false);
+const isDev = ref(import.meta.env.DEV);
 
-const authStore = useAuthStore()
-const {notifications, pendingInvitations, isLoading, error, loadNotifications} =
-  useTeacherNotifications()
+const authStore = useAuthStore();
+const { notifications, pendingInvitations, isLoading, error, loadNotifications } =
+  useTeacherNotifications();
 
 const shouldShowInvitationManager = computed(() => {
   return (
     authStore.isLoggedIn &&
     authStore.user &&
-    (authStore.user.role?.toLowerCase() === "maestro" ||
-      authStore.user.role?.toLowerCase() === "profesor")
-  )
-})
+    (authStore.user.role?.toLowerCase() === 'maestro' ||
+      authStore.user.role?.toLowerCase() === 'profesor')
+  );
+});
 
 const createTestInvitation = async () => {
   if (!authStore.user?.uid) {
-    alert("No hay usuario autenticado")
-    return
+    alert('No hay usuario autenticado');
+    return;
   }
 
   try {
     await createClassInvitationNotification({
       teacherId: authStore.user.uid,
-      teacherName: authStore.user.displayName || "Usuario de Prueba",
-      classId: "test-class-" + Date.now(),
-      className: "Clase de Prueba",
-      fromUserId: "system",
-      fromUserName: "Sistema de Prueba",
+      teacherName: authStore.user.displayName || 'Usuario de Prueba',
+      classId: 'test-class-' + Date.now(),
+      className: 'Clase de Prueba',
+      fromUserId: 'system',
+      fromUserName: 'Sistema de Prueba',
       permissions: {
         canTakeAttendance: true,
         canAddObservations: true,
         canViewAttendanceHistory: true,
       },
-    })
+    });
 
-    alert("Invitación de prueba creada")
+    alert('Invitación de prueba creada');
   } catch (err: any) {
-    alert("Error creando invitación: " + err.message)
+    alert('Error creando invitación: ' + err.message);
   }
-}
+};
 </script>
 
 <style scoped>

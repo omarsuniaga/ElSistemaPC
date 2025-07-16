@@ -10,37 +10,28 @@
     "dev": "vite",
     "dev:clean": "npm run clean-processes && npm run dev",
     "clean-processes": "powershell -ExecutionPolicy Bypass -File scripts/fix-websocket.ps1",
-    
     "build": "vite build",
     "build:prod": "cross-env NODE_ENV=production vite build",
     "build:analyze": "npm run build && tsx scripts/analyze-bundle.ts",
     "preview": "vite preview",
-    
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:montaje": "vitest --config vitest.config.montaje.ts",
-    
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx,.vue --fix --ignore-path .gitignore",
+    "lint": "cross-env NODE_OPTIONS=--max-old-space-size=4096 eslint . --ext .js,.jsx,.ts,.tsx,.vue --fix --ignore-path .gitignore",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,vue,json,md}\" --ignore-path .gitignore",
     "type-check": "vue-tsc --noEmit",
     "validate": "npm run lint && npm run format -- --check && npm run type-check",
-
     "predeploy": "tsx src/utils/cli/migrate.ts",
     "deploy": "npm run build && firebase deploy",
-    
     "permissions": "tsx scripts/setup-permissions.ts",
     "permissions:validate": "tsx scripts/validate-permissions.ts",
-    
     "imports": "node scripts/advanced-import-resolver.js",
     "imports:analyze": "node scripts/safe-import-analyzer.js",
-    
     "backup": "node scripts/backup-alumnos.js",
     "backup:list": "node -e \"import('./scripts/backup-alumnos.js').then(m => m.listAvailableBackups())\"",
-    
     "migrate": "node scripts/safe-migration-process.js",
     "migrate:csv": "node scripts/migrate-students-from-csv.js",
-    
     "standards": "node scripts/check-standards.js",
     "standards:show": "node -e \"import('./src/standards/development.standards.js').then(m => console.log(m.getFormattedStandards()))\""
   },
@@ -49,6 +40,7 @@
     "@headlessui/vue": "^1.7.23",
     "@heroicons/vue": "^2.1.1",
     "@types/chart.js": "^2.9.41",
+    "@types/file-saver": "^2.0.7",
     "@vuepic/vue-datepicker": "^7.4.0",
     "@vueuse/components": "^10.7.2",
     "@vueuse/core": "^10.11.1",
@@ -63,6 +55,7 @@
     "dompurify": "^3.2.4",
     "dotenv": "^16.5.0",
     "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
     "firebase": "^11.9.1",
     "firebase-admin": "^13.2.0",
     "html2pdf.js": "^0.10.3",
@@ -109,6 +102,7 @@
     "cspell": "^9.1.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.0",
     "eslint-plugin-vue": "^9.20.1",
     "glob": "^11.0.3",
@@ -134,8 +128,8 @@
     "workbox-window": "^7.3.0"
   },
   "husky": {
-  "hooks": {
-    "pre-commit": "npm run standards:check && npm run lint"
+    "hooks": {
+      "pre-commit": "npm run standards:check && npm run lint"
+    }
   }
-}
 }

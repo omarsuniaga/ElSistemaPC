@@ -66,8 +66,8 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from "vue"
-import {useRBACStore} from "@/stores/rbacStore"
+import { computed, ref } from 'vue';
+import { useRBACStore } from '@/stores/rbacStore';
 import {
   UserPlusIcon,
   AcademicCapIcon,
@@ -76,27 +76,27 @@ import {
   CogIcon,
   ChartBarIcon,
   ArrowRightIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface Props {
   title: string
   description: string
   icon: string
-  color?: "blue" | "green" | "purple" | "orange" | "red" | "yellow" | "indigo"
+  color?: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'yellow' | 'indigo'
   permission?: {module: string; action: string}
   loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  color: "blue",
+  color: 'blue',
   loading: false,
-})
+});
 
 const emit = defineEmits<{
   click: []
-}>()
+}>();
 
-const rbacStore = useRBACStore()
+const rbacStore = useRBACStore();
 
 // Icon mapping
 const iconComponents = {
@@ -106,42 +106,42 @@ const iconComponents = {
   CalendarIcon,
   CogIcon,
   ChartBarIcon,
-}
+};
 
 // Computed properties
 const hasPermission = computed(() => {
-  if (!props.permission) return true
-  return rbacStore.hasPermission(props.permission.module, props.permission.action)
-})
+  if (!props.permission) return true;
+  return rbacStore.hasPermission(props.permission.module, props.permission.action);
+});
 
 const iconComponent = computed(
-  () => iconComponents[props.icon as keyof typeof iconComponents] || CogIcon
-)
+  () => iconComponents[props.icon as keyof typeof iconComponents] || CogIcon,
+);
 
 const cardClasses = computed(() => ({
   [`hover:border-${props.color}-200 dark:hover:border-${props.color}-600`]: true,
-  "transform hover:scale-105": true,
-  "cursor-not-allowed opacity-50": props.loading,
-}))
+  'transform hover:scale-105': true,
+  'cursor-not-allowed opacity-50': props.loading,
+}));
 
 const gradientClass = computed(
-  () => `bg-gradient-to-br from-${props.color}-500 to-${props.color}-600`
-)
+  () => `bg-gradient-to-br from-${props.color}-500 to-${props.color}-600`,
+);
 
 const iconBgClass = computed(
   () =>
-    `bg-${props.color}-50 dark:bg-${props.color}-900/20 group-hover:bg-${props.color}-100 dark:group-hover:bg-${props.color}-900/30`
-)
+    `bg-${props.color}-50 dark:bg-${props.color}-900/20 group-hover:bg-${props.color}-100 dark:group-hover:bg-${props.color}-900/30`,
+);
 
-const iconClass = computed(() => `text-${props.color}-600 dark:text-${props.color}-400`)
+const iconClass = computed(() => `text-${props.color}-600 dark:text-${props.color}-400`);
 
-const indicatorClass = computed(() => `bg-${props.color}-500`)
+const indicatorClass = computed(() => `bg-${props.color}-500`);
 
 // Methods
 const handleClick = () => {
-  if (props.loading || !hasPermission.value) return
-  emit("click")
-}
+  if (props.loading || !hasPermission.value) return;
+  emit('click');
+};
 </script>
 
 <style scoped>

@@ -398,170 +398,170 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useAdminObservations} from "../../composables/useObservationManagement"
-import type {ObservationFilters} from "../../stores/observations"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useAdminObservations } from '../../composables/useObservationManagement';
+import type { ObservationFilters } from '../../stores/observations';
 
 // Composables
-const {loading, error, fetchAllObservations, generateAdvancedAnalysis, exportForAIAnalysis} =
-  useAdminObservations()
+const { loading, error, fetchAllObservations, generateAdvancedAnalysis, exportForAIAnalysis } =
+  useAdminObservations();
 
 // Estado reactivo
-const observations = ref<any[]>([])
-const stats = ref<any>(null)
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
-const showExportModal = ref(false)
-const exportFormat = ref<"json" | "csv">("json")
+const observations = ref<any[]>([]);
+const stats = ref<any>(null);
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const showExportModal = ref(false);
+const exportFormat = ref<'json' | 'csv'>('json');
 
 // Filtros
 const filters = ref<ObservationFilters>({
-  dateFrom: "",
-  dateTo: "",
-  type: "",
-  priority: "",
+  dateFrom: '',
+  dateTo: '',
+  type: '',
+  priority: '',
   requiresFollowUp: undefined,
-})
+});
 
 // Computed properties
-const filteredObservations = computed(() => observations.value)
+const filteredObservations = computed(() => observations.value);
 
-const totalPages = computed(() => Math.ceil(filteredObservations.value.length / itemsPerPage.value))
+const totalPages = computed(() => Math.ceil(filteredObservations.value.length / itemsPerPage.value));
 
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
-const endIndex = computed(() => startIndex.value + itemsPerPage.value)
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
+const endIndex = computed(() => startIndex.value + itemsPerPage.value);
 
 const paginatedObservations = computed(() =>
-  filteredObservations.value.slice(startIndex.value, endIndex.value)
-)
+  filteredObservations.value.slice(startIndex.value, endIndex.value),
+);
 
 // Métodos
 const loadData = async () => {
   try {
-    const data = await fetchAllObservations(filters.value)
-    observations.value = data || []
+    const data = await fetchAllObservations(filters.value);
+    observations.value = data || [];
   } catch (err) {
-    console.error("Error loading observations:", err)
-    observations.value = []
+    console.error('Error loading observations:', err);
+    observations.value = [];
   }
-}
+};
 
 const applyFilters = async () => {
-  currentPage.value = 1
-  await loadData()
-}
+  currentPage.value = 1;
+  await loadData();
+};
 
 const clearFilters = () => {
   filters.value = {
-    dateFrom: "",
-    dateTo: "",
-    type: "",
-    priority: "",
+    dateFrom: '',
+    dateTo: '',
+    type: '',
+    priority: '',
     requiresFollowUp: undefined,
-  }
-  currentPage.value = 1
-  loadData()
-}
+  };
+  currentPage.value = 1;
+  loadData();
+};
 
 const generateReport = async () => {
   try {
-    const analysis = await generateAdvancedAnalysis(filters.value)
-    stats.value = analysis
+    const analysis = await generateAdvancedAnalysis(filters.value);
+    stats.value = analysis;
   } catch (err) {
-    console.error("Error generating analysis:", err)
+    console.error('Error generating analysis:', err);
   }
-}
+};
 
 const exportData = () => {
-  showExportModal.value = true
-}
+  showExportModal.value = true;
+};
 
 const confirmExport = async () => {
   try {
-    const data = await exportForAIAnalysis(filters.value, exportFormat.value)
+    const data = await exportForAIAnalysis(filters.value, exportFormat.value);
 
     // Crear y descargar archivo
     const blob = new Blob([data], {
-      type: exportFormat.value === "json" ? "application/json" : "text/csv",
-    })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `observaciones_ia_${new Date().toISOString().split("T")[0]}.${exportFormat.value}`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+      type: exportFormat.value === 'json' ? 'application/json' : 'text/csv',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `observaciones_ia_${new Date().toISOString().split('T')[0]}.${exportFormat.value}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
-    showExportModal.value = false
+    showExportModal.value = false;
   } catch (err) {
-    console.error("Error exporting data:", err)
+    console.error('Error exporting data:', err);
   }
-}
+};
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString("es-ES")
-}
+  return new Date(dateString).toLocaleDateString('es-ES');
+};
 
 const getTypeClass = (type: string) => {
   const classes = {
-    general: "bg-gray-100 text-gray-800",
-    comportamiento: "bg-red-100 text-red-800",
-    academico: "bg-blue-100 text-blue-800",
-    asistencia: "bg-yellow-100 text-yellow-800",
-    evaluacion: "bg-green-100 text-green-800",
-  }
-  return classes[type as keyof typeof classes] || classes.general
-}
+    general: 'bg-gray-100 text-gray-800',
+    comportamiento: 'bg-red-100 text-red-800',
+    academico: 'bg-blue-100 text-blue-800',
+    asistencia: 'bg-yellow-100 text-yellow-800',
+    evaluacion: 'bg-green-100 text-green-800',
+  };
+  return classes[type as keyof typeof classes] || classes.general;
+};
 
 const getTypeLabel = (type: string) => {
   const labels = {
-    general: "General",
-    comportamiento: "Comportamiento",
-    academico: "Académico",
-    asistencia: "Asistencia",
-    evaluacion: "Evaluación",
-  }
-  return labels[type as keyof typeof labels] || type
-}
+    general: 'General',
+    comportamiento: 'Comportamiento',
+    academico: 'Académico',
+    asistencia: 'Asistencia',
+    evaluacion: 'Evaluación',
+  };
+  return labels[type as keyof typeof labels] || type;
+};
 
 const getPriorityClass = (priority: string) => {
   const classes = {
-    baja: "bg-green-100 text-green-800",
-    media: "bg-yellow-100 text-yellow-800",
-    alta: "bg-orange-100 text-orange-800",
-    critica: "bg-red-100 text-red-800",
-  }
-  return classes[priority as keyof typeof classes] || classes.media
-}
+    baja: 'bg-green-100 text-green-800',
+    media: 'bg-yellow-100 text-yellow-800',
+    alta: 'bg-orange-100 text-orange-800',
+    critica: 'bg-red-100 text-red-800',
+  };
+  return classes[priority as keyof typeof classes] || classes.media;
+};
 
 const getPriorityLabel = (priority: string) => {
   const labels = {
-    baja: "Baja",
-    media: "Media",
-    alta: "Alta",
-    critica: "Crítica",
-  }
-  return labels[priority as keyof typeof labels] || priority
-}
+    baja: 'Baja',
+    media: 'Media',
+    alta: 'Alta',
+    critica: 'Crítica',
+  };
+  return labels[priority as keyof typeof labels] || priority;
+};
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
-    currentPage.value++
+    currentPage.value++;
   }
-}
+};
 
 const previousPage = () => {
   if (currentPage.value > 1) {
-    currentPage.value--
+    currentPage.value--;
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  await loadData()
-  await generateReport()
-})
+  await loadData();
+  await generateReport();
+});
 
 // Watchers
 watch(
@@ -569,9 +569,9 @@ watch(
   () => {
     // Auto-aplicar filtros cuando cambien las fechas
     if (filters.value.dateFrom || filters.value.dateTo) {
-      applyFilters()
+      applyFilters();
     }
   },
-  {deep: true}
-)
+  { deep: true },
+);
 </script>

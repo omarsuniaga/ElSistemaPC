@@ -1,14 +1,3 @@
-<script setup lang="ts">
-import {
-  ClipboardDocumentCheckIcon,
-  BookOpenIcon,
-  AcademicCapIcon,
-  PencilIcon,
-} from "@heroicons/vue/24/outline"
-
-const emit = defineEmits(["start-activity", "start-editing"])
-</script>
-
 <template>
   <div class="flex justify-center mt-2 gap-4">
     <button
@@ -60,3 +49,14 @@ const emit = defineEmits(["start-activity", "start-editing"])
     </button>
   </div>
 </template>
+
+<script setup lang="ts">
+import {
+  ClipboardDocumentCheckIcon,
+  BookOpenIcon,
+  AcademicCapIcon,
+  PencilIcon,
+} from '@heroicons/vue/24/outline';
+
+const emit = defineEmits(['start-activity', 'start-editing']);
+</script>

@@ -267,14 +267,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch, inject} from "vue"
-import {format, parseISO} from "date-fns"
-import {es} from "date-fns/locale"
-import {useRouter} from "vue-router"
-import {useStudentsStore} from "../../Students/store/students"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useEmergencyClasses} from "../../../composables/useEmergencyClasses"
-import {useToast} from "../../../components/ui/toast/use-toast"
+import { ref, computed, onMounted, watch, inject } from 'vue';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useRouter } from 'vue-router';
+import { useStudentsStore } from '../../Students/store/students';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useEmergencyClasses } from '../../../composables/useEmergencyClasses';
+import { useToast } from '../../../components/ui/toast/use-toast';
 import {
   PlusIcon,
   ExclamationTriangleIcon,
@@ -285,240 +285,240 @@ import {
   PencilIcon,
   TrashIcon,
   ArrowPathIcon,
-} from "@heroicons/vue/24/outline"
-import EmergencyClassModal from "../../Attendance/components/EmergencyClassModal.vue"
+} from '@heroicons/vue/24/outline';
+import EmergencyClassModal from '../../Attendance/components/EmergencyClassModal.vue';
 
 // Props and emits
 interface Props {
   teacherId?: string
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Stores and composables
-const router = useRouter()
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
-const {toast} = useToast()
+const router = useRouter();
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
+const { toast } = useToast();
 const {
   emergencyClasses,
   fetchEmergencyClasses,
   deleteEmergencyClass: deleteEmergencyClassComposable,
   isLoading,
   error,
-} = useEmergencyClasses()
+} = useEmergencyClasses();
 
 // Inject teacherId if not passed as prop
-const injectedTeacherId = inject<string>("currentTeacherId")
-const currentTeacherId = computed(() => props.teacherId || injectedTeacherId || "")
+const injectedTeacherId = inject<string>('currentTeacherId');
+const currentTeacherId = computed(() => props.teacherId || injectedTeacherId || '');
 
 // Reactive state
-const loading = ref(false)
-const showCreateModal = ref(false)
-const selectedDate = ref(format(new Date(), "yyyy-MM-dd"))
-const expandedClasses = ref(new Set<string>())
+const loading = ref(false);
+const showCreateModal = ref(false);
+const selectedDate = ref(format(new Date(), 'yyyy-MM-dd'));
+const expandedClasses = ref(new Set<string>());
 
 // Filtros
 const filters = ref({
-  startDate: "",
-  endDate: "",
-  instrument: "",
-})
+  startDate: '',
+  endDate: '',
+  instrument: '',
+});
 
 // Computed properties
 const filteredEmergencyClasses = computed(() => {
-  let classes = emergencyClasses.value
+  let classes = emergencyClasses.value;
 
   // Filtro por fecha de inicio
   if (filters.value.startDate) {
-    classes = classes.filter((c) => c.date >= filters.value.startDate)
+    classes = classes.filter((c) => c.date >= filters.value.startDate);
   }
 
   // Filtro por fecha final
   if (filters.value.endDate) {
-    classes = classes.filter((c) => c.date <= filters.value.endDate)
+    classes = classes.filter((c) => c.date <= filters.value.endDate);
   }
 
   // Filtro por instrumento
   if (filters.value.instrument) {
-    classes = classes.filter((c) => c.instrument === filters.value.instrument)
+    classes = classes.filter((c) => c.instrument === filters.value.instrument);
   }
 
   // Ordenar por fecha más reciente primero
-  return classes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-})
+  return classes.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+});
 
 const availableInstruments = computed(() => {
-  const instruments = [...new Set(emergencyClasses.value.map((c) => c.instrument).filter(Boolean))]
-  return instruments.sort()
-})
+  const instruments = [...new Set(emergencyClasses.value.map((c) => c.instrument).filter(Boolean))];
+  return instruments.sort();
+});
 
 const hasFilters = computed(() => {
-  return filters.value.startDate || filters.value.endDate || filters.value.instrument
-})
+  return filters.value.startDate || filters.value.endDate || filters.value.instrument;
+});
 
 // Methods
 const formatDate = (dateStr: string) => {
   try {
-    return format(parseISO(dateStr), "EEEE, d 'de' MMMM 'de' yyyy", {locale: es})
+    return format(parseISO(dateStr), 'EEEE, d \'de\' MMMM \'de\' yyyy', { locale: es });
   } catch {
-    return dateStr
+    return dateStr;
   }
-}
+};
 
 const formatDateTime = (date: Date | string) => {
   try {
-    const dateObj = typeof date === "string" ? new Date(date) : date
-    return format(dateObj, "d/MM/yyyy 'a las' HH:mm", {locale: es})
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return format(dateObj, 'd/MM/yyyy \'a las\' HH:mm', { locale: es });
   } catch {
-    return "Fecha no disponible"
+    return 'Fecha no disponible';
   }
-}
+};
 
 const getStudentName = (studentId: string) => {
-  const student = studentsStore.getStudentById(studentId)
-  return student ? `${student.nombre} ${student.apellido}` : `Estudiante ${studentId.slice(-6)}`
-}
+  const student = studentsStore.getStudentById(studentId);
+  return student ? `${student.nombre} ${student.apellido}` : `Estudiante ${studentId.slice(-6)}`;
+};
 
 const getAttendanceStatus = (classId: string, studentId: string) => {
   // TODO: Implementar obtención del estado de asistencia desde el store
-  return null
-}
+  return null;
+};
 
 const getAttendanceStatusClass = (status: string) => {
   const classes = {
-    Presente: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-    Ausente: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-    Tardanza: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-    Justificado: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  }
-  return classes[status] || "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
-}
+    Presente: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    Ausente: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    Tardanza: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+    Justificado: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  };
+  return classes[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+};
 
 const toggleStudentsList = (classId: string) => {
   if (expandedClasses.value.has(classId)) {
-    expandedClasses.value.delete(classId)
+    expandedClasses.value.delete(classId);
   } else {
-    expandedClasses.value.add(classId)
+    expandedClasses.value.add(classId);
   }
-}
+};
 
 const openCreateModal = () => {
-  selectedDate.value = format(new Date(), "yyyy-MM-dd")
-  showCreateModal.value = true
-}
+  selectedDate.value = format(new Date(), 'yyyy-MM-dd');
+  showCreateModal.value = true;
+};
 
 const viewAttendance = (emergencyClass: any) => {
   // Navegar a la vista de asistencia para esta clase emergente
   router
     .push({
-      name: "attendance",
+      name: 'attendance',
       params: {
-        date: emergencyClass.date.replace(/-/g, ""),
+        date: emergencyClass.date.replace(/-/g, ''),
         classId: emergencyClass.id,
       },
     })
     .catch((err) => {
-      console.error("Error navigating to attendance:", err)
+      console.error('Error navigating to attendance:', err);
       toast({
-        title: "Error de navegación",
-        description: "No se pudo abrir la página de asistencia.",
-        variant: "destructive",
-      })
-    })
-}
+        title: 'Error de navegación',
+        description: 'No se pudo abrir la página de asistencia.',
+        variant: 'destructive',
+      });
+    });
+};
 
 const editEmergencyClass = (emergencyClass: any) => {
   // TODO: Implementar edición de clase emergente
   toast({
-    title: "Función en desarrollo",
-    description: "La edición de clases emergentes estará disponible pronto.",
-    variant: "default",
-  })
-}
+    title: 'Función en desarrollo',
+    description: 'La edición de clases emergentes estará disponible pronto.',
+    variant: 'default',
+  });
+};
 
 const deleteEmergencyClass = async (emergencyClass: any) => {
   if (
     !confirm(
-      `¿Estás seguro de que quieres eliminar la clase emergente "${emergencyClass.className}"?`
+      `¿Estás seguro de que quieres eliminar la clase emergente "${emergencyClass.className}"?`,
     )
   ) {
-    return
+    return;
   }
 
   try {
-    await deleteEmergencyClassComposable(emergencyClass.id)
+    await deleteEmergencyClassComposable(emergencyClass.id);
     toast({
-      title: "Clase eliminada",
-      description: "La clase emergente ha sido eliminada correctamente.",
-      variant: "default",
-    })
-    await refreshEmergencyClasses()
+      title: 'Clase eliminada',
+      description: 'La clase emergente ha sido eliminada correctamente.',
+      variant: 'default',
+    });
+    await refreshEmergencyClasses();
   } catch (error) {
-    console.error("Error deleting emergency class:", error)
+    console.error('Error deleting emergency class:', error);
     toast({
-      title: "Error",
-      description: "No se pudo eliminar la clase emergente.",
-      variant: "destructive",
-    })
+      title: 'Error',
+      description: 'No se pudo eliminar la clase emergente.',
+      variant: 'destructive',
+    });
   }
-}
+};
 
 const handleEmergencyClassCreated = async (data: any) => {
-  console.log("Emergency class created:", data)
-  showCreateModal.value = false
-  await refreshEmergencyClasses()
+  console.log('Emergency class created:', data);
+  showCreateModal.value = false;
+  await refreshEmergencyClasses();
 
   toast({
-    title: "Clase emergente creada",
+    title: 'Clase emergente creada',
     description: `La clase "${data.className}" ha sido creada correctamente.`,
-    variant: "default",
-  })
-}
+    variant: 'default',
+  });
+};
 
 const refreshEmergencyClasses = async () => {
-  if (!currentTeacherId.value) return
+  if (!currentTeacherId.value) return;
 
   try {
-    loading.value = true
-    await fetchEmergencyClasses(currentTeacherId.value)
+    loading.value = true;
+    await fetchEmergencyClasses(currentTeacherId.value);
   } catch (error) {
-    console.error("Error refreshing emergency classes:", error)
+    console.error('Error refreshing emergency classes:', error);
     toast({
-      title: "Error",
-      description: "No se pudieron cargar las clases emergentes.",
-      variant: "destructive",
-    })
+      title: 'Error',
+      description: 'No se pudieron cargar las clases emergentes.',
+      variant: 'destructive',
+    });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const clearFilters = () => {
   filters.value = {
-    startDate: "",
-    endDate: "",
-    instrument: "",
-  }
-}
+    startDate: '',
+    endDate: '',
+    instrument: '',
+  };
+};
 
 // Watch for teacherId changes
 watch(
   currentTeacherId,
   async (newTeacherId) => {
     if (newTeacherId) {
-      await refreshEmergencyClasses()
+      await refreshEmergencyClasses();
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 // Initialize
 onMounted(async () => {
   if (currentTeacherId.value) {
-    await refreshEmergencyClasses()
+    await refreshEmergencyClasses();
   }
-})
+});
 </script>
 
 <style scoped>

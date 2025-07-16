@@ -76,25 +76,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import type { MusicalWork, GridCell } from '../types/heatmap'
+import { ref, computed, onMounted } from 'vue';
+import type { MusicalWork, GridCell } from '../types/heatmap';
 
 const props = defineProps<{
   work: MusicalWork
-}>()
+}>();
 
-const loading = ref(true)
-const grid = ref<GridCell[]>([])
+const loading = ref(true);
+const grid = ref<GridCell[]>([]);
 
 // Initialize grid with measure numbers
 const initializeGrid = () => {
-  const newGrid: GridCell[] = []
-  let measureNumber = 1
-  const totalMeasures = props.work.totalMeasures || props.work.compas || 0
+  const newGrid: GridCell[] = [];
+  let measureNumber = 1;
+  const totalMeasures = props.work.totalMeasures || props.work.compas || 0;
   
   // Determinar filas y columnas optimizadas
-  const cols = props.work.cols || 10
-  const rows = Math.ceil(totalMeasures / cols)
+  const cols = props.work.cols || 10;
+  const rows = Math.ceil(totalMeasures / cols);
   
   // Crear solo las celdas necesarias para el número real de compases
   for (let row = 0; row < rows && measureNumber <= totalMeasures; row++) {
@@ -105,50 +105,50 @@ const initializeGrid = () => {
         row,
         col,
         selected: false,
-        measureNumber: measureNumber
-      })
-      measureNumber++
+        measureNumber: measureNumber,
+      });
+      measureNumber++;
     }
   }
   
-  return newGrid
-}
+  return newGrid;
+};
 
 // Get color class from work configuration
 const getCellClass = (cell: GridCell): string => {
-  const levelConfig = props.work.levels.find(l => l.id === cell.level)
-  return levelConfig?.color || 'bg-gray-500'
-}
+  const levelConfig = props.work.levels.find(l => l.id === cell.level);
+  return levelConfig?.color || 'bg-gray-500';
+};
 
 // Get level name from work configuration
 const getLevelName = (level: number): string => {
-  const levelConfig = props.work.levels.find(l => l.id === level)
-  return levelConfig?.name || `Nivel ${level}`
-}
+  const levelConfig = props.work.levels.find(l => l.id === level);
+  return levelConfig?.name || `Nivel ${level}`;
+};
 
 // Statistics
 const stats = computed(() => {
-  const totalCells = grid.value.length
+  const totalCells = grid.value.length;
   const levelCounts = props.work.levels.map(level => 
-    grid.value.filter(cell => cell.level === level.id).length
-  )
+    grid.value.filter(cell => cell.level === level.id).length,
+  );
   
   return {
     total: totalCells,
     levels: levelCounts,
     percentages: levelCounts.map(count => 
-      totalCells > 0 ? Math.round((count / totalCells) * 100) : 0
-    )
-  }
-})
+      totalCells > 0 ? Math.round((count / totalCells) * 100) : 0,
+    ),
+  };
+});
 
 onMounted(() => {
   // Simulate loading
   setTimeout(() => {
-    grid.value = initializeGrid()
-    loading.value = false
-  }, 500)
-})
+    grid.value = initializeGrid();
+    loading.value = false;
+  }, 500);
+});
 </script>
 
 <style scoped>

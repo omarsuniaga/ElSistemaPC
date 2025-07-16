@@ -308,16 +308,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useMontaje } from '../composables/useMontaje'
-import { useTheme } from '../../../contexts/ThemeContext'
-import { SunIcon, MoonIcon } from '@heroicons/vue/24/outline'
-import WorkCard from '../components/WorkCard.vue'
-import WorkFormModal from '../components/WorkFormModal.vue'
-import EvaluationForm from '../components/EvaluationForm.vue'
-import AnalyticsDashboard from '../components/AnalyticsDashboard.vue'
-import type { Obra, Work, CreateWorkInput, CreateEvaluationInput, EstadoRepertorio } from '../types'
-import { TipoInstrumento } from '../types'
+import { ref, computed, onMounted } from 'vue';
+import { useMontaje } from '../composables/useMontaje';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { SunIcon, MoonIcon } from '@heroicons/vue/24/outline';
+import WorkCard from '../components/WorkCard.vue';
+import WorkFormModal from '../components/WorkFormModal.vue';
+import EvaluationForm from '../components/EvaluationForm.vue';
+import AnalyticsDashboard from '../components/AnalyticsDashboard.vue';
+import type { Obra, Work, CreateWorkInput, CreateEvaluationInput, EstadoRepertorio } from '../types';
+import { TipoInstrumento } from '../types';
 
 // Composables
 const {
@@ -345,31 +345,31 @@ const {
   loadMontajeData,
   selectWork,
   clearSelection,
-  setActiveTab
-} = useMontaje()
+  setActiveTab,
+} = useMontaje();
 
 // Contexto de tema
-const { isDarkMode, toggleDarkMode } = useTheme()
+const { isDarkMode, toggleDarkMode } = useTheme();
 
 // Local state
-const showWorkModal = ref(false)
-const showEvaluationModal = ref(false)
-const showPlanModal = ref(false)
-const showNotifications = ref(false)
-const workToEvaluate = ref<Obra | null>(null)
+const showWorkModal = ref(false);
+const showEvaluationModal = ref(false);
+const showPlanModal = ref(false);
+const showNotifications = ref(false);
+const workToEvaluate = ref<Obra | null>(null);
 
 // Filters
-const searchQuery = ref('')
-const statusFilter = ref('')
-const difficultyFilter = ref('')
+const searchQuery = ref('');
+const statusFilter = ref('');
+const difficultyFilter = ref('');
 
 // Helper functions for type conversions
 const convertWorkToObra = (work: Work): any => {
   return {
     ...work,
-    estado: work.status as EstadoRepertorio
-  }
-}
+    estado: work.status as EstadoRepertorio,
+  };
+};
 
 const convertObraToWork = (obra: any): Work => {
   return {
@@ -380,77 +380,77 @@ const convertObraToWork = (obra: any): Work => {
     estimatedDuration: obra.duracionEstimada,
     instruments: obra.instrumentosRequeridos,
     sheetMusicUrl: obra.archivoPartitura,
-    status: obra.estado
-  }
-}
+    status: obra.estado,
+  };
+};
 
 // Computed
 const tabs = computed(() => [
   {
     key: 'obras' as const,
     label: 'Obras',
-    count: works.value.length
+    count: works.value.length,
   },
   {
     key: 'planes' as const,
     label: 'Planes',
-    count: currentPlans.value.length
+    count: currentPlans.value.length,
   },
   {
     key: 'frases' as const,
     label: 'Frases',
-    count: phrases.value.length
+    count: phrases.value.length,
   },
   {
     key: 'evaluaciones' as const,
     label: 'Evaluaciones',
-    count: evaluations.value.length
+    count: evaluations.value.length,
   },
   {
     key: 'analytics' as const,
-    label: 'Analytics'
-  }
-])
+    label: 'Analytics',
+  },
+]);
 
 const filteredWorks = computed(() => {
-  let filtered = works.value
+  let filtered = works.value;
 
   // Search filter
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(work =>
       work.titulo.toLowerCase().includes(query) ||
       work.compositor?.toLowerCase().includes(query) ||
-      work.descripcion?.toLowerCase().includes(query)
-    )
+      work.descripcion?.toLowerCase().includes(query),
+    );
   }
   // Status filter
   if (statusFilter.value) {
-    filtered = filtered.filter(work => work.estado === statusFilter.value)
+    filtered = filtered.filter(work => work.estado === statusFilter.value);
   }
 
   // Difficulty filter
   if (difficultyFilter.value) {
-    filtered = filtered.filter(work => work.metadatos.complejidadGeneral === difficultyFilter.value)
+    filtered = filtered.filter(work => work.metadatos.complejidadGeneral === difficultyFilter.value);
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 const convertedWorkToEvaluate = computed(() => {
-  return workToEvaluate.value ? convertObraToWork(workToEvaluate.value) : null
-})
+  return workToEvaluate.value ? convertObraToWork(workToEvaluate.value) : null;
+});
 
 // Methods
 const viewWork = (work: Work) => {
-  selectWork(convertWorkToObra(work))
+  selectWork(convertWorkToObra(work));
   // Navigate to work detail view (implement routing)
-}
+};
 
 const editWork = (work: Work) => {
-  selectWork(convertWorkToObra(work))
-  showWorkModal.value = true
-}
+  selectWork(convertWorkToObra(work));
+  showWorkModal.value = true;
+};
 
 const duplicateWork = async (work: Work) => {
   try {
@@ -475,94 +475,94 @@ const duplicateWork = async (work: Work) => {
       imagenPortada: work.imagenPortada,
       tags: [],
       status: 'planificando' as EstadoRepertorio,
-      estado: 'planificando' as EstadoRepertorio
-    }
+      estado: 'planificando' as EstadoRepertorio,
+    };
     
-    await createWork(duplicateData)
+    await createWork(duplicateData);
   } catch (error) {
-    console.error('Error duplicating work:', error)
+    console.error('Error duplicating work:', error);
   }
-}
+};
 
 const evaluateWork = (work: Work) => {
-  workToEvaluate.value = work
-  showEvaluationModal.value = true
-}
+  workToEvaluate.value = work;
+  showEvaluationModal.value = true;
+};
 
 const deleteWork = async (work: Work) => {
   if (confirm(`¿Estás seguro de que quieres eliminar "${work.title}"?`)) {
     try {
-      await deleteWorkAction(work.id)
+      await deleteWorkAction(work.id);
     } catch (error) {
-      console.error('Error deleting work:', error)
+      console.error('Error deleting work:', error);
     }
   }
-}
+};
 
 const getWorkProgress = (workId: string): number | undefined => {
   // Calculate work progress based on state and evaluations
-  const workStates = states.value.filter(state => state.workId === workId)
-  if (workStates.length === 0) return undefined
+  const workStates = states.value.filter(state => state.workId === workId);
+  if (workStates.length === 0) return undefined;
 
-  const latestState = workStates[workStates.length - 1]
+  const latestState = workStates[workStates.length - 1];
   const progressMap: Record<string, number> = {
     'planning': 10,
     'in-progress': 50,
     'review': 80,
     'completed': 100,
-    'archived': 100
-  }
+    'archived': 100,
+  };
 
-  return progressMap[latestState.currentState] || 0
-}
+  return progressMap[latestState.currentState] || 0;
+};
 
 const getWorkTitle = (workId: string): string => {
-  const work = works.value.find(w => w.id === workId)
-  return work?.titulo || 'Obra desconocida'
-}
+  const work = works.value.find(w => w.id === workId);
+  return work?.titulo || 'Obra desconocida';
+};
 
 const clearFilters = () => {
-  searchQuery.value = ''
-  statusFilter.value = ''
-  difficultyFilter.value = ''
-}
+  searchQuery.value = '';
+  statusFilter.value = '';
+  difficultyFilter.value = '';
+};
 
 const closeWorkModal = () => {
-  showWorkModal.value = false
-  clearSelection()
-}
+  showWorkModal.value = false;
+  clearSelection();
+};
 
 const closeEvaluationModal = () => {
-  showEvaluationModal.value = false
-  workToEvaluate.value = null
-}
+  showEvaluationModal.value = false;
+  workToEvaluate.value = null;
+};
 
 const handleWorkSubmit = async (workData: CreateWorkInput) => {
   try {
-    console.log('🔄 Iniciando guardado de obra:', workData)
+    console.log('🔄 Iniciando guardado de obra:', workData);
     
     // Agregar el repertorioId requerido para todas las obras
     const completeWorkData = {
       ...workData,
       repertorioId: 'default-repertorio', // TODO: Obtener el repertorioId del contexto actual
-    }
+    };
     
     if (selectedWork.value) {
-      console.log('📝 Actualizando obra existente:', selectedWork.value.id)
-      await updateWork(selectedWork.value.id, completeWorkData)
-      console.log('✅ Obra actualizada exitosamente')
+      console.log('📝 Actualizando obra existente:', selectedWork.value.id);
+      await updateWork(selectedWork.value.id, completeWorkData);
+      console.log('✅ Obra actualizada exitosamente');
     } else {
-      console.log('➕ Creando nueva obra')
-      const result = await createWork(completeWorkData)
-      console.log('✅ Obra creada exitosamente:', result)
+      console.log('➕ Creando nueva obra');
+      const result = await createWork(completeWorkData);
+      console.log('✅ Obra creada exitosamente:', result);
     }
-    closeWorkModal()
+    closeWorkModal();
   } catch (error) {
-    console.error('❌ Error saving work:', error)
+    console.error('❌ Error saving work:', error);
     // Mostrar el error al usuario
-    alert(`Error al guardar la obra: ${error.message || error}`)
+    alert(`Error al guardar la obra: ${error.message || error}`);
   }
-}
+};
 
 const handleEvaluationSubmit = async (evaluationFormData: CreateEvaluationInput) => {
   try {
@@ -580,36 +580,36 @@ const handleEvaluationSubmit = async (evaluationFormData: CreateEvaluationInput)
     };
 
     await createEvaluation(completeEvaluationData as any);
-    closeEvaluationModal()
+    closeEvaluationModal();
   } catch (error) {
-    console.error('Error saving evaluation:', error)
+    console.error('Error saving evaluation:', error);
   }
-}
+};
 
 const handleEvaluationDraft = async (evaluationData: CreateEvaluationInput) => {
   try {
     // Save as draft (implement draft functionality)
-    console.log('Saving evaluation draft:', evaluationData)
+    console.log('Saving evaluation draft:', evaluationData);
   } catch (error) {
-    console.error('Error saving evaluation draft:', error)
+    console.error('Error saving evaluation draft:', error);
   }
-}
+};
 
 const formatDate = (date: Date | string) => {
-  const d = typeof date === 'string' ? new Date(date) : date
+  const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleDateString('es-ES', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
-  })
-}
+    year: 'numeric',
+  });
+};
 
 // Lifecycle
 onMounted(async () => {
   try {
-    await loadMontajeData()
+    await loadMontajeData();
   } catch (error) {
-    console.error('Error loading montaje data:', error)
+    console.error('Error loading montaje data:', error);
   }
-})
+});
 </script>

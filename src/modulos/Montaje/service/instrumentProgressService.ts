@@ -1,8 +1,8 @@
 // src/modulos/Montaje/service/instrumentProgressService.ts
-import { db } from "@/firebase"
-import { collection, doc, getDoc, setDoc, updateDoc, arrayUnion, Timestamp } from "firebase/firestore"
-import { EstadoCompass, TipoInstrumento } from "../types"
-import { useAuthStore } from "@/stores/auth"
+import { db } from '@/firebase';
+import { collection, doc, getDoc, setDoc, updateDoc, arrayUnion, Timestamp } from 'firebase/firestore';
+import { EstadoCompass, TipoInstrumento } from '../types';
+import { useAuthStore } from '@/stores/auth';
 
 class InstrumentProgressService {
   /**
@@ -19,26 +19,26 @@ class InstrumentProgressService {
     obraId: string, 
     instrumentId: TipoInstrumento,
     compassNumber: number, 
-    nuevoEstado: EstadoCompass
+    nuevoEstado: EstadoCompass,
   ) {
     try {
-      const authStore = useAuthStore()
+      const authStore = useAuthStore();
       if (!authStore.user?.uid) {
-        throw new Error("Usuario no autenticado")
+        throw new Error('Usuario no autenticado');
       }
       
       // Referencia al documento de estados de la obra
-      const estadosRef = doc(db, "MONTAJE_ESTADOS", obraId)
+      const estadosRef = doc(db, 'MONTAJE_ESTADOS', obraId);
       
       // Obtenemos el documento actual para verificar si existe
-      const estadosDoc = await getDoc(estadosRef)
+      const estadosDoc = await getDoc(estadosRef);
       
       // Fecha de la actualización
-      const timestamp = Timestamp.now()
+      const timestamp = Timestamp.now();
       
       // Datos del usuario
-      const teacherName = authStore.user.displayName || "Maestro"
-      const teacherId = authStore.user.uid
+      const teacherName = authStore.user.displayName || 'Maestro';
+      const teacherId = authStore.user.uid;
       
       if (!estadosDoc.exists()) {
         // Si no existe el documento, lo creamos con el estado inicial
@@ -51,19 +51,19 @@ class InstrumentProgressService {
                   estado: nuevoEstado,
                   ultimaActualizacion: timestamp,
                   actualizadoPor: teacherId,
-                  nombreActualizador: teacherName
-                }
-              }
-            }
+                  nombreActualizador: teacherName,
+                },
+              },
+            },
           },
           createdAt: timestamp,
-          updatedAt: timestamp
-        })
+          updatedAt: timestamp,
+        });
       } else {
         // Si existe, actualizamos el estado específico del compás para el instrumento
-        const data = estadosDoc.data()
-        const instrumentos = data.instrumentos || {}
-        const instrumento = instrumentos[instrumentId] || { compases: {} }
+        const data = estadosDoc.data();
+        const instrumentos = data.instrumentos || {};
+        const instrumento = instrumentos[instrumentId] || { compases: {} };
         
         // Actualizamos o añadimos el estado del compás
         await updateDoc(estadosRef, {
@@ -71,10 +71,10 @@ class InstrumentProgressService {
             estado: nuevoEstado,
             ultimaActualizacion: timestamp,
             actualizadoPor: teacherId,
-            nombreActualizador: teacherName
+            nombreActualizador: teacherName,
           },
-          updatedAt: timestamp
-        })
+          updatedAt: timestamp,
+        });
       }
       
       // Crear notificación para el director
@@ -85,16 +85,16 @@ class InstrumentProgressService {
         nuevoEstado,
         profesorId: teacherId,
         profesorNombre: teacherName,
-        timestamp
-      })
+        timestamp,
+      });
       
       return {
         success: true,
-        message: `Estado del compás ${compassNumber} actualizado para ${instrumentId}`
-      }
+        message: `Estado del compás ${compassNumber} actualizado para ${instrumentId}`,
+      };
     } catch (error) {
-      console.error("Error al actualizar estado por instrumento:", error)
-      throw error
+      console.error('Error al actualizar estado por instrumento:', error);
+      throw error;
     }
   }
   
@@ -109,7 +109,7 @@ class InstrumentProgressService {
     nuevoEstado,
     profesorId,
     profesorNombre,
-    timestamp
+    timestamp,
   }: {
     obraId: string
     instrumentId: TipoInstrumento
@@ -121,34 +121,34 @@ class InstrumentProgressService {
   }) {
     try {
       // Obtener información de la obra
-      const obraDoc = await getDoc(doc(db, "MONTAJE_OBRAS", obraId))
+      const obraDoc = await getDoc(doc(db, 'MONTAJE_OBRAS', obraId));
       if (!obraDoc.exists()) {
-        console.warn("No se encontró la obra para notificar cambio de estado")
-        return
+        console.warn('No se encontró la obra para notificar cambio de estado');
+        return;
       }
       
-      const obraData = obraDoc.data()
-      const obraTitulo = obraData.titulo || "Obra sin título"
+      const obraData = obraDoc.data();
+      const obraTitulo = obraData.titulo || 'Obra sin título';
       
       // Crear notificación
-      const notificacionId = `estado_${obraId}_${instrumentId}_${compassNumber}_${Date.now()}`
-      const notificacionesRef = collection(db, "MONTAJE_NOTIFICACIONES")
+      const notificacionId = `estado_${obraId}_${instrumentId}_${compassNumber}_${Date.now()}`;
+      const notificacionesRef = collection(db, 'MONTAJE_NOTIFICACIONES');
       
       // Texto según el estado
-      let estadoTexto = "actualizó el estado"
+      let estadoTexto = 'actualizó el estado';
       switch(nuevoEstado) {
-        case EstadoCompass.Completado:
-          estadoTexto = "marcó como completado"
-          break
-        case EstadoCompass.EnProceso:
-          estadoTexto = "marcó como en progreso"
-          break
-        case EstadoCompass.Problematico:
-          estadoTexto = "marcó como problemático"
-          break
-        case EstadoCompass.SinIniciar:
-          estadoTexto = "reinició el estado"
-          break
+      case EstadoCompass.Completado:
+        estadoTexto = 'marcó como completado';
+        break;
+      case EstadoCompass.EnProceso:
+        estadoTexto = 'marcó como en progreso';
+        break;
+      case EstadoCompass.Problematico:
+        estadoTexto = 'marcó como problemático';
+        break;
+      case EstadoCompass.SinIniciar:
+        estadoTexto = 'reinició el estado';
+        break;
       }
       
       // Crear notificación para directores
@@ -156,8 +156,8 @@ class InstrumentProgressService {
         id: notificacionId,
         titulo: `Actualización de progreso - ${obraTitulo}`,
         mensaje: `${profesorNombre} ${estadoTexto} del compás ${compassNumber} para el instrumento ${instrumentId}`,
-        tipo: "progreso",
-        estado: "sin_leer",
+        tipo: 'progreso',
+        estado: 'sin_leer',
         obraId,
         instrumento: instrumentId,
         compass: compassNumber,
@@ -165,16 +165,16 @@ class InstrumentProgressService {
         profesorId,
         createdAt: timestamp,
         destinatarios: {
-          roles: ["Director", "Admin"],
-          usuarios: []
-        }
-      })
+          roles: ['Director', 'Admin'],
+          usuarios: [],
+        },
+      });
       
-      return true
+      return true;
     } catch (error) {
-      console.error("Error al notificar cambio de estado:", error)
+      console.error('Error al notificar cambio de estado:', error);
       // No propagamos el error ya que es una operación secundaria
-      return false
+      return false;
     }
   }
   
@@ -187,23 +187,23 @@ class InstrumentProgressService {
    */
   async cargarEstadosCompasesPorInstrumento(obraId: string, instrumentId: TipoInstrumento) {
     try {
-      const estadosRef = doc(db, "MONTAJE_ESTADOS", obraId)
-      const estadosDoc = await getDoc(estadosRef)
+      const estadosRef = doc(db, 'MONTAJE_ESTADOS', obraId);
+      const estadosDoc = await getDoc(estadosRef);
       
       if (!estadosDoc.exists()) {
-        return {}
+        return {};
       }
       
-      const data = estadosDoc.data()
-      const instrumentos = data.instrumentos || {}
-      const instrumento = instrumentos[instrumentId] || { compases: {} }
+      const data = estadosDoc.data();
+      const instrumentos = data.instrumentos || {};
+      const instrumento = instrumentos[instrumentId] || { compases: {} };
       
-      return instrumento.compases || {}
+      return instrumento.compases || {};
     } catch (error) {
-      console.error("Error al cargar estados por instrumento:", error)
-      throw error
+      console.error('Error al cargar estados por instrumento:', error);
+      throw error;
     }
   }
 }
 
-export const instrumentProgressService = new InstrumentProgressService()
+export const instrumentProgressService = new InstrumentProgressService();

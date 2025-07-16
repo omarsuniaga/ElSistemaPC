@@ -320,16 +320,16 @@
 </template>
 
 <script setup>
-import {ref, computed, watch} from "vue"
+import { ref, computed, watch } from 'vue';
 import {
   XMarkIcon,
   CheckCircleIcon,
   XCircleIcon,
   ClockIcon,
   ChartBarIcon,
-} from "@heroicons/vue/24/outline"
-import {format, eachDayOfInterval, startOfMonth, endOfMonth, getDay} from "date-fns"
-import {es} from "date-fns/locale"
+} from '@heroicons/vue/24/outline';
+import { format, eachDayOfInterval, startOfMonth, endOfMonth, getDay } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const props = defineProps({
   isOpen: {
@@ -344,37 +344,37 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-})
+});
 
-const emit = defineEmits(["close", "export"])
+const emit = defineEmits(['close', 'export']);
 
 // Estado reactivo
-const activeTab = ref("summary")
-const studentFilter = ref("")
+const activeTab = ref('summary');
+const studentFilter = ref('');
 
 // Tabs disponibles
 const tabs = computed(() => [
   {
-    id: "summary",
-    name: "Resumen",
+    id: 'summary',
+    name: 'Resumen',
     count: null,
   },
   {
-    id: "students",
-    name: "Estudiantes",
+    id: 'students',
+    name: 'Estudiantes',
     count: props.classData?.students?.length || 0,
   },
   {
-    id: "calendar",
-    name: "Calendario",
+    id: 'calendar',
+    name: 'Calendario',
     count: null,
   },
   {
-    id: "observations",
-    name: "Observaciones",
+    id: 'observations',
+    name: 'Observaciones',
     count: classObservations.value.length,
   },
-])
+]);
 
 // Resumen de estadísticas
 const summary = computed(() => {
@@ -385,34 +385,34 @@ const summary = computed(() => {
       totalLate: 0,
       totalJustified: 0,
       attendanceRate: 0,
-    }
+    };
   }
 
-  let totalPresent = 0
-  let totalAbsent = 0
-  let totalLate = 0
-  let totalJustified = 0
-  let totalRecords = 0
+  let totalPresent = 0;
+  let totalAbsent = 0;
+  let totalLate = 0;
+  let totalJustified = 0;
+  let totalRecords = 0;
 
   props.classData.students.forEach((student) => {
     student.attendance?.forEach((record) => {
-      totalRecords++
+      totalRecords++;
       switch (record.status) {
-        case "present":
-          totalPresent++
-          break
-        case "absent":
-          totalAbsent++
-          break
-        case "late":
-          totalLate++
-          break
-        case "justified":
-          totalJustified++
-          break
+      case 'present':
+        totalPresent++;
+        break;
+      case 'absent':
+        totalAbsent++;
+        break;
+      case 'late':
+        totalLate++;
+        break;
+      case 'justified':
+        totalJustified++;
+        break;
       }
-    })
-  })
+    });
+  });
 
   return {
     totalPresent,
@@ -420,165 +420,165 @@ const summary = computed(() => {
     totalLate,
     totalJustified,
     attendanceRate: totalRecords > 0 ? Math.round((totalPresent / totalRecords) * 100) : 0,
-  }
-})
+  };
+});
 
 // Estudiantes filtrados
 const filteredStudents = computed(() => {
-  if (!props.classData?.students) return []
+  if (!props.classData?.students) return [];
 
   const students = props.classData.students.filter((student) => {
-    if (!studentFilter.value) return true
+    if (!studentFilter.value) return true;
 
-    const lastRecord = student.attendance?.[0]
-    return lastRecord?.status === studentFilter.value
-  })
+    const lastRecord = student.attendance?.[0];
+    return lastRecord?.status === studentFilter.value;
+  });
 
-  return students
-})
+  return students;
+});
 
 // Total de estudiantes
 const totalStudents = computed(() => {
-  return props.classData?.students?.length || 0
-})
+  return props.classData?.students?.length || 0;
+});
 
 // Observaciones de clase
 const classObservations = computed(() => {
-  return props.classData?.observations || []
-})
+  return props.classData?.observations || [];
+});
 
 // Rango de fechas formateado
 const formatDateRange = computed(() => {
-  if (!props.dateRange.startDate || !props.dateRange.endDate) return "Rango no especificado"
+  if (!props.dateRange.startDate || !props.dateRange.endDate) return 'Rango no especificado';
 
-  const start = format(new Date(props.dateRange.startDate), "dd/MM/yyyy", {locale: es})
-  const end = format(new Date(props.dateRange.endDate), "dd/MM/yyyy", {locale: es})
+  const start = format(new Date(props.dateRange.startDate), 'dd/MM/yyyy', { locale: es });
+  const end = format(new Date(props.dateRange.endDate), 'dd/MM/yyyy', { locale: es });
 
-  return `${start} - ${end}`
-})
+  return `${start} - ${end}`;
+});
 
 // Última actualización
 const lastUpdate = computed(() => {
-  return new Date()
-})
+  return new Date();
+});
 
 // Días del calendario
 const calendarDays = computed(() => {
-  if (!props.dateRange.startDate || !props.dateRange.endDate) return []
+  if (!props.dateRange.startDate || !props.dateRange.endDate) return [];
 
-  const start = startOfMonth(new Date(props.dateRange.startDate))
-  const end = endOfMonth(new Date(props.dateRange.endDate))
+  const start = startOfMonth(new Date(props.dateRange.startDate));
+  const end = endOfMonth(new Date(props.dateRange.endDate));
 
-  const days = eachDayOfInterval({start, end})
+  const days = eachDayOfInterval({ start, end });
 
   return days.map((day) => {
-    const dateStr = format(day, "yyyy-MM-dd")
+    const dateStr = format(day, 'yyyy-MM-dd');
 
     // Buscar registros de asistencia para este día
-    const dayAttendance = []
+    const dayAttendance = [];
     props.classData?.students?.forEach((student) => {
       const record = student.attendance?.find(
-        (a) => format(new Date(a.date), "yyyy-MM-dd") === dateStr
-      )
-      if (record) dayAttendance.push(record)
-    })
+        (a) => format(new Date(a.date), 'yyyy-MM-dd') === dateStr,
+      );
+      if (record) dayAttendance.push(record);
+    });
 
-    const hasClass = dayAttendance.length > 0
-    let status = "none"
-    let tooltip = format(day, "dd/MM/yyyy", {locale: es})
+    const hasClass = dayAttendance.length > 0;
+    let status = 'none';
+    let tooltip = format(day, 'dd/MM/yyyy', { locale: es });
 
     if (hasClass) {
-      const presents = dayAttendance.filter((a) => a.status === "present").length
-      const total = dayAttendance.length
-      const rate = Math.round((presents / total) * 100)
+      const presents = dayAttendance.filter((a) => a.status === 'present').length;
+      const total = dayAttendance.length;
+      const rate = Math.round((presents / total) * 100);
 
-      if (rate >= 80) status = "good"
-      else if (rate >= 60) status = "medium"
-      else status = "poor"
+      if (rate >= 80) status = 'good';
+      else if (rate >= 60) status = 'medium';
+      else status = 'poor';
 
-      tooltip += ` - ${presents}/${total} presentes (${rate}%)`
+      tooltip += ` - ${presents}/${total} presentes (${rate}%)`;
     } else {
-      tooltip += " - Sin clase"
+      tooltip += ' - Sin clase';
     }
 
     return {
       date: dateStr,
-      day: format(day, "d"),
+      day: format(day, 'd'),
       isCurrentMonth: true,
       hasClass,
       status,
       tooltip,
-    }
-  })
-})
+    };
+  });
+});
 
 // Métodos auxiliares
 const getInitials = (firstName, lastName) => {
-  return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase()
-}
+  return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+};
 
 const getStatusDot = (status) => {
   const colors = {
-    present: "bg-green-500",
-    absent: "bg-red-500",
-    late: "bg-yellow-500",
-    justified: "bg-blue-500",
-  }
-  return colors[status] || "bg-gray-300"
-}
+    present: 'bg-green-500',
+    absent: 'bg-red-500',
+    late: 'bg-yellow-500',
+    justified: 'bg-blue-500',
+  };
+  return colors[status] || 'bg-gray-300';
+};
 
 const getStatusText = (status) => {
   const texts = {
-    present: "Presente",
-    absent: "Ausente",
-    late: "Tardanza",
-    justified: "Justificado",
-  }
-  return texts[status] || status
-}
+    present: 'Presente',
+    absent: 'Ausente',
+    late: 'Tardanza',
+    justified: 'Justificado',
+  };
+  return texts[status] || status;
+};
 
 const getCalendarDayColor = (status) => {
   const colors = {
-    good: "bg-green-200 text-green-800",
-    medium: "bg-yellow-200 text-yellow-800",
-    poor: "bg-red-200 text-red-800",
-    none: "bg-gray-100 text-gray-500",
-  }
-  return colors[status] || "bg-gray-100"
-}
+    good: 'bg-green-200 text-green-800',
+    medium: 'bg-yellow-200 text-yellow-800',
+    poor: 'bg-red-200 text-red-800',
+    none: 'bg-gray-100 text-gray-500',
+  };
+  return colors[status] || 'bg-gray-100';
+};
 
 const getObservationTypeColor = (type) => {
   const colors = {
-    positive: "bg-green-100 text-green-800",
-    negative: "bg-red-100 text-red-800",
-    neutral: "bg-gray-100 text-gray-800",
-    important: "bg-blue-100 text-blue-800",
-  }
-  return colors[type] || "bg-gray-100 text-gray-800"
-}
+    positive: 'bg-green-100 text-green-800',
+    negative: 'bg-red-100 text-red-800',
+    neutral: 'bg-gray-100 text-gray-800',
+    important: 'bg-blue-100 text-blue-800',
+  };
+  return colors[type] || 'bg-gray-100 text-gray-800';
+};
 
 const formatDate = (date) => {
-  if (!date) return "N/A"
-  return format(new Date(date), "dd/MM/yyyy", {locale: es})
-}
+  if (!date) return 'N/A';
+  return format(new Date(date), 'dd/MM/yyyy', { locale: es });
+};
 
 // Acciones
 const closeModal = () => {
-  emit("close")
-}
+  emit('close');
+};
 
 const exportClassData = () => {
-  emit("export", props.classData)
-}
+  emit('export', props.classData);
+};
 
 // Resetear tab al abrir modal
 watch(
   () => props.isOpen,
   (newValue) => {
     if (newValue) {
-      activeTab.value = "summary"
-      studentFilter.value = ""
+      activeTab.value = 'summary';
+      studentFilter.value = '';
     }
-  }
-)
+  },
+);
 </script>

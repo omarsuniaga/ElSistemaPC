@@ -1,72 +1,3 @@
-<script setup lang="ts">
-import {ref, watch, computed} from "vue"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useInstrumentoStore} from "../../Instruments/store/instrumento"
-import {
-  MusicalNoteIcon,
-  AcademicCapIcon,
-  UserIcon,
-  ClockIcon,
-  PencilIcon,
-  XMarkIcon,
-  ChevronDownIcon,
-  AdjustmentsHorizontalIcon,
-} from "@heroicons/vue/24/outline"
-
-interface Filters {
-  instrument: string
-  level: string
-  teacherId: string
-  additionalFilter: string
-}
-
-const props = defineProps<{
-  initialFilters: Filters
-  levelOptions: string[]
-  additionalFilterOptions?: string[]
-}>()
-
-const emit = defineEmits<{
-  (e: "update:filters", filters: Filters): void
-  (e: "reset"): void
-}>()
-
-const teachersStore = useTeachersStore()
-const instrumentoStore = useInstrumentoStore()
-
-const filters = ref<Filters>({...props.initialFilters})
-const showFilters = ref(false) // Por defecto, los filtros están ocultos
-const activeFilterCount = computed(() => {
-  return Object.values(filters.value).filter((value) => value !== "").length
-})
-
-// Cuando cambien los filtros, emitir el evento para actualizar
-watch(
-  filters,
-  (newFilters) => {
-    emit("update:filters", newFilters)
-  },
-  {deep: true}
-)
-
-const resetFilters = () => {
-  filters.value = {
-    instrument: "",
-    level: "",
-    teacherId: "",
-  }
-  emit("reset")
-}
-
-const toggleFilters = () => {
-  showFilters.value = !showFilters.value
-}
-
-const getTeacherName = (id: string) => {
-  return teachersStore.teachers.find((t) => t.id === id)?.name || id
-}
-</script>
-
 <template>
   <div
     class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300 mb-3"
@@ -217,6 +148,75 @@ const getTeacherName = (id: string) => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, watch, computed } from 'vue';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useInstrumentoStore } from '../../Instruments/store/instrumento';
+import {
+  MusicalNoteIcon,
+  AcademicCapIcon,
+  UserIcon,
+  ClockIcon,
+  PencilIcon,
+  XMarkIcon,
+  ChevronDownIcon,
+  AdjustmentsHorizontalIcon,
+} from '@heroicons/vue/24/outline';
+
+interface Filters {
+  instrument: string
+  level: string
+  teacherId: string
+  additionalFilter: string
+}
+
+const props = defineProps<{
+  initialFilters: Filters
+  levelOptions: string[]
+  additionalFilterOptions?: string[]
+}>();
+
+const emit = defineEmits<{
+  (e: 'update:filters', filters: Filters): void
+  (e: 'reset'): void
+}>();
+
+const teachersStore = useTeachersStore();
+const instrumentoStore = useInstrumentoStore();
+
+const filters = ref<Filters>({ ...props.initialFilters });
+const showFilters = ref(false); // Por defecto, los filtros están ocultos
+const activeFilterCount = computed(() => {
+  return Object.values(filters.value).filter((value) => value !== '').length;
+});
+
+// Cuando cambien los filtros, emitir el evento para actualizar
+watch(
+  filters,
+  (newFilters) => {
+    emit('update:filters', newFilters);
+  },
+  { deep: true },
+);
+
+const resetFilters = () => {
+  filters.value = {
+    instrument: '',
+    level: '',
+    teacherId: '',
+  };
+  emit('reset');
+};
+
+const toggleFilters = () => {
+  showFilters.value = !showFilters.value;
+};
+
+const getTeacherName = (id: string) => {
+  return teachersStore.teachers.find((t) => t.id === id)?.name || id;
+};
+</script>
 
 <style lang="postcss">
 .filter-group {

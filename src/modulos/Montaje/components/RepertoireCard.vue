@@ -84,31 +84,31 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import type {Repertorio, EstadoRepertorio} from "../types"
-import {formatDate} from "../utils"
+import { computed } from 'vue';
+import type { Repertorio, EstadoRepertorio } from '../types';
+import { formatDate } from '../utils';
 
 interface Props {
   repertoire: Repertorio
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   edit: [repertoire: Repertorio]
   delete: [repertoire: Repertorio]
   view: [repertoire: Repertorio]
-}>()
+}>();
 
 const getEstadoBadgeClass = (estado: EstadoRepertorio) => {
   const classes = {
-    BORRADOR: "bg-gray-100 text-gray-800",
-    EN_REVISION: "bg-yellow-100 text-yellow-800",
-    APROBADO: "bg-green-100 text-green-800",
-    EN_MONTAJE: "bg-blue-100 text-blue-800",
-    SUSPENDIDO: "bg-red-100 text-red-800",
-    COMPLETADO: "bg-purple-100 text-purple-800",
-  }
-  return classes[estado] || "bg-gray-100 text-gray-800"
-}
+    BORRADOR: 'bg-gray-100 text-gray-800',
+    EN_REVISION: 'bg-yellow-100 text-yellow-800',
+    APROBADO: 'bg-green-100 text-green-800',
+    EN_MONTAJE: 'bg-blue-100 text-blue-800',
+    SUSPENDIDO: 'bg-red-100 text-red-800',
+    COMPLETADO: 'bg-purple-100 text-purple-800',
+  };
+  return classes[estado] || 'bg-gray-100 text-gray-800';
+};
 </script>

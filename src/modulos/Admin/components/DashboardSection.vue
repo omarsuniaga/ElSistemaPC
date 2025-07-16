@@ -104,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
+import { ref, computed } from 'vue';
 import {
   ArrowPathIcon,
   ChevronUpIcon,
@@ -116,7 +116,7 @@ import {
   UsersIcon,
   BellIcon,
   ServerIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface Props {
   title: string
@@ -141,12 +141,12 @@ const props = withDefaults(defineProps<Props>(), {
   refreshable: false,
   expandable: false,
   defaultExpanded: true,
-})
+});
 
 const emit = defineEmits<{
   refresh: []
   retry: []
-}>()
+}>();
 
 // Icon mapping
 const iconComponents = {
@@ -157,20 +157,20 @@ const iconComponents = {
   ServerIcon,
   DocumentIcon,
   ExclamationTriangleIcon,
-}
+};
 
 // State
-const isExpanded = ref(props.defaultExpanded)
+const isExpanded = ref(props.defaultExpanded);
 
 // Computed
 const iconComponent = computed(
-  () => iconComponents[props.icon as keyof typeof iconComponents] || CogIcon
-)
+  () => iconComponents[props.icon as keyof typeof iconComponents] || CogIcon,
+);
 
 // Methods
 const toggleExpanded = () => {
-  isExpanded.value = !isExpanded.value
-}
+  isExpanded.value = !isExpanded.value;
+};
 </script>
 
 <style scoped>

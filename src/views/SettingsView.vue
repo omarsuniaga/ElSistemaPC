@@ -589,22 +589,22 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {useAuthStore} from "../stores/auth"
-import {useUserSessionsStore} from "../modulos/Users/store/userSessions"
-import {doc, getDoc, updateDoc, deleteDoc, collection} from "firebase/firestore"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import { useUserSessionsStore } from '../modulos/Users/store/userSessions';
+import { doc, getDoc, updateDoc, deleteDoc, collection } from 'firebase/firestore';
 import {
   updatePassword,
   updateEmail,
   EmailAuthProvider,
   reauthenticateWithCredential,
   deleteUser,
-} from "firebase/auth"
-import {getAuth} from "firebase/auth"
-import {db} from "../firebase"
-import {useTheme} from "../contexts/ThemeContext"
-import SpinnerIcon from "../components/SpinnerIcon.vue"
+} from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
+import { db } from '../firebase';
+import { useTheme } from '../contexts/ThemeContext';
+import SpinnerIcon from '../components/SpinnerIcon.vue';
 import {
   ArrowLeftIcon,
   BellIcon,
@@ -617,35 +617,35 @@ import {
   ComputerDesktopIcon,
   DevicePhoneMobileIcon,
   InformationCircleIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Store y router
-const router = useRouter()
-const authStore = useAuthStore()
-const userSessionsStore = useUserSessionsStore()
-const {isDarkMode, toggleDarkMode} = useTheme()
+const router = useRouter();
+const authStore = useAuthStore();
+const userSessionsStore = useUserSessionsStore();
+const { isDarkMode, toggleDarkMode } = useTheme();
 
 // Estado de la UI
-const activeTab = ref("account")
-const isLoading = ref(false)
-const showEmailUpdateForm = ref(false)
-const showDeleteAccountModal = ref(false)
-const deleteConfirmation = ref("")
+const activeTab = ref('account');
+const isLoading = ref(false);
+const showEmailUpdateForm = ref(false);
+const showDeleteAccountModal = ref(false);
+const deleteConfirmation = ref('');
 
 // Datos del usuario
-const userEmail = computed(() => authStore.user?.email || "")
+const userEmail = computed(() => authStore.user?.email || '');
 
 // Formularios
 const passwordForm = ref({
-  currentPassword: "",
-  newPassword: "",
-  confirmPassword: "",
-})
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+});
 
 const emailForm = ref({
-  newEmail: "",
-  password: "",
-})
+  newEmail: '',
+  password: '',
+});
 
 // Configuración de notificaciones
 const notificationSettings = ref({
@@ -656,78 +656,78 @@ const notificationSettings = ref({
     classes: true,
     announcements: true,
   },
-})
+});
 
 // Configuración de apariencia
 const appearanceSettings = ref({
-  theme: isDarkMode.value ? "dark" : "light",
-})
+  theme: isDarkMode.value ? 'dark' : 'light',
+});
 
 // Configuración de privacidad
 const privacySettings = ref({
   twoFactorAuth: false,
   activityLog: true,
-})
+});
 
 // Historial de sesiones
-const sessionHistory = ref<any[]>([])
+const sessionHistory = ref<any[]>([]);
 
 // Estructura de pestañas
 const tabs = [
-  {id: "account", name: "Cuenta", icon: UserIcon},
-  {id: "notifications", name: "Notificaciones", icon: BellIcon},
-  {id: "appearance", name: "Apariencia", icon: PaintBrushIcon},
-  {id: "privacy", name: "Privacidad", icon: ShieldCheckIcon},
-  {id: "about", name: "Acerca de", icon: InformationCircleIcon},
-]
+  { id: 'account', name: 'Cuenta', icon: UserIcon },
+  { id: 'notifications', name: 'Notificaciones', icon: BellIcon },
+  { id: 'appearance', name: 'Apariencia', icon: PaintBrushIcon },
+  { id: 'privacy', name: 'Privacidad', icon: ShieldCheckIcon },
+  { id: 'about', name: 'Acerca de', icon: InformationCircleIcon },
+];
 
 // Fuerza de la contraseña
 const passwordStrength = computed(() => {
-  const password = passwordForm.value.newPassword
-  if (!password) return 0
+  const password = passwordForm.value.newPassword;
+  if (!password) return 0;
 
-  let score = 0
-  if (password.length >= 8) score++
-  if (/[A-Z]/.test(password)) score++
-  if (/[0-9]/.test(password)) score++
-  if (/[^A-Za-z0-9]/.test(password)) score++
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
 
-  return score
-})
+  return score;
+});
 
 const passwordStrengthClass = computed(() => {
   switch (passwordStrength.value) {
-    case 0:
-      return "bg-gray-300 dark:bg-gray-600"
-    case 1:
-      return "bg-red-500"
-    case 2:
-      return "bg-yellow-500"
-    case 3:
-      return "bg-blue-500"
-    case 4:
-      return "bg-green-500"
-    default:
-      return "bg-gray-300 dark:bg-gray-600"
+  case 0:
+    return 'bg-gray-300 dark:bg-gray-600';
+  case 1:
+    return 'bg-red-500';
+  case 2:
+    return 'bg-yellow-500';
+  case 3:
+    return 'bg-blue-500';
+  case 4:
+    return 'bg-green-500';
+  default:
+    return 'bg-gray-300 dark:bg-gray-600';
   }
-})
+});
 
 const passwordStrengthText = computed(() => {
   switch (passwordStrength.value) {
-    case 0:
-      return "Ingresa una contraseña"
-    case 1:
-      return "Débil"
-    case 2:
-      return "Regular"
-    case 3:
-      return "Buena"
-    case 4:
-      return "Fuerte"
-    default:
-      return ""
+  case 0:
+    return 'Ingresa una contraseña';
+  case 1:
+    return 'Débil';
+  case 2:
+    return 'Regular';
+  case 3:
+    return 'Buena';
+  case 4:
+    return 'Fuerte';
+  default:
+    return '';
   }
-})
+});
 
 const passwordValid = computed(() => {
   return (
@@ -736,266 +736,266 @@ const passwordValid = computed(() => {
     passwordForm.value.currentPassword &&
     passwordForm.value.newPassword === passwordForm.value.confirmPassword &&
     passwordStrength.value >= 3
-  )
-})
+  );
+});
 
 // Métodos
 const goBack = () => {
-  router.back()
-}
+  router.back();
+};
 
 const loadUserSettings = async () => {
-  if (!authStore.user?.uid) return
+  if (!authStore.user?.uid) return;
 
   try {
-    isLoading.value = true
+    isLoading.value = true;
 
     // Cargar preferencias de notificaciones
-    const userDocRef = doc(db, "USERS", authStore.user.uid)
-    const userDoc = await getDoc(userDocRef)
+    const userDocRef = doc(db, 'USERS', authStore.user.uid);
+    const userDoc = await getDoc(userDocRef);
 
     if (userDoc.exists()) {
-      const userData = userDoc.data()
+      const userData = userDoc.data();
 
       if (userData.notificationSettings) {
         notificationSettings.value = {
           ...notificationSettings.value,
           ...userData.notificationSettings,
-        }
+        };
       }
 
       if (userData.privacySettings) {
         privacySettings.value = {
           ...privacySettings.value,
           ...userData.privacySettings,
-        }
+        };
       }
     }
 
     // Cargar historial de sesiones
     if (privacySettings.value.activityLog) {
-      await userSessionsStore.getUserSessions(authStore.user.uid)
-      sessionHistory.value = userSessionsStore.getUserSessionsById(authStore.user.uid)
+      await userSessionsStore.getUserSessions(authStore.user.uid);
+      sessionHistory.value = userSessionsStore.getUserSessionsById(authStore.user.uid);
     }
   } catch (error) {
-    console.error("Error al cargar configuraciones:", error)
+    console.error('Error al cargar configuraciones:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const changePassword = async () => {
-  if (!passwordValid.value) return
+  if (!passwordValid.value) return;
 
   try {
-    isLoading.value = true
-    const auth = getAuth()
-    const user = auth.currentUser
+    isLoading.value = true;
+    const auth = getAuth();
+    const user = auth.currentUser;
 
     if (!user || !user.email) {
-      throw new Error("Usuario no autenticado")
+      throw new Error('Usuario no autenticado');
     }
 
     // Reautenticar al usuario
-    const credential = EmailAuthProvider.credential(user.email, passwordForm.value.currentPassword)
+    const credential = EmailAuthProvider.credential(user.email, passwordForm.value.currentPassword);
 
-    await reauthenticateWithCredential(user, credential)
+    await reauthenticateWithCredential(user, credential);
 
     // Cambiar contraseña
-    await updatePassword(user, passwordForm.value.newPassword)
+    await updatePassword(user, passwordForm.value.newPassword);
 
-    alert("Contraseña actualizada correctamente")
+    alert('Contraseña actualizada correctamente');
 
     // Limpiar formulario
     passwordForm.value = {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    }
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    };
   } catch (error: any) {
-    if (error.code === "auth/wrong-password") {
-      alert("La contraseña actual es incorrecta")
+    if (error.code === 'auth/wrong-password') {
+      alert('La contraseña actual es incorrecta');
     } else {
-      console.error("Error al cambiar contraseña:", error)
-      alert("Error al actualizar contraseña")
+      console.error('Error al cambiar contraseña:', error);
+      alert('Error al actualizar contraseña');
     }
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const updateEmail = async () => {
-  if (!emailForm.value.newEmail || !emailForm.value.password) return
+  if (!emailForm.value.newEmail || !emailForm.value.password) return;
 
   try {
-    isLoading.value = true
-    const auth = getAuth()
-    const user = auth.currentUser
+    isLoading.value = true;
+    const auth = getAuth();
+    const user = auth.currentUser;
 
     if (!user || !user.email) {
-      throw new Error("Usuario no autenticado")
+      throw new Error('Usuario no autenticado');
     }
 
     // Reautenticar al usuario
-    const credential = EmailAuthProvider.credential(user.email, emailForm.value.password)
+    const credential = EmailAuthProvider.credential(user.email, emailForm.value.password);
 
-    await reauthenticateWithCredential(user, credential)
+    await reauthenticateWithCredential(user, credential);
 
     // Actualizar correo
-    await updateEmail(user, emailForm.value.newEmail)
+    await updateEmail(user, emailForm.value.newEmail);
 
     // Actualizar en Firestore
     if (authStore.user?.uid) {
-      const userDocRef = doc(db, "USERS", authStore.user.uid)
+      const userDocRef = doc(db, 'USERS', authStore.user.uid);
       await updateDoc(userDocRef, {
         email: emailForm.value.newEmail,
-      })
+      });
     }
 
-    alert("Correo electrónico actualizado correctamente")
-    showEmailUpdateForm.value = false
+    alert('Correo electrónico actualizado correctamente');
+    showEmailUpdateForm.value = false;
 
     // Limpiar formulario
     emailForm.value = {
-      newEmail: "",
-      password: "",
-    }
+      newEmail: '',
+      password: '',
+    };
   } catch (error: any) {
-    if (error.code === "auth/wrong-password") {
-      alert("La contraseña es incorrecta")
-    } else if (error.code === "auth/email-already-in-use") {
-      alert("Este correo ya está en uso por otra cuenta")
+    if (error.code === 'auth/wrong-password') {
+      alert('La contraseña es incorrecta');
+    } else if (error.code === 'auth/email-already-in-use') {
+      alert('Este correo ya está en uso por otra cuenta');
     } else {
-      console.error("Error al actualizar email:", error)
-      alert("Error al actualizar correo electrónico")
+      console.error('Error al actualizar email:', error);
+      alert('Error al actualizar correo electrónico');
     }
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const saveNotificationSettings = async () => {
-  if (!authStore.user?.uid) return
+  if (!authStore.user?.uid) return;
 
   try {
-    isLoading.value = true
+    isLoading.value = true;
 
-    const userDocRef = doc(db, "USERS", authStore.user.uid)
+    const userDocRef = doc(db, 'USERS', authStore.user.uid);
     await updateDoc(userDocRef, {
       notificationSettings: notificationSettings.value,
-    })
+    });
 
-    alert("Preferencias de notificaciones guardadas")
+    alert('Preferencias de notificaciones guardadas');
   } catch (error) {
-    console.error("Error al guardar preferencias de notificaciones:", error)
-    alert("Error al guardar preferencias")
+    console.error('Error al guardar preferencias de notificaciones:', error);
+    alert('Error al guardar preferencias');
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const saveAppearanceSettings = async () => {
-  if (!authStore.user?.uid) return
+  if (!authStore.user?.uid) return;
 
   try {
-    isLoading.value = true
+    isLoading.value = true;
 
-    const userDocRef = doc(db, "USERS", authStore.user.uid)
+    const userDocRef = doc(db, 'USERS', authStore.user.uid);
     await updateDoc(userDocRef, {
-      isDark: appearanceSettings.value.theme === "dark",
-    })
+      isDark: appearanceSettings.value.theme === 'dark',
+    });
 
     // Aplicar tema
-    if (appearanceSettings.value.theme === "dark") {
-      if (!isDarkMode.value) toggleDarkMode()
+    if (appearanceSettings.value.theme === 'dark') {
+      if (!isDarkMode.value) toggleDarkMode();
     } else {
-      if (isDarkMode.value) toggleDarkMode()
+      if (isDarkMode.value) toggleDarkMode();
     }
 
-    alert("Preferencias de apariencia guardadas")
+    alert('Preferencias de apariencia guardadas');
   } catch (error) {
-    console.error("Error al guardar preferencias de apariencia:", error)
-    alert("Error al guardar preferencias")
+    console.error('Error al guardar preferencias de apariencia:', error);
+    alert('Error al guardar preferencias');
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const savePrivacySettings = async () => {
-  if (!authStore.user?.uid) return
+  if (!authStore.user?.uid) return;
 
   try {
-    isLoading.value = true
+    isLoading.value = true;
 
-    const userDocRef = doc(db, "USERS", authStore.user.uid)
+    const userDocRef = doc(db, 'USERS', authStore.user.uid);
     await updateDoc(userDocRef, {
       privacySettings: privacySettings.value,
-    })
+    });
 
     // Si se activó el registro de actividad, cargar sesiones
     if (privacySettings.value.activityLog) {
-      await userSessionsStore.getUserSessions(authStore.user.uid)
-      sessionHistory.value = userSessionsStore.getUserSessionsById(authStore.user.uid)
+      await userSessionsStore.getUserSessions(authStore.user.uid);
+      sessionHistory.value = userSessionsStore.getUserSessionsById(authStore.user.uid);
     }
 
-    alert("Configuración de privacidad guardada")
+    alert('Configuración de privacidad guardada');
   } catch (error) {
-    console.error("Error al guardar configuración de privacidad:", error)
-    alert("Error al guardar configuración")
+    console.error('Error al guardar configuración de privacidad:', error);
+    alert('Error al guardar configuración');
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const deleteAccount = async () => {
-  if (deleteConfirmation.value !== "ELIMINAR") return
+  if (deleteConfirmation.value !== 'ELIMINAR') return;
 
   try {
-    isLoading.value = true
-    const auth = getAuth()
-    const user = auth.currentUser
+    isLoading.value = true;
+    const auth = getAuth();
+    const user = auth.currentUser;
 
     if (!user || !authStore.user?.uid) {
-      throw new Error("Usuario no autenticado")
+      throw new Error('Usuario no autenticado');
     }
 
     // Eliminar datos del usuario en Firestore
-    const userDocRef = doc(db, "USERS", authStore.user.uid)
-    await deleteDoc(userDocRef)
+    const userDocRef = doc(db, 'USERS', authStore.user.uid);
+    await deleteDoc(userDocRef);
 
     // Eliminar usuario de Firebase Auth
-    await deleteUser(user)
+    await deleteUser(user);
 
-    alert("Cuenta eliminada correctamente")
-    router.push("/login")
+    alert('Cuenta eliminada correctamente');
+    router.push('/login');
   } catch (error) {
-    console.error("Error al eliminar cuenta:", error)
-    alert("Error al eliminar cuenta. Es posible que necesites iniciar sesión nuevamente.")
+    console.error('Error al eliminar cuenta:', error);
+    alert('Error al eliminar cuenta. Es posible que necesites iniciar sesión nuevamente.');
   } finally {
-    isLoading.value = false
-    showDeleteAccountModal.value = false
+    isLoading.value = false;
+    showDeleteAccountModal.value = false;
   }
-}
+};
 
 // Inicializar
 onMounted(() => {
-  loadUserSettings()
+  loadUserSettings();
 
   // Registrar la sesión actual
   if (authStore.user?.uid) {
     const deviceType = /Mobile|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent)
-      ? "Dispositivo Móvil"
-      : "Computadora"
+      ? 'Dispositivo Móvil'
+      : 'Computadora';
 
     userSessionsStore.recordSession({
       userId: authStore.user.uid,
       device: `${deviceType} (${navigator.platform})`,
       startTime: new Date(),
-      ipAddress: "", // No se puede obtener directamente por privacidad
-      actions: ["Acceso a configuración"],
-    })
+      ipAddress: '', // No se puede obtener directamente por privacidad
+      actions: ['Acceso a configuración'],
+    });
   }
-})
+});
 </script>
 
 <style scoped>

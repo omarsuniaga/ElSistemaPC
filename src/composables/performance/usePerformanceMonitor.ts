@@ -3,8 +3,8 @@
  * Fase 2 - Iniciativa 1: Performance Monitoring Avanzado
  */
 
-import {ref, computed, onMounted, onUnmounted} from "vue"
-import {defineStore} from "pinia"
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { defineStore } from 'pinia';
 
 // ==================== TIPOS ====================
 
@@ -55,16 +55,16 @@ interface PerformanceThresholds {
 // ==================== THRESHOLDS (Google Web Vitals) ====================
 
 const PERFORMANCE_THRESHOLDS: PerformanceThresholds = {
-  FCP: {good: 1800, poor: 3000}, // ms
-  LCP: {good: 2500, poor: 4000}, // ms
-  FID: {good: 100, poor: 300}, // ms
-  CLS: {good: 0.1, poor: 0.25}, // score
-  bundleSize: {good: 500000, poor: 1000000}, // bytes
-}
+  FCP: { good: 1800, poor: 3000 }, // ms
+  LCP: { good: 2500, poor: 4000 }, // ms
+  FID: { good: 100, poor: 300 }, // ms
+  CLS: { good: 0.1, poor: 0.25 }, // score
+  bundleSize: { good: 500000, poor: 1000000 }, // bytes
+};
 
 // ==================== STORE DE PERFORMANCE ====================
 
-export const usePerformanceStore = defineStore("performance", () => {
+export const usePerformanceStore = defineStore('performance', () => {
   // Estado
   const metrics = ref<PerformanceMetrics>({
     FCP: null,
@@ -81,17 +81,17 @@ export const usePerformanceStore = defineStore("performance", () => {
     imageSize: 0,
     memoryUsage: null,
     longTasks: 0,
-    connectionType: "unknown",
+    connectionType: 'unknown',
     downlink: null,
-  })
+  });
 
-  const entries = ref<PerformanceEntry[]>([])
-  const isMonitoring = ref(false)
-  const lastUpdate = ref<Date | null>(null)
+  const entries = ref<PerformanceEntry[]>([]);
+  const isMonitoring = ref(false);
+  const lastUpdate = ref<Date | null>(null);
 
   // Computed
   const performanceScore = computed(() => {
-    const scores: Record<string, number> = {}
+    const scores: Record<string, number> = {};
 
     // Calculate Web Vitals scores (0-100)
     if (metrics.value.FCP !== null) {
@@ -100,7 +100,7 @@ export const usePerformanceStore = defineStore("performance", () => {
           ? 100
           : metrics.value.FCP <= PERFORMANCE_THRESHOLDS.FCP.poor
             ? 50
-            : 0
+            : 0;
     }
 
     if (metrics.value.LCP !== null) {
@@ -109,7 +109,7 @@ export const usePerformanceStore = defineStore("performance", () => {
           ? 100
           : metrics.value.LCP <= PERFORMANCE_THRESHOLDS.LCP.poor
             ? 50
-            : 0
+            : 0;
     }
 
     if (metrics.value.FID !== null) {
@@ -118,7 +118,7 @@ export const usePerformanceStore = defineStore("performance", () => {
           ? 100
           : metrics.value.FID <= PERFORMANCE_THRESHOLDS.FID.poor
             ? 50
-            : 0
+            : 0;
     }
 
     if (metrics.value.CLS !== null) {
@@ -127,211 +127,211 @@ export const usePerformanceStore = defineStore("performance", () => {
           ? 100
           : metrics.value.CLS <= PERFORMANCE_THRESHOLDS.CLS.poor
             ? 50
-            : 0
+            : 0;
     }
 
-    const validScores = Object.values(scores).filter((score) => score !== null)
+    const validScores = Object.values(scores).filter((score) => score !== null);
     return validScores.length > 0
       ? Math.round(validScores.reduce((sum, score) => sum + score, 0) / validScores.length)
-      : 0
-  })
+      : 0;
+  });
 
   const bundleHealthStatus = computed(() => {
-    if (!metrics.value.bundleSize) return "unknown"
+    if (!metrics.value.bundleSize) return 'unknown';
 
-    if (metrics.value.bundleSize <= PERFORMANCE_THRESHOLDS.bundleSize.good) return "good"
+    if (metrics.value.bundleSize <= PERFORMANCE_THRESHOLDS.bundleSize.good) return 'good';
     if (metrics.value.bundleSize <= PERFORMANCE_THRESHOLDS.bundleSize.poor)
-      return "needs-improvement"
-    return "poor"
-  })
+      return 'needs-improvement';
+    return 'poor';
+  });
 
   const memoryStatus = computed(() => {
-    if (!metrics.value.memoryUsage) return "unknown"
+    if (!metrics.value.memoryUsage) return 'unknown';
 
     // Memory thresholds (MB)
-    if (metrics.value.memoryUsage <= 50 * 1024 * 1024) return "good"
-    if (metrics.value.memoryUsage <= 100 * 1024 * 1024) return "needs-improvement"
-    return "poor"
-  })
+    if (metrics.value.memoryUsage <= 50 * 1024 * 1024) return 'good';
+    if (metrics.value.memoryUsage <= 100 * 1024 * 1024) return 'needs-improvement';
+    return 'poor';
+  });
 
   const recommendations = computed(() => {
-    const recs: string[] = []
+    const recs: string[] = [];
 
     if (metrics.value.FCP && metrics.value.FCP > PERFORMANCE_THRESHOLDS.FCP.poor) {
-      recs.push("🎨 Optimizar First Contentful Paint: considerar critical CSS y preload de fonts")
+      recs.push('🎨 Optimizar First Contentful Paint: considerar critical CSS y preload de fonts');
     }
 
     if (metrics.value.LCP && metrics.value.LCP > PERFORMANCE_THRESHOLDS.LCP.poor) {
-      recs.push("🖼️ Optimizar Largest Contentful Paint: comprimir imágenes y usar lazy loading")
+      recs.push('🖼️ Optimizar Largest Contentful Paint: comprimir imágenes y usar lazy loading');
     }
 
     if (
       metrics.value.bundleSize &&
       metrics.value.bundleSize > PERFORMANCE_THRESHOLDS.bundleSize.poor
     ) {
-      recs.push("📦 Bundle demasiado grande: implementar code splitting más agresivo")
+      recs.push('📦 Bundle demasiado grande: implementar code splitting más agresivo');
     }
 
     if (metrics.value.longTasks > 5) {
-      recs.push("⏰ Muchas Long Tasks detectadas: optimizar código JavaScript")
+      recs.push('⏰ Muchas Long Tasks detectadas: optimizar código JavaScript');
     }
 
     if (metrics.value.memoryUsage && metrics.value.memoryUsage > 100 * 1024 * 1024) {
-      recs.push("🧠 Alto uso de memoria: revisar memory leaks y optimizar componentes")
+      recs.push('🧠 Alto uso de memoria: revisar memory leaks y optimizar componentes');
     }
 
-    return recs
-  })
+    return recs;
+  });
 
   // ==================== MÉTODOS DE MEDICIÓN ====================
 
   function startMonitoring() {
-    if (isMonitoring.value) return
+    if (isMonitoring.value) return;
 
-    isMonitoring.value = true
-    console.log("📊 Iniciando monitoreo de performance...")
+    isMonitoring.value = true;
+    console.log('📊 Iniciando monitoreo de performance...');
 
     // Medir Web Vitals
-    measureWebVitals()
+    measureWebVitals();
 
     // Medir recursos
-    measureResources()
+    measureResources();
 
     // Medir memoria
-    measureMemory()
+    measureMemory();
 
     // Medir conexión
-    measureNetworkInfo()
+    measureNetworkInfo();
 
     // Configurar observadores
-    setupPerformanceObserver()
+    setupPerformanceObserver();
 
-    lastUpdate.value = new Date()
+    lastUpdate.value = new Date();
   }
 
   function stopMonitoring() {
-    isMonitoring.value = false
-    console.log("📊 Deteniendo monitoreo de performance...")
+    isMonitoring.value = false;
+    console.log('📊 Deteniendo monitoreo de performance...');
   }
 
   function measureWebVitals() {
     // First Contentful Paint
-    const paintEntries = performance.getEntriesByType("paint")
-    const fcpEntry = paintEntries.find((entry) => entry.name === "first-contentful-paint")
+    const paintEntries = performance.getEntriesByType('paint');
+    const fcpEntry = paintEntries.find((entry) => entry.name === 'first-contentful-paint');
     if (fcpEntry) {
-      updateMetric("FCP", fcpEntry.startTime)
+      updateMetric('FCP', fcpEntry.startTime);
     }
 
     // Largest Contentful Paint (usando PerformanceObserver en setupPerformanceObserver)
 
     // Time to Interactive (aproximado usando domContentLoadedEventEnd)
-    const navEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[]
+    const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
     if (navEntries.length > 0) {
-      const navEntry = navEntries[0]
+      const navEntry = navEntries[0];
       if (navEntry.domContentLoadedEventEnd) {
-        updateMetric("TTI", navEntry.domContentLoadedEventEnd)
+        updateMetric('TTI', navEntry.domContentLoadedEventEnd);
       }
     }
   }
 
   function measureResources() {
-    const resources = performance.getEntriesByType("resource") as PerformanceResourceTiming[]
+    const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
 
-    let jsSize = 0
-    let cssSize = 0
-    let imageSize = 0
-    let totalSize = 0
+    let jsSize = 0;
+    let cssSize = 0;
+    let imageSize = 0;
+    let totalSize = 0;
 
     resources.forEach((resource) => {
-      const size = resource.transferSize || 0
-      totalSize += size
+      const size = resource.transferSize || 0;
+      totalSize += size;
 
-      if (resource.name.includes(".js")) {
-        jsSize += size
-      } else if (resource.name.includes(".css")) {
-        cssSize += size
+      if (resource.name.includes('.js')) {
+        jsSize += size;
+      } else if (resource.name.includes('.css')) {
+        cssSize += size;
       } else if (resource.name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
-        imageSize += size
+        imageSize += size;
       }
-    })
+    });
 
-    metrics.value.totalResources = resources.length
-    metrics.value.jsSize = jsSize
-    metrics.value.cssSize = cssSize
-    metrics.value.imageSize = imageSize
-    metrics.value.bundleSize = totalSize
+    metrics.value.totalResources = resources.length;
+    metrics.value.jsSize = jsSize;
+    metrics.value.cssSize = cssSize;
+    metrics.value.imageSize = imageSize;
+    metrics.value.bundleSize = totalSize;
   }
 
   function measureMemory() {
     // Solo en navegadores que soporten la API de memoria
-    if ("memory" in performance) {
-      const memInfo = (performance as any).memory
-      updateMetric("memoryUsage", memInfo.usedJSHeapSize)
+    if ('memory' in performance) {
+      const memInfo = (performance as any).memory;
+      updateMetric('memoryUsage', memInfo.usedJSHeapSize);
     }
   }
 
   function measureNetworkInfo() {
     // Solo en navegadores que soporten la API de conexión
-    if ("connection" in navigator) {
-      const connection = (navigator as any).connection
-      metrics.value.connectionType = connection.effectiveType || "unknown"
-      metrics.value.downlink = connection.downlink || null
+    if ('connection' in navigator) {
+      const connection = (navigator as any).connection;
+      metrics.value.connectionType = connection.effectiveType || 'unknown';
+      metrics.value.downlink = connection.downlink || null;
     }
   }
 
   function setupPerformanceObserver() {
-    if (!("PerformanceObserver" in window)) return
+    if (!('PerformanceObserver' in window)) return;
 
     try {
       // Observer para LCP
       const lcpObserver = new PerformanceObserver((list) => {
-        const entries = list.getEntries()
-        const lastEntry = entries[entries.length - 1] as any
+        const entries = list.getEntries();
+        const lastEntry = entries[entries.length - 1] as any;
         if (lastEntry) {
-          updateMetric("LCP", lastEntry.startTime)
+          updateMetric('LCP', lastEntry.startTime);
         }
-      })
-      lcpObserver.observe({entryTypes: ["largest-contentful-paint"]})
+      });
+      lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
 
       // Observer para FID
       const fidObserver = new PerformanceObserver((list) => {
-        const entries = list.getEntries()
+        const entries = list.getEntries();
         entries.forEach((entry: any) => {
-          updateMetric("FID", entry.processingStart - entry.startTime)
-        })
-      })
-      fidObserver.observe({entryTypes: ["first-input"]})
+          updateMetric('FID', entry.processingStart - entry.startTime);
+        });
+      });
+      fidObserver.observe({ entryTypes: ['first-input'] });
 
       // Observer para CLS
-      let clsValue = 0
+      let clsValue = 0;
       const clsObserver = new PerformanceObserver((list) => {
-        const entries = list.getEntries()
+        const entries = list.getEntries();
         entries.forEach((entry: any) => {
           if (!entry.hadRecentInput) {
-            clsValue += entry.value
-            updateMetric("CLS", clsValue)
+            clsValue += entry.value;
+            updateMetric('CLS', clsValue);
           }
-        })
-      })
-      clsObserver.observe({entryTypes: ["layout-shift"]})
+        });
+      });
+      clsObserver.observe({ entryTypes: ['layout-shift'] });
 
       // Observer para Long Tasks
       const longTaskObserver = new PerformanceObserver((list) => {
-        const entries = list.getEntries()
-        metrics.value.longTasks += entries.length
-      })
-      longTaskObserver.observe({entryTypes: ["longtask"]})
+        const entries = list.getEntries();
+        metrics.value.longTasks += entries.length;
+      });
+      longTaskObserver.observe({ entryTypes: ['longtask'] });
     } catch (error) {
-      console.warn("📊 No se pudieron configurar algunos PerformanceObservers:", error)
+      console.warn('📊 No se pudieron configurar algunos PerformanceObservers:', error);
     }
   }
 
   function updateMetric(
     metric: keyof PerformanceMetrics,
     value: number,
-    metadata?: {url?: string; component?: string}
+    metadata?: {url?: string; component?: string},
   ) {
-    ;(metrics.value as any)[metric] = value
+    ;(metrics.value as any)[metric] = value;
 
     entries.value.push({
       metric,
@@ -339,30 +339,30 @@ export const usePerformanceStore = defineStore("performance", () => {
       timestamp: Date.now(),
       url: metadata?.url || window.location.pathname,
       component: metadata?.component,
-    })
+    });
 
     // Mantener solo las últimas 100 entradas
     if (entries.value.length > 100) {
-      entries.value = entries.value.slice(-100)
+      entries.value = entries.value.slice(-100);
     }
 
-    lastUpdate.value = new Date()
+    lastUpdate.value = new Date();
   }
 
   // ==================== MÉTODOS ESPECÍFICOS ====================
 
   function measureRouteLoadTime(routeName: string, startTime: number) {
-    const loadTime = performance.now() - startTime
-    updateMetric("routeLoadTime", loadTime, {url: routeName})
+    const loadTime = performance.now() - startTime;
+    updateMetric('routeLoadTime', loadTime, { url: routeName });
   }
 
   function measureComponentMountTime(componentName: string, startTime: number) {
-    const mountTime = performance.now() - startTime
-    updateMetric("componentMountTime", mountTime, {component: componentName})
+    const mountTime = performance.now() - startTime;
+    updateMetric('componentMountTime', mountTime, { component: componentName });
   }
 
   function clearEntries() {
-    entries.value = []
+    entries.value = [];
   }
 
   function exportReport() {
@@ -372,7 +372,7 @@ export const usePerformanceStore = defineStore("performance", () => {
       score: performanceScore.value,
       recommendations: recommendations.value,
       recentEntries: entries.value.slice(-20),
-    }
+    };
   }
 
   // ==================== RETURN ====================
@@ -398,38 +398,38 @@ export const usePerformanceStore = defineStore("performance", () => {
     updateMetric,
     clearEntries,
     exportReport,
-  }
-})
+  };
+});
 
 // ==================== COMPOSABLE ====================
 
 export function usePerformanceMonitor() {
-  const store = usePerformanceStore()
+  const store = usePerformanceStore();
 
   onMounted(() => {
     // Iniciar monitoreo automáticamente
-    store.startMonitoring()
-  })
+    store.startMonitoring();
+  });
 
   onUnmounted(() => {
     // No detener el monitoreo al desmontar componentes individuales
     // El monitoreo es global
-  })
+  });
 
   return {
     ...store,
 
     // Método de conveniencia para medir performance de componentes
     measureComponent: (name: string) => {
-      const startTime = performance.now()
+      const startTime = performance.now();
 
       return {
         finish: () => {
-          store.measureComponentMountTime(name, startTime)
+          store.measureComponentMountTime(name, startTime);
         },
-      }
+      };
     },
-  }
+  };
 }
 
 // ==================== DIRECTIVA VUE ====================
@@ -437,41 +437,41 @@ export function usePerformanceMonitor() {
 // Directiva para medir automáticamente performance de componentes
 export const vPerformanceMonitor = {
   mounted(el: HTMLElement, binding: any) {
-    const componentName = binding.value || el.tagName.toLowerCase()
-    const startTime = performance.now()
+    const componentName = binding.value || el.tagName.toLowerCase();
+    const startTime = performance.now();
 
     // Medir cuando el componente termine de renderizar
     requestAnimationFrame(() => {
-      const store = usePerformanceStore()
-      store.measureComponentMountTime(componentName, startTime)
-    })
+      const store = usePerformanceStore();
+      store.measureComponentMountTime(componentName, startTime);
+    });
   },
-}
+};
 
 // ==================== DECORADOR PARA FUNCIONES ====================
 
 export function measurePerformance(functionName: string) {
   return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value
+    const method = descriptor.value;
 
     descriptor.value = function (...args: any[]) {
-      const startTime = performance.now()
-      const result = method.apply(this, args)
+      const startTime = performance.now();
+      const result = method.apply(this, args);
 
       if (result instanceof Promise) {
         return result.finally(() => {
-          const store = usePerformanceStore()
-          const duration = performance.now() - startTime
-          store.updateMetric("componentMountTime", duration, {component: functionName})
-        })
+          const store = usePerformanceStore();
+          const duration = performance.now() - startTime;
+          store.updateMetric('componentMountTime', duration, { component: functionName });
+        });
       } else {
-        const store = usePerformanceStore()
-        const duration = performance.now() - startTime
-        store.updateMetric("componentMountTime", duration, {component: functionName})
-        return result
+        const store = usePerformanceStore();
+        const duration = performance.now() - startTime;
+        store.updateMetric('componentMountTime', duration, { component: functionName });
+        return result;
       }
-    }
+    };
 
-    return descriptor
-  }
+    return descriptor;
+  };
 }

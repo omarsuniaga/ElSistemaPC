@@ -1,31 +1,3 @@
-<script setup lang="ts">
-interface Props {
-  title?: string
-  subtitle?: string
-  hoverable?: boolean
-  clickable?: boolean
-  variant?: "default" | "outlined" | "elevated"
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  title: "",
-  subtitle: "",
-  hoverable: false,
-  clickable: false,
-  variant: "default",
-})
-
-const emit = defineEmits<{
-  (e: "click"): void
-}>()
-
-const handleClick = () => {
-  if (props.clickable) {
-    emit("click")
-  }
-}
-</script>
-
 <template>
   <div
     :class="[
@@ -52,6 +24,34 @@ const handleClick = () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+interface Props {
+  title?: string
+  subtitle?: string
+  hoverable?: boolean
+  clickable?: boolean
+  variant?: 'default' | 'outlined' | 'elevated'
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  title: '',
+  subtitle: '',
+  hoverable: false,
+  clickable: false,
+  variant: 'default',
+});
+
+const emit = defineEmits<{
+  (e: 'click'): void
+}>();
+
+const handleClick = () => {
+  if (props.clickable) {
+    emit('click');
+  }
+};
+</script>
 
 <style scoped>
 .card {

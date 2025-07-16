@@ -128,19 +128,19 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 
 interface AlertAction {
   id: string
   label: string
-  type: "primary" | "secondary" | "danger"
+  type: 'primary' | 'secondary' | 'danger'
 }
 
 interface CriticalAlert {
   id: string
   title: string
   message: string
-  severity: "critical" | "high" | "medium"
+  severity: 'critical' | 'high' | 'medium'
   timestamp: Date
   affectedUsers?: number
   actions?: AlertAction[]
@@ -152,100 +152,100 @@ const props = defineProps<{
   maxVisible?: number
   autoRefresh?: boolean
   refreshInterval?: number
-}>()
+}>();
 
 const emit = defineEmits<{
   alertResolved: [id: string]
   actionExecuted: [alertId: string, actionId: string]
   alertsDismissed: [ids: string[]]
   refreshRequested: []
-}>()
+}>();
 
-const criticalAlerts = ref<CriticalAlert[]>(props.alerts || [])
-const showAll = ref(false)
-const showDetails = ref(false)
-const maxVisible = ref(props.maxVisible || 3)
+const criticalAlerts = ref<CriticalAlert[]>(props.alerts || []);
+const showAll = ref(false);
+const showDetails = ref(false);
+const maxVisible = ref(props.maxVisible || 3);
 
 const visibleAlerts = computed(() => {
-  if (showAll.value) return criticalAlerts.value
-  return criticalAlerts.value.slice(0, maxVisible.value)
-})
+  if (showAll.value) return criticalAlerts.value;
+  return criticalAlerts.value.slice(0, maxVisible.value);
+});
 
 const getSeverityClass = (severity: string) => {
   const classes = {
-    critical: "bg-red-100 text-red-800",
-    high: "bg-orange-100 text-orange-800",
-    medium: "bg-yellow-100 text-yellow-800",
-  }
-  return classes[severity as keyof typeof classes] || classes.medium
-}
+    critical: 'bg-red-100 text-red-800',
+    high: 'bg-orange-100 text-orange-800',
+    medium: 'bg-yellow-100 text-yellow-800',
+  };
+  return classes[severity as keyof typeof classes] || classes.medium;
+};
 
 const getSeverityLabel = (severity: string) => {
   const labels = {
-    critical: "CRÍTICO",
-    high: "ALTO",
-    medium: "MEDIO",
-  }
-  return labels[severity as keyof typeof labels] || "MEDIO"
-}
+    critical: 'CRÍTICO',
+    high: 'ALTO',
+    medium: 'MEDIO',
+  };
+  return labels[severity as keyof typeof labels] || 'MEDIO';
+};
 
 const formatTime = (date: Date) => {
-  return new Intl.DateTimeFormat("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
 
 const formatDateTime = (date: Date) => {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
 
 const resolveAlert = (id: string) => {
-  const alertIndex = criticalAlerts.value.findIndex((a) => a.id === id)
+  const alertIndex = criticalAlerts.value.findIndex((a) => a.id === id);
   if (alertIndex > -1) {
-    criticalAlerts.value.splice(alertIndex, 1)
-    emit("alertResolved", id)
+    criticalAlerts.value.splice(alertIndex, 1);
+    emit('alertResolved', id);
   }
-}
+};
 
 const executeAction = (alertId: string, actionId: string) => {
-  emit("actionExecuted", alertId, actionId)
-}
+  emit('actionExecuted', alertId, actionId);
+};
 
 const refreshAlerts = () => {
-  emit("refreshRequested")
-}
+  emit('refreshRequested');
+};
 
 const dismissAll = () => {
-  const alertIds = criticalAlerts.value.map((a) => a.id)
-  criticalAlerts.value = []
-  emit("alertsDismissed", alertIds)
-}
+  const alertIds = criticalAlerts.value.map((a) => a.id);
+  criticalAlerts.value = [];
+  emit('alertsDismissed', alertIds);
+};
 
 const addAlert = (alert: CriticalAlert) => {
-  criticalAlerts.value.unshift(alert)
-}
+  criticalAlerts.value.unshift(alert);
+};
 
 const removeAlert = (id: string) => {
-  const index = criticalAlerts.value.findIndex((a) => a.id === id)
+  const index = criticalAlerts.value.findIndex((a) => a.id === id);
   if (index > -1) {
-    criticalAlerts.value.splice(index, 1)
+    criticalAlerts.value.splice(index, 1);
   }
-}
+};
 
 // Simular algunas alertas críticas para demostración
 
 // Auto-refresh if enabled
 if (props.autoRefresh) {
-  const interval = props.refreshInterval || 30000 // 30 segundos por defecto
+  const interval = props.refreshInterval || 30000; // 30 segundos por defecto
   setInterval(() => {
-    emit("refreshRequested")
-  }, interval)
+    emit('refreshRequested');
+  }, interval);
 }
 
 // Exponer métodos para uso externo
@@ -254,5 +254,5 @@ defineExpose({
   removeAlert,
   resolveAlert,
   dismissAll,
-})
+});
 </script>

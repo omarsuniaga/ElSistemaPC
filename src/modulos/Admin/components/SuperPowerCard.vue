@@ -37,9 +37,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {ChevronRightIcon} from "@heroicons/vue/24/outline"
-import * as HeroIcons from "@heroicons/vue/24/outline"
+import { computed } from 'vue';
+import { ChevronRightIcon } from '@heroicons/vue/24/outline';
+import * as HeroIcons from '@heroicons/vue/24/outline';
 
 interface Props {
   id: string
@@ -49,15 +49,15 @@ interface Props {
   gradient: string
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 defineEmits<{
   action: [id: string]
-}>()
+}>();
 
 const iconComponent = computed(() => {
-  return HeroIcons[props.icon] || HeroIcons.CogIcon
-})
+  return HeroIcons[props.icon] || HeroIcons.CogIcon;
+});
 </script>
 
 <style scoped>

@@ -414,14 +414,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import {ClockIcon, CalendarDaysIcon} from "@heroicons/vue/24/outline"
-import {useTeacherObservations} from "../../composables/useObservationManagement"
-import {useAuthStore} from "../../stores/auth"
-import {useClassesStore} from "../../modulos/Classes/store/classes"
-import {useTeacherClassCache} from "../../composables/useTeacherClassCache"
-import SmartObservationForm from "./SmartObservationForm.vue"
-import type {ObservationData} from "../../stores/observations"
+import { ref, computed, watch, onMounted } from 'vue';
+import { ClockIcon, CalendarDaysIcon } from '@heroicons/vue/24/outline';
+import { useTeacherObservations } from '../../composables/useObservationManagement';
+import { useAuthStore } from '../../stores/auth';
+import { useClassesStore } from '../../modulos/Classes/store/classes';
+import { useTeacherClassCache } from '../../composables/useTeacherClassCache';
+import SmartObservationForm from './SmartObservationForm.vue';
+import type { ObservationData } from '../../stores/observations';
 
 // Props
 const props = defineProps<{
@@ -429,179 +429,179 @@ const props = defineProps<{
   classId: string
   className?: string
   selectedDate: string
-}>()
+}>();
 
 // Emits
 const emit = defineEmits<{
-  (e: "close"): void
-  (e: "observation-created"): void
-  (e: "observation-updated"): void
-  (e: "observation-deleted"): void
-}>()
+  (e: 'close'): void
+  (e: 'observation-created'): void
+  (e: 'observation-updated'): void
+  (e: 'observation-deleted'): void
+}>();
 
 // Composables
-const authStore = useAuthStore()
-const classesStore = useClassesStore()
-const classCache = useTeacherClassCache()
+const authStore = useAuthStore();
+const classesStore = useClassesStore();
+const classCache = useTeacherClassCache();
 const {
   loading,
   fetchMyObservations,
   createMyObservation,
   updateMyObservation,
   deleteMyObservation,
-} = useTeacherObservations()
+} = useTeacherObservations();
 
 // Estado reactivo mejorado con flags de loading específicos
-const observations = ref<ObservationData[]>([])
-const filteredObservations = ref<ObservationData[]>([])
-const selectedPeriod = ref("today")
-const selectedType = ref("")
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
-const saving = ref(false)
-const deleting = ref(false)
-const initialLoading = ref(true) // Para manejar el primer estado de carga
+const observations = ref<ObservationData[]>([]);
+const filteredObservations = ref<ObservationData[]>([]);
+const selectedPeriod = ref('today');
+const selectedType = ref('');
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const saving = ref(false);
+const deleting = ref(false);
+const initialLoading = ref(true); // Para manejar el primer estado de carga
 
 // Modales
-const showCreateForm = ref(false)
-const editingObservation = ref<ObservationData | null>(null)
-const observationToDelete = ref<ObservationData | null>(null)
+const showCreateForm = ref(false);
+const editingObservation = ref<ObservationData | null>(null);
+const observationToDelete = ref<ObservationData | null>(null);
 
 // Formulario
 const observationForm = ref<{
   classId: string
   date: string
-  type: "general" | "comportamiento" | "academico" | "asistencia" | "evaluacion"
-  priority: "baja" | "media" | "alta" | "critica"
+  type: 'general' | 'comportamiento' | 'academico' | 'asistencia' | 'evaluacion'
+  priority: 'baja' | 'media' | 'alta' | 'critica'
   text: string
   requiresFollowUp: boolean
 }>({
-  classId: "",
-  date: "",
-  type: "general",
-  priority: "media",
-  text: "",
+  classId: '',
+  date: '',
+  type: 'general',
+  priority: 'media',
+  text: '',
   requiresFollowUp: false,
-})
+});
 
 // Computed properties
 // Busca el nombre de la clase según el ID con manejo reactivo mejorado
 const displayClassName = computed(() => {
   // Si tenemos el prop className, usarlo directamente (más rápido)
-  if (props.className) return props.className
+  if (props.className) return props.className;
 
   try {
     // Intentar obtener la clase del store
-    const classData = classesStore.getClassById(props.classId)
+    const classData = classesStore.getClassById(props.classId);
     if (classData) {
       // Solo usar propiedades que existen en el tipo ClassData
-      return classData.name || classData.description || `Clase ID: ${props.classId}`
+      return classData.name || classData.description || `Clase ID: ${props.classId}`;
     }
   } catch (error) {
-    console.warn("Error fetching class data:", error)
+    console.warn('Error fetching class data:', error);
   }
 
   // Fallback más informativo mientras se cargan los datos
-  return classesStore.loading ? "Cargando clase..." : `Clase ID: ${props.classId}`
-})
+  return classesStore.loading ? 'Cargando clase...' : `Clase ID: ${props.classId}`;
+});
 
 const classStats = computed(() => {
-  const classObservations = observations.value.filter((obs) => obs.classId === props.classId)
+  const classObservations = observations.value.filter((obs) => obs.classId === props.classId);
 
   return {
     total: classObservations.length,
     teacherCount: new Set(classObservations.map((obs) => obs.authorId)).size,
     lastObservation: classObservations[0]?.date || null,
-  }
-})
+  };
+});
 
-const totalPages = computed(() => Math.ceil(filteredObservations.value.length / itemsPerPage.value))
+const totalPages = computed(() => Math.ceil(filteredObservations.value.length / itemsPerPage.value));
 
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
-const endIndex = computed(() => startIndex.value + itemsPerPage.value)
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
+const endIndex = computed(() => startIndex.value + itemsPerPage.value);
 
 const paginatedObservations = computed(() =>
-  filteredObservations.value.slice(startIndex.value, endIndex.value)
-)
+  filteredObservations.value.slice(startIndex.value, endIndex.value),
+);
 
 // Métodos mejorados con mejor manejo de estado
 const loadObservations = async () => {
   try {
     // Solo mostrar loading inicial si no hay datos cargados
     if (observations.value.length === 0) {
-      initialLoading.value = true
+      initialLoading.value = true;
     }
 
-    const allObservations = await fetchMyObservations()
-    observations.value = allObservations || []
-    filterObservations()
+    const allObservations = await fetchMyObservations();
+    observations.value = allObservations || [];
+    filterObservations();
   } catch (err) {
-    console.error("Error loading observations:", err)
+    console.error('Error loading observations:', err);
     // Mantener datos existentes en caso de error para evitar pérdida de estado
   } finally {
-    initialLoading.value = false
+    initialLoading.value = false;
   }
-}
+};
 
 const loadObservationsForPeriod = () => {
-  let dateFilter: Date | undefined = new Date()
-  const today = new Date(props.selectedDate)
+  let dateFilter: Date | undefined = new Date();
+  const today = new Date(props.selectedDate);
 
   switch (selectedPeriod.value) {
-    case "today":
-      dateFilter = today
-      break
-    case "week":
-      dateFilter = new Date(today)
-      dateFilter.setDate(dateFilter.getDate() - 7)
-      break
-    case "month":
-      dateFilter = new Date(today)
-      dateFilter.setMonth(dateFilter.getMonth() - 1)
-      break
-    case "all":
-      dateFilter = undefined
-      break
+  case 'today':
+    dateFilter = today;
+    break;
+  case 'week':
+    dateFilter = new Date(today);
+    dateFilter.setDate(dateFilter.getDate() - 7);
+    break;
+  case 'month':
+    dateFilter = new Date(today);
+    dateFilter.setMonth(dateFilter.getMonth() - 1);
+    break;
+  case 'all':
+    dateFilter = undefined;
+    break;
   }
 
-  filterObservations(dateFilter)
-}
+  filterObservations(dateFilter);
+};
 
 const filterObservations = (dateFilter?: Date) => {
-  let filtered = observations.value.filter((obs) => obs.classId === props.classId)
+  let filtered = observations.value.filter((obs) => obs.classId === props.classId);
 
   // Filtro por tipo
   if (selectedType.value) {
-    filtered = filtered.filter((obs) => obs.type === selectedType.value)
+    filtered = filtered.filter((obs) => obs.type === selectedType.value);
   }
 
   // Filtro por fecha
   if (dateFilter) {
     filtered = filtered.filter((obs) => {
-      const obsDate = new Date(obs.date)
-      return obsDate >= dateFilter
-    })
-  } else if (selectedPeriod.value === "today") {
-    filtered = filtered.filter((obs) => obs.date === props.selectedDate)
+      const obsDate = new Date(obs.date);
+      return obsDate >= dateFilter;
+    });
+  } else if (selectedPeriod.value === 'today') {
+    filtered = filtered.filter((obs) => obs.date === props.selectedDate);
   }
 
   // Ordenar por fecha (más reciente primero)
   filtered.sort((a, b) => {
-    const dateA = new Date((a.createdAt as string) || a.date)
-    const dateB = new Date((b.createdAt as string) || b.date)
-    return dateB.getTime() - dateA.getTime()
-  })
+    const dateA = new Date((a.createdAt as string) || a.date);
+    const dateB = new Date((b.createdAt as string) || b.date);
+    return dateB.getTime() - dateA.getTime();
+  });
 
-  filteredObservations.value = filtered
-  currentPage.value = 1
-}
+  filteredObservations.value = filtered;
+  currentPage.value = 1;
+};
 
 const canEditObservation = (observation: ObservationData) => {
-  return observation.authorId === authStore.user?.uid
-}
+  return observation.authorId === authStore.user?.uid;
+};
 
 const editObservation = (observation: ObservationData) => {
-  editingObservation.value = observation
+  editingObservation.value = observation;
   observationForm.value = {
     classId: observation.classId,
     date: observation.date,
@@ -609,223 +609,223 @@ const editObservation = (observation: ObservationData) => {
     priority: observation.priority,
     text: observation.text,
     requiresFollowUp: observation.requiresFollowUp,
-  }
-}
+  };
+};
 
 const deleteObservation = (observation: ObservationData) => {
-  observationToDelete.value = observation
-}
+  observationToDelete.value = observation;
+};
 
 const confirmDelete = async () => {
-  if (!observationToDelete.value) return
+  if (!observationToDelete.value) return;
 
   try {
-    deleting.value = true
-    await deleteMyObservation(observationToDelete.value.id)
-    await loadObservations()
-    observationToDelete.value = null
-    emit("observation-deleted")
+    deleting.value = true;
+    await deleteMyObservation(observationToDelete.value.id);
+    await loadObservations();
+    observationToDelete.value = null;
+    emit('observation-deleted');
   } catch (err) {
-    console.error("Error deleting observation:", err)
+    console.error('Error deleting observation:', err);
   } finally {
-    deleting.value = false
+    deleting.value = false;
   }
-}
+};
 
 const closeModal = () => {
-  emit("close")
-}
+  emit('close');
+};
 
 const isValidDate = (dateString: string | null): boolean => {
-  if (!dateString || dateString.trim() === "") return false
+  if (!dateString || dateString.trim() === '') return false;
 
   // Verificar que no sea solo espacios o caracteres inválidos
-  if (dateString === "Invalid Date" || dateString === "NaN") return false
+  if (dateString === 'Invalid Date' || dateString === 'NaN') return false;
 
-  const date = new Date(dateString)
+  const date = new Date(dateString);
 
   // Verificar que sea una fecha válida y no esté en el futuro lejano o pasado lejano
-  const isValid = !isNaN(date.getTime())
-  const year = date.getFullYear()
-  const currentYear = new Date().getFullYear()
+  const isValid = !isNaN(date.getTime());
+  const year = date.getFullYear();
+  const currentYear = new Date().getFullYear();
 
   // Permitir fechas entre 1900 y 100 años en el futuro
-  return isValid && year >= 1900 && year <= currentYear + 100
-}
+  return isValid && year >= 1900 && year <= currentYear + 100;
+};
 
 const formatDate = (dateString: string | null) => {
-  if (!dateString || !isValidDate(dateString)) return "Fecha no disponible"
+  if (!dateString || !isValidDate(dateString)) return 'Fecha no disponible';
 
   try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("es-ES", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   } catch (error) {
-    console.error("Error formatting date:", error)
-    return "Fecha no disponible"
+    console.error('Error formatting date:', error);
+    return 'Fecha no disponible';
   }
-}
+};
 
 const formatDateTime = (dateOrTimestamp: any) => {
-  if (!dateOrTimestamp) return "Fecha no disponible"
+  if (!dateOrTimestamp) return 'Fecha no disponible';
 
   try {
-    let date: Date
+    let date: Date;
 
     // Si es un timestamp de Firestore
-    if (typeof dateOrTimestamp === "object" && "toDate" in dateOrTimestamp) {
-      date = dateOrTimestamp.toDate()
+    if (typeof dateOrTimestamp === 'object' && 'toDate' in dateOrTimestamp) {
+      date = dateOrTimestamp.toDate();
     } else {
       // Si es una fecha normal o string
-      date = new Date(dateOrTimestamp)
+      date = new Date(dateOrTimestamp);
     }
 
     // Verificar que la fecha sea válida
     if (isNaN(date.getTime())) {
-      return "Fecha no disponible"
+      return 'Fecha no disponible';
     }
 
-    return date.toLocaleString("es-ES", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+    return date.toLocaleString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   } catch (error) {
-    console.error("Error formatting datetime:", error)
-    return "Fecha no disponible"
+    console.error('Error formatting datetime:', error);
+    return 'Fecha no disponible';
   }
-}
+};
 
 const getTypeClass = (type: string) => {
   const classes = {
-    general: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200",
-    comportamiento: "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200",
-    academico: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200",
-    asistencia: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
-    evaluacion: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
-  }
-  return classes[type as keyof typeof classes] || classes.general
-}
+    general: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200',
+    comportamiento: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
+    academico: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
+    asistencia: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+    evaluacion: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+  };
+  return classes[type as keyof typeof classes] || classes.general;
+};
 
 const getTypeLabel = (type: string) => {
   const labels = {
-    general: "General",
-    comportamiento: "Comportamiento",
-    academico: "Académico",
-    asistencia: "Asistencia",
-    evaluacion: "Evaluación",
-  }
-  return labels[type as keyof typeof labels] || type
-}
+    general: 'General',
+    comportamiento: 'Comportamiento',
+    academico: 'Académico',
+    asistencia: 'Asistencia',
+    evaluacion: 'Evaluación',
+  };
+  return labels[type as keyof typeof labels] || type;
+};
 
 const getClassSchedule = (classId: string) => {
-  const classData = classesStore.getClassById(classId)
-  if (!classData) return "Sin horario"
+  const classData = classesStore.getClassById(classId);
+  if (!classData) return 'Sin horario';
 
   // Verificar si hay horario y obtener el formato correcto
   if (classData.schedule) {
     // Si schedule es un objeto con slots (nuevo formato)
     if (
-      "slots" in classData.schedule &&
+      'slots' in classData.schedule &&
       classData.schedule.slots &&
       classData.schedule.slots.length > 0
     ) {
-      const slot = classData.schedule.slots[0]
-      return `${slot.startTime} - ${slot.endTime}`
+      const slot = classData.schedule.slots[0];
+      return `${slot.startTime} - ${slot.endTime}`;
     }
     // Si schedule es un objeto con día, hora inicio y fin (formato alternativo)
-    else if ("startTime" in classData.schedule && "endTime" in classData.schedule) {
-      return `${classData.schedule.startTime} - ${classData.schedule.endTime}`
+    else if ('startTime' in classData.schedule && 'endTime' in classData.schedule) {
+      return `${classData.schedule.startTime} - ${classData.schedule.endTime}`;
     }
   }
 
-  return "Sin horario"
-}
+  return 'Sin horario';
+};
 
 const handleSmartFormSave = async (observationData: any) => {
   try {
-    saving.value = true
+    saving.value = true;
 
     if (editingObservation.value) {
       // Actualizar observación existente
-      await updateMyObservation(editingObservation.value.id, observationData)
-      emit("observation-updated")
+      await updateMyObservation(editingObservation.value.id, observationData);
+      emit('observation-updated');
     } else {
       // Crear nueva observación
-      await createMyObservation(observationData)
-      emit("observation-created")
+      await createMyObservation(observationData);
+      emit('observation-created');
     }
 
     // Recargar observaciones y cerrar formulario
-    await loadObservations()
+    await loadObservations();
 
     // Invalidar caché de clases si la observación afecta la clase
-    await classCache.invalidateOnEvent("class-updated", authStore.user?.uid)
+    await classCache.invalidateOnEvent('class-updated', authStore.user?.uid);
 
-    cancelFormEditing()
+    cancelFormEditing();
   } catch (error) {
-    console.error("Error al guardar observación inteligente:", error)
+    console.error('Error al guardar observación inteligente:', error);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const handleFormUpdate = (data: any) => {
   // Manejar actualizaciones del formulario si es necesario
-  console.log("Formulario actualizado:", data)
-}
+  console.log('Formulario actualizado:', data);
+};
 
 const cancelFormEditing = () => {
-  showCreateForm.value = false
-  editingObservation.value = null
+  showCreateForm.value = false;
+  editingObservation.value = null;
 
   // Resetear el formulario original si es necesario
   observationForm.value = {
     classId: props.classId,
     date: props.selectedDate,
-    type: "general",
-    priority: "media",
-    text: "",
+    type: 'general',
+    priority: 'media',
+    text: '',
     requiresFollowUp: false,
-  }
-}
+  };
+};
 
 const getPriorityClass = (priority: string) => {
   const classes = {
-    baja: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
-    media: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
-    alta: "bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200",
-    critica: "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200",
-  }
-  return classes[priority as keyof typeof classes] || classes.media
-}
+    baja: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+    media: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+    alta: 'bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200',
+    critica: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
+  };
+  return classes[priority as keyof typeof classes] || classes.media;
+};
 
 const getPriorityLabel = (priority: string) => {
   const labels = {
-    baja: "Baja",
-    media: "Media",
-    alta: "Alta",
-    critica: "Crítica",
-  }
-  return labels[priority as keyof typeof labels] || priority
-}
+    baja: 'Baja',
+    media: 'Media',
+    alta: 'Alta',
+    critica: 'Crítica',
+  };
+  return labels[priority as keyof typeof labels] || priority;
+};
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
-    currentPage.value++
+    currentPage.value++;
   }
-}
+};
 
 const previousPage = () => {
   if (currentPage.value > 1) {
-    currentPage.value--
+    currentPage.value--;
   }
-}
+};
 
 // Watchers mejorados para evitar estados inconsistentes
 watch(
@@ -833,50 +833,50 @@ watch(
   (newClassId) => {
     if (newClassId) {
       // Resetear el estado al cambiar de clase
-      initialLoading.value = true
-      observations.value = []
-      filteredObservations.value = []
-      currentPage.value = 1
-      loadObservations()
+      initialLoading.value = true;
+      observations.value = [];
+      filteredObservations.value = [];
+      currentPage.value = 1;
+      loadObservations();
     }
-  }
-)
+  },
+);
 
 watch(
   () => props.selectedDate,
   (newDate) => {
-    observationForm.value.date = newDate
-    if (selectedPeriod.value === "today") {
-      filterObservations()
+    observationForm.value.date = newDate;
+    if (selectedPeriod.value === 'today') {
+      filterObservations();
     }
-  }
-)
+  },
+);
 
 watch(
   () => props.isOpen,
   (isOpen) => {
     if (isOpen) {
-      observationForm.value.classId = props.classId
-      observationForm.value.date = props.selectedDate
+      observationForm.value.classId = props.classId;
+      observationForm.value.date = props.selectedDate;
 
       // Solo cargar si no tenemos datos o si cambió la clase
       if (observations.value.length === 0 || initialLoading.value) {
-        loadObservations()
+        loadObservations();
       }
     }
-  }
-)
+  },
+);
 
 // Lifecycle mejorado
 onMounted(() => {
   // Solo cargar datos si el modal está abierto y tenemos un classId válido
   if (props.isOpen && props.classId) {
-    initialLoading.value = true
-    loadObservations()
+    initialLoading.value = true;
+    loadObservations();
   }
 
   // Asegurar que el formulario esté inicializado correctamente
-  observationForm.value.classId = props.classId
-  observationForm.value.date = props.selectedDate
-})
+  observationForm.value.classId = props.classId;
+  observationForm.value.date = props.selectedDate;
+});
 </script>

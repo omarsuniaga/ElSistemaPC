@@ -105,8 +105,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {useRBACManagement, type Role} from "../../../composables/useRBACManagement"
+import { ref, computed, watch } from 'vue';
+import { useRBACManagement, type Role } from '../../../composables/useRBACManagement';
 
 interface Props {
   isOpen: boolean
@@ -114,26 +114,26 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "saved"): void
+  (e: 'close'): void
+  (e: 'saved'): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
-const {permissions, createRole, updateRole, loading, getPermissionsByModule, initialize} =
-  useRBACManagement()
+const { permissions, createRole, updateRole, loading, getPermissionsByModule, initialize } =
+  useRBACManagement();
 
 const formData = ref({
-  name: "",
-  description: "",
+  name: '',
+  description: '',
   permissions: [] as string[],
   isActive: true,
-})
+});
 
-const isEdit = computed(() => !!props.role)
+const isEdit = computed(() => !!props.role);
 
-const groupedPermissions = computed(() => getPermissionsByModule.value)
+const groupedPermissions = computed(() => getPermissionsByModule.value);
 
 // Resetear formulario cuando se abre/cierra el modal
 watch(
@@ -142,7 +142,7 @@ watch(
     if (newVal) {
       // Asegurar que los permisos estén cargados
       if (permissions.value.length === 0) {
-        await initialize()
+        await initialize();
       }
 
       if (props.role) {
@@ -152,33 +152,33 @@ watch(
           description: props.role.description,
           permissions: [...props.role.permissions],
           isActive: props.role.isActive,
-        }
+        };
       } else {
         // Modo creación
         formData.value = {
-          name: "",
-          description: "",
+          name: '',
+          description: '',
           permissions: [],
           isActive: true,
-        }
+        };
       }
     }
-  }
-)
+  },
+);
 
 const handleSubmit = async () => {
   try {
     if (isEdit.value && props.role) {
-      await updateRole(props.role.id, formData.value)
+      await updateRole(props.role.id, formData.value);
     } else {
-      await createRole(formData.value)
+      await createRole(formData.value);
     }
 
-    emit("saved")
-    emit("close")
+    emit('saved');
+    emit('close');
   } catch (error) {
-    console.error("Error al guardar rol:", error)
-    alert("Error al guardar el rol. Por favor, inténtalo de nuevo.")
+    console.error('Error al guardar rol:', error);
+    alert('Error al guardar el rol. Por favor, inténtalo de nuevo.');
   }
-}
+};
 </script>

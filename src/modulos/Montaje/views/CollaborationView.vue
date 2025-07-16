@@ -294,12 +294,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {useCollaboration} from "../composables/useCollaboration"
-import type {CollaborationSession, Activity, SharedResource, Comment, Work} from "../types"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useCollaboration } from '../composables/useCollaboration';
+import type { CollaborationSession, Activity, SharedResource, Comment, Work } from '../types';
 
-const router = useRouter()
+const router = useRouter();
 const {
   activeSessions,
   recentActivity,
@@ -311,68 +311,68 @@ const {
   sendInvitation: sendCollaborationInvitation,
   shareResource: shareCollaborationResource,
   addComment,
-} = useCollaboration()
+} = useCollaboration();
 
 // State
-const showInviteModal = ref(false)
-const showResourceModal = ref(false)
+const showInviteModal = ref(false);
+const showResourceModal = ref(false);
 
 // Form data
 const invitation = ref({
-  email: "",
-  role: "COLLABORATOR",
-  message: "",
-})
+  email: '',
+  role: 'COLLABORATOR',
+  message: '',
+});
 
 const newResource = ref({
-  title: "",
-  type: "DOCUMENT",
-  description: "",
-  url: "",
+  title: '',
+  type: 'DOCUMENT',
+  description: '',
+  url: '',
   file: null as File | null,
-})
+});
 
 const newComment = ref({
-  workId: "",
-  content: "",
-})
+  workId: '',
+  content: '',
+});
 
 // Methods
 const startNewSession = async () => {
   try {
     const session = await startSession({
-      title: "Nueva Sesión de Colaboración",
-      description: "Sesión de trabajo colaborativo",
-      type: "GENERAL",
-    })
-    await joinSession(session)
+      title: 'Nueva Sesión de Colaboración',
+      description: 'Sesión de trabajo colaborativo',
+      type: 'GENERAL',
+    });
+    await joinSession(session);
   } catch (error) {
-    console.error("Error starting session:", error)
+    console.error('Error starting session:', error);
   }
-}
+};
 
 const joinSession = async (session: CollaborationSession) => {
   try {
-    await joinCollaborationSession(session.id)
+    await joinCollaborationSession(session.id);
     // Navigate to session view or open session modal
-    console.log("Joined session:", session.id)
+    console.log('Joined session:', session.id);
   } catch (error) {
-    console.error("Error joining session:", error)
+    console.error('Error joining session:', error);
   }
-}
+};
 
 const sendInvitation = async () => {
   try {
     await sendCollaborationInvitation({
       email: invitation.value.email,
-      role: invitation.value.role as "VIEWER" | "COLLABORATOR" | "EDITOR",
+      role: invitation.value.role as 'VIEWER' | 'COLLABORATOR' | 'EDITOR',
       message: invitation.value.message,
-    })
-    closeInviteModal()
+    });
+    closeInviteModal();
   } catch (error) {
-    console.error("Error sending invitation:", error)
+    console.error('Error sending invitation:', error);
   }
-}
+};
 
 const shareNewResource = async () => {
   try {
@@ -382,12 +382,12 @@ const shareNewResource = async () => {
       description: newResource.value.description,
       url: newResource.value.url,
       file: newResource.value.file,
-    })
-    closeResourceModal()
+    });
+    closeResourceModal();
   } catch (error) {
-    console.error("Error sharing resource:", error)
+    console.error('Error sharing resource:', error);
   }
-}
+};
 
 const submitComment = async () => {
   if (newComment.value.content.trim()) {
@@ -395,157 +395,157 @@ const submitComment = async () => {
       await addComment({
         workId: newComment.value.workId || undefined,
         content: newComment.value.content,
-      })
-      newComment.value = {workId: "", content: ""}
+      });
+      newComment.value = { workId: '', content: '' };
     } catch (error) {
-      console.error("Error submitting comment:", error)
+      console.error('Error submitting comment:', error);
     }
   }
-}
+};
 
 const likeComment = async (comment: Comment) => {
   // Implementation for liking a comment
-  console.log("Like comment:", comment.id)
-}
+  console.log('Like comment:', comment.id);
+};
 
 const replyToComment = (comment: Comment) => {
   // Implementation for replying to a comment
-  console.log("Reply to comment:", comment.id)
-}
+  console.log('Reply to comment:', comment.id);
+};
 
 const openResource = (resource: SharedResource) => {
   if (resource.url) {
-    window.open(resource.url, "_blank")
+    window.open(resource.url, '_blank');
   }
-}
+};
 
 const downloadResource = (resource: SharedResource) => {
   // Implementation for downloading resource
-  console.log("Download resource:", resource.id)
-}
+  console.log('Download resource:', resource.id);
+};
 
 const shareResource = (resource: SharedResource) => {
   // Implementation for sharing resource
-  console.log("Share resource:", resource.id)
-}
+  console.log('Share resource:', resource.id);
+};
 
 const handleFileUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement
+  const target = event.target as HTMLInputElement;
   if (target.files && target.files[0]) {
-    newResource.value.file = target.files[0]
+    newResource.value.file = target.files[0];
   }
-}
+};
 
 const closeInviteModal = () => {
-  showInviteModal.value = false
-  invitation.value = {email: "", role: "COLLABORATOR", message: ""}
-}
+  showInviteModal.value = false;
+  invitation.value = { email: '', role: 'COLLABORATOR', message: '' };
+};
 
 const closeResourceModal = () => {
-  showResourceModal.value = false
+  showResourceModal.value = false;
   newResource.value = {
-    title: "",
-    type: "DOCUMENT",
-    description: "",
-    url: "",
+    title: '',
+    type: 'DOCUMENT',
+    description: '',
+    url: '',
     file: null,
-  }
-}
+  };
+};
 
 // Utility functions
 const getInitials = (name: string) => {
   return name
-    .split(" ")
+    .split(' ')
     .map((n) => n[0])
-    .join("")
+    .join('')
     .toUpperCase()
-    .slice(0, 2)
-}
+    .slice(0, 2);
+};
 
 const getSessionTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
-    PRACTICE: "Práctica",
-    REVIEW: "Revisión",
-    PLANNING: "Planificación",
-    GENERAL: "General",
-  }
-  return labels[type] || type
-}
+    PRACTICE: 'Práctica',
+    REVIEW: 'Revisión',
+    PLANNING: 'Planificación',
+    GENERAL: 'General',
+  };
+  return labels[type] || type;
+};
 
 const getResourceTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
-    SCORE: "Partitura",
-    AUDIO: "Audio",
-    VIDEO: "Video",
-    DOCUMENT: "Documento",
-    LINK: "Enlace",
-  }
-  return labels[type] || type
-}
+    SCORE: 'Partitura',
+    AUDIO: 'Audio',
+    VIDEO: 'Video',
+    DOCUMENT: 'Documento',
+    LINK: 'Enlace',
+  };
+  return labels[type] || type;
+};
 
 const getResourceIcon = (type: string) => {
   const icons: Record<string, string> = {
-    SCORE: "fas fa-music",
-    AUDIO: "fas fa-volume-up",
-    VIDEO: "fas fa-video",
-    DOCUMENT: "fas fa-file-text",
-    LINK: "fas fa-link",
-  }
-  return icons[type] || "fas fa-file"
-}
+    SCORE: 'fas fa-music',
+    AUDIO: 'fas fa-volume-up',
+    VIDEO: 'fas fa-video',
+    DOCUMENT: 'fas fa-file-text',
+    LINK: 'fas fa-link',
+  };
+  return icons[type] || 'fas fa-file';
+};
 
 const getActivityIcon = (type: string) => {
   const icons: Record<string, string> = {
-    COMMENT: "fas fa-comment",
-    EDIT: "fas fa-edit",
-    SHARE: "fas fa-share",
-    JOIN: "fas fa-sign-in-alt",
-    UPLOAD: "fas fa-upload",
-  }
-  return icons[type] || "fas fa-info-circle"
-}
+    COMMENT: 'fas fa-comment',
+    EDIT: 'fas fa-edit',
+    SHARE: 'fas fa-share',
+    JOIN: 'fas fa-sign-in-alt',
+    UPLOAD: 'fas fa-upload',
+  };
+  return icons[type] || 'fas fa-info-circle';
+};
 
 const formatDuration = (startTime: string) => {
-  const start = new Date(startTime)
-  const now = new Date()
-  const diff = now.getTime() - start.getTime()
-  const minutes = Math.floor(diff / 60000)
+  const start = new Date(startTime);
+  const now = new Date();
+  const diff = now.getTime() - start.getTime();
+  const minutes = Math.floor(diff / 60000);
 
   if (minutes < 60) {
-    return `${minutes} min`
+    return `${minutes} min`;
   } else {
-    const hours = Math.floor(minutes / 60)
-    return `${hours}h ${minutes % 60}m`
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m`;
   }
-}
+};
 
 const formatTimeAgo = (timestamp: string) => {
-  const now = new Date()
-  const time = new Date(timestamp)
-  const diff = now.getTime() - time.getTime()
-  const minutes = Math.floor(diff / 60000)
+  const now = new Date();
+  const time = new Date(timestamp);
+  const diff = now.getTime() - time.getTime();
+  const minutes = Math.floor(diff / 60000);
 
-  if (minutes < 1) return "Hace un momento"
-  if (minutes < 60) return `Hace ${minutes} min`
+  if (minutes < 1) return 'Hace un momento';
+  if (minutes < 60) return `Hace ${minutes} min`;
 
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `Hace ${hours}h`
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Hace ${hours}h`;
 
-  const days = Math.floor(hours / 24)
-  return `Hace ${days} día${days !== 1 ? "s" : ""}`
-}
+  const days = Math.floor(hours / 24);
+  return `Hace ${days} día${days !== 1 ? 's' : ''}`;
+};
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
-}
+  return new Date(date).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
 
 onMounted(() => {
   // Data is loaded through composables
-})
+});
 </script>
 
 <style scoped>

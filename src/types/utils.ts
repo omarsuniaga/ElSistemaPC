@@ -4,7 +4,7 @@ export interface TableColumn {
   sortable?: boolean
   filterable?: boolean
   width?: string
-  align?: "left" | "center" | "right"
+  align?: 'left' | 'center' | 'right'
   format?: (value: any) => string
   render?: (row: any) => string
   className?: string
@@ -13,12 +13,12 @@ export interface TableColumn {
   ellipsis?: boolean
   show?: boolean
   filter?: boolean
-  filterType?: "select" | "text" | "date"
+  filterType?: 'select' | 'text' | 'date'
   filterPlaceholder?: string
   filterValue?: string
   filterOptions?: FilterOption[]
   filterMultiple?: boolean
-  filterRender?: (h: any, {column, $index}: any) => any
+  filterRender?: (h: any, { column, $index }: any) => any
   filterRenderProps?: any
 }
 
@@ -31,7 +31,7 @@ export interface FilterOption {
 }
 
 export interface ExportOptions {
-  format: "xlsx" | "csv"
+  format: 'xlsx' | 'csv'
   filename: string
   includeHeaders: boolean
   columnIds: string[]

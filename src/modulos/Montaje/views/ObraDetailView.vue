@@ -302,13 +302,13 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRoute, useRouter} from "vue-router"
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 // Component imports
-import WorkFormModal from "../components/WorkFormModal.vue"
-import PhraseFormModal from "../components/PhraseFormModal.vue"
-import EvaluationForm from "../components/EvaluationForm.vue"
+import WorkFormModal from '../components/WorkFormModal.vue';
+import PhraseFormModal from '../components/PhraseFormModal.vue';
+import EvaluationForm from '../components/EvaluationForm.vue';
 
 import type {
   Obra,
@@ -316,191 +316,191 @@ import type {
   PlanAccion as Plan,
   EvaluacionContinua as Evaluacion,
   CreateEvaluationInput,
-} from "../types"
-import {useMontaje} from "../composables/useMontaje"
-import {useMontajeStore} from "../store/montaje"
-import {Compas} from "../service/compasService"
-import {formatDate, formatDuration} from "../utils"
+} from '../types';
+import { useMontaje } from '../composables/useMontaje';
+import { useMontajeStore } from '../store/montaje';
+import { Compas } from '../service/compasService';
+import { formatDate, formatDuration } from '../utils';
 
 // Router and Route
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
 // Stores
-const montajeStore = useMontajeStore()
+const montajeStore = useMontajeStore();
 
 // Composable
-const montajeComposable = useMontaje()
-const {cargarObra, cargarPlan, obras, obraActual, frases, planAccion} = montajeComposable
+const montajeComposable = useMontaje();
+const { cargarObra, cargarPlan, obras, obraActual, frases, planAccion } = montajeComposable;
 
 // Reactive data
-const obra = ref<Obra | null>(null)
-const frasesLocal = ref<Frase[]>([])
-const planes = ref<Plan[]>([])
-const evaluaciones = ref<Evaluacion[]>([])
-const alumnos = ref([])
-const loading = ref(true)
-const error = ref<string | null>(null)
+const obra = ref<Obra | null>(null);
+const frasesLocal = ref<Frase[]>([]);
+const planes = ref<Plan[]>([]);
+const evaluaciones = ref<Evaluacion[]>([]);
+const alumnos = ref([]);
+const loading = ref(true);
+const error = ref<string | null>(null);
 
 // UI State
-const activeTab = ref("mapa")
-const showEditModal = ref(false)
-const showPhraseModal = ref(false)
-const showEvaluationModal = ref(false)
-const selectedFrase = ref<Frase | null>(null)
+const activeTab = ref('mapa');
+const showEditModal = ref(false);
+const showPhraseModal = ref(false);
+const showEvaluationModal = ref(false);
+const selectedFrase = ref<Frase | null>(null);
 
 // Props
-const obraId = route.params.id as string
+const obraId = route.params.id as string;
 
 // Computed
 const tabs = computed(() => [
-  {id: "mapa", name: "Mapa de Calor", count: undefined},
-  {id: "frases", name: "Frases", count: frases.value?.length || frasesLocal.value.length},
-  {id: "planes", name: "Planes", count: planAccion.value ? 1 : 0},
-  {id: "evaluaciones", name: "Evaluaciones", count: evaluaciones.value.length},
-  {id: "alumnos", name: "Alumnos", count: alumnos.value.length},
-])
+  { id: 'mapa', name: 'Mapa de Calor', count: undefined },
+  { id: 'frases', name: 'Frases', count: frases.value?.length || frasesLocal.value.length },
+  { id: 'planes', name: 'Planes', count: planAccion.value ? 1 : 0 },
+  { id: 'evaluaciones', name: 'Evaluaciones', count: evaluaciones.value.length },
+  { id: 'alumnos', name: 'Alumnos', count: alumnos.value.length },
+]);
 
 // Methods
 const getEstadoBadgeClass = (estado: string) => {
-  const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+  const baseClasses = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium';
   switch (estado) {
-    case "activa":
-      return `${baseClasses} bg-green-100 text-green-800`
-    case "en_progreso":
-      return `${baseClasses} bg-blue-100 text-blue-800`
-    case "completada":
-      return `${baseClasses} bg-gray-100 text-gray-800`
-    default:
-      return `${baseClasses} bg-gray-100 text-gray-800`
+  case 'activa':
+    return `${baseClasses} bg-green-100 text-green-800`;
+  case 'en_progreso':
+    return `${baseClasses} bg-blue-100 text-blue-800`;
+  case 'completada':
+    return `${baseClasses} bg-gray-100 text-gray-800`;
+  default:
+    return `${baseClasses} bg-gray-100 text-gray-800`;
   }
-}
+};
 
 const loadData = async () => {
   try {
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
 
     // Load main data using composable methods
-    await cargarObra(obraId)
+    await cargarObra(obraId);
 
     // Get obra from store after loading
-    obra.value = obraActual.value
+    obra.value = obraActual.value;
 
     // Load plan and frases if obra exists
     if (obra.value) {
       try {
-        await cargarPlan(obraId)
+        await cargarPlan(obraId);
         // frases and evaluaciones are loaded via the store's reactive state
-        frasesLocal.value = frases.value || []
-        evaluaciones.value = [] // TODO: Load evaluaciones when method is available
+        frasesLocal.value = frases.value || [];
+        evaluaciones.value = []; // TODO: Load evaluaciones when method is available
       } catch (planError) {
-        console.warn("No plan found for obra:", obraId)
-        frasesLocal.value = []
-        evaluaciones.value = []
+        console.warn('No plan found for obra:', obraId);
+        frasesLocal.value = [];
+        evaluaciones.value = [];
       }
     }
 
     // Load students related to this obra
-    await loadAlumnos()
+    await loadAlumnos();
   } catch (err) {
-    console.error("Error loading obra data:", err)
-    error.value = err instanceof Error ? err.message : "Error desconocido"
+    console.error('Error loading obra data:', err);
+    error.value = err instanceof Error ? err.message : 'Error desconocido';
 
     // Fallback: try to find obra in existing obras array
-    const existingObra = obras.value.find((o) => o.id === obraId)
+    const existingObra = obras.value.find((o) => o.id === obraId);
     if (existingObra) {
-      obra.value = existingObra
+      obra.value = existingObra;
     }
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const loadAlumnos = async () => {
   try {
     // TODO: Load students related to this obra when students store is available
     // For now, we'll use an empty array
-    alumnos.value = []
-    console.log("Students loaded successfully (placeholder)")
+    alumnos.value = [];
+    console.log('Students loaded successfully (placeholder)');
   } catch (err) {
-    console.error("Error loading alumnos:", err)
-    alumnos.value = []
+    console.error('Error loading alumnos:', err);
+    alumnos.value = [];
   }
-}
+};
 
 // Action Methods
 const editObra = () => {
-  showEditModal.value = true
-}
+  showEditModal.value = true;
+};
 
 const generateReport = async () => {
   try {
     // Generate PDF report for the obra
-    console.log("Generating report for obra:", obraId)
+    console.log('Generating report for obra:', obraId);
     // TODO: Implement PDF generation
   } catch (err) {
-    console.error("Error generating report:", err)
+    console.error('Error generating report:', err);
   }
-}
+};
 
 const addFrase = () => {
-  selectedFrase.value = null
-  showPhraseModal.value = true
-}
+  selectedFrase.value = null;
+  showPhraseModal.value = true;
+};
 
 const createPlan = () => {
-  console.log("Creating plan for obra:", obraId)
+  console.log('Creating plan for obra:', obraId);
   // TODO: Implement plan creation
-}
+};
 
 const newEvaluation = () => {
-  showEvaluationModal.value = true
-}
+  showEvaluationModal.value = true;
+};
 
 const updateObra = async (updatedObra: Obra) => {
   try {
-    obra.value = updatedObra
-    showEditModal.value = false
+    obra.value = updatedObra;
+    showEditModal.value = false;
     // TODO: Update in store/API
   } catch (err) {
-    console.error("Error updating obra:", err)
+    console.error('Error updating obra:', err);
   }
-}
+};
 
 const handlePhraseSave = async (savedFrase: Frase) => {
   try {
     if (savedFrase.id) {
       // Update existing
-      const index = frasesLocal.value.findIndex((f) => f.id === savedFrase.id)
+      const index = frasesLocal.value.findIndex((f) => f.id === savedFrase.id);
       if (index !== -1) {
-        frasesLocal.value[index] = savedFrase
+        frasesLocal.value[index] = savedFrase;
       }
     } else {
       // Add new
-      frasesLocal.value.push(savedFrase)
+      frasesLocal.value.push(savedFrase);
     }
-    showPhraseModal.value = false
+    showPhraseModal.value = false;
   } catch (err) {
-    console.error("Error saving frase:", err)
+    console.error('Error saving frase:', err);
   }
-}
+};
 
 const saveEvaluation = async (evaluationData: CreateEvaluationInput) => {
   try {
-    console.log("Saving evaluation:", evaluationData)
+    console.log('Saving evaluation:', evaluationData);
     // TODO: Implement evaluation saving when the API is ready
     // For now, just close the modal
-    showEvaluationModal.value = false
+    showEvaluationModal.value = false;
   } catch (err) {
-    console.error("Error saving evaluation:", err)
+    console.error('Error saving evaluation:', err);
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadData()
-})
+  loadData();
+});
 </script>
 
 <style scoped>

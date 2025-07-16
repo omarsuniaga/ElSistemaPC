@@ -1,39 +1,4 @@
 // Instruments/components/InstrumentDetails.vue
-<script setup lang="ts">
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import type {Instrument} from "../types/instrumentsTypes"
-
-const props = defineProps<{
-  instrument: Instrument
-}>()
-
-// Formatear fechas
-const formatDate = (date: string | Date | undefined): string => {
-  if (!date) return "-"
-  try {
-    return format(new Date(date), "PPP", {locale: es})
-  } catch (err) {
-    return String(date)
-  }
-}
-
-// Obtener clase CSS según el estado
-const getStatusClass = (status: string | undefined): string => {
-  const statusMap: Record<string, string> = {
-    excelente: "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300",
-    bueno: "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300",
-    regular: "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300",
-    funcional: "bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300",
-    necesitaReparacion: "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300",
-    malo: "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300",
-    faltante: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300",
-  }
-
-  return statusMap[status || ""] || "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
-}
-</script>
-
 <template>
   <div v-if="instrument" class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
     <div
@@ -221,3 +186,38 @@ const getStatusClass = (status: string | undefined): string => {
     <div class="text-lg font-semibold">No se encontró información del instrumento.</div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import type { Instrument } from '../types/instrumentsTypes';
+
+const props = defineProps<{
+  instrument: Instrument
+}>();
+
+// Formatear fechas
+const formatDate = (date: string | Date | undefined): string => {
+  if (!date) return '-';
+  try {
+    return format(new Date(date), 'PPP', { locale: es });
+  } catch (err) {
+    return String(date);
+  }
+};
+
+// Obtener clase CSS según el estado
+const getStatusClass = (status: string | undefined): string => {
+  const statusMap: Record<string, string> = {
+    excelente: 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300',
+    bueno: 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300',
+    regular: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300',
+    funcional: 'bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300',
+    necesitaReparacion: 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300',
+    malo: 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300',
+    faltante: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300',
+  };
+
+  return statusMap[status || ''] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
+};
+</script>

@@ -220,8 +220,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
-import {useWhatsApp} from "@/composables/useWhatsApp"
+import { ref } from 'vue';
+import { useWhatsApp } from '@/composables/useWhatsApp';
 
 // Usar el composable de WhatsApp
 const {
@@ -239,52 +239,52 @@ const {
   restart,
   clearError,
   formatTime,
-} = useWhatsApp()
+} = useWhatsApp();
 
 // Estado local para prueba de envío
-const testPhone = ref("")
+const testPhone = ref('');
 const testMessage = ref(
-  "🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente."
-)
-const sendResult = ref<{success: boolean; message?: string} | null>(null)
+  '🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.',
+);
+const sendResult = ref<{success: boolean; message?: string} | null>(null);
 
 // Manejar envío de mensaje de prueba
 const handleSendTest = async () => {
-  if (!testPhone.value || !testMessage.value) return
+  if (!testPhone.value || !testMessage.value) return;
 
   try {
     const success = await sendMessage({
       number: testPhone.value,
       message: testMessage.value,
-    })
+    });
 
     sendResult.value = {
       success,
-      message: success ? "Mensaje enviado correctamente" : "Error al enviar mensaje",
-    }
+      message: success ? 'Mensaje enviado correctamente' : 'Error al enviar mensaje',
+    };
 
     if (success) {
       // Limpiar formulario en caso de éxito
-      testPhone.value = ""
+      testPhone.value = '';
       testMessage.value =
-        "🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente."
+        '🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.';
     }
 
     // Limpiar resultado después de 5 segundos
     setTimeout(() => {
-      sendResult.value = null
-    }, 5000)
+      sendResult.value = null;
+    }, 5000);
   } catch (err) {
     sendResult.value = {
       success: false,
-      message: err instanceof Error ? err.message : "Error desconocido",
-    }
+      message: err instanceof Error ? err.message : 'Error desconocido',
+    };
 
     setTimeout(() => {
-      sendResult.value = null
-    }, 5000)
+      sendResult.value = null;
+    }, 5000);
   }
-}
+};
 </script>
 
 <style scoped>

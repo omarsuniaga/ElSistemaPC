@@ -490,12 +490,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch, nextTick} from "vue"
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 
 // Tipos de observaciones importados más abajo
 
 // Interfaces locales específicas para este componente
-interface ClassObservationData extends Omit<Observation, "content"> {
+interface ClassObservationData extends Omit<Observation, 'content'> {
   content:
     | string
     | {
@@ -543,78 +543,78 @@ interface Student {
   [key: string]: any
 }
 
-import {useAttendanceStore} from "../modulos/Attendance/store/attendance"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import {useClassesStore} from "../modulos/Classes/store/classes"
-import {useAuthStore} from "../stores/auth"
-import {useSmartDictionary} from "../composables/useSmartDictionary"
-import {useStudentTags} from "../composables/useStudentTags" // Assuming correct path to composable
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import { useClassesStore } from '../modulos/Classes/store/classes';
+import { useAuthStore } from '../stores/auth';
+import { useSmartDictionary } from '../composables/useSmartDictionary';
+import { useStudentTags } from '../composables/useStudentTags'; // Assuming correct path to composable
 import {
   ObservationType,
   ObservationCategory,
   ObservationStatus,
   Observation,
   ObservationPriority,
-} from "../types/observations"
+} from '../types/observations';
 
 // Importar store para obtener datos de profesores
-import {useTeachersStore} from "../modulos/Teachers/store/teachers"
+import { useTeachersStore } from '../modulos/Teachers/store/teachers';
 
 // Funciones auxiliares
 const getObservationTypeLabel = (type: ObservationType) => {
   switch (type) {
-    case ObservationType.GENERAL:
-      return "General"
-    case ObservationType.CONTENT:
-      return "Académica"
-    case ObservationType.BEHAVIOR:
-      return "Conductual"
-    default:
-      return "Desconocido"
+  case ObservationType.GENERAL:
+    return 'General';
+  case ObservationType.CONTENT:
+    return 'Académica';
+  case ObservationType.BEHAVIOR:
+    return 'Conductual';
+  default:
+    return 'Desconocido';
   }
-}
+};
 
 // Formatear fecha para mostrar
 const formatDate = (isoDate?: string | number | Date): string => {
-  if (!isoDate) return "Fecha desconocida"
+  if (!isoDate) return 'Fecha desconocida';
 
   try {
-    const date = new Date(isoDate)
-    return new Intl.DateTimeFormat("es", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date)
+    const date = new Date(isoDate);
+    return new Intl.DateTimeFormat('es', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
   } catch (err) {
-    console.error("Error al formatear fecha:", err)
-    return String(isoDate)
+    console.error('Error al formatear fecha:', err);
+    return String(isoDate);
   }
-}
+};
 
 // Obtener nombre del autor por ID
 const getAuthorName = (authorId?: string): string => {
-  if (!authorId) return "Usuario no identificado"
+  if (!authorId) return 'Usuario no identificado';
 
   // Si es 'Sistema', retornar tal cual
-  if (authorId === "Sistema") return "Sistema"
+  if (authorId === 'Sistema') return 'Sistema';
 
   // Buscar profesor por ID
-  const teacher = teachersStore.getTeacherById(authorId)
+  const teacher = teachersStore.getTeacherById(authorId);
   if (teacher) {
-    return teacher.name
+    return teacher.name;
   }
 
   // Buscar por uid como fallback
-  const teacherByUid = teachersStore.teachers.find((t) => t.uid === authorId)
+  const teacherByUid = teachersStore.teachers.find((t) => t.uid === authorId);
   if (teacherByUid) {
-    return teacherByUid.name
+    return teacherByUid.name;
   }
 
   // Retornar el ID original si no se encuentra
-  return authorId
-}
+  return authorId;
+};
 
 const props = defineProps({
   isVisible: {
@@ -631,25 +631,25 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: "Observaciones de clase",
+    default: 'Observaciones de clase',
   },
-})
+});
 
 const emit = defineEmits([
-  "close",
-  "observation-added",
-  "observation-updated",
-  "observation-deleted",
-])
+  'close',
+  'observation-added',
+  'observation-updated',
+  'observation-deleted',
+]);
 
-const attendanceStore = useAttendanceStore()
-const studentsStore = useStudentsStore()
-const classesStore = useClassesStore()
-const authStore = useAuthStore()
-const teachersStore = useTeachersStore()
+const attendanceStore = useAttendanceStore();
+const studentsStore = useStudentsStore();
+const classesStore = useClassesStore();
+const authStore = useAuthStore();
+const teachersStore = useTeachersStore();
 
 // Composables para editor enriquecido
-const smartDictionary = useSmartDictionary()
+const smartDictionary = useSmartDictionary();
 const {
   showTagModal,
   cursorPosition,
@@ -660,32 +660,32 @@ const {
   editStudentTag,
   insertStudentTag,
   closeTagModal,
-} = useStudentTags()
+} = useStudentTags();
 
 // Estado
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const classObservations = ref<ClassObservationData[]>([])
-const legacyObservations = ref<string>("")
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const classObservations = ref<ClassObservationData[]>([]);
+const legacyObservations = ref<string>('');
 
 // Estado// Variables reactivas para gestionar estudiantes
-const studentSearchQuery = ref("")
-const filteredStudents = ref<any[]>([])
-const selectedStudent = ref<{id?: string; name?: string} | null>(null)
+const studentSearchQuery = ref('');
+const filteredStudents = ref<any[]>([]);
+const selectedStudent = ref<{id?: string; name?: string} | null>(null);
 
 // Función para filtrar estudiantes basado en la búsqueda
 const filterStudents = () => {
   if (!studentSearchQuery.value) {
-    filteredStudents.value = studentsStore.students || []
-    return
+    filteredStudents.value = studentsStore.students || [];
+    return;
   }
 
-  const query = studentSearchQuery.value.toLowerCase()
+  const query = studentSearchQuery.value.toLowerCase();
   filteredStudents.value = studentsStore.students.filter((student) => {
-    const fullName = `${student.nombre} ${student.apellido}`.toLowerCase()
-    return fullName.includes(query) || student.id.toLowerCase().includes(query)
-  })
-}
+    const fullName = `${student.nombre} ${student.apellido}`.toLowerCase();
+    return fullName.includes(query) || student.id.toLowerCase().includes(query);
+  });
+};
 
 // Seleccionar estudiante para etiqueta
 const selectStudentForTag = (student: any) => {
@@ -693,31 +693,31 @@ const selectStudentForTag = (student: any) => {
   selectedStudent.value = {
     id: student.id,
     name: `${student.nombre} ${student.apellido}`,
-  }
+  };
 
   // Insertar etiqueta en el texto
-  if (typeof insertStudentTag === "function") {
-    insertStudentTag(student)
+  if (typeof insertStudentTag === 'function') {
+    insertStudentTag(student);
   }
 
   // Cerrar el modal de selección
-  closeTagModal()
-}
+  closeTagModal();
+};
 
 // Referencia al textarea de observaciones
-const observationTextarea = ref<HTMLTextAreaElement | null>(null)
+const observationTextarea = ref<HTMLTextAreaElement | null>(null);
 
 // Estado para el formulario
-const isFormVisible = ref(false)
-const isEditMode = ref(false)
-const currentObservationId = ref<string | null>(null)
+const isFormVisible = ref(false);
+const isEditMode = ref(false);
+const currentObservationId = ref<string | null>(null);
 
 // Estado para notificaciones
 const notification = ref({
   show: false,
-  message: "",
-  type: "success" as "success" | "error" | "warning" | "info",
-})
+  message: '',
+  type: 'success' as 'success' | 'error' | 'warning' | 'info',
+});
 
 // Estado para confirmación
 interface ConfirmationDialogState {
@@ -734,13 +734,13 @@ interface ConfirmationDialogState {
 const confirmationDialog = ref<ConfirmationDialogState>({
   show: false,
   isVisible: false,
-  title: "",
-  message: "",
-  action: "",
+  title: '',
+  message: '',
+  action: '',
   data: null,
-  observationId: "",
-  observationText: "",
-})
+  observationId: '',
+  observationText: '',
+});
 
 // Datos del formulario
 const formData = ref<
@@ -752,112 +752,112 @@ const formData = ref<
     taggedStudentIds: string[]
   }
 >({
-  id: "",
-  text: "",
+  id: '',
+  text: '',
   bulletPoints: [],
   type: ObservationType.GENERAL,
-  priority: "media",
+  priority: 'media',
   requiresFollowUp: false,
   taggedStudentIds: [],
   content: {
-    text: "",
+    text: '',
     bulletPoints: [],
   },
-  author: authStore.user?.uid || "",
-  authorName: authStore.user?.email || "Usuario",
+  author: authStore.user?.uid || '',
+  authorName: authStore.user?.email || 'Usuario',
   createdAt: new Date(),
   updatedAt: new Date(),
   classId: props.classId,
   date: props.date,
-})
+});
 
 // Métodos
 const close = () => {
-  emit("close")
-}
+  emit('close');
+};
 
 const getStudentName = (studentId: string): string => {
-  const student = studentsStore.students.find((s) => s.id === studentId)
-  return student ? `${student.nombre} ${student.apellido || ""}`.trim() : "Estudiante"
-}
+  const student = studentsStore.students.find((s) => s.id === studentId);
+  return student ? `${student.nombre} ${student.apellido || ''}`.trim() : 'Estudiante';
+};
 
 // Extraer estudiantes etiquetados de un contenido de observación
 const getTaggedStudentsInContent = (
-  content: string | {text: string; bulletPoints?: string[]} | null
+  content: string | {text: string; bulletPoints?: string[]} | null,
 ): string[] => {
-  if (!content) return []
+  if (!content) return [];
 
-  let textToSearch = ""
-  if (typeof content === "string") {
-    textToSearch = content
-  } else if (content && typeof content === "object" && "text" in content) {
-    textToSearch = content.text || ""
+  let textToSearch = '';
+  if (typeof content === 'string') {
+    textToSearch = content;
+  } else if (content && typeof content === 'object' && 'text' in content) {
+    textToSearch = content.text || '';
   }
 
   // Usar la misma regex que en useStudentTags para buscar etiquetas
-  const regex = /@([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+)/g
-  const matches: string[] = []
+  const regex = /@([a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+)/g;
+  const matches: string[] = [];
 
   try {
     if (textToSearch.matchAll) {
-      const allMatches = [...textToSearch.matchAll(regex)]
-      return allMatches.map((match) => match[1])
+      const allMatches = [...textToSearch.matchAll(regex)];
+      return allMatches.map((match) => match[1]);
     } else {
       // Alternativa para navegadores que no soportan matchAll
-      let match
+      let match;
       while ((match = regex.exec(textToSearch)) !== null) {
-        matches.push(match[1])
+        matches.push(match[1]);
       }
     }
   } catch (error) {
-    console.error("Error al buscar etiquetas:", error)
+    console.error('Error al buscar etiquetas:', error);
   }
 
-  return matches
-}
+  return matches;
+};
 
 // Cargar observaciones usando el nuevo modelo unificado
 const loadObservations = async () => {
   if (!props.classId || !props.date) {
-    console.warn("[ObservationsModal] Faltan classId o date para cargar observaciones")
-    return
+    console.warn('[ObservationsModal] Faltan classId o date para cargar observaciones');
+    return;
   }
 
-  isLoading.value = true
-  error.value = null
+  isLoading.value = true;
+  error.value = null;
 
   try {
     console.log(
-      "[ObservationsModal] Cargando observaciones para fecha:",
+      '[ObservationsModal] Cargando observaciones para fecha:',
       props.date,
-      "clase:",
-      props.classId
-    )
+      'clase:',
+      props.classId,
+    );
 
     // Cargar estudiantes si no están en el store
     if (studentsStore.students.length === 0) {
-      await studentsStore.fetchStudents()
+      await studentsStore.fetchStudents();
     }
 
     // 1. Cargar observaciones modernas
     try {
       // Usar fetchClassObservations en lugar de getObservations
-      const observations = await attendanceStore.fetchClassObservations(props.classId, props.date)
+      const observations = await attendanceStore.fetchClassObservations(props.classId, props.date);
 
       // Mapear las observaciones al tipo esperado compatible con ClassObservationData local
       classObservations.value = observations.map((obs) => {
         // Texto principal de la observación
         const texto =
-          obs.text || (typeof obs.content === "string" ? obs.content : obs.content?.text || "")
+          obs.text || (typeof obs.content === 'string' ? obs.content : obs.content?.text || '');
 
         // Crear un objeto que cumpla con la interfaz local ClassObservationData
         const mappedObs: ClassObservationData = {
-          id: obs.id || "",
+          id: obs.id || '',
           // Campos obligatorios para Observation (interfaz padre)
-          authorId: obs.authorId || authStore.user?.uid || "",
+          authorId: obs.authorId || authStore.user?.uid || '',
           createdAt: obs.createdAt || new Date(),
           updatedAt: obs.updatedAt || new Date(),
-          category: "class",
+          category: 'class',
           categoryId: props.classId,
 
           // Mapeo específico para ClassObservationData
@@ -870,71 +870,71 @@ const loadObservations = async () => {
 
           // Campos de historial de modificaciones
           lastModified: obs.lastModified || obs.updatedAt || new Date(),
-          modifiedBy: obs.modifiedBy || obs.authorId || "",
-          modifiedByName: obs.modifiedByName || obs.authorName || "Usuario",
+          modifiedBy: obs.modifiedBy || obs.authorId || '',
+          modifiedByName: obs.modifiedByName || obs.authorName || 'Usuario',
 
           // Propiedades adicionales útiles
-          authorName: obs.authorName || "Usuario",
-          priority: obs.priority || "media",
+          authorName: obs.authorName || 'Usuario',
+          priority: obs.priority || 'media',
           requiresFollowUp: !!obs.requiresFollowUp,
           studentId: obs.studentId,
           studentName: obs.studentName,
           tags: obs.tags || [],
           bulletPoints: obs.bulletPoints || [],
-        }
+        };
 
-        return mappedObs
-      })
+        return mappedObs;
+      });
     } catch (modernErr) {
-      console.warn("[ObservationsModal] Error al cargar observaciones modernas:", modernErr)
+      console.warn('[ObservationsModal] Error al cargar observaciones modernas:', modernErr);
       // Si falla, continuamos con el enfoque heredado
     }
 
     // 2. Cargar datos heredados como respaldo
-    const attendanceDoc = await attendanceStore.fetchAttendanceDocument(props.date, props.classId)
+    const attendanceDoc = await attendanceStore.fetchAttendanceDocument(props.date, props.classId);
 
     if (!attendanceDoc) {
       if (classObservations.value.length === 0) {
-        legacyObservations.value = null
-        justifications.value = []
+        legacyObservations.value = null;
+        justifications.value = [];
       }
     } else {
       // Almacenar datos heredados - asegurarnos que sea string
       // Asegurar que las observaciones heredadas siempre sean un string
       if (attendanceDoc.data?.observations) {
-        if (typeof attendanceDoc.data.observations === "string") {
-          legacyObservations.value = attendanceDoc.data.observations
+        if (typeof attendanceDoc.data.observations === 'string') {
+          legacyObservations.value = attendanceDoc.data.observations;
         } else if (Array.isArray(attendanceDoc.data.observations)) {
           // Si es un array, extraer el texto de cada observación y unirlo
           try {
             const textos = attendanceDoc.data.observations
               .map((obs) => {
-                if (typeof obs === "string") return obs
-                if (obs && typeof obs === "object" && "content" in obs) {
-                  if (typeof obs.content === "string") return obs.content
-                  if (obs.content && typeof obs.content === "object" && "text" in obs.content) {
-                    return obs.content.text || ""
+                if (typeof obs === 'string') return obs;
+                if (obs && typeof obs === 'object' && 'content' in obs) {
+                  if (typeof obs.content === 'string') return obs.content;
+                  if (obs.content && typeof obs.content === 'object' && 'text' in obs.content) {
+                    return obs.content.text || '';
                   }
                 }
-                return ""
+                return '';
               })
-              .filter((t) => t.length > 0)
-            legacyObservations.value = textos.join("\n\n")
+              .filter((t) => t.length > 0);
+            legacyObservations.value = textos.join('\n\n');
           } catch (err) {
-            console.error("Error procesando observaciones:", err)
-            legacyObservations.value = ""
+            console.error('Error procesando observaciones:', err);
+            legacyObservations.value = '';
           }
         } else {
           // Si no es string ni array, intentar usar JSON.stringify
           try {
-            legacyObservations.value = JSON.stringify(attendanceDoc.data.observations)
+            legacyObservations.value = JSON.stringify(attendanceDoc.data.observations);
           } catch (err) {
-            console.error("Error al convertir observaciones a string:", err)
-            legacyObservations.value = ""
+            console.error('Error al convertir observaciones a string:', err);
+            legacyObservations.value = '';
           }
         }
       } else {
-        legacyObservations.value = ""
+        legacyObservations.value = '';
       }
       // Eliminado código de justificaciones
 
@@ -946,71 +946,71 @@ const loadObservations = async () => {
       ) {
         try {
           // Convertimos ClassObservationData[] a Observation[] con manejo seguro de tipos
-          const processedObservations: Observation[] = []
+          const processedObservations: Observation[] = [];
 
           for (const obs of attendanceDoc.data.observations) {
             // Manejar el contenido que puede ser string u objeto
-            let processedContent: {text: string; bulletPoints: string[]}
+            let processedContent: {text: string; bulletPoints: string[]};
 
             // Asegurar que el contenido siempre tenga el formato correcto
-            if (typeof obs.content === "string") {
+            if (typeof obs.content === 'string') {
               processedContent = {
                 text: obs.content,
                 bulletPoints: [],
-              }
-            } else if (obs.content && typeof obs.content === "object") {
+              };
+            } else if (obs.content && typeof obs.content === 'object') {
               const contentText =
-                "text" in obs.content && obs.content.text ? String(obs.content.text) : ""
+                'text' in obs.content && obs.content.text ? String(obs.content.text) : '';
 
               const bulletPoints =
-                "bulletPoints" in obs.content && Array.isArray(obs.content.bulletPoints)
+                'bulletPoints' in obs.content && Array.isArray(obs.content.bulletPoints)
                   ? obs.content.bulletPoints
-                  : []
+                  : [];
 
               processedContent = {
                 text: contentText,
                 bulletPoints,
-              }
+              };
             } else {
               // Valor por defecto si no hay contenido o es null
               processedContent = {
-                text: "",
+                text: '',
                 bulletPoints: [],
-              }
+              };
             }
 
             // Crear observación compatible con la interfaz
             const observation: Observation = {
               id: obs.id || `obs-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-              author: obs.author || authStore.user?.uid || "unknown", // ID del autor
-              authorName: obs.authorName || authStore.user?.email || "Usuario",
+              author: obs.author || authStore.user?.uid || 'unknown', // ID del autor
+              authorName: obs.authorName || authStore.user?.email || 'Usuario',
               createdAt: obs.createdAt ? new Date(obs.createdAt) : new Date(),
               type: obs.type ? (obs.type as ObservationType) : ObservationType.GENERAL,
               category: obs.category
                 ? (obs.category as ObservationCategory)
                 : ObservationCategory.CLASS,
               status: obs.status ? (obs.status as ObservationStatus) : ObservationStatus.ACTIVE,
-              priority: (obs.priority || "media") as ObservationPriority,
+              priority: (obs.priority || 'media') as ObservationPriority,
               content: processedContent,
               classId: obs.classId || props.classId,
               date: obs.date || props.date,
               requiresFollowUp: Boolean(obs.requiresFollowUp) || false,
-            }
+            };
 
-            processedObservations.push(observation)
+            processedObservations.push(observation);
           }
 
-          classObservations.value = processedObservations
+          classObservations.value = processedObservations;
         } catch (err) {
-          console.error("[ObservationsModal] Error procesando observaciones:", err)
-          classObservations.value = [] // Si hay un error, usar array vacío
+          console.error('[ObservationsModal] Error procesando observaciones:', err);
+          classObservations.value = []; // Si hay un error, usar array vacío
         }
       } else {
         // Si tenemos observaciones heredadas pero no modernas, convertir las heredadas
         if (classObservations.value.length === 0 && legacyObservations.value) {
           // Crear una observación con el modelo nuevo basado en datos heredados
-          const classInfo = classesStore.getClassById(props.classId)
-          const className = classInfo ? classInfo.name : "Clase"
+          const classInfo = classesStore.getClassById(props.classId);
+          const className = classInfo ? classInfo.name : 'Clase';
 
           // Observación unificada con datos antiguos
           const legacyObs: Observation = {
@@ -1019,20 +1019,20 @@ const loadObservations = async () => {
               text: legacyObservations.value,
               bulletPoints: [],
             },
-            author: authStore.user?.uid || "unknown",
-            authorName: authStore.user?.email || "Usuario",
+            author: authStore.user?.uid || 'unknown',
+            authorName: authStore.user?.email || 'Usuario',
             createdAt: new Date(),
             type: ObservationType.GENERAL,
             category: ObservationCategory.CLASS,
-            priority: "media" as ObservationPriority,
+            priority: 'media' as ObservationPriority,
             classId: props.classId,
             className,
             date: props.date,
             status: ObservationStatus.ACTIVE,
             requiresFollowUp: false,
-          }
+          };
 
-          classObservations.value = [legacyObs]
+          classObservations.value = [legacyObs];
         }
       }
     }
@@ -1040,110 +1040,110 @@ const loadObservations = async () => {
     // Cargar clase actual si es necesario
     if (props.classId && classesStore.classes.length === 0) {
       try {
-        await classesStore.fetchClasses()
+        await classesStore.fetchClasses();
       } catch (err) {
-        console.error("[ObservationsModal] Error cargando clases:", err)
+        console.error('[ObservationsModal] Error cargando clases:', err);
       }
     }
   } catch (err) {
-    console.error("[ObservationsModal] Error al cargar observaciones:", err)
-    error.value = `Error al cargar observaciones: ${err instanceof Error ? err.message : "Error desconocido"}`
+    console.error('[ObservationsModal] Error al cargar observaciones:', err);
+    error.value = `Error al cargar observaciones: ${err instanceof Error ? err.message : 'Error desconocido'}`;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Mostrar formulario para agregar observación
 const showAddObservationForm = () => {
-  isFormVisible.value = true
-  isEditMode.value = false
-  currentObservationId.value = null
+  isFormVisible.value = true;
+  isEditMode.value = false;
+  currentObservationId.value = null;
 
   // Resetear formulario
-  formData.value.text = ""
-  formData.value.bulletPoints = []
-  formData.value.type = ObservationType.GENERAL
-  formData.value.priority = "media"
-  formData.value.requiresFollowUp = false
-  formData.value.taggedStudentIds = []
+  formData.value.text = '';
+  formData.value.bulletPoints = [];
+  formData.value.type = ObservationType.GENERAL;
+  formData.value.priority = 'media';
+  formData.value.requiresFollowUp = false;
+  formData.value.taggedStudentIds = [];
 
   // Cargar diccionario para autocompletado
-  smartDictionary.loadSavedDictionary()
+  smartDictionary.loadSavedDictionary();
 
   // Foco en textarea después de renderizar
   nextTick(() => {
     if (observationTextarea.value) {
-      observationTextarea.value.focus()
+      observationTextarea.value.focus();
     }
-  })
-}
+  });
+};
 
 // Mostrar formulario para editar observación
 const editObservation = (observation: Observation) => {
-  isFormVisible.value = true
-  isEditMode.value = true
-  currentObservationId.value = observation.id
+  isFormVisible.value = true;
+  isEditMode.value = true;
+  currentObservationId.value = observation.id;
 
   // Llenar formulario con datos existentes
   formData.value.text =
-    typeof observation.content === "object" ? observation.content.text : observation.content
+    typeof observation.content === 'object' ? observation.content.text : observation.content;
   formData.value.bulletPoints =
-    typeof observation.content === "object" ? observation.content.bulletPoints || [] : []
-  formData.value.type = observation.type
-  formData.value.priority = observation.priority || "media"
-  formData.value.requiresFollowUp = observation.requiresFollowUp
-}
+    typeof observation.content === 'object' ? observation.content.bulletPoints || [] : [];
+  formData.value.type = observation.type;
+  formData.value.priority = observation.priority || 'media';
+  formData.value.requiresFollowUp = observation.requiresFollowUp;
+};
 
 // Cancelar formulario
 const cancelForm = () => {
-  isFormVisible.value = false
+  isFormVisible.value = false;
   // Limpiar etiquetas
   if (Array.isArray(taggedStudents)) {
     // Si es un array puro
-    taggedStudents.length = 0
-  } else if (taggedStudents && "value" in taggedStudents) {
+    taggedStudents.length = 0;
+  } else if (taggedStudents && 'value' in taggedStudents) {
     // Si es un ref
-    taggedStudents.value = []
+    taggedStudents.value = [];
   }
-  smartDictionary.rejectSuggestion()
-}
+  smartDictionary.rejectSuggestion();
+};
 
 // Manejo de eventos de teclado en el editor
 const handleEditorKeydown = (event: KeyboardEvent) => {
-  if (!observationTextarea.value) return
+  if (!observationTextarea.value) return;
 
-  const textarea = event.target as HTMLTextAreaElement
-  const cursorPos = textarea.selectionStart || 0
-  const text = formData.value.text || ""
-  const textBeforeCursor = text.substring(0, cursorPos)
-  const textAfterCursor = text.substring(cursorPos)
+  const textarea = event.target as HTMLTextAreaElement;
+  const cursorPos = textarea.selectionStart || 0;
+  const text = formData.value.text || '';
+  const textBeforeCursor = text.substring(0, cursorPos);
+  const textAfterCursor = text.substring(cursorPos);
 
   // Prevenir comportamiento predeterminado para Tab con sugerencia activa
-  if (event.key === "Tab" && smartDictionary.suggestionActive.value) {
-    event.preventDefault()
+  if (event.key === 'Tab' && smartDictionary.suggestionActive.value) {
+    event.preventDefault();
 
     // Aplicar sugerencia
-    const result = smartDictionary.applySuggestion(textBeforeCursor, textAfterCursor)
+    const result = smartDictionary.applySuggestion(textBeforeCursor, textAfterCursor);
     if (result) {
       // Actualizar el modelo
-      formData.value.text = result.text
+      formData.value.text = result.text;
 
       // Colocar cursor al final de la sugerencia
       setTimeout(() => {
         if (textarea) {
-          textarea.focus()
-          textarea.setSelectionRange(result.cursorPos, result.cursorPos)
+          textarea.focus();
+          textarea.setSelectionRange(result.cursorPos, result.cursorPos);
         }
-      }, 50)
+      }, 50);
     }
-    return
+    return;
   }
 
   // Rechazar sugerencia con Escape
-  if (event.key === "Escape" && smartDictionary.suggestionActive.value) {
-    event.preventDefault()
-    smartDictionary.rejectSuggestion()
-    return
+  if (event.key === 'Escape' && smartDictionary.suggestionActive.value) {
+    event.preventDefault();
+    smartDictionary.rejectSuggestion();
+    return;
   }
 
   // Detectar # para etiquetado de estudiantes
@@ -1154,48 +1154,48 @@ const handleEditorKeydown = (event: KeyboardEvent) => {
       // y el usuario seleccionará uno de la lista
 
       // Preparar la lista de estudiantes filtrada
-      filterStudents()
+      filterStudents();
     }
-    return
+    return;
   }
 
   // Para cualquier otra tecla, buscar sugerencias después de un tiempo
-  smartDictionary.setTypingTimeout(textBeforeCursor)
+  smartDictionary.setTypingTimeout(textBeforeCursor);
 
   // Actualizar etiquetas encontradas
-  if (typeof findTaggedStudents === "function") {
-    findTaggedStudents(formData.value.text)
+  if (typeof findTaggedStudents === 'function') {
+    findTaggedStudents(formData.value.text);
   }
-}
+};
 
 // Guardar nueva observación o actualizar existente
 const saveObservation = async () => {
   if (!formData.value.text.trim()) {
-    error.value = "El texto de la observación es obligatorio"
-    return
+    error.value = 'El texto de la observación es obligatorio';
+    return;
   }
 
-  isLoading.value = true
+  isLoading.value = true;
 
   try {
     // Obtener información de la clase
-    let className = "Clase"
-    const classInfo = classesStore.getClassById(props.classId)
+    let className = 'Clase';
+    const classInfo = classesStore.getClassById(props.classId);
     if (classInfo && classInfo.name) {
-      className = classInfo.name
+      className = classInfo.name;
     }
 
     if (isEditMode.value && currentObservationId.value) {
       // Actualizar observación existente
       // Aquí se implementaría la llamada al servicio
-      console.log("[ObservationsModal] Actualizar observación:", currentObservationId.value)
+      console.log('[ObservationsModal] Actualizar observación:', currentObservationId.value);
 
       // Actualizar observación existente
       const existingObservation = classObservations.value.find(
-        (o) => o.id === currentObservationId.value
-      )
+        (o) => o.id === currentObservationId.value,
+      );
       if (!existingObservation) {
-        throw new Error("No se encontró la observación para actualizar")
+        throw new Error('No se encontró la observación para actualizar');
       }
 
       // Crear copia para actualizar
@@ -1203,51 +1203,51 @@ const saveObservation = async () => {
       const updatedContent = {
         text: formData.value.text,
         bulletPoints: formData.value.bulletPoints,
-      }
+      };
 
-      const now = new Date()
+      const now = new Date();
       const updatedObservation: Observation = {
         ...existingObservation,
         content: updatedContent,
         type: formData.value.type,
         priority: formData.value.priority as ObservationPriority,
         updatedAt: now,
-        author: existingObservation.author || authStore.user?.uid || "unknown",
-        authorName: authStore.user?.email || "Usuario",
+        author: existingObservation.author || authStore.user?.uid || 'unknown',
+        authorName: authStore.user?.email || 'Usuario',
         requiresFollowUp: formData.value.requiresFollowUp,
         // Campos de historial para la modificación
         lastModified: now,
-        modifiedBy: authStore.user?.uid || "unknown",
-        modifiedByName: authStore.user?.email || "Usuario",
+        modifiedBy: authStore.user?.uid || 'unknown',
+        modifiedByName: authStore.user?.email || 'Usuario',
         text: formData.value.text, // Asegurar que el campo text esté actualizado en la raíz
-      }
+      };
 
       // Actualizar en el array local
-      const index = classObservations.value.findIndex((o) => o.id === currentObservationId.value)
+      const index = classObservations.value.findIndex((o) => o.id === currentObservationId.value);
       if (index !== -1) {
-        classObservations.value[index] = updatedObservation
+        classObservations.value[index] = updatedObservation;
       }
 
       // En producción, enviar a API
       // Actualizar en Firestore para asegurar la persistencia del historial
       try {
-        await attendanceStore.updateClassObservation(props.date, props.classId, updatedObservation)
+        await attendanceStore.updateClassObservation(props.date, props.classId, updatedObservation);
       } catch (updateErr) {
         console.error(
-          "[ObservationsModal] Error al actualizar observación en Firestore:",
-          updateErr
-        )
+          '[ObservationsModal] Error al actualizar observación en Firestore:',
+          updateErr,
+        );
         // Continuar a pesar del error para no perder los cambios en la UI
       }
 
-      emit("observation-updated", updatedObservation)
-      showNotification("Observación actualizada correctamente", "success")
+      emit('observation-updated', updatedObservation);
+      showNotification('Observación actualizada correctamente', 'success');
 
       // Actualizar registro heredado para mantener compatibilidad
       if (legacyObservations.value) {
-        legacyObservations.value += "\n\n" + formData.value.text
+        legacyObservations.value += '\n\n' + formData.value.text;
       } else {
-        legacyObservations.value = formData.value.text
+        legacyObservations.value = formData.value.text;
       }
 
       // Actualizar en el store
@@ -1255,28 +1255,28 @@ const saveObservation = async () => {
         await attendanceStore.updateObservations(
           props.date,
           props.classId,
-          legacyObservations.value
-        )
+          legacyObservations.value,
+        );
       } catch (legacyErr) {
-        console.error("[ObservationsModal] Error al actualizar observaciones heredadas:", legacyErr)
+        console.error('[ObservationsModal] Error al actualizar observaciones heredadas:', legacyErr);
       }
     } else {
       // Crear nueva observación
-      const newObservation: ClassObservationData = prepareObservationData()
+      const newObservation: ClassObservationData = prepareObservationData();
 
       // Aquí se implementaría la llamada al servicio
-      console.log("[ObservationsModal] Crear nueva observación", newObservation)
+      console.log('[ObservationsModal] Crear nueva observación', newObservation);
 
       // Simulación de adición
-      classObservations.value.push(newObservation)
-      emit("observation-added", newObservation)
-      showNotification("Observación creada correctamente", "success")
+      classObservations.value.push(newObservation);
+      emit('observation-added', newObservation);
+      showNotification('Observación creada correctamente', 'success');
 
       // Actualizar registro heredado para mantener compatibilidad
       if (legacyObservations.value) {
-        legacyObservations.value += "\n\n" + formData.value.text
+        legacyObservations.value += '\n\n' + formData.value.text;
       } else {
-        legacyObservations.value = formData.value.text
+        legacyObservations.value = formData.value.text;
       }
 
       // Actualizar en el store
@@ -1284,202 +1284,202 @@ const saveObservation = async () => {
         await attendanceStore.updateObservations(
           props.date,
           props.classId,
-          legacyObservations.value
-        )
+          legacyObservations.value,
+        );
       } catch (legacyErr) {
-        console.error("[ObservationsModal] Error al actualizar observaciones heredadas:", legacyErr)
+        console.error('[ObservationsModal] Error al actualizar observaciones heredadas:', legacyErr);
       }
     }
 
     // Cerrar formulario
-    isFormVisible.value = false
+    isFormVisible.value = false;
   } catch (err) {
-    console.error("[ObservationsModal] Error al guardar observación:", err)
-    error.value = `Error al guardar observación: ${err instanceof Error ? err.message : "Error desconocido"}`
+    console.error('[ObservationsModal] Error al guardar observación:', err);
+    error.value = `Error al guardar observación: ${err instanceof Error ? err.message : 'Error desconocido'}`;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Función para preparar datos de observación
 const prepareObservationData = (): ClassObservationData => {
-  const now = new Date()
+  const now = new Date();
   const baseData: ClassObservationData = {
     id: formData.value.id || `obs_${Date.now()}`,
     content: {
       text: formData.value.text,
       bulletPoints: formData.value.bulletPoints || [],
     } as any, // Usamos as any para el contenido dinámico
-    author: authStore.user?.uid || "",
-    authorName: authStore.user?.email || "Usuario",
+    author: authStore.user?.uid || '',
+    authorName: authStore.user?.email || 'Usuario',
     createdAt: (formData.value as any).createdAt || now,
     updatedAt: now,
     type: formData.value.type || ObservationType.GENERAL,
-    category: "class",
-    priority: formData.value.priority || "media",
+    category: 'class',
+    priority: formData.value.priority || 'media',
     requiresFollowUp: formData.value.requiresFollowUp || false,
     classId: props.classId,
-    date: props.date || new Date().toISOString().split("T")[0],
-    status: "active",
+    date: props.date || new Date().toISOString().split('T')[0],
+    status: 'active',
     // Usamos valores de etiquetado de estudiantes o null cuando no hay estudiante seleccionado
     studentId: selectedStudent.value?.id || null,
     studentName: selectedStudent.value?.name || null,
     // Aseguramos que todas las propiedades requeridas estén presentes
     tags: [],
     text: formData.value.text,
-  }
-  return baseData
-}
+  };
+  return baseData;
+};
 
 // Confirmar eliminación de observación
 const confirmDeleteObservation = (observation: ClassObservationData) => {
-  if (!observation || !observation.id) return
+  if (!observation || !observation.id) return;
 
-  showDeleteConfirmation(observation)
-}
+  showDeleteConfirmation(observation);
+};
 
 // Mostrar diálogo de confirmación para eliminar
 const showDeleteConfirmation = (observation: ClassObservationData) => {
   confirmationDialog.value = {
     show: true,
     isVisible: true,
-    title: "Confirmar eliminación",
-    message: "¿Estás seguro de que deseas eliminar esta observación?",
-    action: "delete",
+    title: 'Confirmar eliminación',
+    message: '¿Estás seguro de que deseas eliminar esta observación?',
+    action: 'delete',
     data: observation,
     observationId: observation.id,
     observationText:
-      typeof observation.content === "string"
+      typeof observation.content === 'string'
         ? observation.content
-        : observation.content?.text || "",
-  }
+        : observation.content?.text || '',
+  };
 
   // Extraer el texto para mostrar en la confirmación
   const contentText =
-    typeof observation.content === "string" ? observation.content : observation.content?.text || ""
-  typeof observation.content === "object" && observation.content && "text" in observation.content
+    typeof observation.content === 'string' ? observation.content : observation.content?.text || '';
+  typeof observation.content === 'object' && observation.content && 'text' in observation.content
     ? observation.content.text
-    : ""
+    : '';
 
   // Usando la API de confirmación moderna del navegador
   if (
     window.confirm(`¿Estás seguro que deseas eliminar esta observación?
 
-"${contentText.substring(0, 50)}${contentText.length > 50 ? "..." : ""}"`)
+"${contentText.substring(0, 50)}${contentText.length > 50 ? '...' : ''}"`)
   ) {
-    deleteObservation(observation.id)
+    deleteObservation(observation.id);
   }
-}
+};
 
 // Mostrar notificación
 const showNotification = (
   message: string,
-  type: "success" | "error" | "warning" | "info" = "success"
+  type: 'success' | 'error' | 'warning' | 'info' = 'success',
 ) => {
   notification.value = {
     show: true,
     message,
     type,
-  }
+  };
 
   // Ocultar automáticamente después de 3 segundos
   setTimeout(() => {
-    notification.value.show = false
-  }, 3000)
-}
+    notification.value.show = false;
+  }, 3000);
+};
 
 // Eliminar observación
 const deleteObservation = async (observationId: string) => {
-  if (!observationId) return
+  if (!observationId) return;
 
-  isLoading.value = true
+  isLoading.value = true;
 
   try {
-    const updatedObservations = classObservations.value.filter((o) => o.id !== observationId)
-    classObservations.value = updatedObservations
+    const updatedObservations = classObservations.value.filter((o) => o.id !== observationId);
+    classObservations.value = updatedObservations;
 
     // En producción, aquí se enviaría a la API para eliminar
     // await observationsService.delete(observationId);
 
     // Guardar el texto en el diccionario para autocompletado
-    smartDictionary.analyzeText(formData.value.text)
+    smartDictionary.analyzeText(formData.value.text);
 
     // Actualizar también en el modelo de datos heredado
     // Solo se mantiene para compatibilidad durante la transición
-    const observationToDelete = classObservations.value.find((o) => o.id === observationId)
+    const observationToDelete = classObservations.value.find((o) => o.id === observationId);
 
     if (observationToDelete) {
       // Eliminar del texto heredado si existe
       if (legacyObservations.value) {
         // Versión muy simple: simplemente filtra líneas que contengan el texto de la observación
         // En una implementación real esto sería más sofisticado
-        const lines = legacyObservations.value.split("\n")
+        const lines = legacyObservations.value.split('\n');
         const filteredLines = lines.filter((line) => {
           // Extraer el texto del contenido para comparar
-          let contentText = ""
+          let contentText = '';
           if (
-            typeof observationToDelete.content === "object" &&
+            typeof observationToDelete.content === 'object' &&
             observationToDelete.content !== null
           ) {
-            contentText = String(observationToDelete.content.text || "")
+            contentText = String(observationToDelete.content.text || '');
           } else if (observationToDelete.content) {
-            contentText = String(observationToDelete.content)
+            contentText = String(observationToDelete.content);
           }
-          return !line.includes(contentText)
-        })
-        legacyObservations.value = filteredLines.join("\n")
+          return !line.includes(contentText);
+        });
+        legacyObservations.value = filteredLines.join('\n');
 
         // Actualizar en Firebase el campo legacy
         await attendanceStore.updateObservations(
           props.date,
           props.classId,
-          legacyObservations.value
-        )
+          legacyObservations.value,
+        );
       }
     }
 
-    emit("observation-deleted", observationId)
-    showNotification("Observación eliminada correctamente", "success")
+    emit('observation-deleted', observationId);
+    showNotification('Observación eliminada correctamente', 'success');
   } catch (err) {
-    console.error("[ObservationsModal] Error al eliminar observación:", err)
-    error.value = "Error al eliminar la observación. Inténtalo de nuevo."
-    showNotification("Error al eliminar la observación", "error")
+    console.error('[ObservationsModal] Error al eliminar observación:', err);
+    error.value = 'Error al eliminar la observación. Inténtalo de nuevo.';
+    showNotification('Error al eliminar la observación', 'error');
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Observadores
 watch(
   () => props.isVisible,
   (newValue) => {
     if (newValue) {
-      loadObservations()
+      loadObservations();
     }
-  }
-)
+  },
+);
 
 // Ciclo de vida
 onMounted(() => {
   if (props.isVisible) {
-    loadObservations()
+    loadObservations();
 
     // Inicializar diccionario para autocompletado
-    smartDictionary.loadSavedDictionary()
+    smartDictionary.loadSavedDictionary();
 
     // Configurar modal para seleccionar estudiantes
     watch(showTagModal, (isVisible) => {
       if (isVisible) {
         // Preparar la lista de estudiantes cuando se active el modal
-        studentSearchQuery.value = ""
-        filterStudents()
+        studentSearchQuery.value = '';
+        filterStudents();
 
         // Al cerrar, limpiar búsqueda
         if (!isVisible && editingTagName.value) {
-          editingTagName.value = ""
+          editingTagName.value = '';
         }
       }
-    })
+    });
   }
-})
+});
 </script>

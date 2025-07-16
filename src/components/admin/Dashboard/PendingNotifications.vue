@@ -210,136 +210,136 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed} from "vue"
-import {useRouter} from "vue-router"
-import {db} from "../../../firebase"
-import {collection, query, where, getDocs} from "firebase/firestore"
+import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { db } from '../../../firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import {
   notifyUnexcusedAbsences,
   notifyLateStudents,
-} from "../../../services/attendanceNotifications"
-import {useAdminNotifications} from "../../../composables/useAdminNotifications"
+} from '../../../services/attendanceNotifications';
+import { useAdminNotifications } from '../../../composables/useAdminNotifications';
 
-defineOptions({name: "PendingNotifications"})
+defineOptions({ name: 'PendingNotifications' });
 
-const router = useRouter()
-const loading = ref(true)
-const notifying = ref({absent: false, late: false})
+const router = useRouter();
+const loading = ref(true);
+const notifying = ref({ absent: false, late: false });
 const pending = ref({
   absent: [] as string[],
   late: [] as string[],
-})
+});
 
 // Usar el composable de notificaciones administrativas
-const {state: notificationState, markAsRead, filteredNotifications} = useAdminNotifications()
+const { state: notificationState, markAsRead, filteredNotifications } = useAdminNotifications();
 
 // Computed para notificaciones administrativas
 const adminNotifications = computed(() => ({
   unreadCount: notificationState.unreadCount,
   recent: filteredNotifications.value.slice(0, 3), // Solo mostrar las 3 más recientes
-}))
+}));
 
 // Funciones de utilidad para notificaciones administrativas
 const getNotificationIcon = (type: string): string => {
   const icons: Record<string, string> = {
-    teacher_login: "👨‍🏫",
-    attendance_report: "📊",
-    student_observation: "📝",
-    system_notification: "⚙️",
-  }
-  return icons[type] || "📢"
-}
+    teacher_login: '👨‍🏫',
+    attendance_report: '📊',
+    student_observation: '📝',
+    system_notification: '⚙️',
+  };
+  return icons[type] || '📢';
+};
 
 const getNotificationStyle = (notification: any): string => {
   if (!notification.read) {
-    return "border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+    return 'border-blue-400 bg-blue-50 dark:bg-blue-900/20';
   }
-  return "border-gray-200 dark:border-gray-600"
-}
+  return 'border-gray-200 dark:border-gray-600';
+};
 
 const getUrgencyStyle = (urgency: string): string => {
   const styles: Record<string, string> = {
-    high: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    low: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  }
-  return styles[urgency] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-}
+    high: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    low: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  };
+  return styles[urgency] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+};
 
 const formatNotificationTime = (timestamp: Date): string => {
-  const now = new Date()
-  const diff = now.getTime() - timestamp.getTime()
+  const now = new Date();
+  const diff = now.getTime() - timestamp.getTime();
 
-  const minutes = Math.floor(diff / (1000 * 60))
-  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const minutes = Math.floor(diff / (1000 * 60));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
 
-  if (minutes < 1) return "Ahora"
-  if (minutes < 60) return `Hace ${minutes} min`
-  if (hours < 24) return `Hace ${hours} h`
+  if (minutes < 1) return 'Ahora';
+  if (minutes < 60) return `Hace ${minutes} min`;
+  if (hours < 24) return `Hace ${hours} h`;
 
-  return timestamp.toLocaleDateString()
-}
+  return timestamp.toLocaleDateString();
+};
 
 // Navegación al panel completo
 const goToNotificationsPanel = () => {
-  router.push("/admin/notifications")
-}
+  router.push('/admin/notifications');
+};
 
 // Marcar como leída y mostrar detalles
 const markAsReadAndShowDetails = async (notification: any) => {
   if (!notification.read) {
-    await markAsRead(notification.id)
+    await markAsRead(notification.id);
   }
   // Opcional: Mostrar modal con detalles o navegar al panel completo
-  goToNotificationsPanel()
-}
+  goToNotificationsPanel();
+};
 
 // Funciones legacy para notificaciones de asistencia
 const fetchPendingNotifications = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const todayStr = new Date().toISOString().split("T")[0]
-    const attendanceQuery = query(collection(db, "attendance"), where("date", "==", todayStr))
-    const snapshot = await getDocs(attendanceQuery)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const attendanceQuery = query(collection(db, 'attendance'), where('date', '==', todayStr));
+    const snapshot = await getDocs(attendanceQuery);
 
-    const absentIds = new Set<string>()
-    const lateIds = new Set<string>()
+    const absentIds = new Set<string>();
+    const lateIds = new Set<string>();
 
     snapshot.forEach((doc) => {
       const data = doc.data()
       ;(data.ausentes || []).forEach((id: string) => absentIds.add(id))
-      ;(data.tardes || []).forEach((id: string) => lateIds.add(id))
-    })
+      ;(data.tardes || []).forEach((id: string) => lateIds.add(id));
+    });
 
     // Here you would ideally cross-reference with notification_history
     // to see who has NOT been notified yet. For simplicity, we assume none have.
-    pending.value.absent = Array.from(absentIds)
-    pending.value.late = Array.from(lateIds)
+    pending.value.absent = Array.from(absentIds);
+    pending.value.late = Array.from(lateIds);
   } catch (error) {
-    console.error("Error fetching pending notifications:", error)
+    console.error('Error fetching pending notifications:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
-const handleNotify = async (type: "absent" | "late") => {
-  if (type === "absent") {
-    notifying.value.absent = true
-    await notifyUnexcusedAbsences(pending.value.absent)
-    pending.value.absent = [] // Clear after notifying
-    notifying.value.absent = false
-  } else if (type === "late") {
-    notifying.value.late = true
-    await notifyLateStudents(pending.value.late)
-    pending.value.late = [] // Clear after notifying
-    notifying.value.late = false
+const handleNotify = async (type: 'absent' | 'late') => {
+  if (type === 'absent') {
+    notifying.value.absent = true;
+    await notifyUnexcusedAbsences(pending.value.absent);
+    pending.value.absent = []; // Clear after notifying
+    notifying.value.absent = false;
+  } else if (type === 'late') {
+    notifying.value.late = true;
+    await notifyLateStudents(pending.value.late);
+    pending.value.late = []; // Clear after notifying
+    notifying.value.late = false;
   }
   // Optionally, add a toast notification for success
-}
+};
 
 onMounted(() => {
-  fetchPendingNotifications()
-})
+  fetchPendingNotifications();
+});
 </script>
 
 <style scoped>

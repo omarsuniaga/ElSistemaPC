@@ -1,31 +1,3 @@
-<script setup lang="ts">
-/**
- * HeaderActions.vue – Botonera reutilizable para el header de asistencia
- *
- * Props:
- *  - role: 'admin' | 'teacher' → controla visibilidad de Exportar / Clase Emergente
- * Emits:
- *  - analytics, report, export, emergency
- */
-import {computed} from "vue"
-
-interface Props {
-  role?: "admin" | "teacher"
-}
-const props = withDefaults(defineProps<Props>(), {role: "teacher"})
-
-const emit = defineEmits<{
-  (e: "analytics"): void
-  (e: "report"): void
-  (e: "export"): void
-  (e: "emergency"): void
-}>()
-
-/* Permisos básicos */
-const canExport = computed(() => props.role === "admin")
-const canEmergency = computed(() => props.role === "admin")
-</script>
-
 <template>
   <div class="flex flex-wrap gap-2 w-full sm:w-auto">
     <button class="btn btn-secondary text-xs sm:text-sm" @click="emit('analytics')">
@@ -57,6 +29,34 @@ const canEmergency = computed(() => props.role === "admin")
     </button>
   </div>
 </template>
+
+<script setup lang="ts">
+/**
+ * HeaderActions.vue – Botonera reutilizable para el header de asistencia
+ *
+ * Props:
+ *  - role: 'admin' | 'teacher' → controla visibilidad de Exportar / Clase Emergente
+ * Emits:
+ *  - analytics, report, export, emergency
+ */
+import { computed } from 'vue';
+
+interface Props {
+  role?: 'admin' | 'teacher'
+}
+const props = withDefaults(defineProps<Props>(), { role: 'teacher' });
+
+const emit = defineEmits<{
+  (e: 'analytics'): void
+  (e: 'report'): void
+  (e: 'export'): void
+  (e: 'emergency'): void
+}>();
+
+/* Permisos básicos */
+const canExport = computed(() => props.role === 'admin');
+const canEmergency = computed(() => props.role === 'admin');
+</script>
 
 <style scoped>
 /* sin estilos extra: usa utilidades Tailwind/Shadcn */

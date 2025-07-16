@@ -352,18 +352,18 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, onUnmounted, computed, watch} from "vue"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 // Stores and composables
-import {useSystemAnalytics, SystemActivity} from "../composables/useSystemAnalytics"
-import {useAdminStudentsStore} from "../store/adminStudents"
-import {useAdminTeachersStore} from "../store/teachers"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useRealTimeNotifications} from "../composables/useRealTimeNotifications"
-import {useAuthStore} from "../../../stores/auth"
+import { useSystemAnalytics, SystemActivity } from '../composables/useSystemAnalytics';
+import { useAdminStudentsStore } from '../store/adminStudents';
+import { useAdminTeachersStore } from '../store/teachers';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useRealTimeNotifications } from '../composables/useRealTimeNotifications';
+import { useAuthStore } from '../../../stores/auth';
 
 // Icons
 import {
@@ -375,7 +375,7 @@ import {
   CpuChipIcon,
   ClockIcon,
   ExclamationTriangleIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Firebase imports for real-time data
 import {
@@ -387,318 +387,318 @@ import {
   limit,
   where,
   getDocs,
-} from "firebase/firestore"
-import {db} from "../../../firebase"
+} from 'firebase/firestore';
+import { db } from '../../../firebase';
 
 interface SystemAlert {
   id: string
   title: string
   description: string
-  severity: "low" | "medium" | "high" | "critical"
+  severity: 'low' | 'medium' | 'high' | 'critical'
   timestamp: Date
   acknowledged: boolean
 }
 
 const emit = defineEmits<{
   close: []
-}>()
+}>();
 
 // Initialize stores and services
-const analytics = useSystemAnalytics()
-const studentsStore = useAdminStudentsStore()
-const teachersStore = useAdminTeachersStore()
-const classesStore = useClassesStore()
-const attendanceStore = useAttendanceStore()
-const {notifications} = useRealTimeNotifications()
-const authStore = useAuthStore()
+const analytics = useSystemAnalytics();
+const studentsStore = useAdminStudentsStore();
+const teachersStore = useAdminTeachersStore();
+const classesStore = useClassesStore();
+const attendanceStore = useAttendanceStore();
+const { notifications } = useRealTimeNotifications();
+const authStore = useAuthStore();
 
 // Local state for real-time data
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const lastRefresh = ref<Date>(new Date())
-const autoRefreshInterval = ref<number | null>(null)
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+const lastRefresh = ref<Date>(new Date());
+const autoRefreshInterval = ref<number | null>(null);
 
 // Real-time system alerts
-const systemAlerts = ref<SystemAlert[]>([])
+const systemAlerts = ref<SystemAlert[]>([]);
 
 // Timeout for debounced alert generation
-let alertGenerationTimeout: number | null = null
+let alertGenerationTimeout: number | null = null;
 
 // Load real data on component mount
 const loadSystemData = async () => {
   try {
-    isLoading.value = true
-    error.value = null // Load all necessary data in parallel
+    isLoading.value = true;
+    error.value = null; // Load all necessary data in parallel
     await Promise.all([
       studentsStore.loadStudents(),
       teachersStore.loadTeachers(),
       classesStore.fetchClasses(),
       attendanceStore.fetchAttendance(),
       loadSystemAlerts(),
-    ])
+    ]);
 
-    lastRefresh.value = new Date()
+    lastRefresh.value = new Date();
 
     // Record activity
     analytics.logSystemActivity({
-      action: "Vista Global del Sistema actualizada",
-      user: authStore.user?.email || "Admin",
-      module: "system",
-    })
+      action: 'Vista Global del Sistema actualizada',
+      user: authStore.user?.email || 'Admin',
+      module: 'system',
+    });
   } catch (err: any) {
-    console.error("Error loading system data:", err)
-    error.value = "Error al cargar datos del sistema"
+    console.error('Error loading system data:', err);
+    error.value = 'Error al cargar datos del sistema';
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Calculate real system statistics
 const systemStats = computed(() => {
-  const totalStudents = studentsStore.studentStats.total || 0
-  const activeStudents = studentsStore.studentStats.active || 0
-  const totalTeachers = teachersStore.teachers.length || 0
-  const activeClasses = classesStore.classes.filter((c) => c.status === "active").length || 0
+  const totalStudents = studentsStore.studentStats.total || 0;
+  const activeStudents = studentsStore.studentStats.active || 0;
+  const totalTeachers = teachersStore.teachers.length || 0;
+  const activeClasses = classesStore.classes.filter((c) => c.status === 'active').length || 0;
   // Calculate real attendance rate from attendance data
-  const attendanceRecords = attendanceStore.records || []
+  const attendanceRecords = attendanceStore.records || [];
   const recentAttendance = attendanceRecords.filter((record) => {
-    const recordDate = new Date(record.fecha)
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    return recordDate >= sevenDaysAgo
-  })
+    const recordDate = new Date(record.fecha);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return recordDate >= sevenDaysAgo;
+  });
 
-  const presentCount = recentAttendance.filter((r) => r.status === "Presente").length
-  const totalRecords = recentAttendance.length
-  const dailyAttendance = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 95
+  const presentCount = recentAttendance.filter((r) => r.status === 'Presente').length;
+  const totalRecords = recentAttendance.length;
+  const dailyAttendance = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 95;
 
   return {
     totalUsers: totalStudents + totalTeachers,
     activeClasses,
     dailyAttendance,
     systemHealth: analytics.systemHealth.value,
-  }
-})
+  };
+});
 
 // Real-time activities with enhanced data
 const realtimeActivities = computed(() => {
-  const activities: SystemActivity[] = []
-  const activityCounter = 1
+  const activities: SystemActivity[] = [];
+  const activityCounter = 1;
 
   // Recent system activities from analytics
   if (analytics.activityLog.value) {
-    activities.push(...analytics.activityLog.value.slice(0, 8))
+    activities.push(...analytics.activityLog.value.slice(0, 8));
   }
 
   // Recent notifications converted to activities
   if (notifications.value.length > 0) {
-    const recentNotifications = notifications.value.slice(0, 3)
+    const recentNotifications = notifications.value.slice(0, 3);
     recentNotifications.forEach((notification, index) => {
       activities.push({
         id: `notification-${notification.id}-${index}`,
         action: notification.title,
-        user: "Sistema de Notificaciones",
-        time: format(notification.timestamp, "HH:mm", {locale: es}),
-        module: "notifications",
+        user: 'Sistema de Notificaciones',
+        time: format(notification.timestamp, 'HH:mm', { locale: es }),
+        module: 'notifications',
         timestamp: notification.timestamp,
-      })
-    })
+      });
+    });
   }
 
   // Recent student registrations
   const recentStudents = studentsStore.students
     .filter((student) => {
-      if (!student.fecInscripcion) return false
-      const enrollmentDate = new Date(student.fecInscripcion)
-      const threeDaysAgo = new Date()
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
-      return enrollmentDate >= threeDaysAgo
+      if (!student.fecInscripcion) return false;
+      const enrollmentDate = new Date(student.fecInscripcion);
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      return enrollmentDate >= threeDaysAgo;
     })
-    .slice(0, 2)
+    .slice(0, 2);
 
   recentStudents.forEach((student, index) => {
     activities.push({
       id: `student-${student.id}-${index}`,
       action: `Nuevo estudiante registrado: ${student.nombre}`,
-      user: "Sistema de Registro",
-      time: format(new Date(student.fecInscripcion!), "HH:mm", {locale: es}),
-      module: "students",
+      user: 'Sistema de Registro',
+      time: format(new Date(student.fecInscripcion!), 'HH:mm', { locale: es }),
+      module: 'students',
       timestamp: new Date(student.fecInscripcion!),
-    })
-  })
+    });
+  });
 
   // Sort by timestamp descending and return top 10
   return activities
     .sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0))
-    .slice(0, 10)
-})
+    .slice(0, 10);
+});
 
 // Enhanced module status with real data
 const moduleStatus = computed(() => [
   {
-    name: "Autenticación",
+    name: 'Autenticación',
     status: analytics.moduleStatus.value.auth,
     activeUsers: Math.max(5, analytics.activeUsers.value.auth),
     operations: analytics.operationCounts.value.authOperations,
     responseTime: analytics.responseTime.value.authResponseTime,
   },
   {
-    name: "Gestión de Estudiantes",
-    status: studentsStore.isLoading ? "warning" : "healthy",
+    name: 'Gestión de Estudiantes',
+    status: studentsStore.isLoading ? 'warning' : 'healthy',
     activeUsers: studentsStore.studentStats.active,
     operations: studentsStore.studentStats.total,
     responseTime: 45,
   },
   {
-    name: "Gestión de Clases",
+    name: 'Gestión de Clases',
     status: analytics.moduleStatus.value.classes,
     activeUsers: classesStore.classes.length,
     operations: analytics.operationCounts.value.classesOperations,
     responseTime: analytics.responseTime.value.classesResponseTime,
   },
   {
-    name: "Asistencia",
-    status: attendanceStore.loading ? "warning" : "healthy",
+    name: 'Asistencia',
+    status: attendanceStore.loading ? 'warning' : 'healthy',
     activeUsers: attendanceStore.records.length > 0 ? 25 : 5,
     operations: attendanceStore.records.length,
     responseTime: 67,
   },
   {
-    name: "Notificaciones",
-    status: notifications.value.length > 20 ? "warning" : "healthy",
+    name: 'Notificaciones',
+    status: notifications.value.length > 20 ? 'warning' : 'healthy',
     activeUsers: notifications.value.filter((n) => !n.isRead).length,
     operations: notifications.value.length,
     responseTime: 34,
   },
   {
-    name: "Base de Datos",
+    name: 'Base de Datos',
     status: analytics.moduleStatus.value.database,
     activeUsers: systemStats.value.totalUsers,
     operations: analytics.operationCounts.value.dbOperations,
     responseTime: analytics.responseTime.value.dbResponseTime,
   },
-])
+]);
 
 // Load system alerts from Firebase
 const loadSystemAlerts = async () => {
   try {
     const alertsQuery = query(
-      collection(db, "SYSTEM_ALERTS"),
-      where("acknowledged", "==", false),
-      orderBy("timestamp", "desc"),
-      limit(5)
-    )
+      collection(db, 'SYSTEM_ALERTS'),
+      where('acknowledged', '==', false),
+      orderBy('timestamp', 'desc'),
+      limit(5),
+    );
 
-    const snapshot = await getDocs(alertsQuery)
+    const snapshot = await getDocs(alertsQuery);
 
     if (snapshot.empty) {
       // Generate intelligent alerts based on real data
-      generateIntelligentAlerts()
+      generateIntelligentAlerts();
     } else {
       systemAlerts.value = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         timestamp: doc.data().timestamp?.toDate() || new Date(),
-      })) as SystemAlert[]
+      })) as SystemAlert[];
     }
   } catch (err) {
-    console.warn("Could not load system alerts from Firebase, generating local alerts")
-    generateIntelligentAlerts()
+    console.warn('Could not load system alerts from Firebase, generating local alerts');
+    generateIntelligentAlerts();
   }
-}
+};
 
 // Generate intelligent alerts based on real system data
 const generateIntelligentAlerts = () => {
-  const alerts: SystemAlert[] = []
+  const alerts: SystemAlert[] = [];
 
   try {
     // Calculate attendance directly to avoid computed recursion
-    const attendanceRecords = attendanceStore.records || []
+    const attendanceRecords = attendanceStore.records || [];
     const recentAttendance = attendanceRecords.filter((record) => {
-      const recordDate = new Date(record.fecha)
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      return recordDate >= sevenDaysAgo
-    })
+      const recordDate = new Date(record.fecha);
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return recordDate >= sevenDaysAgo;
+    });
 
-    const presentCount = recentAttendance.filter((r) => r.status === "Presente").length
-    const totalRecords = recentAttendance.length
-    const dailyAttendance = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 95
+    const presentCount = recentAttendance.filter((r) => r.status === 'Presente').length;
+    const totalRecords = recentAttendance.length;
+    const dailyAttendance = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 95;
 
     // Low attendance alert
     if (dailyAttendance < 80) {
       alerts.push({
-        id: "attendance-low",
-        title: "Asistencia Baja Detectada",
+        id: 'attendance-low',
+        title: 'Asistencia Baja Detectada',
         description: `La asistencia promedio es del ${dailyAttendance}% (objetivo: 85%)`,
-        severity: "medium",
+        severity: 'medium',
         timestamp: new Date(),
         acknowledged: false,
-      })
+      });
     }
 
     // High unread notifications
-    const unreadCount = notifications.value.filter((n) => !n.isRead).length
+    const unreadCount = notifications.value.filter((n) => !n.isRead).length;
     if (unreadCount > 10) {
       alerts.push({
-        id: "notifications-high",
-        title: "Muchas Notificaciones Pendientes",
+        id: 'notifications-high',
+        title: 'Muchas Notificaciones Pendientes',
         description: `${unreadCount} notificaciones sin leer requieren atención`,
-        severity: "low",
+        severity: 'low',
         timestamp: new Date(),
         acknowledged: false,
-      })
+      });
     }
 
     // System performance alert
-    const systemHealth = analytics.systemHealth.value
+    const systemHealth = analytics.systemHealth.value;
     if (systemHealth < 85) {
       alerts.push({
-        id: "performance-low",
-        title: "Rendimiento del Sistema",
+        id: 'performance-low',
+        title: 'Rendimiento del Sistema',
         description: `Salud del sistema al ${systemHealth}% (objetivo: 90%)`,
-        severity: systemHealth < 70 ? "high" : "medium",
+        severity: systemHealth < 70 ? 'high' : 'medium',
         timestamp: new Date(),
         acknowledged: false,
-      })
+      });
     }
 
     // Data freshness alert
-    const hoursAgo = (Date.now() - lastRefresh.value.getTime()) / (1000 * 60 * 60)
+    const hoursAgo = (Date.now() - lastRefresh.value.getTime()) / (1000 * 60 * 60);
     if (hoursAgo > 2) {
       alerts.push({
-        id: "data-stale",
-        title: "Datos Desactualizados",
+        id: 'data-stale',
+        title: 'Datos Desactualizados',
         description: `Los datos fueron actualizados hace ${Math.round(hoursAgo)} horas`,
-        severity: "low",
+        severity: 'low',
         timestamp: new Date(),
         acknowledged: false,
-      })
+      });
     }
 
-    systemAlerts.value = alerts.slice(0, 5)
+    systemAlerts.value = alerts.slice(0, 5);
   } catch (error) {
-    console.error("Error generating alerts:", error)
-    systemAlerts.value = []
+    console.error('Error generating alerts:', error);
+    systemAlerts.value = [];
   }
-}
+};
 
 // Auto refresh every 5 minutes
 const startAutoRefresh = () => {
   autoRefreshInterval.value = window.setInterval(
     () => {
-      loadSystemData()
+      loadSystemData();
     },
-    5 * 60 * 1000
-  ) // 5 minutes
-}
+    5 * 60 * 1000,
+  ); // 5 minutes
+};
 
 const stopAutoRefresh = () => {
   if (autoRefreshInterval.value) {
-    clearInterval(autoRefreshInterval.value)
-    autoRefreshInterval.value = null
+    clearInterval(autoRefreshInterval.value);
+    autoRefreshInterval.value = null;
   }
-}
+};
 
 // Watch for changes in critical data (debounced to prevent recursion)
 watch(
@@ -711,45 +711,45 @@ watch(
   () => {
     // Debounce alert generation to prevent recursion
     if (alertGenerationTimeout) {
-      clearTimeout(alertGenerationTimeout)
+      clearTimeout(alertGenerationTimeout);
     }
 
     alertGenerationTimeout = window.setTimeout(() => {
-      generateIntelligentAlerts()
-      alertGenerationTimeout = null
-    }, 1000)
+      generateIntelligentAlerts();
+      alertGenerationTimeout = null;
+    }, 1000);
   },
-  {flush: "post"}
-)
+  { flush: 'post' },
+);
 
 // Lifecycle hooks
 onMounted(async () => {
-  await loadSystemData()
-  startAutoRefresh()
+  await loadSystemData();
+  startAutoRefresh();
   // Track modal opening
   analytics.logSystemActivity({
-    action: "Apertura de Vista Global del Sistema",
-    user: authStore.user?.email || "Admin",
-    module: "system",
-  })
-})
+    action: 'Apertura de Vista Global del Sistema',
+    user: authStore.user?.email || 'Admin',
+    module: 'system',
+  });
+});
 
 onUnmounted(() => {
-  stopAutoRefresh()
+  stopAutoRefresh();
 
   // Clear any pending alert generation timeout
   if (alertGenerationTimeout) {
-    clearTimeout(alertGenerationTimeout)
-    alertGenerationTimeout = null
+    clearTimeout(alertGenerationTimeout);
+    alertGenerationTimeout = null;
   }
 
   // Track modal closing
   analytics.logSystemActivity({
-    action: "Cierre de Vista Global del Sistema",
-    user: authStore.user?.email || "Admin",
-    module: "system",
-  })
-})
+    action: 'Cierre de Vista Global del Sistema',
+    user: authStore.user?.email || 'Admin',
+    module: 'system',
+  });
+});
 </script>
 
 <style scoped>

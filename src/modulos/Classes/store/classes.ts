@@ -1,5 +1,5 @@
 // src/modulos/Classes/store/classes.ts
-import {defineStore} from "pinia"
+import { defineStore } from 'pinia';
 import {
   fetchClassesFirestore,
   addClassFirestore,
@@ -12,11 +12,11 @@ import {
   removeAssistantTeacher,
   updateAssistantPermissions,
   checkTeacherPermission,
-} from "../service/classes"
-import type {ClassData, ClassCreate} from "../types/class"
-import {useQualificationStore} from "../../Qualifications/store/qualification"
+} from '../service/classes';
+import type { ClassData, ClassCreate } from '../types/class';
+import { useQualificationStore } from '../../Qualifications/store/qualification';
 
-export const useClassesStore = defineStore("classes", {
+export const useClassesStore = defineStore('classes', {
   state: () => ({
     classes: [] as ClassData[],
     loading: false,
@@ -40,15 +40,15 @@ export const useClassesStore = defineStore("classes", {
     // Filtra clases por maestro
     getClassesByTeacher: (state) => (teacherId: string) => {
       return state.classes.filter((classItem) => {
-        if (classItem.teacherId !== teacherId) return false
-        const schedule = classItem.schedule as {slots?: any[]}
-        return schedule && Array.isArray(schedule.slots) && schedule.slots.length > 0
-      })
+        if (classItem.teacherId !== teacherId) return false;
+        const schedule = classItem.schedule as {slots?: any[]};
+        return schedule && Array.isArray(schedule.slots) && schedule.slots.length > 0;
+      });
     },
     // Filtra clases por alumno
     getClassesByStudent: (state) => (studentId: string) =>
       state.classes.filter(
-        (classItem) => classItem.studentIds && classItem.studentIds.includes(studentId)
+        (classItem) => classItem.studentIds && classItem.studentIds.includes(studentId),
       ),
     // Retorna clases que tienen definido un horario
     getScheduledClasses: (state) => state.classes.filter((classItem) => classItem.schedule),
@@ -59,67 +59,67 @@ export const useClassesStore = defineStore("classes", {
 
     // Nueva implementación del getter studentClasses para resolver el conflicto de nombres
     studentClasses: (state) => (studentId: string) => {
-      if (!studentId) return []
+      if (!studentId) return [];
       return state.classes.filter(
         (classItem) =>
           classItem.studentIds &&
           Array.isArray(classItem.studentIds) &&
-          classItem.studentIds.includes(studentId)
-      )
+          classItem.studentIds.includes(studentId),
+      );
     },
 
     // obtener clases por dias de la semana
     getClassByDaysAndTeacher: (state) => (teacherId: string, day: string) => {
       return state.classes.filter((classItem) => {
-        if (classItem.teacherId !== teacherId) return false
-        const schedule = classItem.schedule as {slots?: any[]}
+        if (classItem.teacherId !== teacherId) return false;
+        const schedule = classItem.schedule as {slots?: any[]};
         return (
           schedule &&
           Array.isArray(schedule.slots) &&
           schedule.slots.some((slot: any) => slot.day === day)
-        )
-      })
+        );
+      });
     },
     // Clases filtradas por ID de maestro
     getClassesByTeacherId: (state) => (teacherId: string) => {
-      if (!teacherId) return []
-      return state.classes.filter((c) => c.teacherId === teacherId)
+      if (!teacherId) return [];
+      return state.classes.filter((c) => c.teacherId === teacherId);
     },
 
     // Clases programadas filtradas por ID de maestro
     getScheduledClassesByTeacherId: (state) => (teacherId: string) => {
-      if (!teacherId) return []
+      if (!teacherId) return [];
       return state.classes.filter((c) => {
-        if (c.teacherId !== teacherId) return false
-        const schedule = c.schedule as {slots?: any[]}
-        return schedule && Array.isArray(schedule.slots) && schedule.slots.length > 0
-      })
+        if (c.teacherId !== teacherId) return false;
+        const schedule = c.schedule as {slots?: any[]};
+        return schedule && Array.isArray(schedule.slots) && schedule.slots.length > 0;
+      });
     }, // Clases por día de la semana filtradas por ID de maestro
     getClassesByDayAndTeacherId: (state) => (day: string | number, teacherId: string) => {
-      const dayNames = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"]
-      let dayIndex: number
+      const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+      let dayIndex: number;
 
-      if (typeof day === "string") {
-        dayIndex = dayNames.indexOf(day.toLowerCase())
+      if (typeof day === 'string') {
+        dayIndex = dayNames.indexOf(day.toLowerCase());
       } else {
-        dayIndex = day >= 0 && day <= 6 ? day : -1
+        dayIndex = day >= 0 && day <= 6 ? day : -1;
       }
 
-      if (!teacherId || dayIndex === -1) return []
+      if (!teacherId || dayIndex === -1) return [];
 
       return state.classes.filter((c) => {
-        if (c.teacherId !== teacherId) return false
-        const schedule = c.schedule as {slots?: any[]}
-        if (!schedule || !Array.isArray(schedule.slots)) return false
+        if (c.teacherId !== teacherId) return false;
+        const schedule = c.schedule as {slots?: any[]};
+        if (!schedule || !Array.isArray(schedule.slots)) return false;
         return schedule.slots.some((slot: any) => {
-          if (typeof slot.day === "number") {
-            return slot.day === dayIndex
-          } else if (typeof slot.day === "string") {
-            return dayNames[dayIndex] === slot.day.toLowerCase()
+          if (typeof slot.day === 'number') {
+            return slot.day === dayIndex;
+          } else if (typeof slot.day === 'string') {
+            return dayNames[dayIndex] === slot.day.toLowerCase();
           }
-          return false
-        })
-      })
+          return false;
+        });
+      });
     },
 
     /* ===== GETTERS PARA COLABORACION ===== */
@@ -128,68 +128,68 @@ export const useClassesStore = defineStore("classes", {
      * Obtiene clases donde el maestro es encargado
      */
     getLeadClasses: (state) => (teacherId: string) => {
-      if (!teacherId) return []
-      return state.classes.filter((c: ClassData) => c.teacherId === teacherId)
+      if (!teacherId) return [];
+      return state.classes.filter((c: ClassData) => c.teacherId === teacherId);
     },
 
     /**
      * Obtiene clases donde el maestro es asistente
      */
     getAssistantClasses: (state) => (teacherId: string) => {
-      if (!teacherId) return []
+      if (!teacherId) return [];
       return state.classes.filter(
         (c: ClassData) =>
           c.teachers &&
           c.teachers.some(
-            (teacher: any) => teacher.teacherId === teacherId && teacher.role === "assistant"
-          )
-      )
+            (teacher: any) => teacher.teacherId === teacherId && teacher.role === 'assistant',
+          ),
+      );
     },
 
     /**
      * Obtiene todas las clases del maestro (encargado + asistente)
      */
     getAllTeacherClasses: (state) => (teacherId: string) => {
-      if (!teacherId) return []
+      if (!teacherId) return [];
       return state.classes.filter(
         (c: ClassData) =>
           c.teacherId === teacherId ||
-          (c.teachers && c.teachers.some((teacher: any) => teacher.teacherId === teacherId))
-      )
+          (c.teachers && c.teachers.some((teacher: any) => teacher.teacherId === teacherId)),
+      );
     },
 
     /**
      * Obtiene una clase por ID si el maestro tiene acceso (como titular o asistente)
      */
     getClassByIdForTeacher: (state) => (classId: string, teacherId: string) => {
-      if (!classId || !teacherId) return null
+      if (!classId || !teacherId) return null;
       return state.classes.find(
         (c: ClassData) =>
           c.id === classId &&
           (c.teacherId === teacherId ||
-            (c.teachers && c.teachers.some((teacher: any) => teacher.teacherId === teacherId)))
-      )
+            (c.teachers && c.teachers.some((teacher: any) => teacher.teacherId === teacherId))),
+      );
     },
 
     /**
      * Verifica si un maestro tiene acceso a una clase específica
      */
     hasTeacherAccessToClass: (state) => (classId: string, teacherId: string) => {
-      if (!classId || !teacherId) return false
-      const classData = state.classes.find((c) => c.id === classId)
-      if (!classData) return false
+      if (!classId || !teacherId) return false;
+      const classData = state.classes.find((c) => c.id === classId);
+      if (!classData) return false;
       return (
         classData.teacherId === teacherId ||
         (classData.teachers &&
           classData.teachers.some((teacher: any) => teacher.teacherId === teacherId))
-      )
+      );
     },
 
     /**
      * Obtiene el número de clases activas.
      */
     activeClasses: (state) => {
-      return state.classes.filter((c) => c.isActive).length
+      return state.classes.filter((c) => c.isActive).length;
     },
   },
   // Actions para manejar la lógica de negocio y la comunicación con Firestore
@@ -199,21 +199,21 @@ export const useClassesStore = defineStore("classes", {
      * Normaliza la data de una clase para asegurar que el campo "schedule" tenga la estructura esperada.
      */
     normalizeClassData(classItem: any): ClassData {
-      let normalizedSchedule
+      let normalizedSchedule;
       if (classItem.schedule && Array.isArray(classItem.schedule.slots)) {
-        normalizedSchedule = {slots: classItem.schedule.slots}
+        normalizedSchedule = { slots: classItem.schedule.slots };
       } else if (classItem.schedule && classItem.schedule.day) {
         normalizedSchedule = {
           slots: [
             {
               day: classItem.schedule.day,
-              startTime: classItem.schedule.startTime || "",
-              endTime: classItem.schedule.endTime || "",
+              startTime: classItem.schedule.startTime || '',
+              endTime: classItem.schedule.endTime || '',
             },
           ],
-        }
+        };
       } else {
-        normalizedSchedule = {slots: []}
+        normalizedSchedule = { slots: [] };
       }
       return {
         ...classItem,
@@ -224,22 +224,22 @@ export const useClassesStore = defineStore("classes", {
             ? [classItem.studentIds]
             : [],
         schedule: normalizedSchedule,
-      }
+      };
     },
 
     /**
      * Helper para gestionar el estado "loading" y errores durante una acción asíncrona.
      */
     async withLoading<T>(action: () => Promise<T>): Promise<T> {
-      this.loading = true
-      this.error = null
+      this.loading = true;
+      this.error = null;
       try {
-        return await action()
+        return await action();
       } catch (error: any) {
-        this.error = error.message || "Error inesperado"
-        throw error
+        this.error = error.message || 'Error inesperado';
+        throw error;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
@@ -250,11 +250,11 @@ export const useClassesStore = defineStore("classes", {
      */
     async fetchClasses() {
       return await this.withLoading(async () => {
-        const classes = await fetchClassesFirestore()
-        this.classes = classes.map((classItem: any) => this.normalizeClassData(classItem))
-        this.lastSync = new Date()
-        return this.classes
-      })
+        const classes = await fetchClassesFirestore();
+        this.classes = classes.map((classItem: any) => this.normalizeClassData(classItem));
+        this.lastSync = new Date();
+        return this.classes;
+      });
     },
     /**
      * Agrega una nueva clase en Firestore.
@@ -263,17 +263,17 @@ export const useClassesStore = defineStore("classes", {
      */
     async addClass(classData: ClassCreate) {
       return await this.withLoading(async () => {
-        const newClassId = await addClassFirestore(classData)
+        const newClassId = await addClassFirestore(classData);
         const createdClass: ClassData = {
           ...classData,
           id: newClassId,
           createdAt: new Date(),
           updatedAt: new Date(),
-        }
-        const normalizedClass = this.normalizeClassData(createdClass)
-        this.classes.push(normalizedClass)
-        return normalizedClass
-      })
+        };
+        const normalizedClass = this.normalizeClassData(createdClass);
+        this.classes.push(normalizedClass);
+        return normalizedClass;
+      });
     } /**
      * Actualiza una clase existente en Firestore.
      * Soporta dos formas de llamada:
@@ -282,68 +282,68 @@ export const useClassesStore = defineStore("classes", {
      */,
     async updateClass(
       idOrUpdates: string | (Partial<ClassData> & {id: string}),
-      maybeUpdates?: Partial<ClassData>
+      maybeUpdates?: Partial<ClassData>,
     ) {
       return await this.withLoading(async () => {
-        let classId: string
-        let updates: Partial<ClassData>
+        let classId: string;
+        let updates: Partial<ClassData>;
 
         // Determinar forma de llamada y extraer id y updates
-        if (typeof idOrUpdates === "string" && maybeUpdates) {
+        if (typeof idOrUpdates === 'string' && maybeUpdates) {
           // Forma: updateClass(id, updates)
-          classId = idOrUpdates
-          updates = maybeUpdates
-        } else if (typeof idOrUpdates === "object" && idOrUpdates.id) {
+          classId = idOrUpdates;
+          updates = maybeUpdates;
+        } else if (typeof idOrUpdates === 'object' && idOrUpdates.id) {
           // Forma: updateClass({id, ...updates})
-          classId = idOrUpdates.id
-          updates = idOrUpdates
+          classId = idOrUpdates.id;
+          updates = idOrUpdates;
         } else {
-          throw new Error("ID de clase indefinido o formato de llamada incorrecto")
+          throw new Error('ID de clase indefinido o formato de llamada incorrecto');
         }
 
         // Asegurarnos de que tenemos un ID válido
         if (!classId) {
-          throw new Error("ID de clase indefinido")
+          throw new Error('ID de clase indefinido');
         }
         // Obtener datos actuales de la clase para gestionar relaciones bidireccionales
-        const currentClass = this.getClassById(classId)
+        const currentClass = this.getClassById(classId);
 
         // Comprobar si hay cambios en la lista de estudiantes
         if (updates.studentIds && currentClass) {
-          const previousStudentIds = currentClass.studentIds || []
-          const newStudentIds = updates.studentIds
+          const previousStudentIds = currentClass.studentIds || [];
+          const newStudentIds = updates.studentIds;
 
           // Identificar cambios
-          const addedStudents = newStudentIds.filter((id) => !previousStudentIds.includes(id))
-          const removedStudents = previousStudentIds.filter((id) => !newStudentIds.includes(id))
+          const addedStudents = newStudentIds.filter((id) => !previousStudentIds.includes(id));
+          const removedStudents = previousStudentIds.filter((id) => !newStudentIds.includes(id));
 
           try {
             // Importamos el store de estudiantes si hay cambios que procesar
             if (addedStudents.length > 0 || removedStudents.length > 0) {
               // Usamos import dinámico para evitar dependencias circulares
-              const {useStudentsStore} = await import("../../Students/store/students")
-              const studentsStore = useStudentsStore()
+              const { useStudentsStore } = await import('../../Students/store/students');
+              const studentsStore = useStudentsStore();
 
               // Actualizar los estudiantes añadidos para que tengan esta clase en su grupo
               for (const studentId of addedStudents) {
                 try {
-                  const student = studentsStore.getStudentById(studentId)
+                  const student = studentsStore.getStudentById(studentId);
                   if (student) {
                     const currentGrupos = Array.isArray(student.grupo)
                       ? [...student.grupo]
                       : student.grupo
                         ? [student.grupo]
-                        : []
+                        : [];
 
                     if (!currentGrupos.includes(classId)) {
                       await studentsStore.updateStudent(studentId, {
                         grupo: [...currentGrupos, classId],
-                      })
-                      console.log(`Actualizado estudiante ${studentId}: añadido a clase ${classId}`)
+                      });
+                      console.log(`Actualizado estudiante ${studentId}: añadido a clase ${classId}`);
                     }
                   }
                 } catch (err) {
-                  console.error(`Error actualizando grupos del estudiante ${studentId}:`, err)
+                  console.error(`Error actualizando grupos del estudiante ${studentId}:`, err);
                   // Continuamos con los demás estudiantes
                 }
               }
@@ -351,66 +351,66 @@ export const useClassesStore = defineStore("classes", {
               // Actualizar los estudiantes eliminados para quitar esta clase de su grupo
               for (const studentId of removedStudents) {
                 try {
-                  const student = studentsStore.getStudentById(studentId)
+                  const student = studentsStore.getStudentById(studentId);
                   if (student && student.grupo) {
                     const currentGrupos = Array.isArray(student.grupo)
                       ? [...student.grupo]
                       : student.grupo
                         ? [student.grupo]
-                        : []
+                        : [];
 
-                    const updatedGrupos = currentGrupos.filter((g) => g !== classId)
+                    const updatedGrupos = currentGrupos.filter((g) => g !== classId);
 
                     if (currentGrupos.length !== updatedGrupos.length) {
                       await studentsStore.updateStudent(studentId, {
                         grupo: updatedGrupos,
-                      })
+                      });
                       console.log(
-                        `Actualizado estudiante ${studentId}: eliminado de clase ${classId}`
-                      )
+                        `Actualizado estudiante ${studentId}: eliminado de clase ${classId}`,
+                      );
                     }
                   }
                 } catch (err) {
-                  console.error(`Error actualizando grupos del estudiante ${studentId}:`, err)
+                  console.error(`Error actualizando grupos del estudiante ${studentId}:`, err);
                   // Continuamos con los demás estudiantes
                 }
               }
             }
           } catch (err) {
-            console.error("Error actualizando referencias estudiantes-clases:", err)
+            console.error('Error actualizando referencias estudiantes-clases:', err);
             // No bloqueamos la actualización principal por errores en las referencias
           }
         }
 
         // Actualizar en Firestore
-        await updateClassFirestore(classId, updates)
+        await updateClassFirestore(classId, updates);
 
         // Actualizar estado local
-        const index = this.classes.findIndex((c) => c.id === classId)
-        let updatedData: ClassData
+        const index = this.classes.findIndex((c) => c.id === classId);
+        let updatedData: ClassData;
 
         if (index !== -1) {
           updatedData = this.normalizeClassData({
             ...this.classes[index],
             ...updates,
             id: classId, // Asegurar que el ID esté presente
-          })
-          this.classes[index] = updatedData
+          });
+          this.classes[index] = updatedData;
         } else {
           // Si la clase no existe en el estado local, pero existe en Firestore
-          if ("id" in updates) {
-            updatedData = this.normalizeClassData(updates as ClassData)
+          if ('id' in updates) {
+            updatedData = this.normalizeClassData(updates as ClassData);
           } else {
             updatedData = this.normalizeClassData({
               ...updates,
               id: classId,
-            } as ClassData)
+            } as ClassData);
           }
-          this.classes.push(updatedData)
+          this.classes.push(updatedData);
         }
 
-        return true
-      })
+        return true;
+      });
     },
 
     /**
@@ -418,10 +418,10 @@ export const useClassesStore = defineStore("classes", {
      */
     async removeClass(classId: string) {
       return await this.withLoading(async () => {
-        await removeClassFirestore(classId)
-        this.classes = this.classes.filter((c) => c.id !== classId)
-        return {success: true}
-      })
+        await removeClassFirestore(classId);
+        this.classes = this.classes.filter((c) => c.id !== classId);
+        return { success: true };
+      });
     },
 
     /**
@@ -429,17 +429,17 @@ export const useClassesStore = defineStore("classes", {
      */
     async getClassDetails(classId: string) {
       return await this.withLoading(async () => {
-        const classItem = await getClassByIdFirestore(classId)
-        if (!classItem) throw new Error("Clase no encontrada")
-        const normalizedClass = this.normalizeClassData(classItem)
-        const index = this.classes.findIndex((c) => c.id === classId)
+        const classItem = await getClassByIdFirestore(classId);
+        if (!classItem) throw new Error('Clase no encontrada');
+        const normalizedClass = this.normalizeClassData(classItem);
+        const index = this.classes.findIndex((c) => c.id === classId);
         if (index === -1) {
-          this.classes.push(normalizedClass)
+          this.classes.push(normalizedClass);
         } else {
-          this.classes[index] = normalizedClass
+          this.classes[index] = normalizedClass;
         }
-        return normalizedClass
-      })
+        return normalizedClass;
+      });
     },
 
     /**
@@ -449,34 +449,34 @@ export const useClassesStore = defineStore("classes", {
      */
     async fetchClassById(classId: string): Promise<ClassData | null> {
       if (!classId) {
-        console.error("[ClassStore] No se puede obtener clase sin ID")
-        return null
+        console.error('[ClassStore] No se puede obtener clase sin ID');
+        return null;
       }
 
       try {
-        console.log(`[ClassStore] Obteniendo clase por ID: ${classId}`)
-        const classData = await getClassByIdFirestore(classId)
+        console.log(`[ClassStore] Obteniendo clase por ID: ${classId}`);
+        const classData = await getClassByIdFirestore(classId);
 
         if (classData) {
-          const normalizedClass = this.normalizeClassData(classData)
+          const normalizedClass = this.normalizeClassData(classData);
 
           // Agregar o actualizar la clase en el store si no existe
-          const existingIndex = this.classes.findIndex((c) => c.id === classId)
+          const existingIndex = this.classes.findIndex((c) => c.id === classId);
           if (existingIndex >= 0) {
-            this.classes[existingIndex] = normalizedClass
+            this.classes[existingIndex] = normalizedClass;
           } else {
-            this.classes.push(normalizedClass)
+            this.classes.push(normalizedClass);
           }
 
-          console.log(`[ClassStore] ✅ Clase obtenida: "${normalizedClass.name}"`)
-          return normalizedClass
+          console.log(`[ClassStore] ✅ Clase obtenida: "${normalizedClass.name}"`);
+          return normalizedClass;
         } else {
-          console.log(`[ClassStore] ❌ No se encontró clase con ID: ${classId}`)
-          return null
+          console.log(`[ClassStore] ❌ No se encontró clase con ID: ${classId}`);
+          return null;
         }
       } catch (error) {
-        console.error(`[ClassStore] Error al obtener clase ${classId}:`, error)
-        return null
+        console.error(`[ClassStore] Error al obtener clase ${classId}:`, error);
+        return null;
       }
     },
 
@@ -484,7 +484,7 @@ export const useClassesStore = defineStore("classes", {
      * Alias para fetchClassById para compatibilidad con código existente
      */
     async getClass(classId: string): Promise<ClassData | null> {
-      return await this.fetchClassById(classId)
+      return await this.fetchClassById(classId);
     },
 
     /* ===== FUNCIONES AUXILIARES ===== */
@@ -494,10 +494,10 @@ export const useClassesStore = defineStore("classes", {
      */
     async assignTeacher(classId: string, teacherId: string) {
       return await this.withLoading(async () => {
-        const classData = this.getClassById(classId)
-        if (!classData) throw new Error("Clase no encontrada")
-        return await this.updateClass({...classData, teacherId})
-      })
+        const classData = this.getClassById(classId);
+        if (!classData) throw new Error('Clase no encontrada');
+        return await this.updateClass({ ...classData, teacherId });
+      });
     },
 
     /**
@@ -505,19 +505,19 @@ export const useClassesStore = defineStore("classes", {
      */
     async assignStudent(classId: string, studentId: string) {
       return await this.withLoading(async () => {
-        const classData = this.getClassById(classId)
-        if (!classData) throw new Error("Clase no encontrada")
-        const studentIds = [...(classData.studentIds || [])]
-        if (!studentIds.includes(studentId)) studentIds.push(studentId)
-        return await this.updateClass({...classData, studentIds})
-      })
+        const classData = this.getClassById(classId);
+        if (!classData) throw new Error('Clase no encontrada');
+        const studentIds = [...(classData.studentIds || [])];
+        if (!studentIds.includes(studentId)) studentIds.push(studentId);
+        return await this.updateClass({ ...classData, studentIds });
+      });
     },
     async deleteClass(classId: string) {
       return await this.withLoading(async () => {
-        const classData = this.getClassById(classId)
-        if (!classData) throw new Error("Clase no encontrada")
-        return await this.removeClass(classId)
-      })
+        const classData = this.getClassById(classId);
+        if (!classData) throw new Error('Clase no encontrada');
+        return await this.removeClass(classId);
+      });
     },
 
     /**
@@ -525,11 +525,11 @@ export const useClassesStore = defineStore("classes", {
      */
     async removeStudent(classId: string, studentId: string) {
       return await this.withLoading(async () => {
-        const classData = this.getClassById(classId)
-        if (!classData) throw new Error("Clase no encontrada")
-        const studentIds = (classData.studentIds || []).filter((id) => id !== studentId)
-        return await this.updateClass({...classData, studentIds})
-      })
+        const classData = this.getClassById(classId);
+        if (!classData) throw new Error('Clase no encontrada');
+        const studentIds = (classData.studentIds || []).filter((id) => id !== studentId);
+        return await this.updateClass({ ...classData, studentIds });
+      });
     },
 
     /**
@@ -549,23 +549,23 @@ export const useClassesStore = defineStore("classes", {
             startTime: string
             endTime: string
           }[],
-      classroom?: string
+      classroom?: string,
     ) {
       return await this.withLoading(async () => {
-        const classData = this.getClassById(classId)
-        if (!classData) throw new Error("Clase no encontrada")
+        const classData = this.getClassById(classId);
+        if (!classData) throw new Error('Clase no encontrada');
 
         // Normalizar el formato del horario según la interfaz ClassData
         const normalizedSchedule = {
           slots: Array.isArray(scheduleData) ? scheduleData : [scheduleData],
-        }
+        };
 
         return await this.updateClass({
           ...classData,
           schedule: normalizedSchedule,
           classroom: classroom || classData.classroom,
-        })
-      })
+        });
+      });
     },
 
     /**
@@ -575,23 +575,23 @@ export const useClassesStore = defineStore("classes", {
       return await this.withLoading(async () => {
         const classData = this.classes.filter((classItem) => {
           // First check teacher match
-          if (classItem.teacherId !== teacherId) return false
+          if (classItem.teacherId !== teacherId) return false;
 
           // Then check schedule match based on structure
-          if (!classItem.schedule) return false
+          if (!classItem.schedule) return false;
 
-          if ("slots" in classItem.schedule && Array.isArray(classItem.schedule.slots)) {
+          if ('slots' in classItem.schedule && Array.isArray(classItem.schedule.slots)) {
             // Handle structure with slots array
-            return classItem.schedule.slots.some((slot) => slot.day === day)
-          } else if ("day" in classItem.schedule) {
+            return classItem.schedule.slots.some((slot) => slot.day === day);
+          } else if ('day' in classItem.schedule) {
             // Handle direct day property structure
-            return classItem.schedule.day === day
+            return classItem.schedule.day === day;
           }
 
-          return false
-        })
-        return classData
-      })
+          return false;
+        });
+        return classData;
+      });
     },
     /**
      * Agrega un nuevo slot de horario a una clase existente
@@ -602,22 +602,22 @@ export const useClassesStore = defineStore("classes", {
         day: string
         startTime: string
         endTime: string
-      }
+      },
     ) {
       return await this.withLoading(async () => {
-        const classData = this.getClassById(classId)
-        if (!classData) throw new Error("Clase no encontrada")
+        const classData = this.getClassById(classId);
+        if (!classData) throw new Error('Clase no encontrada');
 
-        const currentSchedule = classData.schedule || {slots: []}
+        const currentSchedule = classData.schedule || { slots: [] };
         const updatedSchedule = {
           slots: [...currentSchedule.slots, slot],
-        }
+        };
 
         return await this.updateClass({
           ...classData,
           schedule: updatedSchedule,
-        })
-      })
+        });
+      });
     },
 
     /**
@@ -625,24 +625,24 @@ export const useClassesStore = defineStore("classes", {
      */
     async removeScheduleSlot(classId: string, slotIndex: number) {
       return await this.withLoading(async () => {
-        const classData = this.getClassById(classId)
-        if (!classData) throw new Error("Clase no encontrada")
+        const classData = this.getClassById(classId);
+        if (!classData) throw new Error('Clase no encontrada');
         if (!classData.schedule || !classData.schedule.slots) {
-          throw new Error("La clase no tiene horarios definidos")
+          throw new Error('La clase no tiene horarios definidos');
         }
 
-        const updatedSlots = [...classData.schedule.slots]
+        const updatedSlots = [...classData.schedule.slots];
         if (slotIndex < 0 || slotIndex >= updatedSlots.length) {
-          throw new Error("Índice de horario inválido")
+          throw new Error('Índice de horario inválido');
         }
 
-        updatedSlots.splice(slotIndex, 1)
+        updatedSlots.splice(slotIndex, 1);
 
         return await this.updateClass({
           ...classData,
-          schedule: {slots: updatedSlots},
-        })
-      })
+          schedule: { slots: updatedSlots },
+        });
+      });
     },
 
     /**
@@ -653,38 +653,38 @@ export const useClassesStore = defineStore("classes", {
       return await this.withLoading(async () => {
         try {
           // Limpiar caché local si estamos en desarrollo
-          if (process.env.NODE_ENV === "development") {
-            localStorage.removeItem("classes")
+          if (process.env.NODE_ENV === 'development') {
+            localStorage.removeItem('classes');
           }
 
           // Cargar datos frescos desde Firebase
-          const classes = await fetchClassesFirestore()
-          this.classes = classes.map((classItem: any) => this.normalizeClassData(classItem))
-          this.lastSync = new Date()
+          const classes = await fetchClassesFirestore();
+          this.classes = classes.map((classItem: any) => this.normalizeClassData(classItem));
+          this.lastSync = new Date();
 
-          return this.classes
+          return this.classes;
         } catch (error) {
-          console.error("❌ Error forzando sincronización:", error)
-          throw error
+          console.error('❌ Error forzando sincronización:', error);
+          throw error;
         }
-      })
+      });
     },
 
     /**
      * Check if a student meets criteria to advance to next level
      */
     async checkStudentProgression(studentId: string, classId: string) {
-      const classData = this.getClassById(classId)
-      if (!classData) throw new Error("Clase no encontrada")
+      const classData = this.getClassById(classId);
+      if (!classData) throw new Error('Clase no encontrada');
 
       // Get attendance rate from attendance store
       // const attendanceStore = useAttendanceStore(); // Removed as per modular design
       // const attendanceRate = attendanceStore.getStudentAttendanceRate(studentId, classId); // Removed as per modular design
 
       // Get performance metrics
-      const qualificationStore = useQualificationStore()
-      const qualifications = await qualificationStore.fetchQualifications(classId)
-      const studentQualifications = qualifications.filter((q) => q.group.includes(studentId))
+      const qualificationStore = useQualificationStore();
+      const qualifications = await qualificationStore.fetchQualifications(classId);
+      const studentQualifications = qualifications.filter((q) => q.group.includes(studentId));
       const averageScore =
         studentQualifications.reduce((acc, q) => {
           // Calculate average score for this qualification's indicators
@@ -692,15 +692,15 @@ export const useClassesStore = defineStore("classes", {
             q.indicators.length > 0
               ? q.indicators.reduce((iAcc, indicator) => iAcc + indicator.score, 0) /
                 q.indicators.length
-              : 0
-          return acc + qualificationScore
-        }, 0) / (studentQualifications.length || 1) // Avoid division by zero
+              : 0;
+          return acc + qualificationScore;
+        }, 0) / (studentQualifications.length || 1); // Avoid division by zero
 
       // Criteria for advancement:
       // - Average score >= 80%
       // - Minimum number of classes attended
-      const meetsPerformanceCriteria = averageScore >= 80
-      const hasMinimumClasses = studentQualifications.length >= 20
+      const meetsPerformanceCriteria = averageScore >= 80;
+      const hasMinimumClasses = studentQualifications.length >= 20;
 
       return {
         canAdvance: meetsPerformanceCriteria && hasMinimumClasses,
@@ -708,86 +708,86 @@ export const useClassesStore = defineStore("classes", {
           averageScore,
           classesAttended: studentQualifications.length,
         },
-      }
+      };
     },
     /**
      * Promote a student to the next level class
      */
     async promoteStudent(studentId: string, currentClassId: string) {
-      const currentClass = this.getClassById(currentClassId)
-      if (!currentClass) throw new Error("Clase actual no encontrada")
-      if (!currentClass.level) throw new Error("La clase actual no tiene un nivel definido")
+      const currentClass = this.getClassById(currentClassId);
+      if (!currentClass) throw new Error('Clase actual no encontrada');
+      if (!currentClass.level) throw new Error('La clase actual no tiene un nivel definido');
 
       // Find next level class
-      const nextLevel = this.getNextLevel(currentClass.level)
+      const nextLevel = this.getNextLevel(currentClass.level);
       const nextLevelClasses = this.classes.filter(
-        (c) => c.level === nextLevel && c.instrument === currentClass.instrument
-      )
+        (c) => c.level === nextLevel && c.instrument === currentClass.instrument,
+      );
 
       if (nextLevelClasses.length === 0) {
-        throw new Error("No hay clases disponibles del siguiente nivel")
+        throw new Error('No hay clases disponibles del siguiente nivel');
       }
 
       // Select the class with fewest students
       const targetClass = nextLevelClasses.reduce((a, b) =>
-        (a.studentIds?.length || 0) <= (b.studentIds?.length || 0) ? a : b
-      )
+        (a.studentIds?.length || 0) <= (b.studentIds?.length || 0) ? a : b,
+      );
 
       // Remove from current class
-      await this.removeStudent(currentClassId, studentId)
+      await this.removeStudent(currentClassId, studentId);
 
       // Add to new class
-      await this.assignStudent(targetClass.id, studentId)
+      await this.assignStudent(targetClass.id, studentId);
 
-      return targetClass
+      return targetClass;
     },
 
     /**
      * Get the next level based on current level
      */
     getNextLevel(currentLevel: string): string {
-      const levels = ["Principiante", "Intermedio", "Avanzado"]
-      const currentIndex = levels.indexOf(currentLevel)
+      const levels = ['Principiante', 'Intermedio', 'Avanzado'];
+      const currentIndex = levels.indexOf(currentLevel);
       if (currentIndex === -1 || currentIndex === levels.length - 1) {
-        throw new Error("No hay siguiente nivel disponible")
+        throw new Error('No hay siguiente nivel disponible');
       }
-      return levels[currentIndex + 1]
+      return levels[currentIndex + 1];
     },
 
     /**
      * Acción para obtener clases por día de la semana (igual que el getter, pero como método).
      */
     getClassesByDay(day: string | number) {
-      const daysEs = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"]
-      const daysEn = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-      let dayIndex: number | null = null
-      let dayLower = ""
-      if (typeof day === "number") {
-        dayIndex = day
-        dayLower = daysEs[day] || daysEn[day] || ""
-      } else if (typeof day === "string") {
-        dayLower = day.toLowerCase()
-        dayIndex = daysEs.indexOf(dayLower)
-        if (dayIndex === -1) dayIndex = daysEn.indexOf(dayLower)
+      const daysEs = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+      const daysEn = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      let dayIndex: number | null = null;
+      let dayLower = '';
+      if (typeof day === 'number') {
+        dayIndex = day;
+        dayLower = daysEs[day] || daysEn[day] || '';
+      } else if (typeof day === 'string') {
+        dayLower = day.toLowerCase();
+        dayIndex = daysEs.indexOf(dayLower);
+        if (dayIndex === -1) dayIndex = daysEn.indexOf(dayLower);
       }
       return this.classes.filter(
         (classItem) =>
           classItem.schedule &&
           Array.isArray(classItem.schedule.slots) &&
           classItem.schedule.slots.some((slot) => {
-            if (typeof slot.day === "string") {
-              const slotDayLower = slot.day.toLowerCase()
+            if (typeof slot.day === 'string') {
+              const slotDayLower = slot.day.toLowerCase();
               return (
                 slotDayLower === dayLower ||
                 daysEs.indexOf(slotDayLower) === dayIndex ||
                 daysEn.indexOf(slotDayLower) === dayIndex
-              )
-            } else if (typeof slot.day === "number") {
-              return slot.day === dayIndex
+              );
+            } else if (typeof slot.day === 'number') {
+              return slot.day === dayIndex;
             }
-            return false
-          })
-      )
+            return false;
+          }),
+      );
     },
 
     /**
@@ -796,26 +796,26 @@ export const useClassesStore = defineStore("classes", {
      */
     async fetchClassesByStudentId(studentId: string) {
       return await this.withLoading(async () => {
-        if (!studentId) return []
+        if (!studentId) return [];
 
-        const classes = await fetchClassesByStudentIdFirestore(studentId)
+        const classes = await fetchClassesByStudentIdFirestore(studentId);
 
         // Procesamos cada clase obtenida
-        const normalizedClasses = classes.map((classItem) => this.normalizeClassData(classItem))
+        const normalizedClasses = classes.map((classItem) => this.normalizeClassData(classItem));
 
         // Actualizamos el store con estas clases
         normalizedClasses.forEach((classItem) => {
-          const index = this.classes.findIndex((c) => c.id === classItem.id)
+          const index = this.classes.findIndex((c) => c.id === classItem.id);
           if (index >= 0) {
             // Actualizamos la clase existente
-            this.classes[index] = classItem
+            this.classes[index] = classItem;
           } else {
             // Agregamos la nueva clase
-            this.classes.push(classItem)
+            this.classes.push(classItem);
           }
-        })
-        return normalizedClasses
-      })
+        });
+        return normalizedClasses;
+      });
     },
 
     /**
@@ -824,37 +824,37 @@ export const useClassesStore = defineStore("classes", {
      */
     async fetchClassesByTeacher(teacherId: string) {
       return await this.withLoading(async () => {
-        if (!teacherId) return []
+        if (!teacherId) return [];
         // Si tienes un método Firestore específico, úsalo aquí. Si no, filtra localmente después de fetchClassesFirestore
-        let classes: any[] = []
-        if (typeof fetchClassesFirestore === "function") {
-          classes = await fetchClassesFirestore()
+        let classes: any[] = [];
+        if (typeof fetchClassesFirestore === 'function') {
+          classes = await fetchClassesFirestore();
         }
         // Filtrar por teacherId
-        const filtered = classes.filter((classItem: any) => classItem.teacherId === teacherId)
-        const normalizedClasses = filtered.map((classItem) => this.normalizeClassData(classItem))
+        const filtered = classes.filter((classItem: any) => classItem.teacherId === teacherId);
+        const normalizedClasses = filtered.map((classItem) => this.normalizeClassData(classItem));
         // Actualizar el store
         normalizedClasses.forEach((classItem) => {
-          const index = this.classes.findIndex((c) => c.id === classItem.id)
+          const index = this.classes.findIndex((c) => c.id === classItem.id);
           if (index >= 0) {
-            this.classes[index] = classItem
+            this.classes[index] = classItem;
           } else {
-            this.classes.push(classItem)
+            this.classes.push(classItem);
           }
-        })
-        return normalizedClasses
-      })
+        });
+        return normalizedClasses;
+      });
     } /**
      * Compatibility function for old code that uses getClassesByStudentId as a method
      */,
     getClassesByStudentId(studentId: string) {
-      if (!studentId) return []
+      if (!studentId) return [];
       return this.classes.filter(
         (classItem) =>
           classItem.studentIds &&
           Array.isArray(classItem.studentIds) &&
-          classItem.studentIds.includes(studentId)
-      )
+          classItem.studentIds.includes(studentId),
+      );
     },
 
     /* ===== COLABORACION ENTRE MAESTROS ===== */
@@ -864,24 +864,24 @@ export const useClassesStore = defineStore("classes", {
      */
     async fetchTeacherClasses(teacherId: string) {
       return await this.withLoading(async () => {
-        if (!teacherId) return []
+        if (!teacherId) return [];
 
         // Importar función del servicio
         // getTeacherClasses ya está importado estáticamente
-        const teacherClasses = await getTeacherClasses(teacherId)
+        const teacherClasses = await getTeacherClasses(teacherId);
 
         // Actualizar clases en el store
         teacherClasses.forEach((classView) => {
-          const existingIndex = this.classes.findIndex((c) => c.id === classView.id)
+          const existingIndex = this.classes.findIndex((c) => c.id === classView.id);
           if (existingIndex >= 0) {
-            this.classes[existingIndex] = classView
+            this.classes[existingIndex] = classView;
           } else {
-            this.classes.push(classView)
+            this.classes.push(classView);
           }
-        })
+        });
 
-        return teacherClasses
-      })
+        return teacherClasses;
+      });
     },
 
     /**
@@ -890,19 +890,19 @@ export const useClassesStore = defineStore("classes", {
     async inviteAssistant(inviteData: any) {
       return await this.withLoading(async () => {
         // inviteAssistantTeacher ya está importado estáticamente
-        await inviteAssistantTeacher(inviteData)
+        await inviteAssistantTeacher(inviteData);
 
         // Actualizar la clase en el store
-        const classIndex = this.classes.findIndex((c) => c.id === inviteData.classId)
+        const classIndex = this.classes.findIndex((c) => c.id === inviteData.classId);
         if (classIndex >= 0) {
           // Recargar la clase desde Firestore para obtener los datos actualizados
           // getClassByIdFirestore ya está importado estáticamente
-          const updatedClass = await getClassByIdFirestore(inviteData.classId)
+          const updatedClass = await getClassByIdFirestore(inviteData.classId);
           if (updatedClass) {
-            this.classes[classIndex] = this.normalizeClassData(updatedClass)
+            this.classes[classIndex] = this.normalizeClassData(updatedClass);
           }
         }
-      })
+      });
     },
 
     /**
@@ -911,18 +911,18 @@ export const useClassesStore = defineStore("classes", {
     async removeAssistant(classId: string, assistantId: string, removedBy: string) {
       return await this.withLoading(async () => {
         // removeAssistantTeacher ya está importado estáticamente
-        await removeAssistantTeacher(classId, assistantId, removedBy)
+        await removeAssistantTeacher(classId, assistantId, removedBy);
 
         // Actualizar la clase en el store
-        const classIndex = this.classes.findIndex((c) => c.id === classId)
+        const classIndex = this.classes.findIndex((c) => c.id === classId);
         if (classIndex >= 0) {
           // getClassByIdFirestore ya está importado estáticamente
-          const updatedClass = await getClassByIdFirestore(classId)
+          const updatedClass = await getClassByIdFirestore(classId);
           if (updatedClass) {
-            this.classes[classIndex] = this.normalizeClassData(updatedClass)
+            this.classes[classIndex] = this.normalizeClassData(updatedClass);
           }
         }
-      })
+      });
     },
 
     /**
@@ -932,22 +932,22 @@ export const useClassesStore = defineStore("classes", {
       classId: string,
       assistantId: string,
       permissions: any,
-      updatedBy: string
+      updatedBy: string,
     ) {
       return await this.withLoading(async () => {
         // updateAssistantPermissions ya está importado estáticamente
-        await updateAssistantPermissions(classId, assistantId, permissions, updatedBy)
+        await updateAssistantPermissions(classId, assistantId, permissions, updatedBy);
 
         // Actualizar la clase en el store
-        const classIndex = this.classes.findIndex((c) => c.id === classId)
+        const classIndex = this.classes.findIndex((c) => c.id === classId);
         if (classIndex >= 0) {
           // getClassByIdFirestore ya está importado estáticamente
-          const updatedClass = await getClassByIdFirestore(classId)
+          const updatedClass = await getClassByIdFirestore(classId);
           if (updatedClass) {
-            this.classes[classIndex] = this.normalizeClassData(updatedClass)
+            this.classes[classIndex] = this.normalizeClassData(updatedClass);
           }
         }
-      })
+      });
     },
 
     /**
@@ -955,7 +955,7 @@ export const useClassesStore = defineStore("classes", {
      */
     async checkTeacherPermission(classId: string, teacherId: string, permission: string) {
       // checkTeacherPermission ya está importado estáticamente
-      return await checkTeacherPermission(classId, teacherId, permission)
+      return await checkTeacherPermission(classId, teacherId, permission);
     },
 
     /**
@@ -963,19 +963,19 @@ export const useClassesStore = defineStore("classes", {
      * Si ya hay datos y lastSync es reciente, retorna los datos cacheados.
      */
     async fetchClassesIfNeeded() {
-      const now = Date.now()
-      const FIVE_MINUTES = 5 * 60 * 1000
+      const now = Date.now();
+      const FIVE_MINUTES = 5 * 60 * 1000;
       if (
         this.classes.length > 0 &&
         this.lastSync &&
         now - new Date(this.lastSync).getTime() < FIVE_MINUTES
       ) {
         // Retornar datos cacheados
-        return this.classes
+        return this.classes;
       }
       // Si no hay datos o están desactualizados, hace fetch
-      await this.fetchClasses()
-      return this.classes
+      await this.fetchClasses();
+      return this.classes;
     },
 
     /**
@@ -983,50 +983,50 @@ export const useClassesStore = defineStore("classes", {
      * Si ya hay datos cacheados y son recientes, los retorna sin consultar Firestore
      */
     async fetchTeacherClassesIfNeeded(teacherId: string) {
-      if (!teacherId) return []
+      if (!teacherId) return [];
 
-      const now = new Date()
-      const FIVE_MINUTES = 5 * 60 * 1000
+      const now = new Date();
+      const FIVE_MINUTES = 5 * 60 * 1000;
 
       // Verificar si tenemos datos cacheados para este maestro
-      const cachedData = this.teacherClassesCache[teacherId]
+      const cachedData = this.teacherClassesCache[teacherId];
       if (cachedData && now.getTime() - new Date(cachedData.lastSync).getTime() < FIVE_MINUTES) {
-        console.log(`[ClassesStore] Usando caché para maestro ${teacherId}`)
-        return cachedData.data
+        console.log(`[ClassesStore] Usando caché para maestro ${teacherId}`);
+        return cachedData.data;
       }
 
       // Si no hay caché o está desactualizado, consultar servicio
-      console.log(`[ClassesStore] Consultando Firestore para maestro ${teacherId}`)
+      console.log(`[ClassesStore] Consultando Firestore para maestro ${teacherId}`);
       try {
-        let teacherClasses
+        let teacherClasses;
 
         // Intentar usar el servicio específico de maestros primero
         try {
-          teacherClasses = await getTeacherClasses(teacherId)
+          teacherClasses = await getTeacherClasses(teacherId);
         } catch (serviceError) {
           console.warn(
-            `[ClassesStore] Servicio getTeacherClasses falló, usando fallback:`,
-            serviceError
-          )
+            '[ClassesStore] Servicio getTeacherClasses falló, usando fallback:',
+            serviceError,
+          );
 
           // Fallback: obtener todas las clases y filtrar localmente
-          await this.fetchClasses()
-          teacherClasses = this.getAllTeacherClasses(teacherId)
+          await this.fetchClasses();
+          teacherClasses = this.getAllTeacherClasses(teacherId);
         }
 
         // Actualizar caché
         this.teacherClassesCache[teacherId] = {
           data: teacherClasses,
           lastSync: now,
-        }
+        };
 
         console.log(
-          `[ClassesStore] ✅ Clases del maestro ${teacherId} cargadas: ${teacherClasses.length}`
-        )
-        return teacherClasses
+          `[ClassesStore] ✅ Clases del maestro ${teacherId} cargadas: ${teacherClasses.length}`,
+        );
+        return teacherClasses;
       } catch (error) {
-        console.error("Error fetching teacher classes:", error)
-        throw error
+        console.error('Error fetching teacher classes:', error);
+        throw error;
       }
     },
 
@@ -1034,22 +1034,22 @@ export const useClassesStore = defineStore("classes", {
      * Fuerza la actualización del caché para un maestro específico
      */
     async refreshTeacherClassesCache(teacherId: string) {
-      if (!teacherId) return []
+      if (!teacherId) return [];
 
-      console.log(`[ClassesStore] Forzando actualización de caché para maestro ${teacherId}`)
-      delete this.teacherClassesCache[teacherId] // Eliminar caché existente
+      console.log(`[ClassesStore] Forzando actualización de caché para maestro ${teacherId}`);
+      delete this.teacherClassesCache[teacherId]; // Eliminar caché existente
 
       try {
-        return await this.fetchTeacherClassesIfNeeded(teacherId)
+        return await this.fetchTeacherClassesIfNeeded(teacherId);
       } catch (error) {
-        console.error(`[ClassesStore] Error al refrescar caché para maestro ${teacherId}:`, error)
+        console.error(`[ClassesStore] Error al refrescar caché para maestro ${teacherId}:`, error);
 
         // Fallback: intentar obtener del caché local existente
-        const localClasses = this.getAllTeacherClasses(teacherId)
+        const localClasses = this.getAllTeacherClasses(teacherId);
         console.log(
-          `[ClassesStore] Usando datos locales como fallback: ${localClasses.length} clases`
-        )
-        return localClasses
+          `[ClassesStore] Usando datos locales como fallback: ${localClasses.length} clases`,
+        );
+        return localClasses;
       }
     },
 
@@ -1057,8 +1057,8 @@ export const useClassesStore = defineStore("classes", {
      * Limpia todo el caché de clases de maestros
      */
     clearTeacherClassesCache() {
-      console.log(`[ClassesStore] Limpiando caché de clases de maestros`)
-      this.teacherClassesCache = {}
+      console.log('[ClassesStore] Limpiando caché de clases de maestros');
+      this.teacherClassesCache = {};
     },
 
     /**
@@ -1066,20 +1066,20 @@ export const useClassesStore = defineStore("classes", {
      * Sin hacer consultas a Firestore
      */
     getCachedTeacherClasses(teacherId: string) {
-      if (!teacherId) return []
+      if (!teacherId) return [];
 
       // Primero intentar obtener del caché específico de maestros
-      const cachedData = this.teacherClassesCache[teacherId]
+      const cachedData = this.teacherClassesCache[teacherId];
       if (cachedData) {
-        const now = new Date()
-        const FIVE_MINUTES = 5 * 60 * 1000
+        const now = new Date();
+        const FIVE_MINUTES = 5 * 60 * 1000;
         if (now.getTime() - new Date(cachedData.lastSync).getTime() < FIVE_MINUTES) {
-          return cachedData.data
+          return cachedData.data;
         }
       }
 
       // Si no hay caché específico, usar los getters locales como fallback
-      return this.getAllTeacherClasses(teacherId)
+      return this.getAllTeacherClasses(teacherId);
     },
 
     /**
@@ -1088,28 +1088,28 @@ export const useClassesStore = defineStore("classes", {
      */
     async findClassById(id: string) {
       // Primero buscar en clases regulares
-      const regularClass = this.getClassById(id)
+      const regularClass = this.getClassById(id);
       if (regularClass) {
-        return regularClass
+        return regularClass;
       }
 
       // Si no se encuentra en clases regulares, buscar en clases emergentes
       try {
-        const {getEmergencyClassByIdFirebase} = await import(
-          "../../Attendance/service/emergencyClass"
-        )
-        const emergencyClass = await getEmergencyClassByIdFirebase(id)
+        const { getEmergencyClassByIdFirebase } = await import(
+          '../../Attendance/service/emergencyClass'
+        );
+        const emergencyClass = await getEmergencyClassByIdFirebase(id);
 
         if (emergencyClass) {
           // Convertir la clase emergente al formato completo esperado por AttendanceList
-          const normalizedEmergencyClass = this.normalizeEmergencyClassData(emergencyClass)
-          return normalizedEmergencyClass
+          const normalizedEmergencyClass = this.normalizeEmergencyClassData(emergencyClass);
+          return normalizedEmergencyClass;
         }
       } catch (error) {
-        console.error(`Error buscando clase emergente ${id}:`, error)
+        console.error(`Error buscando clase emergente ${id}:`, error);
       }
 
-      return null
+      return null;
     },
 
     /**
@@ -1122,36 +1122,36 @@ export const useClassesStore = defineStore("classes", {
         // Campos básicos requeridos por ClassData
         id: emergencyClass.id,
         name:
-          emergencyClass.className || `Clase Emergente ${emergencyClass.id?.substring(0, 8) || ""}`,
+          emergencyClass.className || `Clase Emergente ${emergencyClass.id?.substring(0, 8) || ''}`,
         className:
-          emergencyClass.className || `Clase Emergente ${emergencyClass.id?.substring(0, 8) || ""}`, // Para compatibilidad
-        teacherId: emergencyClass.teacherId || "",
+          emergencyClass.className || `Clase Emergente ${emergencyClass.id?.substring(0, 8) || ''}`, // Para compatibilidad
+        teacherId: emergencyClass.teacherId || '',
         studentIds: Array.isArray(emergencyClass.selectedStudents)
           ? emergencyClass.selectedStudents
           : [],
 
         // Campos descriptivos
         description: this.buildEmergencyDescription(emergencyClass),
-        level: "Emergencia",
-        instrument: emergencyClass.instrument || "Múltiples instrumentos",
+        level: 'Emergencia',
+        instrument: emergencyClass.instrument || 'Múltiples instrumentos',
 
         // Horario simulado basado en la fecha de la clase emergente
         schedule: this.buildEmergencySchedule(emergencyClass),
 
         // Estados y fechas
-        isActive: emergencyClass.status === "active" || emergencyClass.isActive !== false,
+        isActive: emergencyClass.status === 'active' || emergencyClass.isActive !== false,
         createdAt: this.parseDate(emergencyClass.createdAt),
         updatedAt: this.parseDate(emergencyClass.updatedAt),
 
         // Campos adicionales para compatibilidad completa
         capacity: emergencyClass.selectedStudents?.length || 0,
         maxCapacity: emergencyClass.selectedStudents?.length || 50,
-        location: emergencyClass.location || "Aula a determinar",
-        notes: emergencyClass.notes || emergencyClass.reason || "",
+        location: emergencyClass.location || 'Aula a determinar',
+        notes: emergencyClass.notes || emergencyClass.reason || '',
 
         // Campos opcionales que podrían estar presentes
         teachers: emergencyClass.assistantTeachers || [],
-        subject: emergencyClass.subject || "Ensayo/Práctica",
+        subject: emergencyClass.subject || 'Ensayo/Práctica',
         academicYear: new Date().getFullYear().toString(),
         semester: this.getCurrentSemester(),
 
@@ -1172,42 +1172,42 @@ export const useClassesStore = defineStore("classes", {
         isEmergencyClass: boolean
         className: string
         emergencyData: any
-      }
+      };
 
-      console.log(`[ClassStore] Clase emergente normalizada:`, {
+      console.log('[ClassStore] Clase emergente normalizada:', {
         id: normalizedClass.id,
         name: normalizedClass.name,
         studentCount: normalizedClass.studentIds.length,
         teacherId: normalizedClass.teacherId,
-      })
+      });
 
-      return normalizedClass
+      return normalizedClass;
     },
 
     /**
      * Construye una descripción informativa para la clase emergente
      */
     buildEmergencyDescription(emergencyClass: any): string {
-      const parts = ["Clase emergente"]
+      const parts = ['Clase emergente'];
 
       if (emergencyClass.reason) {
-        parts.push(`- ${emergencyClass.reason}`)
+        parts.push(`- ${emergencyClass.reason}`);
       }
 
       if (emergencyClass.date) {
-        const date = new Date(emergencyClass.date)
-        parts.push(`- Fecha: ${date.toLocaleDateString("es-ES")}`)
+        const date = new Date(emergencyClass.date);
+        parts.push(`- Fecha: ${date.toLocaleDateString('es-ES')}`);
       }
 
       if (emergencyClass.startTime && emergencyClass.endTime) {
-        parts.push(`- Horario: ${emergencyClass.startTime} - ${emergencyClass.endTime}`)
+        parts.push(`- Horario: ${emergencyClass.startTime} - ${emergencyClass.endTime}`);
       }
 
       if (emergencyClass.location) {
-        parts.push(`- Ubicación: ${emergencyClass.location}`)
+        parts.push(`- Ubicación: ${emergencyClass.location}`);
       }
 
-      return parts.join(" ")
+      return parts.join(' ');
     },
 
     /**
@@ -1216,8 +1216,8 @@ export const useClassesStore = defineStore("classes", {
     buildEmergencySchedule(emergencyClass: any): any {
       const emergencyDate = emergencyClass.date
         ? new Date(`${emergencyClass.date}T00:00:00`)
-        : new Date()
-      const dayName = emergencyDate.toLocaleDateString("es-ES", {weekday: "long"})
+        : new Date();
+      const dayName = emergencyDate.toLocaleDateString('es-ES', { weekday: 'long' });
 
       return {
         slots: [
@@ -1225,56 +1225,56 @@ export const useClassesStore = defineStore("classes", {
             id: `emergency-${emergencyClass.id}`,
             day: dayName,
             dayOfWeek: emergencyDate.getDay(),
-            startTime: emergencyClass.startTime || "09:00",
-            endTime: emergencyClass.endTime || "12:00",
-            location: emergencyClass.location || "Aula Principal",
+            startTime: emergencyClass.startTime || '09:00',
+            endTime: emergencyClass.endTime || '12:00',
+            location: emergencyClass.location || 'Aula Principal',
             isEmergency: true,
           },
         ],
         isEmergencySchedule: true,
         emergencyDate: emergencyClass.date,
-      }
+      };
     },
 
     /**
      * Parsea una fecha de diferentes formatos
      */
     parseDate(dateValue: any): Date {
-      if (!dateValue) return new Date()
+      if (!dateValue) return new Date();
 
-      if (dateValue instanceof Date) return dateValue
+      if (dateValue instanceof Date) return dateValue;
 
-      if (typeof dateValue === "string") {
+      if (typeof dateValue === 'string') {
         // Si es una cadena YYYY-MM-DD, se le añade la hora para evitar problemas de UTC.
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-          const parsed = new Date(`${dateValue}T00:00:00`)
-          return isNaN(parsed.getTime()) ? new Date() : parsed
+          const parsed = new Date(`${dateValue}T00:00:00`);
+          return isNaN(parsed.getTime()) ? new Date() : parsed;
         }
         // Para otros formatos de string (ej. ISO con timezone)
-        const parsed = new Date(dateValue)
-        return isNaN(parsed.getTime()) ? new Date() : parsed
+        const parsed = new Date(dateValue);
+        return isNaN(parsed.getTime()) ? new Date() : parsed;
       }
 
-      if (typeof dateValue === "number") {
-        const parsed = new Date(dateValue)
-        return isNaN(parsed.getTime()) ? new Date() : parsed
+      if (typeof dateValue === 'number') {
+        const parsed = new Date(dateValue);
+        return isNaN(parsed.getTime()) ? new Date() : parsed;
       }
 
       // Si es un timestamp de Firebase
-      if (dateValue && typeof dateValue.toDate === "function") {
-        return dateValue.toDate()
+      if (dateValue && typeof dateValue.toDate === 'function') {
+        return dateValue.toDate();
       }
 
-      return new Date()
+      return new Date();
     },
 
     /**
      * Obtiene el semestre actual
      */
     getCurrentSemester(): string {
-      const month = new Date().getMonth() + 1 // getMonth() returns 0-11
-      return month <= 6 ? "Primer Semestre" : "Segundo Semestre"
+      const month = new Date().getMonth() + 1; // getMonth() returns 0-11
+      return month <= 6 ? 'Primer Semestre' : 'Segundo Semestre';
     },
   },
   persist: true,
-})
+});

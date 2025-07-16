@@ -1,100 +1,3 @@
-<script setup lang="ts">
-import {computed, ref, onMounted, onBeforeUnmount} from "vue"
-import {CheckCircleIcon, XCircleIcon, ClockIcon, DocumentCheckIcon} from "@heroicons/vue/24/outline"
-import type {AttendanceStatus} from "../types/attendance"
-import type {Student} from "../../Students/types/student"
-import StudentAvatar from "./StudentAvatar.vue"
-
-const props = defineProps<{
-  student: Student
-  attendanceStatus: AttendanceStatus | undefined
-  isDisabled: boolean
-  isPending: boolean
-  pendingChanges?: Set<string> // Añadimos prop de pendingChanges para mejor tracking
-}>()
-
-const emit = defineEmits<{
-  (e: "update-status", studentId: string, status: AttendanceStatus): void
-  (e: "open-justification", student: Student): void
-}>()
-
-// Use the imported StudentAvatar component
-const studentName = computed(() => `${props.student.nombre} ${props.student.apellido}`)
-
-// Use a simple media query check with window.matchMedia instead of $q
-const isMobile = ref(false)
-
-// Function to update isMobile based on screen width
-const checkMobileScreen = () => {
-  if (typeof window !== "undefined") {
-    isMobile.value = window.matchMedia("(max-width: 640px)").matches
-  }
-}
-
-// Function to handle ripple effect
-const createRipple = (event: MouseEvent) => {
-  const button = event.currentTarget as HTMLElement
-  const ripple = button.querySelector(".ripple") as HTMLElement
-
-  if (!ripple) return
-
-  // Remove any existing animation
-  ripple.style.animation = "none"
-
-  // Force reflow to ensure animation restarts
-  void ripple.offsetWidth
-
-  // Restart animation
-  ripple.style.animation = "ripple-out 0.6s ease-out"
-}
-
-// Método para manejar la justificación
-const handleJustification = () => {
-  console.log(
-    "[Justificación] Iniciando proceso de justificación para estudiante:",
-    props.student.id
-  )
-
-  // Primero marcamos como Justificado para un cambio inmediato
-  emit("update-status", props.student.id, "Justificado" as AttendanceStatus)
-  console.log("[Justificación] Emitido evento update-status con estado Justificado")
-
-  // Luego abrimos el modal de justificación de inmediato
-  console.log("[Justificación] Emitiendo evento open-justification con estudiante:", props.student)
-  emit("open-justification", props.student)
-}
-
-// Initialize on component mount
-onMounted(() => {
-  if (typeof window !== "undefined") {
-    // Set initial value
-    checkMobileScreen()
-
-    // Add event listener for resize
-    window.addEventListener("resize", checkMobileScreen)
-  }
-
-  // Add click event listeners to all buttons
-  const buttons = document.querySelectorAll(".attendance-btn")
-  buttons.forEach((button) => {
-    button.addEventListener("mousedown", createRipple)
-  })
-})
-
-// Clean up the event listener when component is unmounted
-onBeforeUnmount(() => {
-  if (typeof window !== "undefined") {
-    window.removeEventListener("resize", checkMobileScreen)
-  }
-
-  // Clean up event listeners
-  const buttons = document.querySelectorAll(".attendance-btn")
-  buttons.forEach((button) => {
-    button.removeEventListener("mousedown", createRipple)
-  })
-})
-</script>
-
 <template>
   <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
     <td class="px-1 sm:px-2 py-2 sm:py-3">
@@ -192,6 +95,103 @@ onBeforeUnmount(() => {
     </td>
   </tr>
 </template>
+
+<script setup lang="ts">
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { CheckCircleIcon, XCircleIcon, ClockIcon, DocumentCheckIcon } from '@heroicons/vue/24/outline';
+import type { AttendanceStatus } from '../types/attendance';
+import type { Student } from '../../Students/types/student';
+import StudentAvatar from './StudentAvatar.vue';
+
+const props = defineProps<{
+  student: Student
+  attendanceStatus: AttendanceStatus | undefined
+  isDisabled: boolean
+  isPending: boolean
+  pendingChanges?: Set<string> // Añadimos prop de pendingChanges para mejor tracking
+}>();
+
+const emit = defineEmits<{
+  (e: 'update-status', studentId: string, status: AttendanceStatus): void
+  (e: 'open-justification', student: Student): void
+}>();
+
+// Use the imported StudentAvatar component
+const studentName = computed(() => `${props.student.nombre} ${props.student.apellido}`);
+
+// Use a simple media query check with window.matchMedia instead of $q
+const isMobile = ref(false);
+
+// Function to update isMobile based on screen width
+const checkMobileScreen = () => {
+  if (typeof window !== 'undefined') {
+    isMobile.value = window.matchMedia('(max-width: 640px)').matches;
+  }
+};
+
+// Function to handle ripple effect
+const createRipple = (event: MouseEvent) => {
+  const button = event.currentTarget as HTMLElement;
+  const ripple = button.querySelector('.ripple') as HTMLElement;
+
+  if (!ripple) return;
+
+  // Remove any existing animation
+  ripple.style.animation = 'none';
+
+  // Force reflow to ensure animation restarts
+  void ripple.offsetWidth;
+
+  // Restart animation
+  ripple.style.animation = 'ripple-out 0.6s ease-out';
+};
+
+// Método para manejar la justificación
+const handleJustification = () => {
+  console.log(
+    '[Justificación] Iniciando proceso de justificación para estudiante:',
+    props.student.id,
+  );
+
+  // Primero marcamos como Justificado para un cambio inmediato
+  emit('update-status', props.student.id, 'Justificado' as AttendanceStatus);
+  console.log('[Justificación] Emitido evento update-status con estado Justificado');
+
+  // Luego abrimos el modal de justificación de inmediato
+  console.log('[Justificación] Emitiendo evento open-justification con estudiante:', props.student);
+  emit('open-justification', props.student);
+};
+
+// Initialize on component mount
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    // Set initial value
+    checkMobileScreen();
+
+    // Add event listener for resize
+    window.addEventListener('resize', checkMobileScreen);
+  }
+
+  // Add click event listeners to all buttons
+  const buttons = document.querySelectorAll('.attendance-btn');
+  buttons.forEach((button) => {
+    button.addEventListener('mousedown', createRipple);
+  });
+});
+
+// Clean up the event listener when component is unmounted
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', checkMobileScreen);
+  }
+
+  // Clean up event listeners
+  const buttons = document.querySelectorAll('.attendance-btn');
+  buttons.forEach((button) => {
+    button.removeEventListener('mousedown', createRipple);
+  });
+});
+</script>
 
 <style scoped>
 /* Button base styles */

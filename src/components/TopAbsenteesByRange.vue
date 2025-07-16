@@ -461,9 +461,9 @@
 <script setup lang="ts">
 // Permitir heredar atributos extra (como 'class') en el div raíz
 // eslint-disable-next-line vue/require-explicit-emits
-defineOptions({inheritAttrs: false})
-import {ref, nextTick, computed, onMounted} from "vue"
-import html2pdf from "html2pdf.js"
+defineOptions({ inheritAttrs: false });
+import { ref, nextTick, computed, onMounted } from 'vue';
+import html2pdf from 'html2pdf.js';
 import {
   ExclamationTriangleIcon,
   ChatBubbleOvalLeftEllipsisIcon,
@@ -473,145 +473,145 @@ import {
   PaperAirplaneIcon,
   CalendarIcon,
   CogIcon,
-} from "@heroicons/vue/24/outline"
-import {useAttendanceStore} from "../modulos/Attendance/store/attendance"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import {useClassesStore} from "../modulos/Classes/store/classes"
-import {db} from "../firebase"
-import {doc, setDoc, getDoc} from "firebase/firestore"
-import {useAuthStore} from "../stores/auth"
-import WhatsAppMessageModal from "./WhatsAppMessageModal.vue"
-import WhatsAppTemplateManager from "./WhatsAppTemplateManager.vue"
-import type {MessageData} from "../composables/useWhatsAppPresets"
+} from '@heroicons/vue/24/outline';
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import { useClassesStore } from '../modulos/Classes/store/classes';
+import { db } from '../firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { useAuthStore } from '../stores/auth';
+import WhatsAppMessageModal from './WhatsAppMessageModal.vue';
+import WhatsAppTemplateManager from './WhatsAppTemplateManager.vue';
+import type { MessageData } from '../composables/useWhatsAppPresets';
 
 const props = defineProps<{
   limit?: number
   teacherId?: string
-}>()
-const authStore = useAuthStore()
+}>();
+const authStore = useAuthStore();
 
 // Agregar las variables faltantes
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const selectedClass = ref<string>("")
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const selectedClass = ref<string>('');
 
 // Modal de ausencias detalladas
-const showAbsencesModal = ref(false)
-const selectedAbsentee = ref<any>(null)
+const showAbsencesModal = ref(false);
+const selectedAbsentee = ref<any>(null);
 
 // Computed para ausencias detalladas del alumno seleccionado
 type AbsenceDetail = {date: string; classId: string}
-const classesStore = useClassesStore()
+const classesStore = useClassesStore();
 
 function getClassName(classId: string): string {
-  const classObj = classesStore.classes.find((c) => c.id === classId)
-  return classObj?.name || classId || "Clase desconocida"
+  const classObj = classesStore.classes.find((c) => c.id === classId);
+  return classObj?.name || classId || 'Clase desconocida';
 }
 
 const absencesDetail = computed<AbsenceDetail[]>(() => {
-  if (!selectedAbsentee.value) return []
+  if (!selectedAbsentee.value) return [];
   // Buscar ausencias en los registros del store
   return attendanceStore.records
-    .filter((r) => r.studentId === selectedAbsentee.value.studentId && r.status === "Ausente")
-    .map((r) => ({date: r.fecha, classId: r.classId}))
-})
+    .filter((r) => r.studentId === selectedAbsentee.value.studentId && r.status === 'Ausente')
+    .map((r) => ({ date: r.fecha, classId: r.classId }));
+});
 
 function openAbsencesModal(student: any) {
-  selectedAbsentee.value = student
-  showAbsencesModal.value = true
+  selectedAbsentee.value = student;
+  showAbsencesModal.value = true;
 }
 function closeAbsencesModal() {
-  showAbsencesModal.value = false
-  selectedAbsentee.value = null
+  showAbsencesModal.value = false;
+  selectedAbsentee.value = null;
 }
 
-const attendanceStore = useAttendanceStore()
-const studentsStore = useStudentsStore()
+const attendanceStore = useAttendanceStore();
+const studentsStore = useStudentsStore();
 
 // Siempre inicializado para evitar undefined
 // Por defecto, rango de un mes
 function getDefaultMonthRange() {
-  const today = new Date()
-  const end = today.toISOString().slice(0, 10)
-  const prevMonth = new Date(today)
-  prevMonth.setMonth(today.getMonth() - 1)
-  const start = prevMonth.toISOString().slice(0, 10)
-  return {start, end}
+  const today = new Date();
+  const end = today.toISOString().slice(0, 10);
+  const prevMonth = new Date(today);
+  prevMonth.setMonth(today.getMonth() - 1);
+  const start = prevMonth.toISOString().slice(0, 10);
+  return { start, end };
 }
-const absenceRange = ref<{start: string; end: string}>(getDefaultMonthRange())
+const absenceRange = ref<{start: string; end: string}>(getDefaultMonthRange());
 
-const topAbsentees = ref<any[]>([])
-const absenceSort = ref("absences")
+const topAbsentees = ref<any[]>([]);
+const absenceSort = ref('absences');
 
 function studentName(studentId: string) {
-  const student = studentsStore.getStudentById(studentId)
+  const student = studentsStore.getStudentById(studentId);
   if (student) {
-    const fullName = `${student.nombre || ""} ${student.apellido || ""}`.trim()
-    return fullName || "Estudiante sin nombre"
+    const fullName = `${student.nombre || ''} ${student.apellido || ''}`.trim();
+    return fullName || 'Estudiante sin nombre';
   }
-  return "Estudiante no encontrado"
+  return 'Estudiante no encontrado';
 }
 
 function getAttendanceRateClass(rate: number) {
-  if (rate >= 90) return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-  if (rate >= 75) return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
-  return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+  if (rate >= 90) return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+  if (rate >= 75) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
+  return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
 }
 
 function formatDate(dateString: string): string {
-  if (!dateString) return ""
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString
-  const [year, month, day] = dateString.split("-")
-  return `${day}-${month}-${year}`
+  if (!dateString) return '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+  const [year, month, day] = dateString.split('-');
+  return `${day}-${month}-${year}`;
 }
 
 // Función para formatear el texto del PDF reemplazando saltos de línea y viñetas
 const formatearTextoParaPDF = (texto: string) => {
-  if (!texto) return ""
+  if (!texto) return '';
 
   // Reemplazar saltos de línea por <br>
-  let formateado = texto.replace(/\n/g, "<br>")
+  let formateado = texto.replace(/\n/g, '<br>');
 
   // Dar formato a las viñetas para mejor visualización
   formateado = formateado.replace(
     /• /g,
-    '<span style="display: inline-block; width: 20px; margin-left: 10px;">•</span>'
-  )
+    '<span style="display: inline-block; width: 20px; margin-left: 10px;">•</span>',
+  );
 
-  return formateado
-}
+  return formateado;
+};
 
 // Computed para formatos HTML de los mensajes
 const pdfAmonestacionFormateado = computed(() => {
-  return formatearTextoParaPDF(pdfAmonestacionData.value.mensaje)
-})
+  return formatearTextoParaPDF(pdfAmonestacionData.value.mensaje);
+});
 
 const pdfRetiroFormateado = computed(() => {
-  return formatearTextoParaPDF(pdfRetiroData.value.mensaje)
-})
+  return formatearTextoParaPDF(pdfRetiroData.value.mensaje);
+});
 
 // Variables para PDFs
 const pdfAmonestacionData = ref({
-  fecha: "",
-  nombre: "",
-  motivo: "",
-  mensaje: "",
-})
+  fecha: '',
+  nombre: '',
+  motivo: '',
+  mensaje: '',
+});
 
 const pdfRetiroData = ref({
-  fecha: "",
-  nombre: "",
-  motivo: "",
-  mensaje: "",
-})
+  fecha: '',
+  nombre: '',
+  motivo: '',
+  mensaje: '',
+});
 
 // Función para generar PDF de amonestación
 const generateAmonestacionPDF = async (student: any) => {
-  const studentInfo = studentsStore.getStudentById(student.studentId)
-  if (!studentInfo) return
+  const studentInfo = studentsStore.getStudentById(student.studentId);
+  if (!studentInfo) return;
 
-  const studentName = `${studentInfo.nombre} ${studentInfo.apellido}`.trim()
-  const currentDate = new Date().toLocaleDateString("es-ES")
+  const studentName = `${studentInfo.nombre} ${studentInfo.apellido}`.trim();
+  const currentDate = new Date().toLocaleDateString('es-ES');
 
   pdfAmonestacionData.value = {
     fecha: currentDate,
@@ -623,7 +623,7 @@ Por medio de la presente, le notificamos que el estudiante ${studentName} ha rec
 
 • Ausencias acumuladas: ${student.absences}
 • Fecha de evaluación: ${currentDate}
-• Clase: ${getClassName(student.classId || "")}
+• Clase: ${getClassName(student.classId || '')}
 
 Esta amonestación queda registrada en el expediente del estudiante. De continuar con esta conducta, se procederá con medidas disciplinarias más severas.
 
@@ -632,35 +632,35 @@ Solicitamos su inmediata atención a este asunto y su colaboración para mejorar
 Es importante mantener la asistencia regular para el progreso académico del estudiante.
 
 Esperamos su comprensión y colaboración.`,
-  }
+  };
 
   // Generar PDF
-  await nextTick()
-  const element = document.getElementById("pdf-amonestacion")
+  await nextTick();
+  const element = document.getElementById('pdf-amonestacion');
   if (element) {
     const opt = {
       margin: 1,
-      filename: `amonestacion_${studentName.replace(/\s+/g, "_")}_${currentDate.replace(/\//g, "-")}.pdf`,
-      image: {type: "jpeg", quality: 0.98},
-      html2canvas: {scale: 2, useCORS: true},
-      jsPDF: {unit: "in", format: "letter", orientation: "portrait"},
-    }
+      filename: `amonestacion_${studentName.replace(/\s+/g, '_')}_${currentDate.replace(/\//g, '-')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+    };
 
     try {
-      await html2pdf().set(opt).from(element).save()
+      await html2pdf().set(opt).from(element).save();
     } catch (error) {
-      console.error("Error generating PDF:", error)
+      console.error('Error generating PDF:', error);
     }
   }
-}
+};
 
 // Función para generar PDF de retiro
 const generateRetiroPDF = async (student: any) => {
-  const studentInfo = studentsStore.getStudentById(student.studentId)
-  if (!studentInfo) return
+  const studentInfo = studentsStore.getStudentById(student.studentId);
+  if (!studentInfo) return;
 
-  const studentName = `${studentInfo.nombre} ${studentInfo.apellido}`.trim()
-  const currentDate = new Date().toLocaleDateString("es-ES")
+  const studentName = `${studentInfo.nombre} ${studentInfo.apellido}`.trim();
+  const currentDate = new Date().toLocaleDateString('es-ES');
 
   pdfRetiroData.value = {
     fecha: currentDate,
@@ -672,81 +672,81 @@ Después de múltiples advertencias y amonestaciones, lamentamos informarle que 
 
 • Ausencias acumuladas: ${student.absences}
 • Fecha efectiva de retiro: ${currentDate}
-• Clase: ${getClassName(student.classId || "")}
+• Clase: ${getClassName(student.classId || '')}
 
 Esta decisión se toma después de agotar todas las instancias de diálogo y compromiso establecidas en el reglamento interno de la institución.
 
 Los documentos del estudiante estarán disponibles para retiro en coordinación académica en un plazo de 15 días hábiles.
 
 Lamentamos no haber podido contar con la colaboración necesaria para mantener la asistencia regular del estudiante.`,
-  }
+  };
 
   // Generar PDF
-  await nextTick()
-  const element = document.getElementById("pdf-retiro")
+  await nextTick();
+  const element = document.getElementById('pdf-retiro');
   if (element) {
     const opt = {
       margin: 1,
-      filename: `retiro_${studentName.replace(/\s+/g, "_")}_${currentDate.replace(/\//g, "-")}.pdf`,
-      image: {type: "jpeg", quality: 0.98},
-      html2canvas: {scale: 2, useCORS: true},
-      jsPDF: {unit: "in", format: "letter", orientation: "portrait"},
-    }
+      filename: `retiro_${studentName.replace(/\s+/g, '_')}_${currentDate.replace(/\//g, '-')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+    };
 
     try {
-      await html2pdf().set(opt).from(element).save()
+      await html2pdf().set(opt).from(element).save();
     } catch (error) {
-      console.error("Error generating PDF:", error)
+      console.error('Error generating PDF:', error);
     }
   }
-}
+};
 
 async function calcularTopAbsentees() {
   try {
-    isLoading.value = true
-    error.value = null
+    isLoading.value = true;
+    error.value = null;
 
-    let result
+    let result;
 
     // Si hay teacherId, usar el método específico para maestros
     if (props.teacherId) {
-      console.log(`[TopAbsenteesByRange] Fetching absent students for teacher: ${props.teacherId}`)
+      console.log(`[TopAbsenteesByRange] Fetching absent students for teacher: ${props.teacherId}`);
       result = await attendanceStore.fetchTopAbsentStudentsByTeacher(
         formattedStartDate.value,
         formattedEndDate.value,
         props.teacherId,
-        props.limit || 10
-      )
+        props.limit || 10,
+      );
     } else {
       // Si no hay teacherId, usar el método general
       result = await attendanceStore.fetchTopAbsentStudentsByRange(
         formattedStartDate.value,
         formattedEndDate.value,
         props.limit || 10,
-        selectedClass.value || undefined
-      )
+        selectedClass.value || undefined,
+      );
     }
 
     // Procesamiento adicional: filtrar estudiantes sin nombre válido y agregar datos necesarios
     const processedResult = result
       .map((student) => {
         // Agregar el nombre del estudiante
-        const studentInfo = studentsStore.getStudentById(student.studentId)
+        const studentInfo = studentsStore.getStudentById(student.studentId);
         if (!studentInfo) {
-          return null // Excluir estudiantes no encontrados
+          return null; // Excluir estudiantes no encontrados
         }
 
-        const fullName = `${studentInfo.nombre || ""} ${studentInfo.apellido || ""}`.trim()
+        const fullName = `${studentInfo.nombre || ''} ${studentInfo.apellido || ''}`.trim();
         if (!fullName) {
-          return null // Excluir estudiantes sin nombre
+          return null; // Excluir estudiantes sin nombre
         }
 
         // Calcular datos adicionales para el componente
-        const attendedClasses = Math.max(0, (student.totalPossibleClasses || 0) - student.absences)
+        const attendedClasses = Math.max(0, (student.totalPossibleClasses || 0) - student.absences);
         const attendanceRate =
           student.totalPossibleClasses > 0
             ? (attendedClasses / student.totalPossibleClasses) * 100
-            : 0
+            : 0;
 
         return {
           ...student,
@@ -754,222 +754,222 @@ async function calcularTopAbsentees() {
           attendedClasses,
           attendanceRate: isNaN(attendanceRate) ? 0 : attendanceRate,
           totalClasses: student.totalPossibleClasses || 0,
-        }
+        };
       })
-      .filter((student) => student !== null) // Remover estudiantes nulos
+      .filter((student) => student !== null); // Remover estudiantes nulos
 
-    topAbsentees.value = processedResult
+    topAbsentees.value = processedResult;
   } catch (err: any) {
-    console.error("Error al obtener datos de asistencia:", err)
-    error.value = `Error al obtener datos de asistencia: ${err.message || err}`
-    topAbsentees.value = [] // Asegurar que no haya datos parciales
+    console.error('Error al obtener datos de asistencia:', err);
+    error.value = `Error al obtener datos de asistencia: ${err.message || err}`;
+    topAbsentees.value = []; // Asegurar que no haya datos parciales
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
-const sortColumn = ref<"student" | "absences" | "attendanceRate" | "totalClasses">("absences")
-const sortDirection = ref<"asc" | "desc">("desc")
+const sortColumn = ref<'student' | 'absences' | 'attendanceRate' | 'totalClasses'>('absences');
+const sortDirection = ref<'asc' | 'desc'>('desc');
 
 // --- Persistencia de filtro en Firestore ---
 async function guardarFiltroUsuario() {
-  const userId = authStore.user?.uid
-  if (!userId) return
+  const userId = authStore.user?.uid;
+  if (!userId) return;
   const filtro = {
     columna: sortColumn.value,
     direccion: sortDirection.value,
-    rangoFechas: {...absenceRange.value},
-  }
-  await setDoc(doc(db, "CONFIGURACION", `${userId}_TopAbsenteesByRange`), {
-    tabla: "TopAbsenteesByRange",
+    rangoFechas: { ...absenceRange.value },
+  };
+  await setDoc(doc(db, 'CONFIGURACION', `${userId}_TopAbsenteesByRange`), {
+    tabla: 'TopAbsenteesByRange',
     filtro,
     usuarioId: userId,
     timestamp: new Date(),
-  })
+  });
 }
 
 async function restaurarFiltroUsuario() {
-  const userId = authStore.user?.uid
-  if (!userId) return
+  const userId = authStore.user?.uid;
+  if (!userId) return;
 
   try {
-    const filtroDoc = await getDoc(doc(db, "CONFIGURACION", `${userId}_TopAbsenteesByRange`))
+    const filtroDoc = await getDoc(doc(db, 'CONFIGURACION', `${userId}_TopAbsenteesByRange`));
 
     if (filtroDoc.exists()) {
-      const {filtro} = filtroDoc.data()
+      const { filtro } = filtroDoc.data();
       if (filtro) {
-        if (filtro.columna) sortColumn.value = filtro.columna
-        if (filtro.direccion) sortDirection.value = filtro.direccion
+        if (filtro.columna) sortColumn.value = filtro.columna;
+        if (filtro.direccion) sortDirection.value = filtro.direccion;
         if (filtro.rangoFechas) {
-          absenceRange.value.start = filtro.rangoFechas?.start ?? getDefaultMonthRange().start
-          absenceRange.value.end = filtro.rangoFechas?.end ?? getDefaultMonthRange().end
+          absenceRange.value.start = filtro.rangoFechas?.start ?? getDefaultMonthRange().start;
+          absenceRange.value.end = filtro.rangoFechas?.end ?? getDefaultMonthRange().end;
         }
       }
     } else {
       // Si no hay filtro guardado, usar un mes por defecto
-      const def = getDefaultMonthRange()
-      absenceRange.value.start = def.start
-      absenceRange.value.end = def.end
+      const def = getDefaultMonthRange();
+      absenceRange.value.start = def.start;
+      absenceRange.value.end = def.end;
     }
   } catch (error) {
-    console.error("Error al restaurar filtros:", error)
+    console.error('Error al restaurar filtros:', error);
     // En caso de error, utilizar valores por defecto
-    const def = getDefaultMonthRange()
-    absenceRange.value.start = def.start
-    absenceRange.value.end = def.end
+    const def = getDefaultMonthRange();
+    absenceRange.value.start = def.start;
+    absenceRange.value.end = def.end;
   }
 }
 
 const sortedAbsentees = computed(() => {
-  if (!topAbsentees.value) return []
-  const arr = [...topAbsentees.value]
+  if (!topAbsentees.value) return [];
+  const arr = [...topAbsentees.value];
   return arr.sort((a, b) => {
-    let valA, valB
+    let valA, valB;
     switch (sortColumn.value) {
-      case "student":
-        valA = studentName(a.studentId)
-        valB = studentName(b.studentId)
-        break
-      case "absences":
-        valA = a.absences
-        valB = b.absences
-        break
-      case "attendanceRate":
-        valA = a.attendanceRate
-        valB = b.attendanceRate
-        break
-      case "totalClasses":
-        valA = a.totalClasses
-        valB = b.totalClasses
-        break
-      default:
-        valA = a.absences
-        valB = b.absences
+    case 'student':
+      valA = studentName(a.studentId);
+      valB = studentName(b.studentId);
+      break;
+    case 'absences':
+      valA = a.absences;
+      valB = b.absences;
+      break;
+    case 'attendanceRate':
+      valA = a.attendanceRate;
+      valB = b.attendanceRate;
+      break;
+    case 'totalClasses':
+      valA = a.totalClasses;
+      valB = b.totalClasses;
+      break;
+    default:
+      valA = a.absences;
+      valB = b.absences;
     }
-    if (valA < valB) return sortDirection.value === "asc" ? -1 : 1
-    if (valA > valB) return sortDirection.value === "asc" ? 1 : -1
-    return 0
-  })
-})
+    if (valA < valB) return sortDirection.value === 'asc' ? -1 : 1;
+    if (valA > valB) return sortDirection.value === 'asc' ? 1 : -1;
+    return 0;
+  });
+});
 
-async function setSort(column: "student" | "absences" | "attendanceRate" | "totalClasses") {
+async function setSort(column: 'student' | 'absences' | 'attendanceRate' | 'totalClasses') {
   if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === "asc" ? "desc" : "asc"
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
   } else {
-    sortColumn.value = column
-    sortDirection.value = column === "student" ? "asc" : "desc"
+    sortColumn.value = column;
+    sortDirection.value = column === 'student' ? 'asc' : 'desc';
   }
-  await guardarFiltroUsuario()
+  await guardarFiltroUsuario();
 }
 
 // Computed para fechas formateadas
-const formattedStartDate = computed(() => absenceRange.value?.start || "")
-const formattedEndDate = computed(() => absenceRange.value?.end || "")
+const formattedStartDate = computed(() => absenceRange.value?.start || '');
+const formattedEndDate = computed(() => absenceRange.value?.end || '');
 
 // Función para filtrar ausencias por rango de fechas
 async function filtrarAusenciasPorRango() {
-  await calcularTopAbsentees()
-  await guardarFiltroUsuario()
+  await calcularTopAbsentees();
+  await guardarFiltroUsuario();
 }
 
 // Inicialización
 onMounted(async () => {
-  await restaurarFiltroUsuario()
-  await calcularTopAbsentees()
-})
+  await restaurarFiltroUsuario();
+  await calcularTopAbsentees();
+});
 
 // Variables para el modal de WhatsApp
-const showWhatsAppModal = ref(false)
-const selectedStudentForWhatsApp = ref<any>(null)
+const showWhatsAppModal = ref(false);
+const selectedStudentForWhatsApp = ref<any>(null);
 
 // Variables para el gestor de plantillas
-const showWhatsAppTemplateManager = ref(false)
+const showWhatsAppTemplateManager = ref(false);
 
 // Función para abrir modal de WhatsApp para amonestación
 const openWhatsAppModalForWarning = (student: any) => {
-  selectedStudentForWhatsApp.value = student
-  showWhatsAppModal.value = true
-}
+  selectedStudentForWhatsApp.value = student;
+  showWhatsAppModal.value = true;
+};
 
 // Función para cerrar modal de WhatsApp
 const closeWhatsAppModal = () => {
-  showWhatsAppModal.value = false
-  selectedStudentForWhatsApp.value = null
-}
+  showWhatsAppModal.value = false;
+  selectedStudentForWhatsApp.value = null;
+};
 
 // Funciones para el gestor de plantillas
 const openWhatsAppTemplateManager = () => {
-  showWhatsAppTemplateManager.value = true
-}
+  showWhatsAppTemplateManager.value = true;
+};
 
 const closeWhatsAppTemplateManager = () => {
-  showWhatsAppTemplateManager.value = false
-}
+  showWhatsAppTemplateManager.value = false;
+};
 
 const handleTemplateCreated = (template: any) => {
-  console.log("Nueva plantilla creada:", template)
+  console.log('Nueva plantilla creada:', template);
   // Aquí puedes agregar lógica adicional si es necesario
-}
+};
 
 const handleTemplateUpdated = (template: any) => {
-  console.log("Plantilla actualizada:", template)
+  console.log('Plantilla actualizada:', template);
   // Aquí puedes agregar lógica adicional si es necesario
-}
+};
 
 // Función para manejar cuando se envía un mensaje
 const handleMessageSent = (data: {preset: any; message: string}) => {
-  console.log("Mensaje enviado:", data)
+  console.log('Mensaje enviado:', data);
   // Aquí puedes agregar lógica adicional como logging o notificaciones
-  closeWhatsAppModal()
-}
+  closeWhatsAppModal();
+};
 
 // Computed para los datos del estudiante seleccionado para WhatsApp
 const whatsAppMessageData = computed((): MessageData | null => {
-  if (!selectedStudentForWhatsApp.value) return null
+  if (!selectedStudentForWhatsApp.value) return null;
 
-  const student = studentsStore.getStudentById(selectedStudentForWhatsApp.value.studentId)
-  if (!student) return null
+  const student = studentsStore.getStudentById(selectedStudentForWhatsApp.value.studentId);
+  if (!student) return null;
 
   // Obtener datos del representante
   const representanteName =
     (student as any).representante?.nombre ||
     (student as any).madre?.nombre ||
     (student as any).padre?.nombre ||
-    "Representante"
+    'Representante';
   const representantePhone =
     (student as any).representante?.telefono ||
     (student as any).madre?.telefono ||
     (student as any).padre?.telefono ||
-    ""
+    '';
 
   // Obtener datos de la clase
   const classData = classesStore.classes.find(
-    (c) => c.id === selectedStudentForWhatsApp.value.classId
-  )
-  const className = classData?.name || "Clase Musical"
-  const teacherName = (authStore.user as any)?.displayName || "Maestro"
+    (c) => c.id === selectedStudentForWhatsApp.value.classId,
+  );
+  const className = classData?.name || 'Clase Musical';
+  const teacherName = (authStore.user as any)?.displayName || 'Maestro';
 
   // Generar detalles de ausencias si hay datos disponibles
   const absenceDetails =
     selectedStudentForWhatsApp.value.absenceDetails ||
-    `El estudiante tiene ${selectedStudentForWhatsApp.value.absences} ausencias registradas.`
+    `El estudiante tiene ${selectedStudentForWhatsApp.value.absences} ausencias registradas.`;
 
   return {
     studentName: `${student.nombre} ${student.apellido}`.trim(),
     representanteName,
     representantePhone,
     className,
-    date: new Date().toLocaleDateString("es-ES"),
+    date: new Date().toLocaleDateString('es-ES'),
     absences: selectedStudentForWhatsApp.value.absences || 0,
     teacherName,
-    institutionName: "Academia de Música",
+    institutionName: 'Academia de Música',
     // Nuevas variables
     startDate: formattedStartDate.value,
     endDate: formattedEndDate.value,
     attendanceRate: selectedStudentForWhatsApp.value.attendanceRate || 0,
     absenceDetails,
-  }
-})
+  };
+});
 </script>
 
 <style scoped>

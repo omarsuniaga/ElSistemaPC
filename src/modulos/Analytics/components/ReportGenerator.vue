@@ -1,434 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {format, parseISO, eachMonthOfInterval, subMonths, startOfMonth, endOfMonth} from "date-fns"
-import {es} from "date-fns/locale"
-import {jsPDF} from "jspdf"
-import "jspdf-autotable"
-// Reemplazar XLSX por ExcelJS (solución segura)
-import ExcelJS from "exceljs"
-import {Line, Bar, Doughnut} from "vue-chartjs"
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js"
-import {useStudentsStore} from "../../Students/store/students"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useContentsStore} from "../../Contents/store/contents"
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-)
-
-const studentsStore = useStudentsStore()
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-const attendanceStore = useAttendanceStore()
-const contentsStore = useContentsStore()
-
-// Estado del generador
-const selectedReport = ref("")
-const selectedFormat = ref<"pdf" | "excel">("pdf")
-const dateRange = ref({
-  startDate: format(startOfMonth(new Date()), "yyyy-MM-dd"),
-  endDate: format(endOfMonth(new Date()), "yyyy-MM-dd"),
-})
-const customTitle = ref("")
-const includeCharts = ref(true)
-const selectedFilters = ref<string[]>([])
-const selectedGroups = ref<string[]>([])
-const selectedInstruments = ref<string[]>([])
-const selectedTeachers = ref<string[]>([])
-const isGenerating = ref(false)
-const isConfiguring = ref(false)
-const reportGenerated = ref(false)
-const reportUrl = ref("")
-const error = ref("")
-const showPreview = ref(false)
-
-// Opciones avanzadas para la personalización de informes
-const showAdvancedOptions = ref(false)
-const customColumns = ref<string[]>([])
-const sortOrder = ref<"asc" | "desc">("asc")
-const includeAggregates = ref(true)
-const selectedColorScheme = ref("default")
-const includeHeader = ref(true)
-const includeFooter = ref(true)
-const headerLogo = ref(null)
-const footerText = ref(
-  "Academia de Música - Generado el " + format(new Date(), "PPP", {locale: es})
-)
-const pageOrientation = ref<"portrait" | "landscape">("portrait")
-
-// Lista de informes disponibles
-const availableReports = [
-  {id: "students", name: "Alumnos", icon: "user-group"},
-  {id: "teachers", name: "Profesores", icon: "academic-cap"},
-  {id: "attendance", name: "Asistencia", icon: "clipboard-document-check"},
-  {id: "classes", name: "Clases", icon: "bookmark-square"},
-  {id: "progress", name: "Progreso Estudiantil", icon: "chart-bar"},
-  {id: "instruments", name: "Distribución por Instrumento", icon: "musical-note"},
-  {id: "monthly", name: "Rendimiento Mensual", icon: "calendar"},
-  {id: "custom", name: "Informe Personalizado", icon: "adjustments"},
-]
-
-// Opciones de color
-const colorSchemes = [
-  {id: "default", name: "Predeterminado", primary: "#0ea5e9", secondary: "#6366f1"},
-  {id: "green", name: "Verde Naturaleza", primary: "#10b981", secondary: "#059669"},
-  {id: "purple", name: "Púrpura Real", primary: "#8b5cf6", secondary: "#7c3aed"},
-  {id: "red", name: "Rojo Intenso", primary: "#ef4444", secondary: "#dc2626"},
-  {id: "amber", name: "Ámbar Cálido", primary: "#f59e0b", secondary: "#d97706"},
-]
-
-// Columnas disponibles por tipo de informe
-const availableColumns = computed(() => {
-  const columns: Record<string, {id: string; name: string; selected: boolean}[]> = {
-    students: [
-      {id: "nombre", name: "Nombre", selected: true},
-      {id: "apellido", name: "Apellido", selected: true},
-      {id: "edad", name: "Edad", selected: true},
-      {id: "instrumento", name: "Instrumento", selected: true},
-      {id: "clase", name: "Clase", selected: true},
-      {id: "email", name: "Email", selected: false},
-      {id: "tlf", name: "Teléfono", selected: false},
-      {id: "padre", name: "Padre", selected: false},
-      {id: "madre", name: "Madre", selected: false},
-      {id: "tlf_padre", name: "Teléfono Padre", selected: false},
-      {id: "tlf_madre", name: "Teléfono Madre", selected: false},
-      {id: "fecInscripcion", name: "Fecha Inscripción", selected: true},
-    ],
-    teachers: [
-      // ... otras columnas para profesores
-    ],
-    attendance: [
-      // ... otras columnas para asistencia
-    ],
-    // ... más tipos de informes
-  }
-
-  return columns[selectedReport.value] || []
-})
-
-// Observar cambios en el informe seleccionado
-watch(selectedReport, (newValue) => {
-  if (newValue) {
-    // Restablecer selecciones cuando cambie el tipo de informe
-    selectedFilters.value = []
-    customColumns.value = availableColumns.value.filter((col) => col.selected).map((col) => col.id)
-
-    isConfiguring.value = true
-    showAdvancedOptions.value = false
-  }
-})
-
-// Método para aplicar filtros personalizados
-const applyCustomFilters = () => {
-  // Lógica para aplicar filtros personalizados
-  isConfiguring.value = false
-  // Mostrar vista previa
-  generatePreview()
-}
-
-// Método para generar vista previa
-const generatePreview = () => {
-  showPreview.value = true
-  // Implementar lógica de vista previa
-}
-
-// Función mejorada para generar informes
-const generateReport = async () => {
-  isGenerating.value = true
-  error.value = ""
-
-  try {
-    // Determinar qué datos incluir según el tipo de informe
-    let reportData: any[] = []
-    const title =
-      customTitle.value ||
-      `Informe de ${availableReports.find((r) => r.id === selectedReport.value)?.name}`
-
-    switch (selectedReport.value) {
-      case "students":
-        reportData = await getStudentsReportData()
-        break
-      case "teachers":
-        reportData = await getTeachersReportData()
-        break
-      case "attendance":
-        reportData = await getAttendanceReportData()
-        break
-      case "progress":
-        reportData = await getProgressReportData()
-        break
-      // Otros casos...
-      default:
-        throw new Error("Tipo de informe no válido")
-    }
-
-    // Filtrar columnas si es necesario
-    if (customColumns.value.length > 0) {
-      reportData = reportData.map((item) => {
-        const filteredItem: Record<string, any> = {}
-        customColumns.value.forEach((col) => {
-          if (item[col] !== undefined) {
-            filteredItem[col] = item[col]
-          }
-        })
-        return filteredItem
-      })
-    }
-
-    // Generación del informe según el formato
-    if (selectedFormat.value === "pdf") {
-      await generatePDFReport(reportData, title)
-    } else {
-      await generateExcelReport(reportData, title)
-    }
-
-    reportGenerated.value = true
-  } catch (err: any) {
-    console.error("Error al generar el informe:", err)
-    error.value = err.message || "Error al generar el informe"
-  } finally {
-    isGenerating.value = false
-  }
-}
-
-// Funciones para obtener datos específicos de informe (implementaciones)
-const getStudentsReportData = async () => {
-  if (studentsStore.students.length === 0) {
-    await studentsStore.fetchStudents()
-  }
-
-  let students = [...studentsStore.students]
-
-  // Aplicar filtros si están seleccionados
-  if (selectedInstruments.value.length > 0) {
-    students = students.filter((student) => selectedInstruments.value.includes(student.instrumento))
-  }
-
-  if (selectedGroups.value.length > 0) {
-    students = students.filter((student) =>
-      student.grupo.some((g) => selectedGroups.value.includes(g) && g !== "")
-    )
-  }
-
-  // Mapear a formato de informe
-  return students.map((student) => ({
-    nombre: student.nombre,
-    apellido: student.apellido,
-    edad: student.edad,
-    instrumento: student.instrumento,
-    clase: student.clase,
-    email: student.email,
-    tlf: student.tlf,
-    padre: student.padre || "",
-    madre: student.madre || "",
-    tlf_padre: student.tlf_padre || "",
-    tlf_madre: student.tlf_madre || "",
-    fecInscripcion: student.fecInscripcion,
-  }))
-}
-
-// ... otras funciones para obtener datos específicos
-
-// Generar informe PDF
-const generatePDFReport = async (data: any[], title: string) => {
-  // Implementación de generación de PDF con jsPDF
-  const doc = new jsPDF({
-    orientation: pageOrientation.value,
-    unit: "mm",
-    format: "a4",
-  })
-
-  // Añadir título
-  const textColor =
-    colorSchemes.find((cs) => cs.id === selectedColorScheme.value)?.primary || "#0ea5e9"
-  doc.setTextColor(textColor)
-  doc.setFontSize(18)
-  doc.text(title, 14, 22)
-
-  // Añadir fecha
-  doc.setFontSize(10)
-  doc.setTextColor("#666666")
-  doc.text(`Generado: ${format(new Date(), "PPP", {locale: es})}`, 14, 30)
-
-  // Configurar tablas y datos
-  if (data.length > 0) {
-    const columns = Object.keys(data[0]).map((key) => ({
-      header: key.charAt(0).toUpperCase() + key.slice(1),
-      dataKey: key,
-    }))
-
-    // @ts-ignore - tipo para autoTable
-    doc.autoTable({
-      startY: 40,
-      head: [columns.map((col) => col.header)],
-      body: data.map((row) => columns.map((col) => row[col.dataKey] || "")),
-      theme: "grid",
-      styles: {
-        fontSize: 8,
-        cellPadding: 2,
-      },
-      headStyles: {
-        fillColor: textColor,
-        textColor: "#ffffff",
-        fontStyle: "bold",
-      },
-      alternateRowStyles: {
-        fillColor: "#f8fafc",
-      },
-    })
-  } else {
-    doc.setTextColor("#666666")
-    doc.text("No hay datos disponibles para este informe", 14, 40)
-  }
-
-  // Añadir pie de página si está habilitado
-  if (includeFooter.value) {
-    const pageCount = doc.internal.getNumberOfPages()
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i)
-      doc.setFontSize(8)
-      doc.setTextColor("#666666")
-      doc.text(footerText.value, 14, doc.internal.pageSize.height - 10)
-    }
-  }
-
-  // Guardar/descargar el PDF
-  const pdfOutput = doc.output("datauristring")
-  reportUrl.value = pdfOutput
-
-  // Si no estamos en vista previa, descargar automáticamente
-  if (!showPreview.value) {
-    doc.save(`${title.toLowerCase().replace(/\s+/g, "_")}_${format(new Date(), "yyyy-MM-dd")}.pdf`)
-  }
-}
-
-// Generar informe Excel (reemplazando XLSX con ExcelJS)
-const generateExcelReport = async (data: any[], title: string) => {
-  // Crear libro de trabajo con ExcelJS
-  const workbook = new ExcelJS.Workbook()
-  workbook.creator = "Music Academy App"
-  workbook.lastModifiedBy = "Music Academy App"
-  workbook.created = new Date()
-  workbook.modified = new Date()
-
-  // Crear hoja con nombre limitado a 31 caracteres (límite de Excel)
-  const worksheet = workbook.addWorksheet(title.substring(0, 31))
-
-  if (data.length > 0) {
-    // Añadir encabezados
-    const headers = Object.keys(data[0])
-    worksheet.addRow(headers)
-
-    // Dar formato a los encabezados
-    const headerRow = worksheet.getRow(1)
-    headerRow.font = {bold: true}
-    headerRow.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: {argb: "FF2980B9"}, // Azul
-    }
-    headerRow.alignment = {vertical: "middle", horizontal: "center"}
-
-    // Añadir filas de datos
-    data.forEach((item) => {
-      const row = []
-      headers.forEach((header) => {
-        row.push(item[header] || "")
-      })
-      worksheet.addRow(row)
-    })
-
-    // Autoajustar ancho de columnas
-    worksheet.columns.forEach((column) => {
-      let maxLength = 10
-      column.eachCell({includeEmpty: false}, (cell) => {
-        const cellLength = cell.value ? cell.value.toString().length : 10
-        maxLength = Math.max(maxLength, cellLength)
-      })
-      column.width = Math.min(maxLength + 2, 30) // Limitar ancho máximo
-    })
-  }
-
-  // Guardar el archivo
-  const buffer = await workbook.xlsx.writeBuffer()
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  })
-  const url = URL.createObjectURL(blob)
-
-  // Crear enlace de descarga
-  const anchor = document.createElement("a")
-  anchor.href = url
-  anchor.download = `${title.toLowerCase().replace(/\s+/g, "_")}_${format(new Date(), "yyyy-MM-dd")}.xlsx`
-
-  // Si no estamos en vista previa, descargar automáticamente
-  if (!showPreview.value) {
-    anchor.click()
-  } else {
-    reportUrl.value = url
-  }
-
-  // Liberar recursos
-  setTimeout(() => {
-    URL.revokeObjectURL(url)
-  }, 1000)
-}
-
-// Métodos auxiliares para la interfaz de usuario
-const resetForm = () => {
-  selectedReport.value = ""
-  selectedFormat.value = "pdf"
-  customTitle.value = ""
-  includeCharts.value = true
-  selectedFilters.value = []
-  isConfiguring.value = false
-  reportGenerated.value = false
-  showPreview.value = false
-  reportUrl.value = ""
-  error.value = ""
-}
-
-const startOver = () => {
-  resetForm()
-  showAdvancedOptions.value = false
-}
-
-// Cargar datos al montar el componente
-onMounted(async () => {
-  try {
-    await Promise.all([
-      studentsStore.fetchStudents(),
-      teachersStore.fetchTeachers(),
-      classesStore.fetchClasses(),
-      contentsStore.fetchContents(),
-    ])
-  } catch (err) {
-    console.error("Error al cargar datos iniciales:", err)
-  }
-})
-</script>
-
 <template>
   <div class="space-y-6">
     <!-- Report Selection -->
@@ -1216,3 +785,434 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { format, parseISO, eachMonthOfInterval, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+// Reemplazar XLSX por ExcelJS (solución segura)
+import ExcelJS from 'exceljs';
+import { Line, Bar, Doughnut } from 'vue-chartjs';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { useStudentsStore } from '../../Students/store/students';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useContentsStore } from '../../Contents/store/contents';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+);
+
+const studentsStore = useStudentsStore();
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+const attendanceStore = useAttendanceStore();
+const contentsStore = useContentsStore();
+
+// Estado del generador
+const selectedReport = ref('');
+const selectedFormat = ref<'pdf' | 'excel'>('pdf');
+const dateRange = ref({
+  startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+  endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+});
+const customTitle = ref('');
+const includeCharts = ref(true);
+const selectedFilters = ref<string[]>([]);
+const selectedGroups = ref<string[]>([]);
+const selectedInstruments = ref<string[]>([]);
+const selectedTeachers = ref<string[]>([]);
+const isGenerating = ref(false);
+const isConfiguring = ref(false);
+const reportGenerated = ref(false);
+const reportUrl = ref('');
+const error = ref('');
+const showPreview = ref(false);
+
+// Opciones avanzadas para la personalización de informes
+const showAdvancedOptions = ref(false);
+const customColumns = ref<string[]>([]);
+const sortOrder = ref<'asc' | 'desc'>('asc');
+const includeAggregates = ref(true);
+const selectedColorScheme = ref('default');
+const includeHeader = ref(true);
+const includeFooter = ref(true);
+const headerLogo = ref(null);
+const footerText = ref(
+  'Academia de Música - Generado el ' + format(new Date(), 'PPP', { locale: es }),
+);
+const pageOrientation = ref<'portrait' | 'landscape'>('portrait');
+
+// Lista de informes disponibles
+const availableReports = [
+  { id: 'students', name: 'Alumnos', icon: 'user-group' },
+  { id: 'teachers', name: 'Profesores', icon: 'academic-cap' },
+  { id: 'attendance', name: 'Asistencia', icon: 'clipboard-document-check' },
+  { id: 'classes', name: 'Clases', icon: 'bookmark-square' },
+  { id: 'progress', name: 'Progreso Estudiantil', icon: 'chart-bar' },
+  { id: 'instruments', name: 'Distribución por Instrumento', icon: 'musical-note' },
+  { id: 'monthly', name: 'Rendimiento Mensual', icon: 'calendar' },
+  { id: 'custom', name: 'Informe Personalizado', icon: 'adjustments' },
+];
+
+// Opciones de color
+const colorSchemes = [
+  { id: 'default', name: 'Predeterminado', primary: '#0ea5e9', secondary: '#6366f1' },
+  { id: 'green', name: 'Verde Naturaleza', primary: '#10b981', secondary: '#059669' },
+  { id: 'purple', name: 'Púrpura Real', primary: '#8b5cf6', secondary: '#7c3aed' },
+  { id: 'red', name: 'Rojo Intenso', primary: '#ef4444', secondary: '#dc2626' },
+  { id: 'amber', name: 'Ámbar Cálido', primary: '#f59e0b', secondary: '#d97706' },
+];
+
+// Columnas disponibles por tipo de informe
+const availableColumns = computed(() => {
+  const columns: Record<string, {id: string; name: string; selected: boolean}[]> = {
+    students: [
+      { id: 'nombre', name: 'Nombre', selected: true },
+      { id: 'apellido', name: 'Apellido', selected: true },
+      { id: 'edad', name: 'Edad', selected: true },
+      { id: 'instrumento', name: 'Instrumento', selected: true },
+      { id: 'clase', name: 'Clase', selected: true },
+      { id: 'email', name: 'Email', selected: false },
+      { id: 'tlf', name: 'Teléfono', selected: false },
+      { id: 'padre', name: 'Padre', selected: false },
+      { id: 'madre', name: 'Madre', selected: false },
+      { id: 'tlf_padre', name: 'Teléfono Padre', selected: false },
+      { id: 'tlf_madre', name: 'Teléfono Madre', selected: false },
+      { id: 'fecInscripcion', name: 'Fecha Inscripción', selected: true },
+    ],
+    teachers: [
+      // ... otras columnas para profesores
+    ],
+    attendance: [
+      // ... otras columnas para asistencia
+    ],
+    // ... más tipos de informes
+  };
+
+  return columns[selectedReport.value] || [];
+});
+
+// Observar cambios en el informe seleccionado
+watch(selectedReport, (newValue) => {
+  if (newValue) {
+    // Restablecer selecciones cuando cambie el tipo de informe
+    selectedFilters.value = [];
+    customColumns.value = availableColumns.value.filter((col) => col.selected).map((col) => col.id);
+
+    isConfiguring.value = true;
+    showAdvancedOptions.value = false;
+  }
+});
+
+// Método para aplicar filtros personalizados
+const applyCustomFilters = () => {
+  // Lógica para aplicar filtros personalizados
+  isConfiguring.value = false;
+  // Mostrar vista previa
+  generatePreview();
+};
+
+// Método para generar vista previa
+const generatePreview = () => {
+  showPreview.value = true;
+  // Implementar lógica de vista previa
+};
+
+// Función mejorada para generar informes
+const generateReport = async () => {
+  isGenerating.value = true;
+  error.value = '';
+
+  try {
+    // Determinar qué datos incluir según el tipo de informe
+    let reportData: any[] = [];
+    const title =
+      customTitle.value ||
+      `Informe de ${availableReports.find((r) => r.id === selectedReport.value)?.name}`;
+
+    switch (selectedReport.value) {
+    case 'students':
+      reportData = await getStudentsReportData();
+      break;
+    case 'teachers':
+      reportData = await getTeachersReportData();
+      break;
+    case 'attendance':
+      reportData = await getAttendanceReportData();
+      break;
+    case 'progress':
+      reportData = await getProgressReportData();
+      break;
+      // Otros casos...
+    default:
+      throw new Error('Tipo de informe no válido');
+    }
+
+    // Filtrar columnas si es necesario
+    if (customColumns.value.length > 0) {
+      reportData = reportData.map((item) => {
+        const filteredItem: Record<string, any> = {};
+        customColumns.value.forEach((col) => {
+          if (item[col] !== undefined) {
+            filteredItem[col] = item[col];
+          }
+        });
+        return filteredItem;
+      });
+    }
+
+    // Generación del informe según el formato
+    if (selectedFormat.value === 'pdf') {
+      await generatePDFReport(reportData, title);
+    } else {
+      await generateExcelReport(reportData, title);
+    }
+
+    reportGenerated.value = true;
+  } catch (err: any) {
+    console.error('Error al generar el informe:', err);
+    error.value = err.message || 'Error al generar el informe';
+  } finally {
+    isGenerating.value = false;
+  }
+};
+
+// Funciones para obtener datos específicos de informe (implementaciones)
+const getStudentsReportData = async () => {
+  if (studentsStore.students.length === 0) {
+    await studentsStore.fetchStudents();
+  }
+
+  let students = [...studentsStore.students];
+
+  // Aplicar filtros si están seleccionados
+  if (selectedInstruments.value.length > 0) {
+    students = students.filter((student) => selectedInstruments.value.includes(student.instrumento));
+  }
+
+  if (selectedGroups.value.length > 0) {
+    students = students.filter((student) =>
+      student.grupo.some((g) => selectedGroups.value.includes(g) && g !== ''),
+    );
+  }
+
+  // Mapear a formato de informe
+  return students.map((student) => ({
+    nombre: student.nombre,
+    apellido: student.apellido,
+    edad: student.edad,
+    instrumento: student.instrumento,
+    clase: student.clase,
+    email: student.email,
+    tlf: student.tlf,
+    padre: student.padre || '',
+    madre: student.madre || '',
+    tlf_padre: student.tlf_padre || '',
+    tlf_madre: student.tlf_madre || '',
+    fecInscripcion: student.fecInscripcion,
+  }));
+};
+
+// ... otras funciones para obtener datos específicos
+
+// Generar informe PDF
+const generatePDFReport = async (data: any[], title: string) => {
+  // Implementación de generación de PDF con jsPDF
+  const doc = new jsPDF({
+    orientation: pageOrientation.value,
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  // Añadir título
+  const textColor =
+    colorSchemes.find((cs) => cs.id === selectedColorScheme.value)?.primary || '#0ea5e9';
+  doc.setTextColor(textColor);
+  doc.setFontSize(18);
+  doc.text(title, 14, 22);
+
+  // Añadir fecha
+  doc.setFontSize(10);
+  doc.setTextColor('#666666');
+  doc.text(`Generado: ${format(new Date(), 'PPP', { locale: es })}`, 14, 30);
+
+  // Configurar tablas y datos
+  if (data.length > 0) {
+    const columns = Object.keys(data[0]).map((key) => ({
+      header: key.charAt(0).toUpperCase() + key.slice(1),
+      dataKey: key,
+    }));
+
+    // @ts-ignore - tipo para autoTable
+    doc.autoTable({
+      startY: 40,
+      head: [columns.map((col) => col.header)],
+      body: data.map((row) => columns.map((col) => row[col.dataKey] || '')),
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: textColor,
+        textColor: '#ffffff',
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: '#f8fafc',
+      },
+    });
+  } else {
+    doc.setTextColor('#666666');
+    doc.text('No hay datos disponibles para este informe', 14, 40);
+  }
+
+  // Añadir pie de página si está habilitado
+  if (includeFooter.value) {
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor('#666666');
+      doc.text(footerText.value, 14, doc.internal.pageSize.height - 10);
+    }
+  }
+
+  // Guardar/descargar el PDF
+  const pdfOutput = doc.output('datauristring');
+  reportUrl.value = pdfOutput;
+
+  // Si no estamos en vista previa, descargar automáticamente
+  if (!showPreview.value) {
+    doc.save(`${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+  }
+};
+
+// Generar informe Excel (reemplazando XLSX con ExcelJS)
+const generateExcelReport = async (data: any[], title: string) => {
+  // Crear libro de trabajo con ExcelJS
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Music Academy App';
+  workbook.lastModifiedBy = 'Music Academy App';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  // Crear hoja con nombre limitado a 31 caracteres (límite de Excel)
+  const worksheet = workbook.addWorksheet(title.substring(0, 31));
+
+  if (data.length > 0) {
+    // Añadir encabezados
+    const headers = Object.keys(data[0]);
+    worksheet.addRow(headers);
+
+    // Dar formato a los encabezados
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF2980B9' }, // Azul
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+    // Añadir filas de datos
+    data.forEach((item) => {
+      const row = [];
+      headers.forEach((header) => {
+        row.push(item[header] || '');
+      });
+      worksheet.addRow(row);
+    });
+
+    // Autoajustar ancho de columnas
+    worksheet.columns.forEach((column) => {
+      let maxLength = 10;
+      column.eachCell({ includeEmpty: false }, (cell) => {
+        const cellLength = cell.value ? cell.value.toString().length : 10;
+        maxLength = Math.max(maxLength, cellLength);
+      });
+      column.width = Math.min(maxLength + 2, 30); // Limitar ancho máximo
+    });
+  }
+
+  // Guardar el archivo
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+
+  // Crear enlace de descarga
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+
+  // Si no estamos en vista previa, descargar automáticamente
+  if (!showPreview.value) {
+    anchor.click();
+  } else {
+    reportUrl.value = url;
+  }
+
+  // Liberar recursos
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 1000);
+};
+
+// Métodos auxiliares para la interfaz de usuario
+const resetForm = () => {
+  selectedReport.value = '';
+  selectedFormat.value = 'pdf';
+  customTitle.value = '';
+  includeCharts.value = true;
+  selectedFilters.value = [];
+  isConfiguring.value = false;
+  reportGenerated.value = false;
+  showPreview.value = false;
+  reportUrl.value = '';
+  error.value = '';
+};
+
+const startOver = () => {
+  resetForm();
+  showAdvancedOptions.value = false;
+};
+
+// Cargar datos al montar el componente
+onMounted(async () => {
+  try {
+    await Promise.all([
+      studentsStore.fetchStudents(),
+      teachersStore.fetchTeachers(),
+      classesStore.fetchClasses(),
+      contentsStore.fetchContents(),
+    ]);
+  } catch (err) {
+    console.error('Error al cargar datos iniciales:', err);
+  }
+});
+</script>

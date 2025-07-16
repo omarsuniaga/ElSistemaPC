@@ -390,7 +390,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, reactive} from "vue"
+import { ref, computed, onMounted, reactive } from 'vue';
 import {
   CalendarIcon,
   PlusIcon,
@@ -399,97 +399,97 @@ import {
   PencilIcon,
   TrashIcon,
   XMarkIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Data
-const viewMode = ref<"calendar" | "list">("list")
-const currentWeek = ref(new Date())
-const selectedTeacher = ref("")
-const selectedDay = ref("")
-const selectedInstrument = ref("")
-const selectedStatus = ref("")
-const showScheduleModal = ref(false)
-const editingSchedule = ref<any>(null)
+const viewMode = ref<'calendar' | 'list'>('list');
+const currentWeek = ref(new Date());
+const selectedTeacher = ref('');
+const selectedDay = ref('');
+const selectedInstrument = ref('');
+const selectedStatus = ref('');
+const showScheduleModal = ref(false);
+const editingSchedule = ref<any>(null);
 
 // Formulario para crear/editar horarios
 const scheduleForm = reactive({
-  teacherId: "",
-  studentId: "",
-  instrument: "",
-  dayOfWeek: "",
-  startTime: "",
+  teacherId: '',
+  studentId: '',
+  instrument: '',
+  dayOfWeek: '',
+  startTime: '',
   duration: 60,
-})
+});
 
 // Datos mock - en una app real vendrían de stores
 const teachers = ref([
-  {id: "1", name: "Ana García", email: "ana@academia.com"},
-  {id: "2", name: "Carlos López", email: "carlos@academia.com"},
-  {id: "3", name: "María González", email: "maria@academia.com"},
-])
+  { id: '1', name: 'Ana García', email: 'ana@academia.com' },
+  { id: '2', name: 'Carlos López', email: 'carlos@academia.com' },
+  { id: '3', name: 'María González', email: 'maria@academia.com' },
+]);
 
 const students = ref([
-  {id: "1", name: "Juan Pérez", level: "Principiante"},
-  {id: "2", name: "Sara Martín", level: "Intermedio"},
-  {id: "3", name: "Pedro Ruiz", level: "Avanzado"},
-])
+  { id: '1', name: 'Juan Pérez', level: 'Principiante' },
+  { id: '2', name: 'Sara Martín', level: 'Intermedio' },
+  { id: '3', name: 'Pedro Ruiz', level: 'Avanzado' },
+]);
 
 const schedules = ref([
   {
-    id: "1",
-    teacherId: "1",
-    teacherName: "Ana García",
-    teacherEmail: "ana@academia.com",
-    studentId: "1",
-    studentName: "Juan Pérez",
-    studentLevel: "Principiante",
-    instrument: "piano",
-    dayOfWeek: "lunes",
-    startTime: "10:00",
-    endTime: "11:00",
+    id: '1',
+    teacherId: '1',
+    teacherName: 'Ana García',
+    teacherEmail: 'ana@academia.com',
+    studentId: '1',
+    studentName: 'Juan Pérez',
+    studentLevel: 'Principiante',
+    instrument: 'piano',
+    dayOfWeek: 'lunes',
+    startTime: '10:00',
+    endTime: '11:00',
     duration: 60,
-    status: "activo",
+    status: 'activo',
   },
   {
-    id: "2",
-    teacherId: "2",
-    teacherName: "Carlos López",
-    teacherEmail: "carlos@academia.com",
-    studentId: "2",
-    studentName: "Sara Martín",
-    studentLevel: "Intermedio",
-    instrument: "guitarra",
-    dayOfWeek: "martes",
-    startTime: "15:00",
-    endTime: "16:00",
+    id: '2',
+    teacherId: '2',
+    teacherName: 'Carlos López',
+    teacherEmail: 'carlos@academia.com',
+    studentId: '2',
+    studentName: 'Sara Martín',
+    studentLevel: 'Intermedio',
+    instrument: 'guitarra',
+    dayOfWeek: 'martes',
+    startTime: '15:00',
+    endTime: '16:00',
     duration: 60,
-    status: "activo",
+    status: 'activo',
   },
-])
+]);
 
 // Computed
-const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const timeSlots = [
-  "08:00",
-  "09:00",
-  "10:00",
-  "11:00",
-  "12:00",
-  "13:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-  "18:00",
-]
+  '08:00',
+  '09:00',
+  '10:00',
+  '11:00',
+  '12:00',
+  '13:00',
+  '14:00',
+  '15:00',
+  '16:00',
+  '17:00',
+  '18:00',
+];
 
 const currentWeekRange = computed(() => {
-  const start = new Date(currentWeek.value)
-  const end = new Date(currentWeek.value)
-  end.setDate(start.getDate() + 6)
+  const start = new Date(currentWeek.value);
+  const end = new Date(currentWeek.value);
+  end.setDate(start.getDate() + 6);
 
-  return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`
-})
+  return `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+});
 
 const filteredSchedules = computed(() => {
   return schedules.value.filter((schedule) => {
@@ -498,68 +498,68 @@ const filteredSchedules = computed(() => {
       (!selectedDay.value || schedule.dayOfWeek === selectedDay.value) &&
       (!selectedInstrument.value || schedule.instrument === selectedInstrument.value) &&
       (!selectedStatus.value || schedule.status === selectedStatus.value)
-    )
-  })
-})
+    );
+  });
+});
 
 // Methods
 const toggleViewMode = () => {
-  viewMode.value = viewMode.value === "calendar" ? "list" : "calendar"
-}
+  viewMode.value = viewMode.value === 'calendar' ? 'list' : 'calendar';
+};
 
 const previousWeek = () => {
-  currentWeek.value.setDate(currentWeek.value.getDate() - 7)
-}
+  currentWeek.value.setDate(currentWeek.value.getDate() - 7);
+};
 
 const nextWeek = () => {
-  currentWeek.value.setDate(currentWeek.value.getDate() + 7)
-}
+  currentWeek.value.setDate(currentWeek.value.getDate() + 7);
+};
 
 const filterSchedules = () => {
   // Los filtros ya están reactivos en el computed
-}
+};
 
 const getSchedulesForDayAndHour = (day: string, hour: string) => {
   const dayMap: {[key: string]: string} = {
-    Lun: "lunes",
-    Mar: "martes",
-    Mié: "miercoles",
-    Jue: "jueves",
-    Vie: "viernes",
-    Sáb: "sabado",
-    Dom: "domingo",
-  }
+    Lun: 'lunes',
+    Mar: 'martes',
+    Mié: 'miercoles',
+    Jue: 'jueves',
+    Vie: 'viernes',
+    Sáb: 'sabado',
+    Dom: 'domingo',
+  };
 
   return filteredSchedules.value.filter(
-    (schedule) => schedule.dayOfWeek === dayMap[day] && schedule.startTime === hour
-  )
-}
+    (schedule) => schedule.dayOfWeek === dayMap[day] && schedule.startTime === hour,
+  );
+};
 
 const openScheduleModal = () => {
-  editingSchedule.value = null
-  resetScheduleForm()
-  showScheduleModal.value = true
-}
+  editingSchedule.value = null;
+  resetScheduleForm();
+  showScheduleModal.value = true;
+};
 
 const closeScheduleModal = () => {
-  showScheduleModal.value = false
-  editingSchedule.value = null
-  resetScheduleForm()
-}
+  showScheduleModal.value = false;
+  editingSchedule.value = null;
+  resetScheduleForm();
+};
 
 const resetScheduleForm = () => {
   Object.assign(scheduleForm, {
-    teacherId: "",
-    studentId: "",
-    instrument: "",
-    dayOfWeek: "",
-    startTime: "",
+    teacherId: '',
+    studentId: '',
+    instrument: '',
+    dayOfWeek: '',
+    startTime: '',
     duration: 60,
-  })
-}
+  });
+};
 
 const editSchedule = (schedule: any) => {
-  editingSchedule.value = schedule
+  editingSchedule.value = schedule;
   Object.assign(scheduleForm, {
     teacherId: schedule.teacherId,
     studentId: schedule.studentId,
@@ -567,51 +567,51 @@ const editSchedule = (schedule: any) => {
     dayOfWeek: schedule.dayOfWeek,
     startTime: schedule.startTime,
     duration: schedule.duration,
-  })
-  showScheduleModal.value = true
-}
+  });
+  showScheduleModal.value = true;
+};
 
 const saveSchedule = () => {
   // Aquí iría la lógica para guardar el horario
-  console.log("Guardando horario:", scheduleForm)
-  closeScheduleModal()
-}
+  console.log('Guardando horario:', scheduleForm);
+  closeScheduleModal();
+};
 
 const deleteSchedule = (scheduleId: string) => {
-  if (confirm("¿Estás seguro de que quieres eliminar este horario?")) {
-    schedules.value = schedules.value.filter((s) => s.id !== scheduleId)
+  if (confirm('¿Estás seguro de que quieres eliminar este horario?')) {
+    schedules.value = schedules.value.filter((s) => s.id !== scheduleId);
   }
-}
+};
 
 const openScheduleDetail = (schedule: any) => {
-  console.log("Detalle del horario:", schedule)
-}
+  console.log('Detalle del horario:', schedule);
+};
 
 const getStatusBadgeClass = (status: string) => {
   const classes = {
     activo:
-      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800",
+      'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800',
     pausado:
-      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800",
+      'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800',
     completado:
-      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800",
-  }
-  return classes[status as keyof typeof classes] || classes.activo
-}
+      'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800',
+  };
+  return classes[status as keyof typeof classes] || classes.activo;
+};
 
 const getStatusText = (status: string) => {
   const texts = {
-    activo: "Activo",
-    pausado: "Pausado",
-    completado: "Completado",
-  }
-  return texts[status as keyof typeof texts] || "Activo"
-}
+    activo: 'Activo',
+    pausado: 'Pausado',
+    completado: 'Completado',
+  };
+  return texts[status as keyof typeof texts] || 'Activo';
+};
 
 // Lifecycle
 onMounted(() => {
   // Cargar datos iniciales
-})
+});
 </script>
 
 <style scoped>

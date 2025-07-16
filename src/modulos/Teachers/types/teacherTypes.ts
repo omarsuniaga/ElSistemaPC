@@ -1,6 +1,6 @@
 // This file defines shared types used across the teacher module components.
 
-import type {FunctionalComponent, SVGAttributes} from "vue"
+import type { FunctionalComponent, SVGAttributes } from 'vue';
 
 export interface ClassScheduleSlot {
   day: string
@@ -38,7 +38,7 @@ export interface Notification {
   message: string
   date: Date | string | number // Allow various date representations
   read: boolean
-  type: "info" | "reminder" | "warning" | "error"
+  type: 'info' | 'reminder' | 'warning' | 'error'
 }
 
 // Interface for AbsenceAlertList component methods

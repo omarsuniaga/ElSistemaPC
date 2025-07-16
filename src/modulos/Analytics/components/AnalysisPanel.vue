@@ -430,10 +430,10 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import TopAbsenteesByRange from "@/components/TopAbsenteesByRange.vue"
-import Chart from "chart.js/auto"
-import {Line, Doughnut, Bar} from "vue-chartjs"
+import { ref, computed, watch, onMounted } from 'vue';
+import TopAbsenteesByRange from '@/components/TopAbsenteesByRange.vue';
+import Chart from 'chart.js/auto';
+import { Line, Doughnut, Bar } from 'vue-chartjs';
 import {
   ChartBarIcon,
   ExclamationTriangleIcon,
@@ -447,27 +447,27 @@ import {
   ClipboardDocumentCheckIcon,
   CalendarDaysIcon,
   CalendarIcon,
-} from "@heroicons/vue/24/outline"
-import ChartContainer from "../../Analytics/components/ChartContainer.vue"
-import {useRouter} from "vue-router"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useStudentsStore} from "../../Students/store/students"
-import {useTeachersStore} from "../../Teachers/store/teachers"
+} from '@heroicons/vue/24/outline';
+import ChartContainer from '../../Analytics/components/ChartContainer.vue';
+import { useRouter } from 'vue-router';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useStudentsStore } from '../../Students/store/students';
+import { useTeachersStore } from '../../Teachers/store/teachers';
 
-const router = useRouter()
+const router = useRouter();
 
 // Definir los eventos que este componente puede emitir
-const emit = defineEmits(["period-changed", "refresh-data"])
+const emit = defineEmits(['period-changed', 'refresh-data']);
 
 const showAllAtRiskStudents = () => {
-  router.push("/at-risk-students")
-}
+  router.push('/at-risk-students');
+};
 
-const attendanceStore = useAttendanceStore()
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-const teachersStore = useTeachersStore()
+const attendanceStore = useAttendanceStore();
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+const teachersStore = useTeachersStore();
 
 // --- Teacher Metrics Computed Property ---
 const teacherMetrics = computed(() => {
@@ -476,38 +476,38 @@ const teacherMetrics = computed(() => {
     const specialty =
       Array.isArray(teacher.specialties) && teacher.specialties.length > 0
         ? teacher.specialties[0]
-        : teacher.specialty || "No especificado"
+        : teacher.specialty || 'No especificado';
     // Class count
-    const teacherClasses = classesStore.classes.filter((c) => c.teacherId === teacher.id)
-    const classCount = teacherClasses.length
+    const teacherClasses = classesStore.classes.filter((c) => c.teacherId === teacher.id);
+    const classCount = teacherClasses.length;
     // Attendance: count how many classes have attendance records for this teacher
-    const teacherClassIds = teacherClasses.map((c) => c.id)
+    const teacherClassIds = teacherClasses.map((c) => c.id);
     // only include docs that have a data object
     const teacherAttendanceDocs = attendanceStore.attendanceDocuments.filter(
-      (doc) => doc.data && teacherClassIds.includes(doc.classId)
-    )
+      (doc) => doc.data && teacherClassIds.includes(doc.classId),
+    );
 
-    const totalAttendance = teacherAttendanceDocs.length
+    const totalAttendance = teacherAttendanceDocs.length;
     // Attendance rate: average attendance rate over these classes
-    let attendanceRate = 0
+    let attendanceRate = 0;
     if (totalAttendance > 0) {
-      let sum = 0
+      let sum = 0;
       teacherAttendanceDocs.forEach((doc) => {
-        const presentes = Array.isArray(doc.data.presentes) ? doc.data.presentes.length : 0
-        const tarde = Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0
-        const total = presentes + tarde
+        const presentes = Array.isArray(doc.data.presentes) ? doc.data.presentes.length : 0;
+        const tarde = Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0;
+        const total = presentes + tarde;
         const totalStudents =
           (Array.isArray(doc.data.presentes) ? doc.data.presentes.length : 0) +
           (Array.isArray(doc.data.ausentes) ? doc.data.ausentes.length : 0) +
-          (Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0)
-        sum += totalStudents > 0 ? (total / totalStudents) * 100 : 0
-      })
-      attendanceRate = sum / totalAttendance
+          (Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0);
+        sum += totalStudents > 0 ? (total / totalStudents) * 100 : 0;
+      });
+      attendanceRate = sum / totalAttendance;
     }
     // Efficiency: simple average of class count and attendance rate (normalize class count if needed)
     // For demo, efficiency = (attendanceRate + (classCount * 10)) / 2
     // Adjust this formula as needed
-    const efficiency = (attendanceRate + classCount * 10) / 2
+    const efficiency = (attendanceRate + classCount * 10) / 2;
     return {
       id: teacher.id,
       name: teacher.name,
@@ -515,9 +515,9 @@ const teacherMetrics = computed(() => {
       classCount,
       attendanceRate,
       efficiency,
-    }
-  })
-})
+    };
+  });
+});
 
 interface AbsentStudent {
   studentId: string
@@ -526,17 +526,17 @@ interface AbsentStudent {
   attendanceRate: number
 }
 
-const topAbsentees = ref<AbsentStudent[]>([])
+const topAbsentees = ref<AbsentStudent[]>([]);
 
 // Define props con valores por defecto para evitar errores de undefined
 const props = defineProps({
-  attendanceByDayOfWeek: {type: Object, required: true},
-  studentPerformance: {type: Object, required: true},
-  chartOptions: {type: Object, required: true},
-  doughnutOptions: {type: Object, default: () => ({})},
-  atRiskStudents: {type: Array, default: () => []},
-  bestAttendanceClasses: {type: Array, default: () => []},
-  lowestPerformanceIndicators: {type: Array, default: () => []},
+  attendanceByDayOfWeek: { type: Object, required: true },
+  studentPerformance: { type: Object, required: true },
+  chartOptions: { type: Object, required: true },
+  doughnutOptions: { type: Object, default: () => ({}) },
+  atRiskStudents: { type: Array, default: () => [] },
+  bestAttendanceClasses: { type: Array, default: () => [] },
+  lowestPerformanceIndicators: { type: Array, default: () => [] },
   studentsAnalytics: {
     type: Object,
     default: () => ({
@@ -546,9 +546,9 @@ const props = defineProps({
       periodTotal: 0,
     }),
   },
-  studentAttendanceTrend: {type: Object, default: () => ({})},
-  trendChartOptions: {type: Object, default: () => ({})},
-  instrumentPerformance: {type: Array, default: () => []},
+  studentAttendanceTrend: { type: Object, default: () => ({}) },
+  trendChartOptions: { type: Object, default: () => ({}) },
+  instrumentPerformance: { type: Array, default: () => [] },
   teachersAnalytics: {
     type: Object,
     default: () => ({
@@ -558,65 +558,65 @@ const props = defineProps({
       hoursWorked: 0,
     }),
   },
-  teacherAttendanceData: {type: Object, default: () => ({})},
-  barChartOptions: {type: Object, default: () => ({})},
-  teacherAttendanceBalance: {type: Array, default: () => []},
-  dailyAttendanceData: {type: Object, default: () => ({})},
-  lineChartOptions: {type: Object, default: () => ({})},
+  teacherAttendanceData: { type: Object, default: () => ({}) },
+  barChartOptions: { type: Object, default: () => ({}) },
+  teacherAttendanceBalance: { type: Array, default: () => [] },
+  dailyAttendanceData: { type: Object, default: () => ({}) },
+  lineChartOptions: { type: Object, default: () => ({}) },
   attendanceAnalytics: {
     type: Object,
     default: () => ({
       dailyAverage: 0,
-      peakDay: "",
+      peakDay: '',
       weeklyTotal: 0,
-      bestDay: "",
+      bestDay: '',
       monthlyTotal: 0,
       weeklyAverage: 0,
       growthRate: 0,
     }),
   },
-  weeklyAttendanceData: {type: Object, default: () => ({})},
-  monthlyAttendanceTrend: {type: Object, default: () => ({})},
+  weeklyAttendanceData: { type: Object, default: () => ({}) },
+  monthlyAttendanceTrend: { type: Object, default: () => ({}) },
   periods: {
     type: Array,
-    default: () => [{id: "current", nombre: "Periodo Actual"}],
+    default: () => [{ id: 'current', nombre: 'Periodo Actual' }],
   },
   tabs: {
     type: Array,
-    default: () => [{id: "general", nombre: "General"}],
+    default: () => [{ id: 'general', nombre: 'General' }],
   },
-})
+});
 
-const selectedPeriod = ref(props.periods.length > 0 ? props.periods[0].id : "current")
-const customDateRange = ref(false)
-const dateRange = ref({startDate: "", endDate: ""})
-const selectedTab = ref(props.tabs.length > 0 ? props.tabs[0].id : "general")
+const selectedPeriod = ref(props.periods.length > 0 ? props.periods[0].id : 'current');
+const customDateRange = ref(false);
+const dateRange = ref({ startDate: '', endDate: '' });
+const selectedTab = ref(props.tabs.length > 0 ? props.tabs[0].id : 'general');
 
 // Watcher para el cambio de período
 watch(selectedPeriod, (newPeriod) => {
   // Actualizar el estado de fecha personalizada
-  customDateRange.value = newPeriod === "custom"
+  customDateRange.value = newPeriod === 'custom';
 
   // Emitir evento para notificar al componente padre sobre el cambio de período
-  emit("period-changed", {
+  emit('period-changed', {
     period: newPeriod,
-    dateRange: newPeriod === "custom" ? dateRange.value : null,
-  })
+    dateRange: newPeriod === 'custom' ? dateRange.value : null,
+  });
 
   // Si es un período predefinido, actualizar automáticamente los datos
-  if (newPeriod !== "custom") {
+  if (newPeriod !== 'custom') {
     // Aquí se podrían cargar datos específicos para el período seleccionado
     // Por ejemplo, emitir un evento para que el componente padre actualice los datos
-    emit("refresh-data", {period: newPeriod})
+    emit('refresh-data', { period: newPeriod });
   }
-})
+});
 
 // --- NUEVO: Cálculo del día con más asistencias ---
 // Usar sólo datos reales de attendanceStore para este análisis.
-const bestAttendanceDay = ref({bestDay: "", total: 0, attendanceByDay: {}})
+const bestAttendanceDay = ref({ bestDay: '', total: 0, attendanceByDay: {} });
 
 async function calcularDiaMayorAsistencia(startDate, endDate) {
-  await attendanceStore.fetchAttendanceByDateRange(startDate, endDate)
+  await attendanceStore.fetchAttendanceByDateRange(startDate, endDate);
   const attendanceByDay = {
     Domingo: 0,
     Lunes: 0,
@@ -625,111 +625,111 @@ async function calcularDiaMayorAsistencia(startDate, endDate) {
     Jueves: 0,
     Viernes: 0,
     Sábado: 0,
-  }
+  };
 
   attendanceStore.attendanceDocuments.forEach((doc) => {
     // skip any doc without a data object
-    if (!doc.data) return
+    if (!doc.data) return;
 
-    const date = new Date(doc.fecha)
-    const dayIndex = date.getDay()
-    const dayName = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"][
+    const date = new Date(doc.fecha);
+    const dayIndex = date.getDay();
+    const dayName = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][
       dayIndex
-    ]
+    ];
 
-    const presentes = Array.isArray(doc.data.presentes) ? doc.data.presentes.length : 0
-    const tarde = Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0
-    attendanceByDay[dayName] += presentes + tarde
-  })
+    const presentes = Array.isArray(doc.data.presentes) ? doc.data.presentes.length : 0;
+    const tarde = Array.isArray(doc.data.tarde) ? doc.data.tarde.length : 0;
+    attendanceByDay[dayName] += presentes + tarde;
+  });
 
-  let bestDay = ""
-  let max = 0
+  let bestDay = '';
+  let max = 0;
   for (const [day, total] of Object.entries(attendanceByDay)) {
     if (total > max) {
-      max = total
-      bestDay = day
+      max = total;
+      bestDay = day;
     }
   }
-  bestAttendanceDay.value = {bestDay, total: max, attendanceByDay}
+  bestAttendanceDay.value = { bestDay, total: max, attendanceByDay };
 }
 
 // --- NUEVO: Alumnos con más ausencias en el rango seleccionado ---
 // Usar sólo datos reales de attendanceStore y studentsStore para este análisis.
 function studentNombre(studentId: string) {
-  const student = studentsStore.getStudentById(studentId)
+  const student = studentsStore.getStudentById(studentId);
   if (student) {
-    return `${student.nombre || ""} ${student.apellido || ""}`.trim()
+    return `${student.nombre || ''} ${student.apellido || ''}`.trim();
   }
-  return studentId
+  return studentId;
 }
 
 async function calcularTopAbsentees(startDate: string, endDate: string) {
-  await attendanceStore.fetchAttendanceByDateRange(startDate, endDate)
+  await attendanceStore.fetchAttendanceByDateRange(startDate, endDate);
   // Usa el método del store para calcular ausentes
-  topAbsentees.value = attendanceStore.calculateAbsentStudents(10)
+  topAbsentees.value = attendanceStore.calculateAbsentStudents(10);
 }
 
 onMounted(async () => {
-  await classesStore.fetchClasses()
-  await studentsStore.$patch({students: []}) // Limpia para evitar duplicados
+  await classesStore.fetchClasses();
+  await studentsStore.$patch({ students: [] }); // Limpia para evitar duplicados
   await studentsStore.$reset?.() // Si existe método para resetear
   ;(await studentsStore.$state.loading) ||
     (await studentsStore.$state.error) ||
     (await studentsStore.$state.lastSync) ||
-    (await studentsStore.$state.students)
-  if (typeof studentsStore.fetchStudents === "function") {
-    await studentsStore.fetchStudents()
+    (await studentsStore.$state.students);
+  if (typeof studentsStore.fetchStudents === 'function') {
+    await studentsStore.fetchStudents();
   }
   // Por ejemplo, analizar el último mes:
-  const endDate = new Date()
-  const startDate = new Date()
-  startDate.setMonth(endDate.getMonth() - 1)
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setMonth(endDate.getMonth() - 1);
   await calcularDiaMayorAsistencia(
     startDate.toISOString().slice(0, 10),
-    endDate.toISOString().slice(0, 10)
-  )
+    endDate.toISOString().slice(0, 10),
+  );
   await calcularTopAbsentees(
     startDate.toISOString().slice(0, 10),
-    endDate.toISOString().slice(0, 10)
-  )
-})
+    endDate.toISOString().slice(0, 10),
+  );
+});
 
 const absenceRange = ref({
   start: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().slice(0, 10),
   end: new Date().toISOString().slice(0, 10),
-})
+});
 
 async function filtrarAusenciasPorRango() {
-  await calcularTopAbsentees(absenceRange.value.start, absenceRange.value.end)
+  await calcularTopAbsentees(absenceRange.value.start, absenceRange.value.end);
 }
 
-const absenceSort = ref("absences")
+const absenceSort = ref('absences');
 
 const sortedAbsentees = computed(() => {
-  if (!topAbsentees.value) return []
-  const arr = [...topAbsentees.value]
-  if (absenceSort.value === "attendanceRate") {
-    return arr.sort((a, b) => a.attendanceRate - b.attendanceRate) // Menor % asistencia primero
-  } else if (absenceSort.value === "lastAttendance") {
-    return arr.sort((a, b) => (a.lastAttendance < b.lastAttendance ? 1 : -1)) // Más reciente primero
+  if (!topAbsentees.value) return [];
+  const arr = [...topAbsentees.value];
+  if (absenceSort.value === 'attendanceRate') {
+    return arr.sort((a, b) => a.attendanceRate - b.attendanceRate); // Menor % asistencia primero
+  } else if (absenceSort.value === 'lastAttendance') {
+    return arr.sort((a, b) => (a.lastAttendance < b.lastAttendance ? 1 : -1)); // Más reciente primero
   } else {
-    return arr.sort((a, b) => b.absences - a.absences) // Más ausencias primero
+    return arr.sort((a, b) => b.absences - a.absences); // Más ausencias primero
   }
-})
+});
 
 /**
  * Formatea una fecha de 'YYYY-MM-DD' a 'DD-MM-AAAA'
  */
 function formatDate(dateString: string): string {
-  if (!dateString) return ""
+  if (!dateString) return '';
 
   // Validar que el formato de entrada sea correcto
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
 
   // Dividir la fecha en partes
-  const [year, month, day] = dateString.split("-")
+  const [year, month, day] = dateString.split('-');
 
   // Retornar en formato DD-MM-AAAA
-  return `${day}-${month}-${year}`
+  return `${day}-${month}-${year}`;
 }
 </script>

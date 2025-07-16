@@ -1,142 +1,3 @@
-<script setup lang="ts">
-import {ref} from "vue"
-import {
-  UserCircleIcon,
-  ClipboardDocumentCheckIcon,
-  BookOpenIcon,
-  AcademicCapIcon,
-  DocumentIcon,
-  ChatBubbleLeftRightIcon,
-  UserGroupIcon,
-  ClockIcon,
-  PhotoIcon,
-  MicrophoneIcon,
-  PaperClipIcon,
-  XMarkIcon,
-} from "@heroicons/vue/24/outline"
-
-// Define proper types for the activities
-interface Attachment {
-  id: string
-  name: string
-  type: string
-  size: string
-  url: string
-}
-
-interface ActivityMetadata {
-  present?: number
-  absent?: number
-  score?: number
-  dueDate?: string
-}
-
-interface Activity {
-  id: string
-  type:
-    | "system"
-    | "attendance"
-    | "content"
-    | "evaluation"
-    | "task"
-    | "message"
-    | "student_added"
-    | "schedule_change"
-    | "student_action"
-  user: string
-  content: string
-  timestamp: string
-  metadata?: ActivityMetadata
-  attachments?: Attachment[]
-  important?: boolean
-}
-
-const props = defineProps({
-  activities: {
-    type: Array as () => Activity[],
-    required: true,
-    default: () => [],
-  },
-})
-
-const emit = defineEmits(["download-attachment"])
-
-// Helper functions
-const formattedTime = (timestamp: string) => {
-  const date = new Date(timestamp)
-  return date.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})
-}
-
-const formattedDate = (timestamp: string) => {
-  const date = new Date(timestamp)
-  const today = new Date()
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-
-  if (date.toDateString() === today.toDateString()) {
-    return "Hoy"
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return "Ayer"
-  } else {
-    return date.toLocaleDateString()
-  }
-}
-
-// Add the missing formatDate function
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
-
-// Activity icon selection
-const showActivityIcon = (type: Activity["type"]) => {
-  switch (type) {
-    case "system":
-      return UserCircleIcon
-    case "attendance":
-      return ClipboardDocumentCheckIcon
-    case "content":
-      return BookOpenIcon
-    case "evaluation":
-      return AcademicCapIcon
-    case "task":
-      return DocumentIcon
-    case "message":
-      return ChatBubbleLeftRightIcon
-    case "student_added":
-      return UserGroupIcon
-    case "schedule_change":
-      return ClockIcon
-    case "student_action":
-      return UserCircleIcon
-    default:
-      return UserCircleIcon
-  }
-}
-
-// File icon selection
-const getFileIcon = (mimeType: string) => {
-  if (mimeType.startsWith("image/")) {
-    return PhotoIcon
-  } else if (mimeType.startsWith("audio/")) {
-    return MicrophoneIcon
-  } else if (mimeType.startsWith("application/pdf")) {
-    return DocumentIcon
-  } else {
-    return PaperClipIcon
-  }
-}
-
-// Handle attachment download
-const handleDownloadAttachment = (attachment: Attachment) => {
-  emit("download-attachment", attachment)
-}
-</script>
-
 <template>
   <div class="pb-20 activity-feed">
     <div v-for="(activity, index) in activities" :key="activity.id" class="mb-4">
@@ -257,6 +118,145 @@ v-for="file in activity.attachments" :key="file.id"
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import {
+  UserCircleIcon,
+  ClipboardDocumentCheckIcon,
+  BookOpenIcon,
+  AcademicCapIcon,
+  DocumentIcon,
+  ChatBubbleLeftRightIcon,
+  UserGroupIcon,
+  ClockIcon,
+  PhotoIcon,
+  MicrophoneIcon,
+  PaperClipIcon,
+  XMarkIcon,
+} from '@heroicons/vue/24/outline';
+
+// Define proper types for the activities
+interface Attachment {
+  id: string
+  name: string
+  type: string
+  size: string
+  url: string
+}
+
+interface ActivityMetadata {
+  present?: number
+  absent?: number
+  score?: number
+  dueDate?: string
+}
+
+interface Activity {
+  id: string
+  type:
+    | 'system'
+    | 'attendance'
+    | 'content'
+    | 'evaluation'
+    | 'task'
+    | 'message'
+    | 'student_added'
+    | 'schedule_change'
+    | 'student_action'
+  user: string
+  content: string
+  timestamp: string
+  metadata?: ActivityMetadata
+  attachments?: Attachment[]
+  important?: boolean
+}
+
+const props = defineProps({
+  activities: {
+    type: Array as () => Activity[],
+    required: true,
+    default: () => [],
+  },
+});
+
+const emit = defineEmits(['download-attachment']);
+
+// Helper functions
+const formattedTime = (timestamp: string) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const formattedDate = (timestamp: string) => {
+  const date = new Date(timestamp);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return 'Hoy';
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return 'Ayer';
+  } else {
+    return date.toLocaleDateString();
+  }
+};
+
+// Add the missing formatDate function
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+// Activity icon selection
+const showActivityIcon = (type: Activity['type']) => {
+  switch (type) {
+  case 'system':
+    return UserCircleIcon;
+  case 'attendance':
+    return ClipboardDocumentCheckIcon;
+  case 'content':
+    return BookOpenIcon;
+  case 'evaluation':
+    return AcademicCapIcon;
+  case 'task':
+    return DocumentIcon;
+  case 'message':
+    return ChatBubbleLeftRightIcon;
+  case 'student_added':
+    return UserGroupIcon;
+  case 'schedule_change':
+    return ClockIcon;
+  case 'student_action':
+    return UserCircleIcon;
+  default:
+    return UserCircleIcon;
+  }
+};
+
+// File icon selection
+const getFileIcon = (mimeType: string) => {
+  if (mimeType.startsWith('image/')) {
+    return PhotoIcon;
+  } else if (mimeType.startsWith('audio/')) {
+    return MicrophoneIcon;
+  } else if (mimeType.startsWith('application/pdf')) {
+    return DocumentIcon;
+  } else {
+    return PaperClipIcon;
+  }
+};
+
+// Handle attachment download
+const handleDownloadAttachment = (attachment: Attachment) => {
+  emit('download-attachment', attachment);
+};
+</script>
 
 <style scoped>
 .activity-feed {

@@ -7,7 +7,7 @@
 /**
  * Estándares de Arquitectura y Estructura
  */
-export const ARCHITECTURE_STANDARDS = {
+const ARCHITECTURE_STANDARDS = {
   MAX_FILE_LINES: 600,
   FOLDER_STRUCTURE: {
     COMPONENTS: 'components/',
@@ -25,12 +25,12 @@ export const ARCHITECTURE_STANDARDS = {
     'Services',
     'Firestore'
   ]
-} as const;
+};
 
 /**
  * Estándares de UI/UX
  */
-export const UI_UX_STANDARDS = {
+const UI_UX_STANDARDS = {
   THEMES: {
     LIGHT: 'light',
     DARK: 'dark',
@@ -47,12 +47,12 @@ export const UI_UX_STANDARDS = {
     DURATION: '300ms',
     TIMING_FUNCTION: 'cubic-bezier(0.4, 0, 0.2, 1)'
   }
-} as const;
+};
 
 /**
  * Estándares de Rendimiento
  */
-export const PERFORMANCE_STANDARDS = {
+const PERFORMANCE_STANDARDS = {
   MAX_ASSET_SIZE: '100kb',
   MAX_INITIAL_LOAD: '200kb',
   MAX_CHUNK_SIZE: '500kb',
@@ -61,12 +61,12 @@ export const PERFORMANCE_STANDARDS = {
     API: 'NetworkFirst',
     FALLBACK: 'CacheFirst'
   }
-} as const;
+};
 
 /**
  * Estándares de Código
  */
-export const CODE_STANDARDS = {
+const CODE_STANDARDS = {
   NAMING: {
     COMPONENTS: 'PascalCase',
     COMPOSABLES: 'useCamelCase',
@@ -86,12 +86,12 @@ export const CODE_STANDARDS = {
       'Assets'
     ]
   }
-} as const;
+};
 
 /**
  * Estándares de PWA
  */
-export const PWA_STANDARDS = {
+const PWA_STANDARDS = {
   CACHE_NAME: 'music-academy-cache-v1',
   PRECACHE: [
     '/',
@@ -105,14 +105,14 @@ export const PWA_STANDARDS = {
     'cors',
     'default'
   ]
-} as const;
+};
 
 /**
  * Verifica si un archivo cumple con los estándares de tamaño
  * @param filePath Ruta del archivo a verificar
  * @returns boolean - true si cumple con los estándares
  */
-export function checkFileSize(fileContent: string): boolean {
+function checkFileSize(fileContent) {
   const lineCount = fileContent.split('\n').length;
   return lineCount <= ARCHITECTURE_STANDARDS.MAX_FILE_LINES;
 }
@@ -122,7 +122,7 @@ export function checkFileSize(fileContent: string): boolean {
  * @param componentContent Contenido del componente
  * @returns boolean - true si la estructura es válida
  */
-export function validateComponentStructure(componentContent: string): boolean {
+function validateComponentStructure(componentContent) {
   const requiredSections = [
     '<template>',
     '<script',
@@ -138,7 +138,7 @@ export function validateComponentStructure(componentContent: string): boolean {
  * Obtiene los estándares en formato legible
  * @returns string - Estándares formateados
  */
-export function getFormattedStandards(): string {
+function getFormattedStandards() {
   return `
     ===== ESTÁNDARES DE DESARROLLO =====
     
@@ -161,17 +161,13 @@ export function getFormattedStandards(): string {
 }
 
 // Exportar todos los estándares
-export const DEVELOPMENT_STANDARDS = {
-  ARCHITECTURE: ARCHITECTURE_STANDARDS,
-  UI_UX: UI_UX_STANDARDS,
-  PERFORMANCE: PERFORMANCE_STANDARDS,
-  CODE: CODE_STANDARDS,
-  PWA: PWA_STANDARDS,
-  validators: {
-    checkFileSize,
-    validateComponentStructure,
-    getFormattedStandards
-  }
-} as const;
-
-export default DEVELOPMENT_STANDARDS;
+module.exports = {
+  ARCHITECTURE_STANDARDS,
+  UI_UX_STANDARDS,
+  PERFORMANCE_STANDARDS,
+  CODE_STANDARDS,
+  PWA_STANDARDS,
+  checkFileSize,
+  validateComponentStructure,
+  getFormattedStandards
+};

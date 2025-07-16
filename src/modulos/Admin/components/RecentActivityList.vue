@@ -119,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
+import { ref, computed } from 'vue';
 import {
   BellIcon,
   EyeIcon,
@@ -131,19 +131,19 @@ import {
   AcademicCapIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-} from "@heroicons/vue/24/outline"
-import ActivityDetailModal from "./ActivityDetailModal.vue"
+} from '@heroicons/vue/24/outline';
+import ActivityDetailModal from './ActivityDetailModal.vue';
 
 interface Activity {
   id: string
-  type: "create" | "update" | "delete" | "login" | "assignment" | "approval"
+  type: 'create' | 'update' | 'delete' | 'login' | 'assignment' | 'approval'
   entity: string
   description: string
   user: string
   timestamp: Date
   icon?: string
   color?: string
-  priority?: "low" | "medium" | "high"
+  priority?: 'low' | 'medium' | 'high'
   metadata?: any
 }
 
@@ -158,15 +158,15 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   hasMore: false,
   loadingMore: false,
-})
+});
 
 const emit = defineEmits<{
   loadMore: []
   activityClick: [activity: Activity]
-}>()
+}>();
 
 // State
-const selectedActivity = ref<Activity | null>(null)
+const selectedActivity = ref<Activity | null>(null);
 
 // Icon mapping for different activity types
 const activityIcons = {
@@ -177,84 +177,84 @@ const activityIcons = {
   assignment: UserGroupIcon,
   approval: CheckCircleIcon,
   default: BellIcon,
-}
+};
 
 // Methods
 const getActivityIcon = (activity: Activity) => {
-  return activityIcons[activity.type] || activityIcons.default
-}
+  return activityIcons[activity.type] || activityIcons.default;
+};
 
 const getActivityIconBg = (activity: Activity) => {
   const colorMap = {
-    create: "bg-green-100 dark:bg-green-900/20",
-    update: "bg-blue-100 dark:bg-blue-900/20",
-    delete: "bg-red-100 dark:bg-red-900/20",
-    login: "bg-purple-100 dark:bg-purple-900/20",
-    assignment: "bg-orange-100 dark:bg-orange-900/20",
-    approval: "bg-green-100 dark:bg-green-900/20",
-    default: "bg-gray-100 dark:bg-gray-700",
-  }
+    create: 'bg-green-100 dark:bg-green-900/20',
+    update: 'bg-blue-100 dark:bg-blue-900/20',
+    delete: 'bg-red-100 dark:bg-red-900/20',
+    login: 'bg-purple-100 dark:bg-purple-900/20',
+    assignment: 'bg-orange-100 dark:bg-orange-900/20',
+    approval: 'bg-green-100 dark:bg-green-900/20',
+    default: 'bg-gray-100 dark:bg-gray-700',
+  };
 
-  return colorMap[activity.type] || colorMap.default
-}
+  return colorMap[activity.type] || colorMap.default;
+};
 
 const getActivityIconColor = (activity: Activity) => {
   const colorMap = {
-    create: "text-green-600 dark:text-green-400",
-    update: "text-blue-600 dark:text-blue-400",
-    delete: "text-red-600 dark:text-red-400",
-    login: "text-purple-600 dark:text-purple-400",
-    assignment: "text-orange-600 dark:text-orange-400",
-    approval: "text-green-600 dark:text-green-400",
-    default: "text-gray-600 dark:text-gray-400",
-  }
+    create: 'text-green-600 dark:text-green-400',
+    update: 'text-blue-600 dark:text-blue-400',
+    delete: 'text-red-600 dark:text-red-400',
+    login: 'text-purple-600 dark:text-purple-400',
+    assignment: 'text-orange-600 dark:text-orange-400',
+    approval: 'text-green-600 dark:text-green-400',
+    default: 'text-gray-600 dark:text-gray-400',
+  };
 
-  return colorMap[activity.type] || colorMap.default
-}
+  return colorMap[activity.type] || colorMap.default;
+};
 
 const getPriorityColor = (priority: string) => {
   const colorMap = {
-    low: "bg-green-400",
-    medium: "bg-yellow-400",
-    high: "bg-red-400",
-  }
+    low: 'bg-green-400',
+    medium: 'bg-yellow-400',
+    high: 'bg-red-400',
+  };
 
-  return colorMap[priority as keyof typeof colorMap] || "bg-gray-400"
-}
+  return colorMap[priority as keyof typeof colorMap] || 'bg-gray-400';
+};
 
 const formatTimeAgo = (timestamp: Date): string => {
-  const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000)
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
-    return "Ahora"
+    return 'Ahora';
   } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60)
-    return `${minutes}m`
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes}m`;
   } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600)
-    return `${hours}h`
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours}h`;
   } else {
-    const days = Math.floor(diffInSeconds / 86400)
-    return `${days}d`
+    const days = Math.floor(diffInSeconds / 86400);
+    return `${days}d`;
   }
-}
+};
 
 const formatMetadata = (metadata: any): string => {
-  if (typeof metadata === "string") return metadata
-  if (typeof metadata === "object") {
+  if (typeof metadata === 'string') return metadata;
+  if (typeof metadata === 'object') {
     // Format object metadata as key-value pairs
     return Object.entries(metadata)
       .map(([key, value]) => `${key}: ${value}`)
-      .join(", ")
+      .join(', ');
   }
-  return String(metadata)
-}
+  return String(metadata);
+};
 
 const showActivityDetails = (activity: Activity) => {
-  selectedActivity.value = activity
-  emit("activityClick", activity)
-}
+  selectedActivity.value = activity;
+  emit('activityClick', activity);
+};
 </script>
 
 <style scoped>

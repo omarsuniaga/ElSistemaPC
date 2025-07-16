@@ -218,9 +218,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, watch} from "vue"
-import {Timestamp} from "firebase/firestore"
-import type {PlanAccion, ObjetivoPlan, FasePlan} from "../types"
+import { ref, watch } from 'vue';
+import { Timestamp } from 'firebase/firestore';
+import type { PlanAccion, ObjetivoPlan, FasePlan } from '../types';
 
 interface Props {
   show: boolean
@@ -230,28 +230,28 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "submit", data: Omit<PlanAccion, "id" | "auditoria">): void
+  (e: 'close'): void
+  (e: 'submit', data: Omit<PlanAccion, 'id' | 'auditoria'>): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   teachers: () => [],
-})
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
-const isSubmitting = ref(false)
+const isSubmitting = ref(false);
 
 const defaultPlanData = () => ({
-  obraId: props.workId || "",
-  nombre: "",
-  descripcion: "",
-  fechaInicio: new Date().toISOString().split("T")[0],
-  fechaFinalizacion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-  responsableId: "",
-  estado: "activo" as const,
-  objetivos: [] as Omit<ObjetivoPlan, "id" | "completado" | "progreso">[],
-  fases: [] as Omit<FasePlan, "id" | "completada" | "progreso">[],
+  obraId: props.workId || '',
+  nombre: '',
+  descripcion: '',
+  fechaInicio: new Date().toISOString().split('T')[0],
+  fechaFinalizacion: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  responsableId: '',
+  estado: 'activo' as const,
+  objetivos: [] as Omit<ObjetivoPlan, 'id' | 'completado' | 'progreso'>[],
+  fases: [] as Omit<FasePlan, 'id' | 'completada' | 'progreso'>[],
   metadatos: {
     progresoPorcentaje: 0,
     fasesCompletadas: 0,
@@ -259,9 +259,9 @@ const defaultPlanData = () => ({
     horasEstimadas: 0,
     horasReales: 0,
   },
-})
+});
 
-const planData = ref(defaultPlanData())
+const planData = ref(defaultPlanData());
 
 // Watch for plan prop changes to populate form
 watch(
@@ -271,7 +271,7 @@ watch(
       planData.value = {
         obraId: newPlan.obraId,
         nombre: newPlan.nombre,
-        descripcion: newPlan.descripcion || "",
+        descripcion: newPlan.descripcion || '',
         fechaInicio: formatDateForInput(newPlan.fechaInicio),
         fechaFinalizacion: formatDateForInput(newPlan.fechaFinalizacion),
         responsableId: newPlan.responsableId,
@@ -283,7 +283,7 @@ watch(
         })),
         fases: newPlan.fases.map((fase) => ({
           nombre: fase.nombre,
-          descripcion: fase.descripcion || "",
+          descripcion: fase.descripcion || '',
           orden: fase.orden,
           fechaInicio: fase.fechaInicio,
           fechaFinalizacion: fase.fechaFinalizacion,
@@ -291,61 +291,61 @@ watch(
           dependencias: fase.dependencias,
         })),
         metadatos: newPlan.metadatos,
-      }
+      };
     } else {
-      planData.value = defaultPlanData()
+      planData.value = defaultPlanData();
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 function formatDateForInput(timestamp: Timestamp | Date | string): string {
   if (timestamp instanceof Timestamp) {
-    return timestamp.toDate().toISOString().split("T")[0]
+    return timestamp.toDate().toISOString().split('T')[0];
   } else if (timestamp instanceof Date) {
-    return timestamp.toISOString().split("T")[0]
-  } else if (typeof timestamp === "string") {
-    return new Date(timestamp).toISOString().split("T")[0]
+    return timestamp.toISOString().split('T')[0];
+  } else if (typeof timestamp === 'string') {
+    return new Date(timestamp).toISOString().split('T')[0];
   }
-  return new Date().toISOString().split("T")[0]
+  return new Date().toISOString().split('T')[0];
 }
 
 const addObjetivo = () => {
   planData.value.objetivos.push({
-    descripcion: "",
+    descripcion: '',
     criteriosExito: [],
     fechaLimite: undefined,
-  })
-}
+  });
+};
 
 const removeObjetivo = (index: number) => {
-  planData.value.objetivos.splice(index, 1)
-}
+  planData.value.objetivos.splice(index, 1);
+};
 
 const addFase = () => {
   planData.value.fases.push({
-    nombre: "",
-    descripcion: "",
+    nombre: '',
+    descripcion: '',
     orden: planData.value.fases.length + 1,
     fechaInicio: Timestamp.now(),
     fechaFinalizacion: Timestamp.now(),
     tareas: [],
     dependencias: [],
-  })
-}
+  });
+};
 
 const removeFase = (index: number) => {
-  planData.value.fases.splice(index, 1)
-}
+  planData.value.fases.splice(index, 1);
+};
 
 const closeModal = () => {
-  planData.value = defaultPlanData()
-  emit("close")
-}
+  planData.value = defaultPlanData();
+  emit('close');
+};
 
 const handleSubmit = async () => {
   try {
-    isSubmitting.value = true
+    isSubmitting.value = true;
 
     // Convert dates to Timestamps
     const dataToSubmit = {
@@ -356,14 +356,14 @@ const handleSubmit = async () => {
         ...planData.value.metadatos,
         totalFases: planData.value.fases.length,
       },
-    }
+    };
 
-    emit("submit", dataToSubmit)
-    closeModal()
+    emit('submit', dataToSubmit);
+    closeModal();
   } catch (error) {
-    console.error("Error submitting plan:", error)
+    console.error('Error submitting plan:', error);
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
-}
+};
 </script>

@@ -1,17 +1,3 @@
-<script setup lang="ts">
-import {type FunctionalComponent} from "vue"
-import {UserGroupIcon, ClockIcon, BookOpenIcon, CalendarIcon} from "@heroicons/vue/24/outline"
-
-const props = defineProps<{
-  metrics: Array<{
-    title: string
-    value: number
-    icon: FunctionalComponent
-    color: string
-  }>
-}>()
-</script>
-
 <template>
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
     <div
@@ -33,6 +19,20 @@ const props = defineProps<{
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { type FunctionalComponent } from 'vue';
+import { UserGroupIcon, ClockIcon, BookOpenIcon, CalendarIcon } from '@heroicons/vue/24/outline';
+
+const props = defineProps<{
+  metrics: Array<{
+    title: string
+    value: number
+    icon: FunctionalComponent
+    color: string
+  }>
+}>();
+</script>
 
 <style scoped>
 /* Add any specific styles for the metrics section here */

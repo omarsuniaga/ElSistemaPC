@@ -4,205 +4,6 @@ Vista de confirmación y exportación después de guardar asistencia
 Muestra resumen y opciones para exportar a PDF o volver al calendario
 -->
 
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { format, parseISO } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { useAttendanceStore } from '../../store/attendance'
-import { useClassesStore } from '../../../Classes/store/classes'
-import { useStudentsStore } from '../../../Students/store/students'
-import { useAuthStore } from '../../../../stores/auth'
-
-// Props de la ruta
-interface Props {
-  date: string // YYYYMMDD format from URL
-  classId: string
-}
-
-const props = defineProps<Props>()
-const router = useRouter()
-const route = useRoute()
-
-// Stores
-const attendanceStore = useAttendanceStore()
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-const authStore = useAuthStore()
-
-// Estado del componente
-const isLoading = ref(true)
-const isExporting = ref(false)
-const attendanceDocument = ref<any>(null)
-const classData = ref<any>(null)
-const studentsData = ref<any[]>([])
-
-// Computed properties
-const formattedDate = computed(() => {
-  if (!props.date) return ''
-  
-  // Convertir YYYYMMDD a YYYY-MM-DD
-  const dateStr = `${props.date.slice(0, 4)}-${props.date.slice(4, 6)}-${props.date.slice(6, 8)}`
-  const date = parseISO(dateStr)
-  return format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es }).replace(/^\w/, (c) =>
-    c.toUpperCase()
-  )
-})
-
-const dateForStore = computed(() => {
-  if (!props.date) return ''
-  // Convertir YYYYMMDD a YYYY-MM-DD para el store
-  return `${props.date.slice(0, 4)}-${props.date.slice(4, 6)}-${props.date.slice(6, 8)}`
-})
-
-const currentTeacher = computed(() => ({
-  name: authStore.user?.email || 'Maestro',
-  id: authStore.user?.uid,
-}))
-
-const wasSuccessful = computed(() => {
-  return route.query.success === 'true'
-})
-
-// Estadísticas de asistencia
-const attendanceStats = computed(() => {
-  if (!attendanceDocument.value?.students) {
-    return { presente: 0, ausente: 0, tardanza: 0, total: 0 }
-  }
-
-  const stats = attendanceDocument.value.students.reduce(
-    (acc: any, student: any) => {
-      acc.total++
-      acc[student.status] = (acc[student.status] || 0) + 1
-      return acc
-    },
-    { presente: 0, ausente: 0, tardanza: 0, total: 0 }
-  )
-
-  return stats
-})
-
-const attendanceRate = computed(() => {
-  if (attendanceStats.value.total === 0) return 0
-  return Math.round((attendanceStats.value.presente / attendanceStats.value.total) * 100)
-})
-
-// Métodos principales
-const loadAttendanceData = async () => {
-  if (!props.date || !props.classId || !currentTeacher.value.id) {
-    console.error('❌ [ShareAttendance] Datos de ruta incompletos')
-    return
-  }
-
-  isLoading.value = true
-
-  try {
-    console.log('📋 [ShareAttendance] Loading attendance data:', {
-      date: dateForStore.value,
-      classId: props.classId,
-      teacherId: currentTeacher.value.id
-    })
-
-    // 1. Cargar el documento de asistencia
-    await attendanceStore.fetchAttendanceDocument(
-      dateForStore.value,
-      props.classId,
-      currentTeacher.value.id
-    )
-
-    // 2. Obtener el documento desde el store
-    attendanceDocument.value = attendanceStore.getCurrentAttendanceDocument(
-      dateForStore.value,
-      props.classId
-    )
-
-    // 3. Cargar datos de la clase
-    await classesStore.fetchClassById(props.classId)
-    classData.value = classesStore.getClassById(props.classId)
-
-    // 4. Cargar datos de los estudiantes
-    if (classData.value?.studentIds && classData.value.studentIds.length > 0) {
-      await studentsStore.fetchStudentsByIds(classData.value.studentIds)
-      studentsData.value = studentsStore.getStudentsByIds(classData.value.studentIds)
-    }
-
-    console.log('✅ [ShareAttendance] Data loaded successfully')
-
-  } catch (err) {
-    console.error('❌ [ShareAttendance] Error loading attendance data:', err)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const exportToPDF = async () => {
-  if (!attendanceDocument.value) return
-
-  isExporting.value = true
-
-  try {
-    console.log('📄 [ShareAttendance] Exporting to PDF...')
-
-    // TODO: Implementar exportación a PDF
-    // Aquí se podría usar jsPDF o llamar a un endpoint del backend
-    
-    // Simular exportación
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    console.log('✅ [ShareAttendance] PDF exported successfully')
-    
-    // Mostrar mensaje de éxito o descargar automáticamente
-    alert('📄 PDF generado exitosamente')
-
-  } catch (err) {
-    console.error('❌ [ShareAttendance] Error exporting PDF:', err)
-    alert('❌ Error al generar el PDF')
-  } finally {
-    isExporting.value = false
-  }
-}
-
-const shareViaWhatsApp = () => {
-  if (!attendanceDocument.value || !classData.value) return
-
-  const message = `📋 *Asistencia Registrada*\n\n` +
-    `📅 Fecha: ${formattedDate.value}\n` +
-    `📚 Clase: ${classData.value.name || classData.value.instrument}\n` +
-    `👥 Total estudiantes: ${attendanceStats.value.total}\n` +
-    `✅ Presentes: ${attendanceStats.value.presente}\n` +
-    `❌ Ausentes: ${attendanceStats.value.ausente}\n` +
-    `⏰ Tardanzas: ${attendanceStats.value.tardanza}\n` +
-    `📊 Tasa de asistencia: ${attendanceRate.value}%\n\n` +
-    `_Generado por Academia Musical_`
-
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-  window.open(whatsappUrl, '_blank')
-}
-
-const goBackToCalendar = () => {
-  router.push({ name: 'TeacherAttendanceDashboard' })
-}
-
-const editAttendance = () => {
-  router.push({
-    name: 'TeacherAttendanceForm',
-    params: {
-      date: props.date,
-      classId: props.classId
-    },
-    query: {
-      return: 'share'
-    }
-  })
-}
-
-// Lifecycle
-onMounted(() => {
-  console.log('🚀 [ShareAttendance] Component mounted with props:', props)
-  loadAttendanceData()
-})
-</script>
-
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- 🎯 HEADER -->
@@ -213,9 +14,9 @@ onMounted(() => {
           <div class="flex items-center space-x-4">
             <!-- Botón de regreso al calendario -->
             <button
-              @click="goBackToCalendar"
               class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Volver al calendario"
+              @click="goBackToCalendar"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -239,8 +40,8 @@ onMounted(() => {
           <!-- Acciones del header -->
           <div class="flex items-center space-x-3">
             <button
-              @click="editAttendance"
               class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              @click="editAttendance"
             >
               Editar Asistencia
             </button>
@@ -300,7 +101,8 @@ onMounted(() => {
             
             <!-- Indicador de tasa de asistencia -->
             <div class="text-center">
-              <div class="text-3xl font-bold" :class="{
+              <div
+class="text-3xl font-bold" :class="{
                 'text-green-600 dark:text-green-400': attendanceRate >= 80,
                 'text-yellow-600 dark:text-yellow-400': attendanceRate >= 60 && attendanceRate < 80,
                 'text-red-600 dark:text-red-400': attendanceRate < 60
@@ -454,9 +256,9 @@ onMounted(() => {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- Exportar a PDF -->
             <button
-              @click="exportToPDF"
               :disabled="isExporting"
               class="flex items-center justify-center space-x-3 p-4 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="exportToPDF"
             >
               <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -473,8 +275,8 @@ onMounted(() => {
 
             <!-- Compartir por WhatsApp -->
             <button
-              @click="shareViaWhatsApp"
               class="flex items-center justify-center space-x-3 p-4 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg transition-colors"
+              @click="shareViaWhatsApp"
             >
               <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -491,8 +293,8 @@ onMounted(() => {
 
             <!-- Volver al calendario -->
             <button
-              @click="goBackToCalendar"
               class="flex items-center justify-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors"
+              @click="goBackToCalendar"
             >
               <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -512,6 +314,205 @@ onMounted(() => {
     </main>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAttendanceStore } from '../../store/attendance';
+import { useClassesStore } from '../../../Classes/store/classes';
+import { useStudentsStore } from '../../../Students/store/students';
+import { useAuthStore } from '../../../../stores/auth';
+
+// Props de la ruta
+interface Props {
+  date: string // YYYYMMDD format from URL
+  classId: string
+}
+
+const props = defineProps<Props>();
+const router = useRouter();
+const route = useRoute();
+
+// Stores
+const attendanceStore = useAttendanceStore();
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+const authStore = useAuthStore();
+
+// Estado del componente
+const isLoading = ref(true);
+const isExporting = ref(false);
+const attendanceDocument = ref<any>(null);
+const classData = ref<any>(null);
+const studentsData = ref<any[]>([]);
+
+// Computed properties
+const formattedDate = computed(() => {
+  if (!props.date) return '';
+  
+  // Convertir YYYYMMDD a YYYY-MM-DD
+  const dateStr = `${props.date.slice(0, 4)}-${props.date.slice(4, 6)}-${props.date.slice(6, 8)}`;
+  const date = parseISO(dateStr);
+  return format(date, 'EEEE, d \'de\' MMMM \'de\' yyyy', { locale: es }).replace(/^\w/, (c) =>
+    c.toUpperCase(),
+  );
+});
+
+const dateForStore = computed(() => {
+  if (!props.date) return '';
+  // Convertir YYYYMMDD a YYYY-MM-DD para el store
+  return `${props.date.slice(0, 4)}-${props.date.slice(4, 6)}-${props.date.slice(6, 8)}`;
+});
+
+const currentTeacher = computed(() => ({
+  name: authStore.user?.email || 'Maestro',
+  id: authStore.user?.uid,
+}));
+
+const wasSuccessful = computed(() => {
+  return route.query.success === 'true';
+});
+
+// Estadísticas de asistencia
+const attendanceStats = computed(() => {
+  if (!attendanceDocument.value?.students) {
+    return { presente: 0, ausente: 0, tardanza: 0, total: 0 };
+  }
+
+  const stats = attendanceDocument.value.students.reduce(
+    (acc: any, student: any) => {
+      acc.total++;
+      acc[student.status] = (acc[student.status] || 0) + 1;
+      return acc;
+    },
+    { presente: 0, ausente: 0, tardanza: 0, total: 0 },
+  );
+
+  return stats;
+});
+
+const attendanceRate = computed(() => {
+  if (attendanceStats.value.total === 0) return 0;
+  return Math.round((attendanceStats.value.presente / attendanceStats.value.total) * 100);
+});
+
+// Métodos principales
+const loadAttendanceData = async () => {
+  if (!props.date || !props.classId || !currentTeacher.value.id) {
+    console.error('❌ [ShareAttendance] Datos de ruta incompletos');
+    return;
+  }
+
+  isLoading.value = true;
+
+  try {
+    console.log('📋 [ShareAttendance] Loading attendance data:', {
+      date: dateForStore.value,
+      classId: props.classId,
+      teacherId: currentTeacher.value.id,
+    });
+
+    // 1. Cargar el documento de asistencia
+    await attendanceStore.fetchAttendanceDocument(
+      dateForStore.value,
+      props.classId,
+      currentTeacher.value.id,
+    );
+
+    // 2. Obtener el documento desde el store
+    attendanceDocument.value = attendanceStore.getCurrentAttendanceDocument(
+      dateForStore.value,
+      props.classId,
+    );
+
+    // 3. Cargar datos de la clase
+    await classesStore.fetchClassById(props.classId);
+    classData.value = classesStore.getClassById(props.classId);
+
+    // 4. Cargar datos de los estudiantes
+    if (classData.value?.studentIds && classData.value.studentIds.length > 0) {
+      await studentsStore.fetchStudentsByIds(classData.value.studentIds);
+      studentsData.value = studentsStore.getStudentsByIds(classData.value.studentIds);
+    }
+
+    console.log('✅ [ShareAttendance] Data loaded successfully');
+
+  } catch (err) {
+    console.error('❌ [ShareAttendance] Error loading attendance data:', err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const exportToPDF = async () => {
+  if (!attendanceDocument.value) return;
+
+  isExporting.value = true;
+
+  try {
+    console.log('📄 [ShareAttendance] Exporting to PDF...');
+
+    // TODO: Implementar exportación a PDF
+    // Aquí se podría usar jsPDF o llamar a un endpoint del backend
+    
+    // Simular exportación
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    console.log('✅ [ShareAttendance] PDF exported successfully');
+    
+    // Mostrar mensaje de éxito o descargar automáticamente
+    alert('📄 PDF generado exitosamente');
+
+  } catch (err) {
+    console.error('❌ [ShareAttendance] Error exporting PDF:', err);
+    alert('❌ Error al generar el PDF');
+  } finally {
+    isExporting.value = false;
+  }
+};
+
+const shareViaWhatsApp = () => {
+  if (!attendanceDocument.value || !classData.value) return;
+
+  const message = '📋 *Asistencia Registrada*\n\n' +
+    `📅 Fecha: ${formattedDate.value}\n` +
+    `📚 Clase: ${classData.value.name || classData.value.instrument}\n` +
+    `👥 Total estudiantes: ${attendanceStats.value.total}\n` +
+    `✅ Presentes: ${attendanceStats.value.presente}\n` +
+    `❌ Ausentes: ${attendanceStats.value.ausente}\n` +
+    `⏰ Tardanzas: ${attendanceStats.value.tardanza}\n` +
+    `📊 Tasa de asistencia: ${attendanceRate.value}%\n\n` +
+    '_Generado por Academia Musical_';
+
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+  window.open(whatsappUrl, '_blank');
+};
+
+const goBackToCalendar = () => {
+  router.push({ name: 'TeacherAttendanceDashboard' });
+};
+
+const editAttendance = () => {
+  router.push({
+  name: 'TeacherAttendanceDetail',
+    params: {
+      date: props.date,
+      classId: props.classId,
+    },
+    query: {
+      return: 'share',
+    },
+  });
+};
+
+// Lifecycle
+onMounted(() => {
+  console.log('🚀 [ShareAttendance] Component mounted with props:', props);
+  loadAttendanceData();
+});
+</script>
 
 <style scoped>
 /* Animaciones personalizadas */

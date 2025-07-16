@@ -292,12 +292,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useAuthStore} from "../../../stores/auth"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useClassesStore} from "../store/classes"
-import type {ClassData, SharedClassPermission, ClassTeacher} from "../types/class"
-import {TeacherRole} from "../types/class"
+import { ref, computed, onMounted } from 'vue';
+import { useAuthStore } from '../../../stores/auth';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useClassesStore } from '../store/classes';
+import type { ClassData, SharedClassPermission, ClassTeacher } from '../types/class';
+import { TeacherRole } from '../types/class';
 import {
   ShareIcon,
   UserIcon,
@@ -307,11 +307,11 @@ import {
   CalendarIcon,
   PencilIcon,
   CogIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Import dialogs
-import ShareClassDialog from "./ShareClassDialog.vue"
-import ManagePermissionsDialog from "./ManagePermissionsDialog.vue"
+import ShareClassDialog from './ShareClassDialog.vue';
+import ManagePermissionsDialog from './ManagePermissionsDialog.vue';
 
 interface Props {
   classes: ClassData[]
@@ -319,40 +319,40 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   classes: () => [],
-})
+});
 
 // Define emits
 const emit = defineEmits<{
   edit: [classData: ClassData]
-  "manage-permissions": [classData: ClassData, teacherId: string]
-  "view-schedule": [classData: ClassData]
-}>()
+  'manage-permissions': [classData: ClassData, teacherId: string]
+  'view-schedule': [classData: ClassData]
+}>();
 
 // Stores
-const authStore = useAuthStore()
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
+const authStore = useAuthStore();
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
 
 // Reactive data
-const filterType = ref<"all" | "owned" | "shared-with-me">("all")
-const showShareDialog = ref(false)
-const showPermissionsDialog = ref(false)
-const showManageSharingDialog = ref(false)
-const selectedClass = ref<ClassData | null>(null)
-const selectedTeacher = ref<any>(null)
-const selectedClassForSharing = ref<ClassData | null>(null)
+const filterType = ref<'all' | 'owned' | 'shared-with-me'>('all');
+const showShareDialog = ref(false);
+const showPermissionsDialog = ref(false);
+const showManageSharingDialog = ref(false);
+const selectedClass = ref<ClassData | null>(null);
+const selectedTeacher = ref<any>(null);
+const selectedClassForSharing = ref<ClassData | null>(null);
 
 // Computed properties
-const currentUserId = computed(() => authStore.user?.uid || "")
+const currentUserId = computed(() => authStore.user?.uid || '');
 
 const sharedClasses = computed(() => {
   // Asegurar que props.classes existe y es un array
   if (!props.classes || !Array.isArray(props.classes)) {
-    console.log("⚠️  No hay props.classes, usando datos demo")
-    return getDemoSharedClasses()
+    console.log('⚠️  No hay props.classes, usando datos demo');
+    return getDemoSharedClasses();
   }
 
-  console.log("📊 Total de clases recibidas:", props.classes.length)
+  console.log('📊 Total de clases recibidas:', props.classes.length);
 
   // Filtrar clases que tienen la propiedad "teachers" con elementos
   const realShared = props.classes.filter(
@@ -360,344 +360,344 @@ const sharedClasses = computed(() => {
       classItem &&
       classItem.teachers &&
       Array.isArray(classItem.teachers) &&
-      classItem.teachers.length > 0
-  )
+      classItem.teachers.length > 0,
+  );
 
-  console.log("📚 Clases compartidas encontradas:", realShared.length)
+  console.log('📚 Clases compartidas encontradas:', realShared.length);
 
   realShared.forEach((cls) => {
-    console.log(`✅ COMPARTIDA: ${cls.name} → teachers = [${cls.teachers?.join(", ")}]`)
-  })
+    console.log(`✅ COMPARTIDA: ${cls.name} → teachers = [${cls.teachers?.join(', ')}]`);
+  });
 
   // Si no hay clases reales compartidas, usar demo
   if (realShared.length === 0) {
-    console.log("💡 No se encontraron clases compartidas reales, usando datos demo")
-    return getDemoSharedClasses()
+    console.log('💡 No se encontraron clases compartidas reales, usando datos demo');
+    return getDemoSharedClasses();
   }
 
-  return realShared
-})
+  return realShared;
+});
 
 // Helper function to get demo data
 const getDemoSharedClasses = (): ClassData[] => {
   return [
     {
-      id: "demo-1",
-      name: "Piano Intermedio - Grupo A",
-      description: "Clase de piano para estudiantes de nivel intermedio",
-      instrument: "Piano",
-      level: "preparatoria",
+      id: 'demo-1',
+      name: 'Piano Intermedio - Grupo A',
+      description: 'Clase de piano para estudiantes de nivel intermedio',
+      instrument: 'Piano',
+      level: 'preparatoria',
       teacherId: currentUserId.value,
-      studentIds: ["student1", "student2", "student3"],
-      teachers: [currentUserId.value, "teacher-demo-1", "teacher-demo-2"] as any,
+      studentIds: ['student1', 'student2', 'student3'],
+      teachers: [currentUserId.value, 'teacher-demo-1', 'teacher-demo-2'] as any,
       permissions: {
-        "teacher-demo-1": ["read", "write"],
-        "teacher-demo-2": ["read"],
+        'teacher-demo-1': ['read', 'write'],
+        'teacher-demo-2': ['read'],
       },
       capacity: 8,
-      status: "active" as const,
+      status: 'active' as const,
     },
     {
-      id: "demo-2",
-      name: "Guitarra Avanzada",
-      description: "Técnicas avanzadas de guitarra clásica",
-      instrument: "Guitarra",
-      level: "orquesta",
-      teacherId: "teacher-demo-1",
-      studentIds: ["student4", "student5"],
-      teachers: ["teacher-demo-1", currentUserId.value] as any,
+      id: 'demo-2',
+      name: 'Guitarra Avanzada',
+      description: 'Técnicas avanzadas de guitarra clásica',
+      instrument: 'Guitarra',
+      level: 'orquesta',
+      teacherId: 'teacher-demo-1',
+      studentIds: ['student4', 'student5'],
+      teachers: ['teacher-demo-1', currentUserId.value] as any,
       permissions: {
-        [currentUserId.value]: ["read", "write"],
+        [currentUserId.value]: ['read', 'write'],
       },
       capacity: 6,
-      status: "active" as const,
+      status: 'active' as const,
     },
-  ]
-}
+  ];
+};
 
 const ownedSharedClasses = computed(() => {
   if (!sharedClasses.value || !Array.isArray(sharedClasses.value)) {
-    return []
+    return [];
   }
 
   // Una clase es "owned" si el usuario actual está en el array teachers
   return sharedClasses.value.filter((classItem) => {
     if (!classItem || !classItem.teachers || !Array.isArray(classItem.teachers)) {
-      return false
+      return false;
     }
 
     return classItem.teachers.some((teacherItem) => {
-      if (typeof teacherItem === "string") {
-        return teacherItem === currentUserId.value
-      } else if (typeof teacherItem === "object" && teacherItem.teacherId) {
-        return teacherItem.teacherId === currentUserId.value
+      if (typeof teacherItem === 'string') {
+        return teacherItem === currentUserId.value;
+      } else if (typeof teacherItem === 'object' && teacherItem.teacherId) {
+        return teacherItem.teacherId === currentUserId.value;
       }
-      return false
-    })
-  })
-})
+      return false;
+    });
+  });
+});
 
 const sharedWithMeClasses = computed(() => {
   if (!sharedClasses.value || !Array.isArray(sharedClasses.value)) {
-    return []
+    return [];
   }
 
   // Una clase está "shared with me" si el usuario actual está en el array teachers
   // pero no es el propietario principal (teacherId)
   return sharedClasses.value.filter((classItem) => {
     if (!classItem || !classItem.teachers || !Array.isArray(classItem.teachers)) {
-      return false
+      return false;
     }
 
     const isInTeachers = classItem.teachers.some((teacherItem) => {
-      if (typeof teacherItem === "string") {
-        return teacherItem === currentUserId.value
-      } else if (typeof teacherItem === "object" && teacherItem.teacherId) {
-        return teacherItem.teacherId === currentUserId.value
+      if (typeof teacherItem === 'string') {
+        return teacherItem === currentUserId.value;
+      } else if (typeof teacherItem === 'object' && teacherItem.teacherId) {
+        return teacherItem.teacherId === currentUserId.value;
       }
-      return false
-    })
+      return false;
+    });
 
-    return isInTeachers && classItem.teacherId !== currentUserId.value
-  })
-})
+    return isInTeachers && classItem.teacherId !== currentUserId.value;
+  });
+});
 
 const filteredSharedClasses = computed(() => {
   switch (filterType.value) {
-    case "owned":
-      return ownedSharedClasses.value
-    case "shared-with-me":
-      return sharedWithMeClasses.value
-    default:
-      return sharedClasses.value || []
+  case 'owned':
+    return ownedSharedClasses.value;
+  case 'shared-with-me':
+    return sharedWithMeClasses.value;
+  default:
+    return sharedClasses.value || [];
   }
-})
+});
 
 const availableClassesToShare = computed(() => {
   // Asegurar que props.classes existe y es un array
   if (!props.classes || !Array.isArray(props.classes)) {
-    return []
+    return [];
   }
 
   return props.classes.filter(
     (classItem) =>
       classItem &&
       classItem.teacherId === currentUserId.value &&
-      (!classItem.teachers || !Array.isArray(classItem.teachers) || classItem.teachers.length === 0)
-  )
-})
+      (!classItem.teachers || !Array.isArray(classItem.teachers) || classItem.teachers.length === 0),
+  );
+});
 
-const teachers = computed(() => teachersStore.teachers)
+const teachers = computed(() => teachersStore.teachers);
 
 // Methods
 const isClassOwner = (classItem: ClassData): boolean => {
-  return classItem.teacherId === currentUserId.value
-}
+  return classItem.teacherId === currentUserId.value;
+};
 
 const canEditClass = (classItem: ClassData): boolean => {
-  if (isClassOwner(classItem)) return true
+  if (isClassOwner(classItem)) return true;
 
-  const permissions = getTeacherPermissions(classItem, currentUserId.value)
+  const permissions = getTeacherPermissions(classItem, currentUserId.value);
   return (
-    permissions.includes("write") ||
-    permissions.includes("manage") ||
-    permissions.includes("canEditClass")
-  )
-}
+    permissions.includes('write') ||
+    permissions.includes('manage') ||
+    permissions.includes('canEditClass')
+  );
+};
 
 const getSharedTeachers = (classItem: ClassData) => {
   if (!classItem || !classItem.teachers || !Array.isArray(classItem.teachers)) {
-    return []
+    return [];
   }
 
   return classItem.teachers
     .map((teacherItem) => {
       // Si teachers es un array de strings (como en Firestore)
-      let teacherId: string
-      if (typeof teacherItem === "string") {
-        teacherId = teacherItem
-      } else if (typeof teacherItem === "object" && teacherItem.teacherId) {
+      let teacherId: string;
+      if (typeof teacherItem === 'string') {
+        teacherId = teacherItem;
+      } else if (typeof teacherItem === 'object' && teacherItem.teacherId) {
         // Si teachers es un array de objetos ClassTeacher
-        teacherId = teacherItem.teacherId
+        teacherId = teacherItem.teacherId;
       } else {
-        return null
+        return null;
       }
 
-      const teacher = teachers.value.find((t) => t && t.id === teacherId)
+      const teacher = teachers.value.find((t) => t && t.id === teacherId);
       // For demo purposes, create mock teacher names
       if (!teacher) {
         const demoNames = {
-          "teacher-demo-1": "María González",
-          "teacher-demo-2": "Carlos Rodríguez",
-        }
+          'teacher-demo-1': 'María González',
+          'teacher-demo-2': 'Carlos Rodríguez',
+        };
         return {
           id: teacherId,
-          name: demoNames[teacherId as keyof typeof demoNames] || "Maestro Demo",
-        }
+          name: demoNames[teacherId as keyof typeof demoNames] || 'Maestro Demo',
+        };
       }
-      return teacher
+      return teacher;
     })
-    .filter(Boolean) // Filtrar valores null/undefined
-}
+    .filter(Boolean); // Filtrar valores null/undefined
+};
 
 const getTeacherPermissions = (classItem: ClassData, teacherId: string): string[] => {
   if (!classItem || !teacherId) {
-    return []
+    return [];
   }
 
   // Para la nueva estructura con teachers array
   if (classItem.teachers && Array.isArray(classItem.teachers)) {
     const teacher = classItem.teachers.find((t) => {
-      if (typeof t === "string") {
-        return t === teacherId
-      } else if (typeof t === "object" && t.teacherId) {
-        return t.teacherId === teacherId
+      if (typeof t === 'string') {
+        return t === teacherId;
+      } else if (typeof t === 'object' && t.teacherId) {
+        return t.teacherId === teacherId;
       }
-      return false
-    })
+      return false;
+    });
 
-    if (teacher && typeof teacher === "object" && teacher.permissions) {
-      const permissions: string[] = []
+    if (teacher && typeof teacher === 'object' && teacher.permissions) {
+      const permissions: string[] = [];
 
       // Convertir el objeto de permisos a array de strings
-      if (teacher.permissions.canAddObservations) permissions.push("canAddObservations")
-      if (teacher.permissions.canTakeAttendance) permissions.push("canTakeAttendance")
-      if (teacher.permissions.canViewAttendanceHistory) permissions.push("canViewAttendanceHistory")
-      if (teacher.permissions.canEditClass) permissions.push("canEditClass")
-      if (teacher.permissions.canManageStudents) permissions.push("canManageStudents")
-      if (teacher.permissions.canManageTeachers) permissions.push("canManageTeachers")
-      if (teacher.permissions.canManageSchedule) permissions.push("canManageSchedule")
+      if (teacher.permissions.canAddObservations) permissions.push('canAddObservations');
+      if (teacher.permissions.canTakeAttendance) permissions.push('canTakeAttendance');
+      if (teacher.permissions.canViewAttendanceHistory) permissions.push('canViewAttendanceHistory');
+      if (teacher.permissions.canEditClass) permissions.push('canEditClass');
+      if (teacher.permissions.canManageStudents) permissions.push('canManageStudents');
+      if (teacher.permissions.canManageTeachers) permissions.push('canManageTeachers');
+      if (teacher.permissions.canManageSchedule) permissions.push('canManageSchedule');
 
       // Determinar el nivel de acceso basado en los permisos
       if (teacher.permissions.canManageTeachers && teacher.permissions.canManageSchedule) {
-        permissions.push("manage")
+        permissions.push('manage');
       } else if (teacher.permissions.canEditClass || teacher.permissions.canManageStudents) {
-        permissions.push("write")
+        permissions.push('write');
       } else {
-        permissions.push("read")
+        permissions.push('read');
       }
 
-      return permissions
+      return permissions;
     }
   }
 
   // Fallback para estructura legacy con permissions object
   if (classItem.permissions && classItem.permissions[teacherId]) {
-    return classItem.permissions[teacherId]
+    return classItem.permissions[teacherId];
   }
 
-  return ["read"] // Permisos por defecto
-}
+  return ['read']; // Permisos por defecto
+};
 
 const getPermissionText = (permissions: string[]): string => {
-  if (!permissions || permissions.length === 0) return "Sin permisos"
+  if (!permissions || permissions.length === 0) return 'Sin permisos';
 
-  if (permissions.includes("manage")) return "Administrador"
-  if (permissions.includes("write")) return "Editor"
-  if (permissions.includes("read")) return "Solo lectura"
+  if (permissions.includes('manage')) return 'Administrador';
+  if (permissions.includes('write')) return 'Editor';
+  if (permissions.includes('read')) return 'Solo lectura';
 
-  return "Permisos personalizados"
-}
+  return 'Permisos personalizados';
+};
 
 const getPermissionBadgeColor = (permissions: string[]): string => {
   if (!permissions || permissions.length === 0) {
-    return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
+    return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
   }
 
-  if (permissions.includes("manage")) {
-    return "bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400"
+  if (permissions.includes('manage')) {
+    return 'bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-400';
   }
-  if (permissions.includes("write")) {
-    return "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400"
+  if (permissions.includes('write')) {
+    return 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400';
   }
-  if (permissions.includes("read")) {
-    return "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400"
+  if (permissions.includes('read')) {
+    return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400';
   }
 
-  return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
-}
+  return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300';
+};
 
 const getProgramName = (level?: string): string => {
-  if (!level) return "Sin programa"
+  if (!level) return 'Sin programa';
   const programs: Record<string, string> = {
-    preparatoria: "Preparatoria",
-    "teoria-musical": "Teoría Musical",
-    coro: "Coro",
-    orquesta: "Orquesta",
-    otros: "Otros",
-  }
-  return programs[level] || level
-}
+    preparatoria: 'Preparatoria',
+    'teoria-musical': 'Teoría Musical',
+    coro: 'Coro',
+    orquesta: 'Orquesta',
+    otros: 'Otros',
+  };
+  return programs[level] || level;
+};
 
 const getEmptyStateTitle = (): string => {
   switch (filterType.value) {
-    case "owned":
-      return "No has compartido ninguna clase"
-    case "shared-with-me":
-      return "No tienes clases compartidas contigo"
-    default:
-      return "No hay clases compartidas"
+  case 'owned':
+    return 'No has compartido ninguna clase';
+  case 'shared-with-me':
+    return 'No tienes clases compartidas contigo';
+  default:
+    return 'No hay clases compartidas';
   }
-}
+};
 
 const getEmptyStateDescription = (): string => {
   switch (filterType.value) {
-    case "owned":
-      return "Comparte tus clases con otros maestros para colaborar en la enseñanza."
-    case "shared-with-me":
-      return "Cuando otros maestros compartan clases contigo, aparecerán aquí."
-    default:
-      return "Las clases compartidas permiten la colaboración entre maestros."
+  case 'owned':
+    return 'Comparte tus clases con otros maestros para colaborar en la enseñanza.';
+  case 'shared-with-me':
+    return 'Cuando otros maestros compartan clases contigo, aparecerán aquí.';
+  default:
+    return 'Las clases compartidas permiten la colaboración entre maestros.';
   }
-}
+};
 
 const editTeacherPermissions = (classItem: ClassData, teacher: any) => {
-  selectedClass.value = classItem
-  selectedTeacher.value = teacher
-  showPermissionsDialog.value = true
-}
+  selectedClass.value = classItem;
+  selectedTeacher.value = teacher;
+  showPermissionsDialog.value = true;
+};
 
 const manageClassSharing = (classItem: ClassData) => {
-  selectedClassForSharing.value = classItem
-  showManageSharingDialog.value = true
-}
+  selectedClassForSharing.value = classItem;
+  showManageSharingDialog.value = true;
+};
 
 const closePermissionsDialog = () => {
-  showPermissionsDialog.value = false
-  selectedClass.value = null
-  selectedTeacher.value = null
-}
+  showPermissionsDialog.value = false;
+  selectedClass.value = null;
+  selectedTeacher.value = null;
+};
 
 const handleShareClass = async (data: {
   classId: string
   teachers: Array<{teacherId: string; permissions: string[]}>
 }) => {
   try {
-    console.log("Sharing class:", data)
+    console.log('Sharing class:', data);
 
     // Encontrar la clase a compartir
-    const classToShare = props.classes.find((c) => c.id === data.classId)
+    const classToShare = props.classes.find((c) => c.id === data.classId);
     if (!classToShare) {
-      console.error("Clase no encontrada")
-      return
+      console.error('Clase no encontrada');
+      return;
     }
 
     // Preparar la lista de maestros (incluyendo los nuevos)
-    const existingTeachers = classToShare.teachers || []
-    const newTeachers = [...existingTeachers]
+    const existingTeachers = classToShare.teachers || [];
+    const newTeachers = [...existingTeachers];
 
     // Agregar los nuevos maestros
     for (const teacherData of data.teachers) {
       // Verificar que el maestro no esté ya agregado
       const alreadyExists = existingTeachers.some((teacher) => {
-        return typeof teacher === "string"
+        return typeof teacher === 'string'
           ? teacher === teacherData.teacherId
-          : teacher.teacherId === teacherData.teacherId
-      })
+          : teacher.teacherId === teacherData.teacherId;
+      });
 
       if (!alreadyExists) {
         // Determinar permisos basados en el nivel
-        const permissionLevel = teacherData.permissions[0] // 'read', 'write', o 'manage'
+        const permissionLevel = teacherData.permissions[0]; // 'read', 'write', o 'manage'
 
         const permissions = {
           canTakeAttendance: true,
@@ -707,16 +707,16 @@ const handleShareClass = async (data: {
           canManageTeachers: false,
           canManageStudents: false,
           canManageSchedule: false,
-        }
+        };
 
-        if (permissionLevel === "write") {
-          permissions.canEditClass = true
-          permissions.canManageStudents = true
-        } else if (permissionLevel === "manage") {
-          permissions.canEditClass = true
-          permissions.canManageStudents = true
-          permissions.canManageTeachers = true
-          permissions.canManageSchedule = true
+        if (permissionLevel === 'write') {
+          permissions.canEditClass = true;
+          permissions.canManageStudents = true;
+        } else if (permissionLevel === 'manage') {
+          permissions.canEditClass = true;
+          permissions.canManageStudents = true;
+          permissions.canManageTeachers = true;
+          permissions.canManageSchedule = true;
         }
         // Agregar como objeto ClassTeacher completo
         newTeachers.push({
@@ -725,7 +725,7 @@ const handleShareClass = async (data: {
           assignedAt: new Date(),
           assignedBy: currentUserId.value,
           permissions,
-        } as ClassTeacher)
+        } as ClassTeacher);
       }
     }
 
@@ -733,26 +733,26 @@ const handleShareClass = async (data: {
     await classesStore.updateClass(data.classId, {
       teachers: newTeachers,
       updatedAt: new Date(),
-    })
+    });
 
     // Actualizar localmente
-    const classIndex = props.classes.findIndex((c) => c.id === data.classId)
+    const classIndex = props.classes.findIndex((c) => c.id === data.classId);
     if (classIndex !== -1) {
       props.classes[classIndex] = {
         ...props.classes[classIndex],
         teachers: newTeachers,
-      }
+      };
     }
 
-    console.log("✅ Clase compartida exitosamente")
-    showShareDialog.value = false
+    console.log('✅ Clase compartida exitosamente');
+    showShareDialog.value = false;
 
     // Opcional: mostrar notificación de éxito
   } catch (error) {
-    console.error("❌ Error compartiendo clase:", error)
+    console.error('❌ Error compartiendo clase:', error);
     // TODO: Mostrar mensaje de error al usuario
   }
-}
+};
 
 const handleUpdatePermissions = async (data: {
   classId: string
@@ -769,11 +769,11 @@ const handleUpdatePermissions = async (data: {
   role: string
 }) => {
   try {
-    console.log("Updating permissions:", data)
+    console.log('Updating permissions:', data);
 
     if (!selectedClass.value) {
-      console.error("No hay clase seleccionada")
-      return
+      console.error('No hay clase seleccionada');
+      return;
     }
 
     // Usar el store para actualizar permisos
@@ -781,17 +781,17 @@ const handleUpdatePermissions = async (data: {
       data.classId,
       data.teacherId,
       data.permissions,
-      currentUserId.value
-    )
+      currentUserId.value,
+    );
     // Actualizar la clase localmente
-    const classIndex = props.classes.findIndex((c) => c.id === data.classId)
+    const classIndex = props.classes.findIndex((c) => c.id === data.classId);
     if (classIndex !== -1 && props.classes[classIndex].teachers) {
-      const updatedClass = {...props.classes[classIndex]}
+      const updatedClass = { ...props.classes[classIndex] };
       if (updatedClass.teachers) {
         updatedClass.teachers = updatedClass.teachers.map((teacher) => {
-          const teacherId = typeof teacher === "string" ? teacher : teacher.teacherId
+          const teacherId = typeof teacher === 'string' ? teacher : teacher.teacherId;
           if (teacherId === data.teacherId) {
-            if (typeof teacher === "string") {
+            if (typeof teacher === 'string') {
               // Convertir de string a ClassTeacher completo
               return {
                 teacherId: teacher,
@@ -799,84 +799,84 @@ const handleUpdatePermissions = async (data: {
                 assignedAt: new Date(),
                 assignedBy: currentUserId.value,
                 permissions: data.permissions,
-              } as ClassTeacher
+              } as ClassTeacher;
             } else {
               // Actualizar ClassTeacher existente
               return {
                 ...teacher,
                 permissions: data.permissions,
-              }
+              };
             }
           }
-          return teacher
-        })
+          return teacher;
+        });
       }
 
       // Actualizar el array de clases
-      props.classes[classIndex] = updatedClass
+      props.classes[classIndex] = updatedClass;
     }
 
-    console.log("✅ Permisos actualizados exitosamente")
-    closePermissionsDialog()
+    console.log('✅ Permisos actualizados exitosamente');
+    closePermissionsDialog();
 
     // Opcional: mostrar notificación de éxito
     // TODO: Implementar sistema de notificaciones
   } catch (error) {
-    console.error("❌ Error actualizando permisos:", error)
+    console.error('❌ Error actualizando permisos:', error);
     // TODO: Mostrar mensaje de error al usuario
   }
-}
+};
 
 const handleRemoveAccess = async (data: {classId: string; teacherId: string}) => {
   try {
-    console.log("Removing access:", data)
+    console.log('Removing access:', data);
 
     if (!selectedClass.value) {
-      console.error("No hay clase seleccionada")
-      return
+      console.error('No hay clase seleccionada');
+      return;
     }
     // Usar el store para remover acceso
-    await classesStore.removeAssistant(data.classId, data.teacherId, currentUserId.value)
+    await classesStore.removeAssistant(data.classId, data.teacherId, currentUserId.value);
 
     // Actualizar la clase localmente
-    const classIndex = props.classes.findIndex((c) => c.id === data.classId)
+    const classIndex = props.classes.findIndex((c) => c.id === data.classId);
     if (classIndex !== -1 && props.classes[classIndex].teachers) {
-      const updatedClass = {...props.classes[classIndex]}
+      const updatedClass = { ...props.classes[classIndex] };
       if (updatedClass.teachers) {
         updatedClass.teachers = updatedClass.teachers.filter((teacher) => {
-          const teacherId = typeof teacher === "string" ? teacher : teacher.teacherId
-          return teacherId !== data.teacherId
-        })
+          const teacherId = typeof teacher === 'string' ? teacher : teacher.teacherId;
+          return teacherId !== data.teacherId;
+        });
       }
 
       // Actualizar el array de clases
-      props.classes[classIndex] = updatedClass
+      props.classes[classIndex] = updatedClass;
     }
 
-    console.log("✅ Acceso removido exitosamente")
-    closePermissionsDialog()
+    console.log('✅ Acceso removido exitosamente');
+    closePermissionsDialog();
 
     // Opcional: mostrar notificación de éxito
     // TODO: Implementar sistema de notificaciones
   } catch (error) {
-    console.error("❌ Error removiendo acceso:", error)
+    console.error('❌ Error removiendo acceso:', error);
     // TODO: Mostrar mensaje de error al usuario
   }
-}
+};
 
 const handleUpdateSharing = (data: any) => {
-  console.log("Updating sharing:", data)
+  console.log('Updating sharing:', data);
   // TODO: Implement update sharing logic
-  showManageSharingDialog.value = false
-}
+  showManageSharingDialog.value = false;
+};
 
 // Lifecycle
 onMounted(async () => {
   // Load teachers if not already loaded
   if (teachers.value.length === 0) {
-    await teachersStore.fetchTeachers()
+    await teachersStore.fetchTeachers();
   }
-})
+});
 </script>
 
 <style scoped>

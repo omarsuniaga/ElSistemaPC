@@ -1,48 +1,3 @@
-<script setup lang="ts">
-import {ref} from "vue"
-import {useRouter} from "vue-router"
-import {useAuthStore} from "../stores/auth"
-import {LockClosedIcon, ExclamationCircleIcon} from "@heroicons/vue/24/outline"
-
-const router = useRouter()
-const authStore = useAuthStore()
-
-const email = ref("")
-const password = ref("")
-const error = ref("")
-const isLoading = ref(false)
-const showPassword = ref(false)
-
-const handleSubmit = async () => {
-  if (isLoading.value) return
-
-  if (!email.value || !password.value) {
-    error.value = "Por favor, complete todos los campos"
-    return
-  }
-
-  error.value = ""
-  isLoading.value = true
-
-  try {
-    const user = await authStore.login(email.value, password.value)
-
-    // Redirigir según el rol
-    if (user.role === "Director") {
-      router.push("/dashboard")
-    } else if (user.role === "Maestro") {
-      router.push("/attendance")
-    } else {
-      router.push("/")
-    }
-  } catch (e: any) {
-    error.value = e.message || "Error al iniciar sesión"
-  } finally {
-    isLoading.value = false
-  }
-}
-</script>
-
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
     <div class="max-w-md w-full space-y-8 p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
@@ -138,3 +93,48 @@ const handleSubmit = async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import { LockClosedIcon, ExclamationCircleIcon } from '@heroicons/vue/24/outline';
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+const email = ref('');
+const password = ref('');
+const error = ref('');
+const isLoading = ref(false);
+const showPassword = ref(false);
+
+const handleSubmit = async () => {
+  if (isLoading.value) return;
+
+  if (!email.value || !password.value) {
+    error.value = 'Por favor, complete todos los campos';
+    return;
+  }
+
+  error.value = '';
+  isLoading.value = true;
+
+  try {
+    const user = await authStore.login(email.value, password.value);
+
+    // Redirigir según el rol
+    if (user.role === 'Director') {
+      router.push('/dashboard');
+    } else if (user.role === 'Maestro') {
+      router.push('/attendance');
+    } else {
+      router.push('/');
+    }
+  } catch (e: any) {
+    error.value = e.message || 'Error al iniciar sesión';
+  } finally {
+    isLoading.value = false;
+  }
+};
+</script>

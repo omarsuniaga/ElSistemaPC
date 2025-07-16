@@ -1,766 +1,3 @@
-<script setup lang="ts">
-import {ref, watch, computed} from "vue"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import {XMarkIcon} from "@heroicons/vue/24/outline"
-import {useRouter} from "vue-router"
-import {useAttendanceStore} from "../store/attendance"
-import {useOptimizedAttendance} from "../composables/useOptimizedAttendance"
-import {useAuthStore} from "../../../stores/auth"
-import {AttendancePrediction} from "@/analytics/ml/attendancePredictionModel"
-
-// Define props and emits
-const props = defineProps<{
-  isOpen: boolean
-  date: string
-  classes: {
-    id: string
-    name: string
-    teacher?: string
-    teacherId?: string // ID del profesor principal
-    teachers?: {
-      // Array de profesores para clases compartidas
-      teacherId: string
-      role: string
-      permissions?: {
-        canTakeAttendance?: boolean
-        canEditClass?: boolean
-        canViewReports?: boolean
-      }
-    }[]
-    time?: string
-    students?: number
-    hasAttendance?: boolean
-    classroom?: string
-    studentIds?: string[]
-    isLoadingAttendance?: boolean
-    attendanceStatus?: boolean
-    // Nuevas propiedades para clasificar tipos de clases
-    classType?: string
-    isScheduledClass?: boolean
-    hasAttendanceRecord?: boolean
-    attendanceRecord?: any
-    teacherPermissions?: {
-      canTakeAttendance?: boolean
-    }
-    // Propiedades agregadas desde TeacherHome para clases compartidas
-    isSharedWithMe?: boolean
-    userRole?: string
-    schedule: {
-      slots: {
-        id: string
-        startTime: string
-        endTime: string
-      }[]
-    }
-  }[]
-  predictions?: AttendancePrediction[] // <--- NUEVA PROP
-}>()
-
-const emit = defineEmits(["close", "select-class", "create-emergency-class"])
-
-const router = useRouter()
-const attendanceStore = useAttendanceStore()
-const authStore = useAuthStore()
-const {checkAttendanceExists} = useOptimizedAttendance()
-
-// --- Lógica de Predicción ---
-const getClassRisk = (classId: string, predictions: AttendancePrediction[] | undefined) => {
-  if (!predictions || predictions.length === 0) return {risk: 'low', highRiskCount: 0};
-
-  const classPredictions = predictions.filter(p => p.classId === classId);
-  if (classPredictions.length === 0) return {risk: 'low', highRiskCount: 0};
-
-  const highRiskCount = classPredictions.filter(p => p.risk === 'high').length;
-  const mediumRiskCount = classPredictions.filter(p => p.risk === 'medium').length;
-
-  if (highRiskCount > 0) return {risk: 'high', highRiskCount};
-  if (mediumRiskCount > 0) return {risk: 'medium', highRiskCount: 0}; // No contamos los de riesgo medio
-  return {risk: 'low', highRiskCount: 0};
-};
-
-const classesWithRisk = computed(() => {
-  return props.classes.map(classItem => {
-    const { risk, highRiskCount } = getClassRisk(classItem.id, props.predictions);
-    return {
-      ...classItem,
-      risk,
-      highRiskCount
-    }
-  });
-});
-// --- Fin Lógica de Predicción ---
-
-// Estado para los indicadores de asistencia
-const attendanceStatus = ref<Record<string, boolean>>({})
-const attendanceStatusLoading = ref<Record<string, boolean>>({})
-
-// Estado de carga para el modal
-const isModalLoading = ref(false)
-
-// Computed property for development mode
-const isDevelopment = computed(() => import.meta.env?.DEV || false)
-
-// Función de logging optimizada
-const logDebug = (message: string, data?: any) => {
-  if (isDevelopment.value) {
-    console.log(`[ClassesModal] ${message}`, data)
-  }
-}
-
-// Función de logging para errores (siempre activa)
-const logError = (message: string, error?: any) => {
-  console.error(`[ClassesModal] ${message}`, error)
-}
-
-// Function to check if attendance exists for a class on a specific date (async version)
-const hasAttendanceRecord = async (classId: string, date: string): Promise<boolean> => {
-  try {
-    // console.log('[ClassesModal] ===== CHECKING ATTENDANCE RECORD =====');
-    // console.log('[ClassesModal] Input:', { classId, date });
-    // console.log('[ClassesModal] Available attendance documents:');
-
-    // First check the attendance store cache
-    const record = attendanceStore.attendanceDocuments.find(
-      (doc) => doc.classId === classId && doc.fecha === date
-    )
-
-    if (record) {
-      // console.log('[ClassesModal] ✅ Found record in store cache:', record.id);
-      return true
-    }
-
-    // console.log('[ClassesModal] ❌ No record found in store cache');
-
-    // If not in cache, use optimized query to check Firestore
-    // console.log('[ClassesModal] Checking Firestore...');
-    const exists = await checkAttendanceExists(classId, date)
-    // console.log('[ClassesModal] Firestore query result:', exists);
-
-    return exists
-  } catch (error) {
-    logError("Error checking attendance record:", error)
-    return false
-  }
-}
-
-// Function to check attendance status for a specific class
-const checkAttendanceStatus = async (classId: string, date: string) => {
-  const key = `${classId}|${date}`
-  // console.log('[ClassesModal] Starting attendance check for:', { classId, date, key });
-  attendanceStatusLoading.value[key] = true
-
-  try {
-    const hasRecord = await hasAttendanceRecord(classId, date)
-    // console.log('[ClassesModal] Attendance check result:', { classId, date, hasRecord });
-    attendanceStatus.value[key] = hasRecord
-  } catch (error) {
-    logError("Error checking attendance status:", error)
-    attendanceStatus.value[key] = false
-  } finally {
-    attendanceStatusLoading.value[key] = false
-    //   console.log('[ClassesModal] Attendance status set:', { key, status: attendanceStatus.value[key] });
-  }
-}
-
-// Computed property for classes with attendance status
-const classesWithAttendanceStatus = computed(() => {
-  if (!props.classes || !props.date) return []
-
-  const currentUserId = authStore.user?.uid
-
-  // 🐛 DEBUG: Log detallado de datos recibidos
-  console.log("🚀 [ClassesModal] === DEBUG DETALLADO ===")
-  console.log("📅 Fecha seleccionada:", props.date)
-  console.log("👤 Usuario actual:", currentUserId)
-  console.log("📚 Clases recibidas:", props.classes.length)
-  console.log("📋 Datos completos de clases:", JSON.stringify(props.classes, null, 2))
-
-  // Las clases ya vienen filtradas por el componente padre (AttendanceView.vue o TeacherHome.vue)
-  logDebug(`Procesando ${props.classes.length} clases para la fecha ${props.date}`)
-  logDebug(`Usuario actual: ${currentUserId}`)
-
-  // Log detallado de cada clase recibida
-  if (isDevelopment.value) {
-    props.classes.forEach((classItem, index) => {
-      logDebug(`Clase ${index + 1}: ${classItem.name}`, {
-        id: classItem.id,
-        teacherId: classItem.teacherId,
-        teachers: classItem.teachers,
-        classType: classItem.classType,
-        hasTeachersArray: !!(
-          classItem.teachers &&
-          Array.isArray(classItem.teachers) &&
-          classItem.teachers.length > 0
-        ),
-      })
-    })
-  }
-
-  return props.classes
-    .map((classItem) => {
-      const key = `${classItem.id}|${props.date}`
-      const isLoading = attendanceStatusLoading.value[key]
-      const hasAttendance = attendanceStatus.value[key]
-
-      // Verificar si es una clase compartida y el rol del usuario actual
-      const hasTeachersArray =
-        classItem.teachers && Array.isArray(classItem.teachers) && classItem.teachers.length > 0
-      const isPrimaryTeacher = classItem.teacherId === currentUserId
-
-      // Buscar al usuario actual en el array de teachers
-      let userTeacherInfo = null
-      let userRole = null
-      let userPermissions = null
-      let isSharedClass = false
-      let isCollaboratingTeacher = false
-
-      // PASO 1: Verificar si el usuario está en el array de teachers
-      if (hasTeachersArray && currentUserId && classItem.teachers) {
-        userTeacherInfo = classItem.teachers.find((teacher) => teacher.teacherId === currentUserId)
-        if (userTeacherInfo) {
-          isCollaboratingTeacher = true
-          userRole = userTeacherInfo.role || "assistant"
-          userPermissions = userTeacherInfo.permissions
-          console.log(
-            `[ClassesModal] ✅ Usuario encontrado en teachers array de ${classItem.name}:`,
-            {
-              role: userRole,
-              permissions: userPermissions,
-              isPrimaryTeacher,
-            }
-          )
-        }
-      }
-
-      // PASO 2: Determinar si es una clase compartida basándose en múltiples criterios
-      if (hasTeachersArray && classItem.teachers) {
-        // Es una clase compartida si hay un array de teachers configurado
-        isSharedClass = classItem.teachers.length > 0
-        console.log(
-          `[ClassesModal] 🔍 Clase ${classItem.name} tiene teachers array con ${classItem.teachers.length} miembros`
-        )
-      }
-
-      // PASO 3: También considerar clases compartidas por el classType existente
-      if (classItem.classType === "shared") {
-        isSharedClass = true
-        console.log(`[ClassesModal] 📋 Clase ${classItem.name} marcada como 'shared' por classType`)
-      }
-
-      // PASO 4: CRÍTICO - Si el usuario está en teachers pero NO es el profesor principal,
-      // definitivamente es una clase compartida CON ÉL
-      if (hasTeachersArray && currentUserId && classItem.teachers && !isPrimaryTeacher) {
-        const userInTeachers = classItem.teachers.find(
-          (teacher) => teacher.teacherId === currentUserId
-        )
-        if (userInTeachers) {
-          console.log(`[ClassesModal] 🎯 CLASE COMPARTIDA DETECTADA: ${classItem.name}`, {
-            userInTeachers: true,
-            isPrimaryTeacher,
-            userRole: userInTeachers.role,
-            classType: classItem.classType,
-          })
-          isSharedClass = true
-          isCollaboratingTeacher = true
-          userTeacherInfo = userInTeachers
-          userRole = userInTeachers.role || "assistant"
-          userPermissions = userInTeachers.permissions
-        }
-      }
-
-      // PASO 5: Verificar si es clase compartida desde TeacherHome.vue
-      if (classItem.isSharedWithMe === true) {
-        console.log(`[ClassesModal] 📨 Clase marcada como isSharedWithMe: ${classItem.name}`)
-        isSharedClass = true
-        if (!isCollaboratingTeacher && classItem.userRole) {
-          isCollaboratingTeacher = true
-          userRole = classItem.userRole
-          userPermissions = classItem.teacherPermissions
-        }
-      }
-
-      // PASO 6: Determinar el tipo de participación del usuario de forma más robusta
-      let participationType = "none"
-
-      if (isPrimaryTeacher && isSharedClass) {
-        participationType = "primary-shared"
-        console.log(
-          `[ClassesModal] 👑 ${classItem.name}: Usuario es profesor principal de clase compartida`
-        )
-      } else if (isPrimaryTeacher && !isSharedClass) {
-        participationType = "primary-solo"
-        console.log(`[ClassesModal] 🎓 ${classItem.name}: Usuario es profesor principal único`)
-      } else if (isCollaboratingTeacher) {
-        // El usuario está en el array teachers - fue invitado a colaborar
-        participationType = "collaborator"
-        console.log(`[ClassesModal] 🤝 ${classItem.name}: Usuario es colaborador (${userRole})`)
-      } else if (isSharedClass && hasTeachersArray) {
-        // Si es una clase compartida pero el usuario no está en el array,
-        // podría ser que tenga acceso por otras razones
-        participationType = "viewer"
-        console.log(`[ClassesModal] 👁️ ${classItem.name}: Usuario tiene acceso como viewer`)
-      }
-
-      // PASO 7: VERIFICACIÓN FINAL CRÍTICA - Asegurar que las clases compartidas se detecten
-      if (hasTeachersArray && currentUserId && classItem.teachers && !isPrimaryTeacher) {
-        const isInvitedCollaborator = classItem.teachers.some(
-          (teacher) => teacher.teacherId === currentUserId
-        )
-        if (isInvitedCollaborator) {
-          console.log(
-            `[ClassesModal] 🚨 FORZAR INCLUSIÓN: ${classItem.name} - Usuario definitivamente está invitado`
-          )
-          participationType = "collaborator"
-          isCollaboratingTeacher = true
-          isSharedClass = true
-
-          // Si no tenemos la info del usuario, buscarla de nuevo
-          if (!userTeacherInfo) {
-            userTeacherInfo = classItem.teachers.find(
-              (teacher) => teacher.teacherId === currentUserId
-            )
-            if (userTeacherInfo) {
-              userRole = userTeacherInfo.role || "assistant"
-              userPermissions = userTeacherInfo.permissions
-            }
-          }
-        }
-      }
-
-      // PASO 8: Verificación adicional para clases marcadas desde TeacherHome
-      if (classItem.classType === "shared" && classItem.isSharedWithMe === true) {
-        console.log(
-          `[ClassesModal] 📬 CLASE COMPARTIDA CONFIRMADA desde TeacherHome: ${classItem.name}`
-        )
-        participationType = "collaborator"
-        isSharedClass = true
-        isCollaboratingTeacher = true
-      }
-
-      console.log(`[ClassesModal] 📊 RESULTADO FINAL - Clase: ${classItem.name}`, {
-        id: classItem.id,
-        hasTeachersArray,
-        teachersCount: classItem.teachers?.length || 0,
-        isPrimaryTeacher,
-        isCollaboratingTeacher,
-        isSharedClass,
-        participationType,
-        userRole,
-        canTakeAttendance: userPermissions?.canTakeAttendance !== false || isPrimaryTeacher,
-        userPermissions,
-        teachersArray: classItem.teachers,
-        currentUserId,
-        classType: classItem.classType,
-        originalClassType: classItem.classType,
-        studentCount: classItem.studentIds?.length || classItem.students || 0,
-        // Información específica sobre si la clase fue compartida con el usuario
-        isSharedWithMe: isCollaboratingTeacher && !isPrimaryTeacher,
-        primaryTeacherId: classItem.teacherId,
-        amIInvited:
-          hasTeachersArray &&
-          classItem.teachers &&
-          classItem.teachers.some((t) => t.teacherId === currentUserId),
-        // Verificaciones de debug críticas
-        SHOULD_BE_INCLUDED: participationType !== "none",
-        IS_ASSISTANT_CLASS: isCollaboratingTeacher && !isPrimaryTeacher,
-        HAS_95_STUDENTS: (classItem.studentIds?.length || classItem.students || 0) >= 90,
-      })
-
-      return {
-        ...classItem,
-        // Use the async status check results
-        hasAttendance: hasAttendance === true,
-        isLoadingAttendance: isLoading === true,
-        attendanceStatus: hasAttendance,
-        // Nuevas propiedades para manejo de clases compartidas
-        isSharedClass,
-        isPrimaryTeacher,
-        isCollaboratingTeacher,
-        participationType,
-        userRole,
-        userPermissions: userPermissions || classItem.teacherPermissions,
-        userTeacherInfo,
-        // Mantener compatibilidad con la lógica existente
-        classType: isSharedClass ? "shared" : classItem.classType || "regular",
-        // Propiedades adicionales para mejor control
-        canTakeAttendance: userPermissions?.canTakeAttendance !== false || isPrimaryTeacher,
-        hasTeachersArray,
-        // Nueva propiedad para identificar clases compartidas conmigo
-        isSharedWithMe: isCollaboratingTeacher && !isPrimaryTeacher,
-        originalTeacherId: classItem.teacherId,
-      }
-    })
-    .map((classItem, index, arr) => {
-      // Log del resultado final en el último elemento
-      if (index === arr.length - 1) {
-        console.log(`[ClassesModal] ===== RESULTADO FINAL =====`)
-        console.log(`[ClassesModal] Total clases procesadas: ${arr.length}`)
-
-        const sharedWithMe = arr.filter((cls) => cls.isSharedWithMe)
-        const myPrimaryClasses = arr.filter((cls) => cls.isPrimaryTeacher)
-        const mySharedClasses = arr.filter((cls) => cls.isPrimaryTeacher && cls.isSharedClass)
-
-        console.log(`[ClassesModal] 📊 Resumen:`)
-        console.log(`[ClassesModal] - Mis clases principales: ${myPrimaryClasses.length}`)
-        console.log(
-          `[ClassesModal] - Mis clases compartidas (soy principal): ${mySharedClasses.length}`
-        )
-        console.log(`[ClassesModal] - Clases compartidas conmigo: ${sharedWithMe.length}`)
-
-        if (sharedWithMe.length > 0) {
-          console.log(`[ClassesModal] 📩 Clases compartidas conmigo:`)
-          sharedWithMe.forEach((cls) => {
-            console.log(
-              `[ClassesModal]   - ${cls.name} (by: ${cls.teacher || cls.originalTeacherId})`
-            )
-          })
-        }
-
-        arr.forEach((cls) => {
-          console.log(
-            `[ClassesModal] - ${cls.name}: participationType=${cls.participationType}, isSharedClass=${cls.isSharedClass}, classType=${cls.classType}`
-          )
-        })
-      }
-      return classItem
-    })
-})
-
-// Función de validación de datos de entrada
-const validateClassData = (classItem: any): boolean => {
-  const requiredFields = ["id", "name"]
-  const missingFields = requiredFields.filter((field) => !classItem[field])
-
-  if (missingFields.length > 0) {
-    logError(`Clase inválida - campos faltantes: ${missingFields.join(", ")}`, classItem)
-    return false
-  }
-
-  return true
-}
-
-// Función para calcular estadísticas del modal
-const getModalStatistics = computed(() => {
-  const scheduled = scheduledClasses.value.length
-  const extra = extraClasses.value.length
-  const withAttendance = classesWithAttendanceStatus.value.filter((c) => c.hasAttendance).length
-  const withoutAttendance = classesWithAttendanceStatus.value.filter((c) => !c.hasAttendance).length
-  const sharedClasses = classesWithAttendanceStatus.value.filter((c) => c.isSharedClass).length
-
-  return {
-    total: scheduled + extra,
-    scheduled,
-    extra,
-    withAttendance,
-    withoutAttendance,
-    sharedClasses,
-  }
-})
-
-// Computed property for scheduled classes (programadas)
-const scheduledClasses = computed(() => {
-  const filtered = classesWithAttendanceStatus.value.filter((classItem) => {
-    // Incluir clases si:
-    // 1. Son clases programadas regulares (no son clases extra/recuperación)
-    // 2. Son clases compartidas (independientemente del tipo)
-    // 3. El usuario tiene algún tipo de participación en la clase (incluyendo 'viewer')
-    // 4. CRÍTICO: Si es una clase donde el usuario es asistente, SIEMPRE incluir
-
-    const isScheduled = classItem.isScheduledClass !== false && classItem.classType !== "recorded"
-    const isShared = classItem.isSharedClass || classItem.classType === "shared"
-    const hasParticipation = classItem.participationType !== "none"
-
-    // VERIFICACIÓN ESPECIAL: Si es una clase compartida con el usuario como asistente
-    const isSharedWithMeAsAssistant =
-      classItem.isSharedWithMe &&
-      classItem.participationType === "collaborator" &&
-      !classItem.isPrimaryTeacher
-
-    // VERIFICACIÓN ADICIONAL: Si tiene 95 estudiantes y es compartida, definitivamente incluir
-    const isLargeSharedClass =
-      (classItem.studentIds?.length || classItem.students || 0) >= 90 &&
-      (isShared || classItem.isSharedWithMe)
-
-    // Decidir si incluir la clase
-    // REGLA FUNDAMENTAL: Si es una clase compartida Y tengo permisos de asistencia, SIEMPRE incluir
-    const hasAttendancePermissions =
-      classItem.canTakeAttendance === true ||
-      classItem.userPermissions?.canTakeAttendance === true ||
-      classItem.teacherPermissions?.canTakeAttendance === true
-
-    // VERIFICACIÓN PRIORITARIA: Clase compartida con permisos de asistencia
-    const isSharedWithAttendancePermissions =
-      (isShared || classItem.isSharedWithMe) &&
-      hasAttendancePermissions &&
-      classItem.participationType === "collaborator"
-
-    const shouldInclude =
-      (isScheduled ||
-        isShared ||
-        isSharedWithMeAsAssistant ||
-        isLargeSharedClass ||
-        isSharedWithAttendancePermissions) &&
-      hasParticipation
-
-    // Debug log para ver qué está pasando con el filtrado
-    console.log(`[ClassesModal] 🔍 Filtrado de clase ${classItem.name}:`, {
-      isScheduled,
-      isShared,
-      hasParticipation,
-      isSharedWithMeAsAssistant,
-      isLargeSharedClass,
-      hasAttendancePermissions,
-      isSharedWithAttendancePermissions,
-      participationType: classItem.participationType,
-      classType: classItem.classType,
-      isSharedClass: classItem.isSharedClass,
-      studentCount: classItem.studentIds?.length || classItem.students || 0,
-      canTakeAttendance: classItem.canTakeAttendance,
-      userPermissions: classItem.userPermissions,
-      teacherPermissions: classItem.teacherPermissions,
-      willBeIncluded: shouldInclude,
-      reasons: {
-        isScheduledOK: isScheduled,
-        isSharedOK: isShared,
-        hasParticipationOK: hasParticipation,
-        isAssistantClassOK: isSharedWithMeAsAssistant,
-        isLargeClassOK: isLargeSharedClass,
-        hasAttendancePermissionsOK: hasAttendancePermissions,
-        isSharedWithAttendancePermissionsOK: isSharedWithAttendancePermissions,
-      },
-    })
-
-    return shouldInclude
-  })
-
-  console.log(`[ClassesModal] ===== CLASES PROGRAMADAS FILTRADAS =====`)
-  console.log(`[ClassesModal] Total clases programadas: ${filtered.length}`)
-
-  // 🚨 Si no hay clases, crear datos de prueba
-  if (filtered.length === 0 && props.classes.length > 0) {
-    console.log(
-      "🔧 [ClassesModal] Creando datos de prueba ya que no se encontraron clases filtradas"
-    )
-    const originalClass = props.classes[0]
-    const testClass = {
-      id: originalClass?.id || "test-class-1",
-      name: originalClass?.name || "Clase de Prueba",
-      status: "Disponible",
-      type: "scheduled",
-      students: originalClass?.students || 20,
-      schedule: originalClass?.schedule || "4:30 PM - 6:30 PM",
-      isScheduledClass: true,
-      classType: "scheduled",
-      participationType: "primary",
-      canTakeAttendance: true,
-      teacherPermissions: {canTakeAttendance: true},
-      hasAttendance: false,
-      isLoadingAttendance: false,
-      attendanceStatus: false,
-      isSharedClass: false,
-      isPrimaryTeacher: true,
-      isCollaboratingTeacher: false,
-      isSharedWithMe: false,
-      teacher: originalClass?.teacher || "Profesor Principal",
-      classroom: originalClass?.classroom || "Aula 1",
-      studentIds: originalClass?.studentIds || [],
-      teachers: originalClass?.teachers || [],
-      hasTeachersArray: false,
-      userRole: "teacher",
-      originalTeacherId: currentUserId,
-    }
-    console.log("🔧 [ClassesModal] Datos de prueba creados:", testClass)
-    return [testClass]
-  }
-
-  // Log detallado de cada clase
-  filtered.forEach((cls) => {
-    const studentCount = cls.studentIds?.length || cls.students || 0
-    const isLargeClass = studentCount >= 90
-    console.log(
-      `[ClassesModal] ✅ ${cls.name}: ${cls.participationType} (shared: ${cls.isSharedClass}, students: ${studentCount}${isLargeClass ? " 🎯" : ""})`
-    )
-  })
-
-  // Verificar específicamente clases grandes como asistente
-  const largeAssistantClasses = filtered.filter((cls) => {
-    const studentCount = cls.studentIds?.length || cls.students || 0
-    return studentCount >= 90 && cls.participationType === "collaborator" && cls.isSharedWithMe
-  })
-
-  if (largeAssistantClasses.length > 0) {
-    console.log(
-      `[ClassesModal] 🎯🎯🎯 CLASE(S) OBJETIVO ENCONTRADA(S): ${largeAssistantClasses.length}`
-    )
-    largeAssistantClasses.forEach((cls) => {
-      console.log(
-        `[ClassesModal] 📚 ${cls.name} - ${cls.studentIds?.length || cls.students || 0} estudiantes - LISTA PARA ASISTENCIA`
-      )
-    })
-  } else {
-    console.log(
-      `[ClassesModal] ❌ NO se encontraron clases grandes (90+ estudiantes) donde seas asistente`
-    )
-  }
-
-  return filtered
-})
-
-// Computed property for extra/recovery classes (clases extra/recuperación)
-const extraClasses = computed(() => {
-  return classesWithAttendanceStatus.value.filter(
-    (classItem) => classItem.isScheduledClass === false || classItem.classType === "recorded"
-  )
-})
-
-// Función para manejar la carga inicial del modal
-const initializeModal = async () => {
-  if (!props.isOpen || !props.date) return
-
-  isModalLoading.value = true
-  try {
-    // Verificar estado de asistencia para todas las clases
-    const checkPromises = props.classes.map((classItem) =>
-      checkAttendanceStatus(classItem.id, props.date)
-    )
-    await Promise.all(checkPromises)
-
-    logDebug("Modal inicializado correctamente", {
-      date: props.date,
-      classesCount: props.classes.length,
-    })
-  } catch (error) {
-    logError("Error inicializando modal:", error)
-  } finally {
-    isModalLoading.value = false
-  }
-}
-
-// Watch para inicializar el modal cuando se abre
-watch(
-  () => props.isOpen,
-  (isOpen) => {
-    if (isOpen) {
-      initializeModal()
-    }
-  }
-)
-
-// Watch for changes in props and trigger attendance checks
-watch(
-  [() => props.classes, () => props.date, () => props.isOpen],
-  async ([newClasses, newDate, isOpen]) => {
-    if (!isOpen || !newClasses?.length || !newDate) return
-
-    console.log("[ClassesModal] ===== STARTING ATTENDANCE CHECK =====")
-    console.log("[ClassesModal] Date:", newDate)
-    console.log("[ClassesModal] Classes:")
-    newClasses.forEach((c, index) => {
-      console.log(`[ClassesModal] Class ${index}:`, {
-        id: c.id,
-        name: c.name,
-      })
-    })
-
-    try {
-      // Load attendance documents if not already loaded
-      if (!attendanceStore.attendanceDocuments.length) {
-        console.log("[ClassesModal] Loading attendance documents...")
-        await attendanceStore.fetchAttendanceDocuments()
-        console.log(
-          "[ClassesModal] Loaded attendance documents:",
-          attendanceStore.attendanceDocuments.length
-        )
-      }
-
-      // Reset status
-      attendanceStatus.value = {}
-      attendanceStatusLoading.value = {}
-
-      // Check attendance for all classes in parallel
-      console.log("[ClassesModal] Starting parallel attendance checks...")
-      const statusChecks = newClasses.map(async (classItem) => {
-        console.log(
-          `[ClassesModal] Checking attendance for class: ${classItem.name} (${classItem.id})`
-        )
-        await checkAttendanceStatus(classItem.id, newDate)
-      })
-
-      await Promise.all(statusChecks)
-      console.log("[ClassesModal] ===== FINAL ATTENDANCE STATUS =====")
-      console.log("[ClassesModal] Final attendance status:", attendanceStatus.value)
-    } catch (error) {
-      logError("Error during attendance check:", error)
-    }
-  },
-  {immediate: true}
-)
-
-// Format the date to display it nicely
-const formattedDate = ref("")
-
-watch(
-  () => props.date,
-  (newDate) => {
-    if (newDate) {
-      logDebug("Formateando fecha:", newDate)
-
-      // 🐛 FIX: Usar parseo manual para evitar conversión UTC
-      const [year, month, day] = newDate.split("-").map(Number)
-      const dateObj = new Date(year, month - 1, day)
-      logDebug("Fecha parseada:", dateObj)
-
-      // Format: "Lunes, 24 de junio de 2024"
-      formattedDate.value = format(dateObj, "EEEE, d 'de' MMMM 'de' yyyy", {locale: es})
-      // Capitalize first letter
-      formattedDate.value =
-        formattedDate.value.charAt(0).toUpperCase() + formattedDate.value.slice(1)
-
-      logDebug("Fecha formateada final:", formattedDate.value)
-    }
-  },
-  {immediate: true}
-)
-
-// Format time to better display format (12h format)
-const formatTime = (timeStr: string): string => {
-  if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) return timeStr
-
-  const [hours, minutes] = timeStr.split(":")
-  const date = new Date()
-  date.setHours(parseInt(hours, 10))
-  date.setMinutes(parseInt(minutes, 10))
-
-  return format(date, "h:mm a", {locale: es})
-}
-
-// Handle class selection
-const handleSelectClass = (classId: string) => {
-  emit("select-class", classId)
-}
-
-// Navigate to create attendance for a specific class
-const navigateToAttendance = (classId: string) => {
-  emit("select-class", classId)
-  emit("close")
-}
-
-// Handle emergency class creation
-const handleCreateEmergencyClass = () => {
-  logDebug("Usuario solicitó crear clase emergente para fecha:", props.date)
-  emit("create-emergency-class", props.date)
-}
-
-// Make sure the component is exported as default
-defineExpose({})
-if (import.meta.env?.PROD === false) {
-  // @ts-ignore - This ensures the component has a default export
-  // which helps with certain bundlers and IDE tooling
-  const _default = {}
-}
-</script>
-
 <template>
   <div
     v-if="isOpen"
@@ -1234,3 +471,766 @@ if (import.meta.env?.PROD === false) {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, watch, computed } from 'vue';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
+import { useRouter } from 'vue-router';
+import { useAttendanceStore } from '../store/attendance';
+import { useOptimizedAttendance } from "../../../obsoleto/useOptimizedAttendance";
+import { useAuthStore } from '../../../stores/auth';
+import { AttendancePrediction } from '@/analytics/ml/attendancePredictionModel';
+
+// Define props and emits
+const props = defineProps<{
+  isOpen: boolean
+  date: string
+  classes: {
+    id: string
+    name: string
+    teacher?: string
+    teacherId?: string // ID del profesor principal
+    teachers?: {
+      // Array de profesores para clases compartidas
+      teacherId: string
+      role: string
+      permissions?: {
+        canTakeAttendance?: boolean
+        canEditClass?: boolean
+        canViewReports?: boolean
+      }
+    }[]
+    time?: string
+    students?: number
+    hasAttendance?: boolean
+    classroom?: string
+    studentIds?: string[]
+    isLoadingAttendance?: boolean
+    attendanceStatus?: boolean
+    // Nuevas propiedades para clasificar tipos de clases
+    classType?: string
+    isScheduledClass?: boolean
+    hasAttendanceRecord?: boolean
+    attendanceRecord?: any
+    teacherPermissions?: {
+      canTakeAttendance?: boolean
+    }
+    // Propiedades agregadas desde TeacherHome para clases compartidas
+    isSharedWithMe?: boolean
+    userRole?: string
+    schedule: {
+      slots: {
+        id: string
+        startTime: string
+        endTime: string
+      }[]
+    }
+  }[]
+  predictions?: AttendancePrediction[] // <--- NUEVA PROP
+}>();
+
+const emit = defineEmits(['close', 'select-class', 'create-emergency-class']);
+
+const router = useRouter();
+const attendanceStore = useAttendanceStore();
+const authStore = useAuthStore();
+const { checkAttendanceExists } = useOptimizedAttendance();
+
+// --- Lógica de Predicción ---
+const getClassRisk = (classId: string, predictions: AttendancePrediction[] | undefined) => {
+  if (!predictions || predictions.length === 0) return { risk: 'low', highRiskCount: 0 };
+
+  const classPredictions = predictions.filter(p => p.classId === classId);
+  if (classPredictions.length === 0) return { risk: 'low', highRiskCount: 0 };
+
+  const highRiskCount = classPredictions.filter(p => p.risk === 'high').length;
+  const mediumRiskCount = classPredictions.filter(p => p.risk === 'medium').length;
+
+  if (highRiskCount > 0) return { risk: 'high', highRiskCount };
+  if (mediumRiskCount > 0) return { risk: 'medium', highRiskCount: 0 }; // No contamos los de riesgo medio
+  return { risk: 'low', highRiskCount: 0 };
+};
+
+const classesWithRisk = computed(() => {
+  return props.classes.map(classItem => {
+    const { risk, highRiskCount } = getClassRisk(classItem.id, props.predictions);
+    return {
+      ...classItem,
+      risk,
+      highRiskCount,
+    };
+  });
+});
+// --- Fin Lógica de Predicción ---
+
+// Estado para los indicadores de asistencia
+const attendanceStatus = ref<Record<string, boolean>>({});
+const attendanceStatusLoading = ref<Record<string, boolean>>({});
+
+// Estado de carga para el modal
+const isModalLoading = ref(false);
+
+// Computed property for development mode
+const isDevelopment = computed(() => import.meta.env?.DEV || false);
+
+// Función de logging optimizada
+const logDebug = (message: string, data?: any) => {
+  if (isDevelopment.value) {
+    console.log(`[ClassesModal] ${message}`, data);
+  }
+};
+
+// Función de logging para errores (siempre activa)
+const logError = (message: string, error?: any) => {
+  console.error(`[ClassesModal] ${message}`, error);
+};
+
+// Function to check if attendance exists for a class on a specific date (async version)
+const hasAttendanceRecord = async (classId: string, date: string): Promise<boolean> => {
+  try {
+    // console.log('[ClassesModal] ===== CHECKING ATTENDANCE RECORD =====');
+    // console.log('[ClassesModal] Input:', { classId, date });
+    // console.log('[ClassesModal] Available attendance documents:');
+
+    // First check the attendance store cache
+    const record = attendanceStore.attendanceDocuments.find(
+      (doc) => doc.classId === classId && doc.fecha === date,
+    );
+
+    if (record) {
+      // console.log('[ClassesModal] ✅ Found record in store cache:', record.id);
+      return true;
+    }
+
+    // console.log('[ClassesModal] ❌ No record found in store cache');
+
+    // If not in cache, use optimized query to check Firestore
+    // console.log('[ClassesModal] Checking Firestore...');
+    const exists = await checkAttendanceExists(classId, date);
+    // console.log('[ClassesModal] Firestore query result:', exists);
+
+    return exists;
+  } catch (error) {
+    logError('Error checking attendance record:', error);
+    return false;
+  }
+};
+
+// Function to check attendance status for a specific class
+const checkAttendanceStatus = async (classId: string, date: string) => {
+  const key = `${classId}|${date}`;
+  // console.log('[ClassesModal] Starting attendance check for:', { classId, date, key });
+  attendanceStatusLoading.value[key] = true;
+
+  try {
+    const hasRecord = await hasAttendanceRecord(classId, date);
+    // console.log('[ClassesModal] Attendance check result:', { classId, date, hasRecord });
+    attendanceStatus.value[key] = hasRecord;
+  } catch (error) {
+    logError('Error checking attendance status:', error);
+    attendanceStatus.value[key] = false;
+  } finally {
+    attendanceStatusLoading.value[key] = false;
+    //   console.log('[ClassesModal] Attendance status set:', { key, status: attendanceStatus.value[key] });
+  }
+};
+
+// Computed property for classes with attendance status
+const classesWithAttendanceStatus = computed(() => {
+  if (!props.classes || !props.date) return [];
+
+  const currentUserId = authStore.user?.uid;
+
+  // 🐛 DEBUG: Log detallado de datos recibidos
+  console.log('🚀 [ClassesModal] === DEBUG DETALLADO ===');
+  console.log('📅 Fecha seleccionada:', props.date);
+  console.log('👤 Usuario actual:', currentUserId);
+  console.log('📚 Clases recibidas:', props.classes.length);
+  console.log('📋 Datos completos de clases:', JSON.stringify(props.classes, null, 2));
+
+  // Las clases ya vienen filtradas por el componente padre (AttendanceView.vue o TeacherHome.vue)
+  logDebug(`Procesando ${props.classes.length} clases para la fecha ${props.date}`);
+  logDebug(`Usuario actual: ${currentUserId}`);
+
+  // Log detallado de cada clase recibida
+  if (isDevelopment.value) {
+    props.classes.forEach((classItem, index) => {
+      logDebug(`Clase ${index + 1}: ${classItem.name}`, {
+        id: classItem.id,
+        teacherId: classItem.teacherId,
+        teachers: classItem.teachers,
+        classType: classItem.classType,
+        hasTeachersArray: !!(
+          classItem.teachers &&
+          Array.isArray(classItem.teachers) &&
+          classItem.teachers.length > 0
+        ),
+      });
+    });
+  }
+
+  return props.classes
+    .map((classItem) => {
+      const key = `${classItem.id}|${props.date}`;
+      const isLoading = attendanceStatusLoading.value[key];
+      const hasAttendance = attendanceStatus.value[key];
+
+      // Verificar si es una clase compartida y el rol del usuario actual
+      const hasTeachersArray =
+        classItem.teachers && Array.isArray(classItem.teachers) && classItem.teachers.length > 0;
+      const isPrimaryTeacher = classItem.teacherId === currentUserId;
+
+      // Buscar al usuario actual en el array de teachers
+      let userTeacherInfo = null;
+      let userRole = null;
+      let userPermissions = null;
+      let isSharedClass = false;
+      let isCollaboratingTeacher = false;
+
+      // PASO 1: Verificar si el usuario está en el array de teachers
+      if (hasTeachersArray && currentUserId && classItem.teachers) {
+        userTeacherInfo = classItem.teachers.find((teacher) => teacher.teacherId === currentUserId);
+        if (userTeacherInfo) {
+          isCollaboratingTeacher = true;
+          userRole = userTeacherInfo.role || 'assistant';
+          userPermissions = userTeacherInfo.permissions;
+          console.log(
+            `[ClassesModal] ✅ Usuario encontrado en teachers array de ${classItem.name}:`,
+            {
+              role: userRole,
+              permissions: userPermissions,
+              isPrimaryTeacher,
+            },
+          );
+        }
+      }
+
+      // PASO 2: Determinar si es una clase compartida basándose en múltiples criterios
+      if (hasTeachersArray && classItem.teachers) {
+        // Es una clase compartida si hay un array de teachers configurado
+        isSharedClass = classItem.teachers.length > 0;
+        console.log(
+          `[ClassesModal] 🔍 Clase ${classItem.name} tiene teachers array con ${classItem.teachers.length} miembros`,
+        );
+      }
+
+      // PASO 3: También considerar clases compartidas por el classType existente
+      if (classItem.classType === 'shared') {
+        isSharedClass = true;
+        console.log(`[ClassesModal] 📋 Clase ${classItem.name} marcada como 'shared' por classType`);
+      }
+
+      // PASO 4: CRÍTICO - Si el usuario está en teachers pero NO es el profesor principal,
+      // definitivamente es una clase compartida CON ÉL
+      if (hasTeachersArray && currentUserId && classItem.teachers && !isPrimaryTeacher) {
+        const userInTeachers = classItem.teachers.find(
+          (teacher) => teacher.teacherId === currentUserId,
+        );
+        if (userInTeachers) {
+          console.log(`[ClassesModal] 🎯 CLASE COMPARTIDA DETECTADA: ${classItem.name}`, {
+            userInTeachers: true,
+            isPrimaryTeacher,
+            userRole: userInTeachers.role,
+            classType: classItem.classType,
+          });
+          isSharedClass = true;
+          isCollaboratingTeacher = true;
+          userTeacherInfo = userInTeachers;
+          userRole = userInTeachers.role || 'assistant';
+          userPermissions = userInTeachers.permissions;
+        }
+      }
+
+      // PASO 5: Verificar si es clase compartida desde TeacherHome.vue
+      if (classItem.isSharedWithMe === true) {
+        console.log(`[ClassesModal] 📨 Clase marcada como isSharedWithMe: ${classItem.name}`);
+        isSharedClass = true;
+        if (!isCollaboratingTeacher && classItem.userRole) {
+          isCollaboratingTeacher = true;
+          userRole = classItem.userRole;
+          userPermissions = classItem.teacherPermissions;
+        }
+      }
+
+      // PASO 6: Determinar el tipo de participación del usuario de forma más robusta
+      let participationType = 'none';
+
+      if (isPrimaryTeacher && isSharedClass) {
+        participationType = 'primary-shared';
+        console.log(
+          `[ClassesModal] 👑 ${classItem.name}: Usuario es profesor principal de clase compartida`,
+        );
+      } else if (isPrimaryTeacher && !isSharedClass) {
+        participationType = 'primary-solo';
+        console.log(`[ClassesModal] 🎓 ${classItem.name}: Usuario es profesor principal único`);
+      } else if (isCollaboratingTeacher) {
+        // El usuario está en el array teachers - fue invitado a colaborar
+        participationType = 'collaborator';
+        console.log(`[ClassesModal] 🤝 ${classItem.name}: Usuario es colaborador (${userRole})`);
+      } else if (isSharedClass && hasTeachersArray) {
+        // Si es una clase compartida pero el usuario no está en el array,
+        // podría ser que tenga acceso por otras razones
+        participationType = 'viewer';
+        console.log(`[ClassesModal] 👁️ ${classItem.name}: Usuario tiene acceso como viewer`);
+      }
+
+      // PASO 7: VERIFICACIÓN FINAL CRÍTICA - Asegurar que las clases compartidas se detecten
+      if (hasTeachersArray && currentUserId && classItem.teachers && !isPrimaryTeacher) {
+        const isInvitedCollaborator = classItem.teachers.some(
+          (teacher) => teacher.teacherId === currentUserId,
+        );
+        if (isInvitedCollaborator) {
+          console.log(
+            `[ClassesModal] 🚨 FORZAR INCLUSIÓN: ${classItem.name} - Usuario definitivamente está invitado`,
+          );
+          participationType = 'collaborator';
+          isCollaboratingTeacher = true;
+          isSharedClass = true;
+
+          // Si no tenemos la info del usuario, buscarla de nuevo
+          if (!userTeacherInfo) {
+            userTeacherInfo = classItem.teachers.find(
+              (teacher) => teacher.teacherId === currentUserId,
+            );
+            if (userTeacherInfo) {
+              userRole = userTeacherInfo.role || 'assistant';
+              userPermissions = userTeacherInfo.permissions;
+            }
+          }
+        }
+      }
+
+      // PASO 8: Verificación adicional para clases marcadas desde TeacherHome
+      if (classItem.classType === 'shared' && classItem.isSharedWithMe === true) {
+        console.log(
+          `[ClassesModal] 📬 CLASE COMPARTIDA CONFIRMADA desde TeacherHome: ${classItem.name}`,
+        );
+        participationType = 'collaborator';
+        isSharedClass = true;
+        isCollaboratingTeacher = true;
+      }
+
+      console.log(`[ClassesModal] 📊 RESULTADO FINAL - Clase: ${classItem.name}`, {
+        id: classItem.id,
+        hasTeachersArray,
+        teachersCount: classItem.teachers?.length || 0,
+        isPrimaryTeacher,
+        isCollaboratingTeacher,
+        isSharedClass,
+        participationType,
+        userRole,
+        canTakeAttendance: userPermissions?.canTakeAttendance !== false || isPrimaryTeacher,
+        userPermissions,
+        teachersArray: classItem.teachers,
+        currentUserId,
+        classType: classItem.classType,
+        originalClassType: classItem.classType,
+        studentCount: classItem.studentIds?.length || classItem.students || 0,
+        // Información específica sobre si la clase fue compartida con el usuario
+        isSharedWithMe: isCollaboratingTeacher && !isPrimaryTeacher,
+        primaryTeacherId: classItem.teacherId,
+        amIInvited:
+          hasTeachersArray &&
+          classItem.teachers &&
+          classItem.teachers.some((t) => t.teacherId === currentUserId),
+        // Verificaciones de debug críticas
+        SHOULD_BE_INCLUDED: participationType !== 'none',
+        IS_ASSISTANT_CLASS: isCollaboratingTeacher && !isPrimaryTeacher,
+        HAS_95_STUDENTS: (classItem.studentIds?.length || classItem.students || 0) >= 90,
+      });
+
+      return {
+        ...classItem,
+        // Use the async status check results
+        hasAttendance: hasAttendance === true,
+        isLoadingAttendance: isLoading === true,
+        attendanceStatus: hasAttendance,
+        // Nuevas propiedades para manejo de clases compartidas
+        isSharedClass,
+        isPrimaryTeacher,
+        isCollaboratingTeacher,
+        participationType,
+        userRole,
+        userPermissions: userPermissions || classItem.teacherPermissions,
+        userTeacherInfo,
+        // Mantener compatibilidad con la lógica existente
+        classType: isSharedClass ? 'shared' : classItem.classType || 'regular',
+        // Propiedades adicionales para mejor control
+        canTakeAttendance: userPermissions?.canTakeAttendance !== false || isPrimaryTeacher,
+        hasTeachersArray,
+        // Nueva propiedad para identificar clases compartidas conmigo
+        isSharedWithMe: isCollaboratingTeacher && !isPrimaryTeacher,
+        originalTeacherId: classItem.teacherId,
+      };
+    })
+    .map((classItem, index, arr) => {
+      // Log del resultado final en el último elemento
+      if (index === arr.length - 1) {
+        console.log('[ClassesModal] ===== RESULTADO FINAL =====');
+        console.log(`[ClassesModal] Total clases procesadas: ${arr.length}`);
+
+        const sharedWithMe = arr.filter((cls) => cls.isSharedWithMe);
+        const myPrimaryClasses = arr.filter((cls) => cls.isPrimaryTeacher);
+        const mySharedClasses = arr.filter((cls) => cls.isPrimaryTeacher && cls.isSharedClass);
+
+        console.log('[ClassesModal] 📊 Resumen:');
+        console.log(`[ClassesModal] - Mis clases principales: ${myPrimaryClasses.length}`);
+        console.log(
+          `[ClassesModal] - Mis clases compartidas (soy principal): ${mySharedClasses.length}`,
+        );
+        console.log(`[ClassesModal] - Clases compartidas conmigo: ${sharedWithMe.length}`);
+
+        if (sharedWithMe.length > 0) {
+          console.log('[ClassesModal] 📩 Clases compartidas conmigo:');
+          sharedWithMe.forEach((cls) => {
+            console.log(
+              `[ClassesModal]   - ${cls.name} (by: ${cls.teacher || cls.originalTeacherId})`,
+            );
+          });
+        }
+
+        arr.forEach((cls) => {
+          console.log(
+            `[ClassesModal] - ${cls.name}: participationType=${cls.participationType}, isSharedClass=${cls.isSharedClass}, classType=${cls.classType}`,
+          );
+        });
+      }
+      return classItem;
+    });
+});
+
+// Función de validación de datos de entrada
+const validateClassData = (classItem: any): boolean => {
+  const requiredFields = ['id', 'name'];
+  const missingFields = requiredFields.filter((field) => !classItem[field]);
+
+  if (missingFields.length > 0) {
+    logError(`Clase inválida - campos faltantes: ${missingFields.join(', ')}`, classItem);
+    return false;
+  }
+
+  return true;
+};
+
+// Función para calcular estadísticas del modal
+const getModalStatistics = computed(() => {
+  const scheduled = scheduledClasses.value.length;
+  const extra = extraClasses.value.length;
+  const withAttendance = classesWithAttendanceStatus.value.filter((c) => c.hasAttendance).length;
+  const withoutAttendance = classesWithAttendanceStatus.value.filter((c) => !c.hasAttendance).length;
+  const sharedClasses = classesWithAttendanceStatus.value.filter((c) => c.isSharedClass).length;
+
+  return {
+    total: scheduled + extra,
+    scheduled,
+    extra,
+    withAttendance,
+    withoutAttendance,
+    sharedClasses,
+  };
+});
+
+// Computed property for scheduled classes (programadas)
+const scheduledClasses = computed(() => {
+  const filtered = classesWithAttendanceStatus.value.filter((classItem) => {
+    // Incluir clases si:
+    // 1. Son clases programadas regulares (no son clases extra/recuperación)
+    // 2. Son clases compartidas (independientemente del tipo)
+    // 3. El usuario tiene algún tipo de participación en la clase (incluyendo 'viewer')
+    // 4. CRÍTICO: Si es una clase donde el usuario es asistente, SIEMPRE incluir
+
+    const isScheduled = classItem.isScheduledClass !== false && classItem.classType !== 'recorded';
+    const isShared = classItem.isSharedClass || classItem.classType === 'shared';
+    const hasParticipation = classItem.participationType !== 'none';
+
+    // VERIFICACIÓN ESPECIAL: Si es una clase compartida con el usuario como asistente
+    const isSharedWithMeAsAssistant =
+      classItem.isSharedWithMe &&
+      classItem.participationType === 'collaborator' &&
+      !classItem.isPrimaryTeacher;
+
+    // VERIFICACIÓN ADICIONAL: Si tiene 95 estudiantes y es compartida, definitivamente incluir
+    const isLargeSharedClass =
+      (classItem.studentIds?.length || classItem.students || 0) >= 90 &&
+      (isShared || classItem.isSharedWithMe);
+
+    // Decidir si incluir la clase
+    // REGLA FUNDAMENTAL: Si es una clase compartida Y tengo permisos de asistencia, SIEMPRE incluir
+    const hasAttendancePermissions =
+      classItem.canTakeAttendance === true ||
+      classItem.userPermissions?.canTakeAttendance === true ||
+      classItem.teacherPermissions?.canTakeAttendance === true;
+
+    // VERIFICACIÓN PRIORITARIA: Clase compartida con permisos de asistencia
+    const isSharedWithAttendancePermissions =
+      (isShared || classItem.isSharedWithMe) &&
+      hasAttendancePermissions &&
+      classItem.participationType === 'collaborator';
+
+    const shouldInclude =
+      (isScheduled ||
+        isShared ||
+        isSharedWithMeAsAssistant ||
+        isLargeSharedClass ||
+        isSharedWithAttendancePermissions) &&
+      hasParticipation;
+
+    // Debug log para ver qué está pasando con el filtrado
+    console.log(`[ClassesModal] 🔍 Filtrado de clase ${classItem.name}:`, {
+      isScheduled,
+      isShared,
+      hasParticipation,
+      isSharedWithMeAsAssistant,
+      isLargeSharedClass,
+      hasAttendancePermissions,
+      isSharedWithAttendancePermissions,
+      participationType: classItem.participationType,
+      classType: classItem.classType,
+      isSharedClass: classItem.isSharedClass,
+      studentCount: classItem.studentIds?.length || classItem.students || 0,
+      canTakeAttendance: classItem.canTakeAttendance,
+      userPermissions: classItem.userPermissions,
+      teacherPermissions: classItem.teacherPermissions,
+      willBeIncluded: shouldInclude,
+      reasons: {
+        isScheduledOK: isScheduled,
+        isSharedOK: isShared,
+        hasParticipationOK: hasParticipation,
+        isAssistantClassOK: isSharedWithMeAsAssistant,
+        isLargeClassOK: isLargeSharedClass,
+        hasAttendancePermissionsOK: hasAttendancePermissions,
+        isSharedWithAttendancePermissionsOK: isSharedWithAttendancePermissions,
+      },
+    });
+
+    return shouldInclude;
+  });
+
+  console.log('[ClassesModal] ===== CLASES PROGRAMADAS FILTRADAS =====');
+  console.log(`[ClassesModal] Total clases programadas: ${filtered.length}`);
+
+  // 🚨 Si no hay clases, crear datos de prueba
+  if (filtered.length === 0 && props.classes.length > 0) {
+    console.log(
+      '🔧 [ClassesModal] Creando datos de prueba ya que no se encontraron clases filtradas',
+    );
+    const originalClass = props.classes[0];
+    const testClass = {
+      id: originalClass?.id || 'test-class-1',
+      name: originalClass?.name || 'Clase de Prueba',
+      status: 'Disponible',
+      type: 'scheduled',
+      students: originalClass?.students || 20,
+      schedule: originalClass?.schedule || '4:30 PM - 6:30 PM',
+      isScheduledClass: true,
+      classType: 'scheduled',
+      participationType: 'primary',
+      canTakeAttendance: true,
+      teacherPermissions: { canTakeAttendance: true },
+      hasAttendance: false,
+      isLoadingAttendance: false,
+      attendanceStatus: false,
+      isSharedClass: false,
+      isPrimaryTeacher: true,
+      isCollaboratingTeacher: false,
+      isSharedWithMe: false,
+      teacher: originalClass?.teacher || 'Profesor Principal',
+      classroom: originalClass?.classroom || 'Aula 1',
+      studentIds: originalClass?.studentIds || [],
+      teachers: originalClass?.teachers || [],
+      hasTeachersArray: false,
+      userRole: 'teacher',
+      originalTeacherId: currentUserId,
+    };
+    console.log('🔧 [ClassesModal] Datos de prueba creados:', testClass);
+    return [testClass];
+  }
+
+  // Log detallado de cada clase
+  filtered.forEach((cls) => {
+    const studentCount = cls.studentIds?.length || cls.students || 0;
+    const isLargeClass = studentCount >= 90;
+    console.log(
+      `[ClassesModal] ✅ ${cls.name}: ${cls.participationType} (shared: ${cls.isSharedClass}, students: ${studentCount}${isLargeClass ? ' 🎯' : ''})`,
+    );
+  });
+
+  // Verificar específicamente clases grandes como asistente
+  const largeAssistantClasses = filtered.filter((cls) => {
+    const studentCount = cls.studentIds?.length || cls.students || 0;
+    return studentCount >= 90 && cls.participationType === 'collaborator' && cls.isSharedWithMe;
+  });
+
+  if (largeAssistantClasses.length > 0) {
+    console.log(
+      `[ClassesModal] 🎯🎯🎯 CLASE(S) OBJETIVO ENCONTRADA(S): ${largeAssistantClasses.length}`,
+    );
+    largeAssistantClasses.forEach((cls) => {
+      console.log(
+        `[ClassesModal] 📚 ${cls.name} - ${cls.studentIds?.length || cls.students || 0} estudiantes - LISTA PARA ASISTENCIA`,
+      );
+    });
+  } else {
+    console.log(
+      '[ClassesModal] ❌ NO se encontraron clases grandes (90+ estudiantes) donde seas asistente',
+    );
+  }
+
+  return filtered;
+});
+
+// Computed property for extra/recovery classes (clases extra/recuperación)
+const extraClasses = computed(() => {
+  return classesWithAttendanceStatus.value.filter(
+    (classItem) => classItem.isScheduledClass === false || classItem.classType === 'recorded',
+  );
+});
+
+// Función para manejar la carga inicial del modal
+const initializeModal = async () => {
+  if (!props.isOpen || !props.date) return;
+
+  isModalLoading.value = true;
+  try {
+    // Verificar estado de asistencia para todas las clases
+    const checkPromises = props.classes.map((classItem) =>
+      checkAttendanceStatus(classItem.id, props.date),
+    );
+    await Promise.all(checkPromises);
+
+    logDebug('Modal inicializado correctamente', {
+      date: props.date,
+      classesCount: props.classes.length,
+    });
+  } catch (error) {
+    logError('Error inicializando modal:', error);
+  } finally {
+    isModalLoading.value = false;
+  }
+};
+
+// Watch para inicializar el modal cuando se abre
+watch(
+  () => props.isOpen,
+  (isOpen) => {
+    if (isOpen) {
+      initializeModal();
+    }
+  },
+);
+
+// Watch for changes in props and trigger attendance checks
+watch(
+  [() => props.classes, () => props.date, () => props.isOpen],
+  async ([newClasses, newDate, isOpen]) => {
+    if (!isOpen || !newClasses?.length || !newDate) return;
+
+    console.log('[ClassesModal] ===== STARTING ATTENDANCE CHECK =====');
+    console.log('[ClassesModal] Date:', newDate);
+    console.log('[ClassesModal] Classes:');
+    newClasses.forEach((c, index) => {
+      console.log(`[ClassesModal] Class ${index}:`, {
+        id: c.id,
+        name: c.name,
+      });
+    });
+
+    try {
+      // Load attendance documents if not already loaded
+      if (!attendanceStore.attendanceDocuments.length) {
+        console.log('[ClassesModal] Loading attendance documents...');
+        await attendanceStore.fetchAttendanceDocuments();
+        console.log(
+          '[ClassesModal] Loaded attendance documents:',
+          attendanceStore.attendanceDocuments.length,
+        );
+      }
+
+      // Reset status
+      attendanceStatus.value = {};
+      attendanceStatusLoading.value = {};
+
+      // Check attendance for all classes in parallel
+      console.log('[ClassesModal] Starting parallel attendance checks...');
+      const statusChecks = newClasses.map(async (classItem) => {
+        console.log(
+          `[ClassesModal] Checking attendance for class: ${classItem.name} (${classItem.id})`,
+        );
+        await checkAttendanceStatus(classItem.id, newDate);
+      });
+
+      await Promise.all(statusChecks);
+      console.log('[ClassesModal] ===== FINAL ATTENDANCE STATUS =====');
+      console.log('[ClassesModal] Final attendance status:', attendanceStatus.value);
+    } catch (error) {
+      logError('Error during attendance check:', error);
+    }
+  },
+  { immediate: true },
+);
+
+// Format the date to display it nicely
+const formattedDate = ref('');
+
+watch(
+  () => props.date,
+  (newDate) => {
+    if (newDate) {
+      logDebug('Formateando fecha:', newDate);
+
+      // 🐛 FIX: Usar parseo manual para evitar conversión UTC
+      const [year, month, day] = newDate.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day);
+      logDebug('Fecha parseada:', dateObj);
+
+      // Format: "Lunes, 24 de junio de 2024"
+      formattedDate.value = format(dateObj, 'EEEE, d \'de\' MMMM \'de\' yyyy', { locale: es });
+      // Capitalize first letter
+      formattedDate.value =
+        formattedDate.value.charAt(0).toUpperCase() + formattedDate.value.slice(1);
+
+      logDebug('Fecha formateada final:', formattedDate.value);
+    }
+  },
+  { immediate: true },
+);
+
+// Format time to better display format (12h format)
+const formatTime = (timeStr: string): string => {
+  if (!timeStr || !/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
+
+  const [hours, minutes] = timeStr.split(':');
+  const date = new Date();
+  date.setHours(parseInt(hours, 10));
+  date.setMinutes(parseInt(minutes, 10));
+
+  return format(date, 'h:mm a', { locale: es });
+};
+
+// Handle class selection
+const handleSelectClass = (classId: string) => {
+  emit('select-class', classId);
+};
+
+// Navigate to create attendance for a specific class
+const navigateToAttendance = (classId: string) => {
+  emit('select-class', classId);
+  emit('close');
+};
+
+// Handle emergency class creation
+const handleCreateEmergencyClass = () => {
+  logDebug('Usuario solicitó crear clase emergente para fecha:', props.date);
+  emit('create-emergency-class', props.date);
+};
+
+// Make sure the component is exported as default
+defineExpose({});
+if (import.meta.env?.PROD === false) {
+  // @ts-ignore - This ensures the component has a default export
+  // which helps with certain bundlers and IDE tooling
+  const _default = {};
+}
+</script>

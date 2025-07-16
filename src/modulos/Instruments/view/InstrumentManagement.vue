@@ -1,308 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, reactive} from "vue"
-import {useInstrumentoStore} from "../store/instrumento"
-import {useStudentsStore} from "../../Students/store/students"
-import InstrumentForm from "../components/InstrumentForm.vue"
-import InstrumentDetails from "../components/InstrumentDetails.vue"
-import type {Instrument} from "../types/instrumentsTypes"
-import {
-  PlusIcon,
-  ArrowDownTrayIcon,
-  UserPlusIcon,
-  ClipboardDocumentCheckIcon,
-  PhotoIcon,
-  PencilIcon,
-  TrashIcon,
-  EyeIcon,
-  ClockIcon,
-  DocumentTextIcon,
-} from "@heroicons/vue/24/outline"
-
-// Stores
-const instrumentStore = useInstrumentoStore()
-const studentsStore = useStudentsStore()
-
-// Estado local
-const instruments = ref<Instrument[]>([])
-const selectedInstrument = ref<Instrument | null>(null)
-const isLoading = ref(false)
-const isEditing = ref(false)
-const isCreating = ref(false)
-const error = ref<string | null>(null)
-const searchQuery = ref("")
-const filterFamily = ref("")
-const availableFamilies = ref<string[]>([])
-
-// Paginación
-const pagination = reactive({
-  currentPage: 1,
-  itemsPerPage: 10,
-  totalItems: 0,
-})
-
-// Ordenamiento
-const sorting = reactive({
-  field: "nombre",
-  direction: "asc" as "asc" | "desc",
-})
-
-// Notificación
-const notification = reactive({
-  show: false,
-  message: "",
-  type: "success" as "success" | "error" | "info",
-})
-
-// Cargar datos iniciales
-onMounted(async () => {
-  await loadData()
-})
-
-// Cargar instrumentos y estudiantes
-const loadData = async () => {
-  isLoading.value = true
-  error.value = null
-
-  try {
-    await Promise.all([instrumentStore.fetchInstruments(), studentsStore.fetchStudents()])
-
-    instruments.value = instrumentStore.instruments
-    availableFamilies.value = [
-      ...new Set(instruments.value.map((i) => i.familia).filter(Boolean) as string[]),
-    ]
-    pagination.totalItems = instruments.value.length
-  } catch (err: any) {
-    console.error("Error cargando datos:", err)
-    error.value = `Error cargando datos: ${err.message}`
-    showNotification("Error al cargar datos", "error")
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Filtrar instrumentos según búsqueda y familia
-const filteredInstruments = computed(() => {
-  let result = instruments.value
-
-  // Filtrar por familia
-  if (filterFamily.value) {
-    result = result.filter((i) => i.familia === filterFamily.value)
-  }
-
-  // Filtrar por término de búsqueda
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(
-      (i) =>
-        i.nombre?.toLowerCase().includes(query) ||
-        i.marca?.toLowerCase().includes(query) ||
-        i.serial?.toLowerCase().includes(query)
-    )
-  }
-
-  // Aplicar ordenamiento
-  result = [...result].sort((a, b) => {
-    const fieldA = a[sorting.field as keyof Instrument] || ""
-    const fieldB = b[sorting.field as keyof Instrument] || ""
-
-    if (typeof fieldA === "string" && typeof fieldB === "string") {
-      return sorting.direction === "asc"
-        ? fieldA.localeCompare(fieldB)
-        : fieldB.localeCompare(fieldA)
-    }
-
-    return 0
-  })
-
-  // Actualizar total para paginación
-  pagination.totalItems = result.length
-
-  return result
-})
-
-// Instrumentos paginados
-const paginatedInstruments = computed(() => {
-  const startIndex = (pagination.currentPage - 1) * pagination.itemsPerPage
-  const endIndex = startIndex + pagination.itemsPerPage
-  return filteredInstruments.value.slice(startIndex, endIndex)
-})
-
-// Total de páginas
-const totalPages = computed(() => {
-  return Math.ceil(pagination.totalItems / pagination.itemsPerPage)
-})
-
-// Cambiar página
-const changePage = (page: number) => {
-  if (page >= 1 && page <= totalPages.value) {
-    pagination.currentPage = page
-  }
-}
-
-// Cambiar ordenamiento
-const changeSort = (field: string) => {
-  if (sorting.field === field) {
-    sorting.direction = sorting.direction === "asc" ? "desc" : "asc"
-  } else {
-    sorting.field = field
-    sorting.direction = "asc"
-  }
-}
-
-// Mostrar notificación
-const showNotification = (message: string, type: "success" | "error" | "info" = "info") => {
-  notification.message = message
-  notification.type = type
-  notification.show = true
-
-  // Auto-ocultar después de 3 segundos
-  setTimeout(() => {
-    notification.show = false
-  }, 3000)
-}
-
-// Mostrar detalles de un instrumento
-const viewInstrument = async (instrument: Instrument) => {
-  selectedInstrument.value = instrument
-  isEditing.value = false
-  isCreating.value = false
-}
-
-// Iniciar edición de un instrumento
-const editInstrument = () => {
-  if (!selectedInstrument.value) return
-  isEditing.value = true
-  isCreating.value = false
-}
-
-// Iniciar creación de un nuevo instrumento
-const createNewInstrument = () => {
-  selectedInstrument.value = null
-  isEditing.value = false
-  isCreating.value = true
-}
-
-// Guardar instrumento (crear o actualizar)
-const saveInstrument = async (instrumentData: Partial<Instrument>) => {
-  isLoading.value = true
-  error.value = null
-
-  try {
-    // Verificar que al menos el nombre esté presente
-    if (!instrumentData.nombre) {
-      throw new Error("El nombre del instrumento es obligatorio")
-    }
-
-    if (isCreating.value) {
-      // Crear nuevo instrumento
-      const newInstrument = await instrumentStore.addInstrument(
-        instrumentData as Omit<Instrument, "id">
-      )
-      selectedInstrument.value = newInstrument
-      instruments.value.push(newInstrument)
-      showNotification("Instrumento creado con éxito", "success")
-    } else if (isEditing.value && selectedInstrument.value) {
-      // Actualizar instrumento existente
-      await instrumentStore.updateInstrument(selectedInstrument.value.id, instrumentData)
-
-      // Actualizar la vista
-      const index = instruments.value.findIndex((i) => i.id === selectedInstrument.value?.id)
-      if (index !== -1) {
-        instruments.value[index] = {...instruments.value[index], ...instrumentData}
-        selectedInstrument.value = instruments.value[index]
-      }
-      showNotification("Instrumento actualizado con éxito", "success")
-    }
-
-    isEditing.value = false
-    isCreating.value = false
-  } catch (err: any) {
-    console.error("Error guardando instrumento:", err)
-    error.value = `Error: ${err.message}`
-    showNotification(`Error al guardar: ${err.message}`, "error")
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Cancelar edición o creación
-const cancelEdit = () => {
-  isEditing.value = false
-  isCreating.value = false
-}
-
-// Eliminar instrumento
-const deleteInstrument = async () => {
-  if (!selectedInstrument.value) return
-
-  // Mejorado: usando una variable reactiva
-  const confirmDelete = confirm(
-    `¿Está seguro que desea eliminar el instrumento "${selectedInstrument.value.nombre}"?`
-  )
-  if (!confirmDelete) return
-
-  isLoading.value = true
-
-  try {
-    await instrumentStore.deleteInstrument(selectedInstrument.value.id)
-    instruments.value = instruments.value.filter((i) => i.id !== selectedInstrument.value?.id)
-    selectedInstrument.value = null
-    showNotification("Instrumento eliminado con éxito", "success")
-  } catch (err: any) {
-    console.error("Error eliminando instrumento:", err)
-    error.value = `Error: ${err.message}`
-    showNotification(`Error al eliminar: ${err.message}`, "error")
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Exportar datos a CSV
-const exportToCSV = () => {
-  // Crear cabeceras
-  const headers = ["Nombre", "Marca", "Serial", "Familia", "Estado"]
-
-  // Mapear datos
-  const data = filteredInstruments.value.map((instrument) => [
-    instrument.nombre || "",
-    instrument.marca || "",
-    instrument.serial || "",
-    instrument.familia || "",
-    instrument.estado || "",
-  ])
-
-  // Crear contenido
-  const csvContent = [headers.join(","), ...data.map((row) => row.join(","))].join("\n")
-
-  // Crear blob y descargar
-  const blob = new Blob([csvContent], {type: "text/csv;charset=utf-8;"})
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.setAttribute("href", url)
-  link.setAttribute("download", `instrumentos_${new Date().toISOString().slice(0, 10)}.csv`)
-  link.style.visibility = "hidden"
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-
-  showNotification("Datos exportados a CSV", "success")
-}
-
-// Mapeo de estados a clases de color
-const getStatusClass = (status: string | undefined): string => {
-  const statusMap: Record<string, string> = {
-    excelente: "bg-green-100 text-green-800",
-    bueno: "bg-blue-100 text-blue-800",
-    regular: "bg-yellow-100 text-yellow-800",
-    funcional: "bg-orange-100 text-orange-800",
-    necesitaReparacion: "bg-red-100 text-red-800",
-    malo: "bg-red-100 text-red-800",
-  }
-
-  return statusMap[status || ""] || "bg-gray-100 text-gray-800"
-}
-</script>
-
 <template>
   <div class="instrument-management p-2 sm:p-4 max-w-7xl mx-auto">
     <div
@@ -685,6 +380,311 @@ const getStatusClass = (status: string | undefined): string => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, reactive } from 'vue';
+import { useInstrumentoStore } from '../store/instrumento';
+import { useStudentsStore } from '../../Students/store/students';
+import InstrumentForm from '../components/InstrumentForm.vue';
+import InstrumentDetails from '../components/InstrumentDetails.vue';
+import type { Instrument } from '../types/instrumentsTypes';
+import {
+  PlusIcon,
+  ArrowDownTrayIcon,
+  UserPlusIcon,
+  ClipboardDocumentCheckIcon,
+  PhotoIcon,
+  PencilIcon,
+  TrashIcon,
+  EyeIcon,
+  ClockIcon,
+  DocumentTextIcon,
+} from '@heroicons/vue/24/outline';
+
+// Stores
+const instrumentStore = useInstrumentoStore();
+const studentsStore = useStudentsStore();
+
+// Estado local
+const instruments = ref<Instrument[]>([]);
+const selectedInstrument = ref<Instrument | null>(null);
+const isLoading = ref(false);
+const isEditing = ref(false);
+const isCreating = ref(false);
+const error = ref<string | null>(null);
+const searchQuery = ref('');
+const filterFamily = ref('');
+const availableFamilies = ref<string[]>([]);
+
+// Paginación
+const pagination = reactive({
+  currentPage: 1,
+  itemsPerPage: 10,
+  totalItems: 0,
+});
+
+// Ordenamiento
+const sorting = reactive({
+  field: 'nombre',
+  direction: 'asc' as 'asc' | 'desc',
+});
+
+// Notificación
+const notification = reactive({
+  show: false,
+  message: '',
+  type: 'success' as 'success' | 'error' | 'info',
+});
+
+// Cargar datos iniciales
+onMounted(async () => {
+  await loadData();
+});
+
+// Cargar instrumentos y estudiantes
+const loadData = async () => {
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    await Promise.all([instrumentStore.fetchInstruments(), studentsStore.fetchStudents()]);
+
+    instruments.value = instrumentStore.instruments;
+    availableFamilies.value = [
+      ...new Set(instruments.value.map((i) => i.familia).filter(Boolean) as string[]),
+    ];
+    pagination.totalItems = instruments.value.length;
+  } catch (err: any) {
+    console.error('Error cargando datos:', err);
+    error.value = `Error cargando datos: ${err.message}`;
+    showNotification('Error al cargar datos', 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Filtrar instrumentos según búsqueda y familia
+const filteredInstruments = computed(() => {
+  let result = instruments.value;
+
+  // Filtrar por familia
+  if (filterFamily.value) {
+    result = result.filter((i) => i.familia === filterFamily.value);
+  }
+
+  // Filtrar por término de búsqueda
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(
+      (i) =>
+        i.nombre?.toLowerCase().includes(query) ||
+        i.marca?.toLowerCase().includes(query) ||
+        i.serial?.toLowerCase().includes(query),
+    );
+  }
+
+  // Aplicar ordenamiento
+  result = [...result].sort((a, b) => {
+    const fieldA = a[sorting.field as keyof Instrument] || '';
+    const fieldB = b[sorting.field as keyof Instrument] || '';
+
+    if (typeof fieldA === 'string' && typeof fieldB === 'string') {
+      return sorting.direction === 'asc'
+        ? fieldA.localeCompare(fieldB)
+        : fieldB.localeCompare(fieldA);
+    }
+
+    return 0;
+  });
+
+  // Actualizar total para paginación
+  pagination.totalItems = result.length;
+
+  return result;
+});
+
+// Instrumentos paginados
+const paginatedInstruments = computed(() => {
+  const startIndex = (pagination.currentPage - 1) * pagination.itemsPerPage;
+  const endIndex = startIndex + pagination.itemsPerPage;
+  return filteredInstruments.value.slice(startIndex, endIndex);
+});
+
+// Total de páginas
+const totalPages = computed(() => {
+  return Math.ceil(pagination.totalItems / pagination.itemsPerPage);
+});
+
+// Cambiar página
+const changePage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    pagination.currentPage = page;
+  }
+};
+
+// Cambiar ordenamiento
+const changeSort = (field: string) => {
+  if (sorting.field === field) {
+    sorting.direction = sorting.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    sorting.field = field;
+    sorting.direction = 'asc';
+  }
+};
+
+// Mostrar notificación
+const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  notification.message = message;
+  notification.type = type;
+  notification.show = true;
+
+  // Auto-ocultar después de 3 segundos
+  setTimeout(() => {
+    notification.show = false;
+  }, 3000);
+};
+
+// Mostrar detalles de un instrumento
+const viewInstrument = async (instrument: Instrument) => {
+  selectedInstrument.value = instrument;
+  isEditing.value = false;
+  isCreating.value = false;
+};
+
+// Iniciar edición de un instrumento
+const editInstrument = () => {
+  if (!selectedInstrument.value) return;
+  isEditing.value = true;
+  isCreating.value = false;
+};
+
+// Iniciar creación de un nuevo instrumento
+const createNewInstrument = () => {
+  selectedInstrument.value = null;
+  isEditing.value = false;
+  isCreating.value = true;
+};
+
+// Guardar instrumento (crear o actualizar)
+const saveInstrument = async (instrumentData: Partial<Instrument>) => {
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    // Verificar que al menos el nombre esté presente
+    if (!instrumentData.nombre) {
+      throw new Error('El nombre del instrumento es obligatorio');
+    }
+
+    if (isCreating.value) {
+      // Crear nuevo instrumento
+      const newInstrument = await instrumentStore.addInstrument(
+        instrumentData as Omit<Instrument, 'id'>,
+      );
+      selectedInstrument.value = newInstrument;
+      instruments.value.push(newInstrument);
+      showNotification('Instrumento creado con éxito', 'success');
+    } else if (isEditing.value && selectedInstrument.value) {
+      // Actualizar instrumento existente
+      await instrumentStore.updateInstrument(selectedInstrument.value.id, instrumentData);
+
+      // Actualizar la vista
+      const index = instruments.value.findIndex((i) => i.id === selectedInstrument.value?.id);
+      if (index !== -1) {
+        instruments.value[index] = { ...instruments.value[index], ...instrumentData };
+        selectedInstrument.value = instruments.value[index];
+      }
+      showNotification('Instrumento actualizado con éxito', 'success');
+    }
+
+    isEditing.value = false;
+    isCreating.value = false;
+  } catch (err: any) {
+    console.error('Error guardando instrumento:', err);
+    error.value = `Error: ${err.message}`;
+    showNotification(`Error al guardar: ${err.message}`, 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Cancelar edición o creación
+const cancelEdit = () => {
+  isEditing.value = false;
+  isCreating.value = false;
+};
+
+// Eliminar instrumento
+const deleteInstrument = async () => {
+  if (!selectedInstrument.value) return;
+
+  // Mejorado: usando una variable reactiva
+  const confirmDelete = confirm(
+    `¿Está seguro que desea eliminar el instrumento "${selectedInstrument.value.nombre}"?`,
+  );
+  if (!confirmDelete) return;
+
+  isLoading.value = true;
+
+  try {
+    await instrumentStore.deleteInstrument(selectedInstrument.value.id);
+    instruments.value = instruments.value.filter((i) => i.id !== selectedInstrument.value?.id);
+    selectedInstrument.value = null;
+    showNotification('Instrumento eliminado con éxito', 'success');
+  } catch (err: any) {
+    console.error('Error eliminando instrumento:', err);
+    error.value = `Error: ${err.message}`;
+    showNotification(`Error al eliminar: ${err.message}`, 'error');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Exportar datos a CSV
+const exportToCSV = () => {
+  // Crear cabeceras
+  const headers = ['Nombre', 'Marca', 'Serial', 'Familia', 'Estado'];
+
+  // Mapear datos
+  const data = filteredInstruments.value.map((instrument) => [
+    instrument.nombre || '',
+    instrument.marca || '',
+    instrument.serial || '',
+    instrument.familia || '',
+    instrument.estado || '',
+  ]);
+
+  // Crear contenido
+  const csvContent = [headers.join(','), ...data.map((row) => row.join(','))].join('\n');
+
+  // Crear blob y descargar
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `instrumentos_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  showNotification('Datos exportados a CSV', 'success');
+};
+
+// Mapeo de estados a clases de color
+const getStatusClass = (status: string | undefined): string => {
+  const statusMap: Record<string, string> = {
+    excelente: 'bg-green-100 text-green-800',
+    bueno: 'bg-blue-100 text-blue-800',
+    regular: 'bg-yellow-100 text-yellow-800',
+    funcional: 'bg-orange-100 text-orange-800',
+    necesitaReparacion: 'bg-red-100 text-red-800',
+    malo: 'bg-red-100 text-red-800',
+  };
+
+  return statusMap[status || ''] || 'bg-gray-100 text-gray-800';
+};
+</script>
 
 <style scoped>
 .instrument-management {

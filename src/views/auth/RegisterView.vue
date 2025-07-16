@@ -1,121 +1,3 @@
-<script setup lang="ts">
-import {ref, reactive} from "vue"
-import {useRouter} from "vue-router"
-import {useAuthStore} from "../../stores/auth"
-import {ExclamationCircleIcon, EyeIcon, EyeSlashIcon} from "@heroicons/vue/24/outline"
-
-const router = useRouter()
-const authStore = useAuthStore()
-
-const formData = reactive({
-  name: "",
-  email: "",
-  password: "",
-  confirmPassword: "",
-  phone: "",
-  role: "Maestro", // Por defecto, registrarse como maestro
-})
-
-const error = ref("")
-const successMessage = ref("")
-const isLoading = ref(false)
-const showPassword = ref(false)
-const showConfirmPassword = ref(false)
-const currentStep = ref(1)
-const totalSteps = 2
-
-// Validación del paso 1
-const validateStep1 = () => {
-  if (!formData.name.trim()) {
-    error.value = "Por favor, ingresa tu nombre completo"
-    return false
-  }
-
-  if (!formData.email.trim()) {
-    error.value = "Por favor, ingresa tu correo electrónico"
-    return false
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(formData.email)) {
-    error.value = "Por favor, ingresa un correo electrónico válido"
-    return false
-  }
-
-  return true
-}
-
-// Validación del paso 2
-const validateStep2 = () => {
-  if (!formData.password) {
-    error.value = "Por favor, ingresa una contraseña"
-    return false
-  }
-
-  if (formData.password.length < 6) {
-    error.value = "La contraseña debe tener al menos 6 caracteres"
-    return false
-  }
-
-  if (formData.password !== formData.confirmPassword) {
-    error.value = "Las contraseñas no coinciden"
-    return false
-  }
-
-  return true
-}
-
-// Avanzar al siguiente paso
-const nextStep = () => {
-  error.value = ""
-
-  if (currentStep.value === 1 && validateStep1()) {
-    currentStep.value = 2
-  }
-}
-
-// Retroceder al paso anterior
-const prevStep = () => {
-  error.value = ""
-  currentStep.value = 1
-}
-
-// Manejar el registro completo
-const handleRegister = async () => {
-  error.value = ""
-
-  // Validar el paso actual
-  if (currentStep.value === 1) {
-    if (!validateStep1()) return
-    nextStep()
-    return
-  }
-
-  // Validar el último paso
-  if (!validateStep2()) return
-
-  isLoading.value = true
-
-  try {
-    const result = await authStore.register(formData.email, formData.password, {
-      name: formData.name,
-      phone: formData.phone,
-      role: formData.role,
-    })
-
-    successMessage.value =
-      result.message || "Registro exitoso. Tu cuenta está pendiente de aprobación."
-    setTimeout(() => {
-      router.push("/login?registered=true")
-    }, 3000)
-  } catch (e: any) {
-    error.value = e.message || "Error al crear la cuenta"
-  } finally {
-    isLoading.value = false
-  }
-}
-</script>
-
 <template>
   <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg">
@@ -415,3 +297,121 @@ const handleRegister = async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../../stores/auth';
+import { ExclamationCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline';
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+const formData = reactive({
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  phone: '',
+  role: 'Maestro', // Por defecto, registrarse como maestro
+});
+
+const error = ref('');
+const successMessage = ref('');
+const isLoading = ref(false);
+const showPassword = ref(false);
+const showConfirmPassword = ref(false);
+const currentStep = ref(1);
+const totalSteps = 2;
+
+// Validación del paso 1
+const validateStep1 = () => {
+  if (!formData.name.trim()) {
+    error.value = 'Por favor, ingresa tu nombre completo';
+    return false;
+  }
+
+  if (!formData.email.trim()) {
+    error.value = 'Por favor, ingresa tu correo electrónico';
+    return false;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(formData.email)) {
+    error.value = 'Por favor, ingresa un correo electrónico válido';
+    return false;
+  }
+
+  return true;
+};
+
+// Validación del paso 2
+const validateStep2 = () => {
+  if (!formData.password) {
+    error.value = 'Por favor, ingresa una contraseña';
+    return false;
+  }
+
+  if (formData.password.length < 6) {
+    error.value = 'La contraseña debe tener al menos 6 caracteres';
+    return false;
+  }
+
+  if (formData.password !== formData.confirmPassword) {
+    error.value = 'Las contraseñas no coinciden';
+    return false;
+  }
+
+  return true;
+};
+
+// Avanzar al siguiente paso
+const nextStep = () => {
+  error.value = '';
+
+  if (currentStep.value === 1 && validateStep1()) {
+    currentStep.value = 2;
+  }
+};
+
+// Retroceder al paso anterior
+const prevStep = () => {
+  error.value = '';
+  currentStep.value = 1;
+};
+
+// Manejar el registro completo
+const handleRegister = async () => {
+  error.value = '';
+
+  // Validar el paso actual
+  if (currentStep.value === 1) {
+    if (!validateStep1()) return;
+    nextStep();
+    return;
+  }
+
+  // Validar el último paso
+  if (!validateStep2()) return;
+
+  isLoading.value = true;
+
+  try {
+    const result = await authStore.register(formData.email, formData.password, {
+      name: formData.name,
+      phone: formData.phone,
+      role: formData.role,
+    });
+
+    successMessage.value =
+      result.message || 'Registro exitoso. Tu cuenta está pendiente de aprobación.';
+    setTimeout(() => {
+      router.push('/login?registered=true');
+    }, 3000);
+  } catch (e: any) {
+    error.value = e.message || 'Error al crear la cuenta';
+  } finally {
+    isLoading.value = false;
+  }
+};
+</script>

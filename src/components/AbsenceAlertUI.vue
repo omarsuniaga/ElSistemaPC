@@ -150,52 +150,52 @@
 </template>
 
 <script setup lang="ts">
-import {ExclamationCircleIcon, CheckCircleIcon} from "@heroicons/vue/24/outline"
-import {useMotion} from "@vueuse/motion"
-import {ref} from "vue"
+import { ExclamationCircleIcon, CheckCircleIcon } from '@heroicons/vue/24/outline';
+import { useMotion } from '@vueuse/motion';
+import { ref } from 'vue';
 
 // Notificaciones
-const showNotification = ref(false)
-const notificationMessage = ref("")
+const showNotification = ref(false);
+const notificationMessage = ref('');
 
 const triggerNotification = (message: string) => {
-  notificationMessage.value = message
-  showNotification.value = true
-  setTimeout(() => (showNotification.value = false), 3000)
-}
+  notificationMessage.value = message;
+  showNotification.value = true;
+  setTimeout(() => (showNotification.value = false), 3000);
+};
 
 // Animaciones
-const {apply: motion} = useMotion({
+const { apply: motion } = useMotion({
   header: {
-    initial: {opacity: 0, y: -20},
-    enter: {opacity: 1, y: 0},
+    initial: { opacity: 0, y: -20 },
+    enter: { opacity: 1, y: 0 },
   },
   notification: {
-    initial: {opacity: 0, x: 100},
-    enter: {opacity: 1, x: 0},
-    leave: {opacity: 0, x: 100},
+    initial: { opacity: 0, x: 100 },
+    enter: { opacity: 1, x: 0 },
+    leave: { opacity: 0, x: 100 },
   },
-})
+});
 
 defineProps({
   loading: Boolean,
   hasAbsences: Boolean,
   activeFilter: {
     type: String,
-    default: "week",
+    default: 'week',
   },
   filters: {
     type: Object,
     default: () => ({
-      week: {label: "Semanal"},
-      month: {label: "Mensual"},
+      week: { label: 'Semanal' },
+      month: { label: 'Mensual' },
     }),
   },
   filteredStudents: {
     type: Array,
     default: () => [],
   },
-})
+});
 </script>
 
 <style scoped>

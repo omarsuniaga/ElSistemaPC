@@ -1,86 +1,86 @@
 // src/utils/testing/brandingTests.ts
 
-import {logger} from "@/utils/logging/logger"
+import { logger } from '@/utils/logging/logger';
 
 /**
  * Suite de pruebas para el sistema de configuración de marca
  */
 export class BrandingTestSuite {
-  private testResults: Array<{test: string; status: "PASS" | "FAIL"; details?: string}> = []
+  private testResults: Array<{test: string; status: 'PASS' | 'FAIL'; details?: string}> = [];
 
   // Lazy initialization to avoid early store access
   private async getBrandingStore() {
-    const {useBrandingStore} = await import("@/stores/brandingStore")
-    return useBrandingStore()
+    const { useBrandingStore } = await import('@/stores/brandingStore');
+    return useBrandingStore();
   }
 
   private async getBrandingComposable() {
-    const {useBranding} = await import("@/composables/useBranding")
-    return useBranding()
+    const { useBranding } = await import('@/composables/useBranding');
+    return useBranding();
   }
 
   /**
    * Ejecuta todas las pruebas del sistema de branding
    */
   async runAllTests(): Promise<void> {
-    console.group("🎨 TESTING: Sistema de Configuración de Marca")
+    console.group('🎨 TESTING: Sistema de Configuración de Marca');
 
-    this.testResults = []
+    this.testResults = [];
 
     try {
       // Pruebas de store
-      await this.testStoreInitialization()
-      await this.testStoreOperations()
+      await this.testStoreInitialization();
+      await this.testStoreOperations();
 
       // Pruebas de composable
-      await this.testComposableProperties()
-      await this.testCSSVariables()
+      await this.testComposableProperties();
+      await this.testCSSVariables();
 
       // Pruebas de DOM
-      this.testDOMApplication()
+      this.testDOMApplication();
 
       // Pruebas de archivos
-      await this.testFileOperations()
+      await this.testFileOperations();
 
       // Mostrar resultados
-      this.displayResults()
+      this.displayResults();
     } catch (error) {
-      console.error("❌ Error ejecutando pruebas de branding:", error)
+      console.error('❌ Error ejecutando pruebas de branding:', error);
     }
 
-    console.groupEnd()
+    console.groupEnd();
   }
 
   /**
    * Prueba la inicialización del store
    */
   private async testStoreInitialization(): Promise<void> {
-    console.log("🔍 Probando inicialización del store...")
+    console.log('🔍 Probando inicialización del store...');
 
     try {
-      const brandingStore = await this.getBrandingStore()
+      const brandingStore = await this.getBrandingStore();
       
       // Verificar estado inicial
-      const initialConfig = brandingStore.config
+      const initialConfig = brandingStore.config;
 
       if (initialConfig.appName) {
-        this.addResult("Store inicializado", "PASS", `App name: ${initialConfig.appName}`)
+        this.addResult('Store inicializado', 'PASS', `App name: ${initialConfig.appName}`);
       } else {
-        this.addResult("Store inicializado", "FAIL", "Config no tiene appName")
+        this.addResult('Store inicializado', 'FAIL', 'Config no tiene appName');
       }
 
       // Verificar propiedades computadas
       if (brandingStore.appTitle) {
         this.addResult(
-          "Computed properties funcionando",
-          "PASS",
-          `Title: ${brandingStore.appTitle}`
-        )
+          'Computed properties funcionando',
+          'PASS',
+          `Title: ${brandingStore.appTitle}`,
+        );
       } else {
-        this.addResult("Computed properties funcionando", "FAIL", "appTitle no disponible")
+        this.addResult('Computed properties funcionando', 'FAIL', 'appTitle no disponible');
       }
     } catch (error) {
-      this.addResult("Store inicializado", "FAIL", `Error: ${error}`)
+      this.addResult('Store inicializado', 'FAIL', `Error: ${error}`);
     }
   }
 
@@ -88,41 +88,41 @@ export class BrandingTestSuite {
    * Prueba las operaciones del store
    */
   private async testStoreOperations(): Promise<void> {
-    console.log("🔍 Probando operaciones del store...")
+    console.log('🔍 Probando operaciones del store...');
 
     try {
-      const brandingStore = await this.getBrandingStore()
+      const brandingStore = await this.getBrandingStore();
       
       // Crear configuración de prueba
       const testConfig = {
-        appName: "Test Academy",
-        tagline: "Testing Mode",
+        appName: 'Test Academy',
+        tagline: 'Testing Mode',
         colors: {
-          primary: "#ff5722",
-          secondary: "#9c27b0",
-          accent: "#4caf50",
-          background: "#f5f5f5",
-          surface: "#ffffff",
-          text: "#333333",
+          primary: '#ff5722',
+          secondary: '#9c27b0',
+          accent: '#4caf50',
+          background: '#f5f5f5',
+          surface: '#ffffff',
+          text: '#333333',
         },
-      }
+      };
 
       // Probar preview de cambios
-      brandingStore.previewChanges(testConfig)
+      brandingStore.previewChanges(testConfig);
 
-      if (brandingStore.config.appName === "Test Academy") {
-        this.addResult("Preview de cambios", "PASS", "Configuración aplicada temporalmente")
+      if (brandingStore.config.appName === 'Test Academy') {
+        this.addResult('Preview de cambios', 'PASS', 'Configuración aplicada temporalmente');
       } else {
-        this.addResult("Preview de cambios", "FAIL", "Preview no funcionó")
+        this.addResult('Preview de cambios', 'FAIL', 'Preview no funcionó');
       }
 
       // Revertir cambios si hay función disponible
       if ((window as any).revertBrandingPreview) {
-        ;(window as any).revertBrandingPreview()
-        this.addResult("Revertir preview", "PASS", "Cambios revertidos exitosamente")
+        ;(window as any).revertBrandingPreview();
+        this.addResult('Revertir preview', 'PASS', 'Cambios revertidos exitosamente');
       }
     } catch (error) {
-      this.addResult("Store operaciones", "FAIL", `Error: ${error}`)
+      this.addResult('Store operaciones', 'FAIL', `Error: ${error}`);
     }
   }
 
@@ -130,42 +130,42 @@ export class BrandingTestSuite {
    * Prueba las propiedades del composable
    */
   private async testComposableProperties(): Promise<void> {
-    console.log("🔍 Probando composable de branding...")
+    console.log('🔍 Probando composable de branding...');
 
     try {
-      const brandingComposable = await this.getBrandingComposable()
-      const {appTitle, appDescription, appLogo, brandColors} = brandingComposable
+      const brandingComposable = await this.getBrandingComposable();
+      const { appTitle, appDescription, appLogo, brandColors } = brandingComposable;
 
       // Verificar propiedades reactivas
       if (appTitle.value) {
-        this.addResult("Composable appTitle", "PASS", `Value: ${appTitle.value}`)
+        this.addResult('Composable appTitle', 'PASS', `Value: ${appTitle.value}`);
       } else {
-        this.addResult("Composable appTitle", "FAIL", "No value")
+        this.addResult('Composable appTitle', 'FAIL', 'No value');
       }
 
       if (appDescription.value) {
         this.addResult(
-          "Composable appDescription",
-          "PASS",
-          `Length: ${appDescription.value.length} chars`
-        )
+          'Composable appDescription',
+          'PASS',
+          `Length: ${appDescription.value.length} chars`,
+        );
       } else {
-        this.addResult("Composable appDescription", "FAIL", "No value")
+        this.addResult('Composable appDescription', 'FAIL', 'No value');
       }
 
       if (appLogo.value.url) {
-        this.addResult("Composable appLogo", "PASS", `URL: ${appLogo.value.url}`)
+        this.addResult('Composable appLogo', 'PASS', `URL: ${appLogo.value.url}`);
       } else {
-        this.addResult("Composable appLogo", "FAIL", "No URL")
+        this.addResult('Composable appLogo', 'FAIL', 'No URL');
       }
 
       if (brandColors.value.primary) {
-        this.addResult("Composable brandColors", "PASS", `Primary: ${brandColors.value.primary}`)
+        this.addResult('Composable brandColors', 'PASS', `Primary: ${brandColors.value.primary}`);
       } else {
-        this.addResult("Composable brandColors", "FAIL", "No primary color")
+        this.addResult('Composable brandColors', 'FAIL', 'No primary color');
       }
     } catch (error) {
-      this.addResult("Composable properties", "FAIL", `Error: ${error}`)
+      this.addResult('Composable properties', 'FAIL', `Error: ${error}`);
     }
   }
 
@@ -173,50 +173,50 @@ export class BrandingTestSuite {
    * Prueba las variables CSS
    */
   private async testCSSVariables(): Promise<void> {
-    console.log("🔍 Probando variables CSS...")
+    console.log('🔍 Probando variables CSS...');
 
     try {
-      const brandingComposable = await this.getBrandingComposable()
-      const brandingStore = await this.getBrandingStore()
-      const {cssVariables, getCSSVariables} = brandingComposable
+      const brandingComposable = await this.getBrandingComposable();
+      const brandingStore = await this.getBrandingStore();
+      const { cssVariables, getCSSVariables } = brandingComposable;
 
       // Verificar variables CSS del store
-      const storeVariables = brandingStore.cssVariables
+      const storeVariables = brandingStore.cssVariables;
       if (Object.keys(storeVariables).length > 0) {
         this.addResult(
-          "CSS Variables (Store)",
-          "PASS",
-          `${Object.keys(storeVariables).length} variables`
-        )
+          'CSS Variables (Store)',
+          'PASS',
+          `${Object.keys(storeVariables).length} variables`,
+        );
       } else {
-        this.addResult("CSS Variables (Store)", "FAIL", "No variables")
+        this.addResult('CSS Variables (Store)', 'FAIL', 'No variables');
       }
 
       // Verificar variables CSS del composable
-      const composableVariables = cssVariables
+      const composableVariables = cssVariables;
       if (Object.keys(composableVariables).length > 0) {
         this.addResult(
-          "CSS Variables (Composable)",
-          "PASS",
-          `${Object.keys(composableVariables).length} variables`
-        )
+          'CSS Variables (Composable)',
+          'PASS',
+          `${Object.keys(composableVariables).length} variables`,
+        );
       } else {
-        this.addResult("CSS Variables (Composable)", "FAIL", "No variables")
+        this.addResult('CSS Variables (Composable)', 'FAIL', 'No variables');
       }
 
       // Verificar función getCSSVariables
-      const dynamicVariables = getCSSVariables()
-      if (dynamicVariables["--brand-primary"]) {
+      const dynamicVariables = getCSSVariables();
+      if (dynamicVariables['--brand-primary']) {
         this.addResult(
-          "Dynamic CSS Variables",
-          "PASS",
-          `Primary: ${dynamicVariables["--brand-primary"]}`
-        )
+          'Dynamic CSS Variables',
+          'PASS',
+          `Primary: ${dynamicVariables['--brand-primary']}`,
+        );
       } else {
-        this.addResult("Dynamic CSS Variables", "FAIL", "No dynamic variables")
+        this.addResult('Dynamic CSS Variables', 'FAIL', 'No dynamic variables');
       }
     } catch (error) {
-      this.addResult("CSS Variables", "FAIL", `Error: ${error}`)
+      this.addResult('CSS Variables', 'FAIL', `Error: ${error}`);
     }
   }
 
@@ -224,48 +224,48 @@ export class BrandingTestSuite {
    * Prueba la aplicación al DOM
    */
   private testDOMApplication(): void {
-    console.log("🔍 Probando aplicación al DOM...")
+    console.log('🔍 Probando aplicación al DOM...');
 
     try {
       // Verificar título del documento
-      const currentTitle = document.title
-      if (currentTitle && currentTitle !== "Vite App") {
-        this.addResult("Document title", "PASS", `Title: ${currentTitle}`)
+      const currentTitle = document.title;
+      if (currentTitle && currentTitle !== 'Vite App') {
+        this.addResult('Document title', 'PASS', `Title: ${currentTitle}`);
       } else {
-        this.addResult("Document title", "FAIL", "Title no actualizado")
+        this.addResult('Document title', 'FAIL', 'Title no actualizado');
       }
 
       // Verificar variables CSS en el DOM
-      const root = document.documentElement
-      const primaryColor = getComputedStyle(root).getPropertyValue("--ion-color-primary")
+      const root = document.documentElement;
+      const primaryColor = getComputedStyle(root).getPropertyValue('--ion-color-primary');
 
       if (primaryColor) {
-        this.addResult("CSS Variables en DOM", "PASS", `Primary: ${primaryColor.trim()}`)
+        this.addResult('CSS Variables en DOM', 'PASS', `Primary: ${primaryColor.trim()}`);
       } else {
-        this.addResult("CSS Variables en DOM", "FAIL", "Variables no aplicadas")
+        this.addResult('CSS Variables en DOM', 'FAIL', 'Variables no aplicadas');
       }
 
       // Verificar meta description
-      const metaDescription = document.querySelector('meta[name="description"]') as HTMLMetaElement
+      const metaDescription = document.querySelector('meta[name="description"]') as HTMLMetaElement;
       if (metaDescription && metaDescription.content) {
         this.addResult(
-          "Meta description",
-          "PASS",
-          `Content: ${metaDescription.content.substring(0, 50)}...`
-        )
+          'Meta description',
+          'PASS',
+          `Content: ${metaDescription.content.substring(0, 50)}...`,
+        );
       } else {
-        this.addResult("Meta description", "FAIL", "Meta description no encontrada")
+        this.addResult('Meta description', 'FAIL', 'Meta description no encontrada');
       }
 
       // Verificar favicon
-      const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement
+      const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
       if (favicon && favicon.href) {
-        this.addResult("Favicon", "PASS", `Href: ${favicon.href}`)
+        this.addResult('Favicon', 'PASS', `Href: ${favicon.href}`);
       } else {
-        this.addResult("Favicon", "FAIL", "Favicon no encontrado")
+        this.addResult('Favicon', 'FAIL', 'Favicon no encontrado');
       }
     } catch (error) {
-      this.addResult("DOM Application", "FAIL", `Error: ${error}`)
+      this.addResult('DOM Application', 'FAIL', `Error: ${error}`);
     }
   }
 
@@ -273,133 +273,133 @@ export class BrandingTestSuite {
    * Prueba las operaciones de archivos
    */
   private async testFileOperations(): Promise<void> {
-    console.log("🔍 Probando operaciones de archivos...")
+    console.log('🔍 Probando operaciones de archivos...');
 
     try {
       // Crear un archivo de prueba para importar
       const testConfigData = {
-        appName: "Test Import Academy",
-        appDescription: "Configuración de prueba importada",
-        tagline: "Testing Import",
+        appName: 'Test Import Academy',
+        appDescription: 'Configuración de prueba importada',
+        tagline: 'Testing Import',
         colors: {
-          primary: "#e91e63",
-          secondary: "#9c27b0",
-          accent: "#00bcd4",
-          background: "#fafafa",
-          surface: "#ffffff",
-          text: "#212121",
+          primary: '#e91e63',
+          secondary: '#9c27b0',
+          accent: '#00bcd4',
+          background: '#fafafa',
+          surface: '#ffffff',
+          text: '#212121',
         },
         version: 999,
-      }
+      };
 
       // Probar exportación
       try {
-        const brandingStore = await this.getBrandingStore()
-        brandingStore.exportConfig()
-        this.addResult("Export Config", "PASS", "Descarga iniciada")
+        const brandingStore = await this.getBrandingStore();
+        brandingStore.exportConfig();
+        this.addResult('Export Config', 'PASS', 'Descarga iniciada');
       } catch (error) {
-        this.addResult("Export Config", "FAIL", `Error: ${error}`)
+        this.addResult('Export Config', 'FAIL', `Error: ${error}`);
       }
 
       // Simular archivo para importación
-      const testFile = new File([JSON.stringify(testConfigData)], "test-config.json", {
-        type: "application/json",
-      })
+      const testFile = new File([JSON.stringify(testConfigData)], 'test-config.json', {
+        type: 'application/json',
+      });
 
       // Verificar que el archivo se puede procesar
-      const fileContent = await testFile.text()
-      const parsedContent = JSON.parse(fileContent)
+      const fileContent = await testFile.text();
+      const parsedContent = JSON.parse(fileContent);
 
-      if (parsedContent.appName === "Test Import Academy") {
-        this.addResult("File Processing", "PASS", "Archivo de prueba válido")
+      if (parsedContent.appName === 'Test Import Academy') {
+        this.addResult('File Processing', 'PASS', 'Archivo de prueba válido');
       } else {
-        this.addResult("File Processing", "FAIL", "Archivo de prueba inválido")
+        this.addResult('File Processing', 'FAIL', 'Archivo de prueba inválido');
       }
     } catch (error) {
-      this.addResult("File Operations", "FAIL", `Error: ${error}`)
+      this.addResult('File Operations', 'FAIL', `Error: ${error}`);
     }
   }
 
   /**
    * Agrega un resultado de prueba
    */
-  private addResult(test: string, status: "PASS" | "FAIL", details?: string): void {
-    this.testResults.push({test, status, details})
+  private addResult(test: string, status: 'PASS' | 'FAIL', details?: string): void {
+    this.testResults.push({ test, status, details });
 
-    const icon = status === "PASS" ? "✅" : "❌"
-    const message = details ? ` - ${details}` : ""
-    console.log(`  ${icon} ${test}${message}`)
+    const icon = status === 'PASS' ? '✅' : '❌';
+    const message = details ? ` - ${details}` : '';
+    console.log(`  ${icon} ${test}${message}`);
   }
 
   /**
    * Muestra el resumen de resultados
    */
   private displayResults(): void {
-    const passCount = this.testResults.filter((r) => r.status === "PASS").length
-    const failCount = this.testResults.filter((r) => r.status === "FAIL").length
-    const total = this.testResults.length
+    const passCount = this.testResults.filter((r) => r.status === 'PASS').length;
+    const failCount = this.testResults.filter((r) => r.status === 'FAIL').length;
+    const total = this.testResults.length;
 
-    console.log("\n📊 RESUMEN DE PRUEBAS:")
-    console.log(`   Total: ${total}`)
-    console.log(`   ✅ Exitosas: ${passCount}`)
-    console.log(`   ❌ Fallidas: ${failCount}`)
-    console.log(`   📈 Tasa de éxito: ${((passCount / total) * 100).toFixed(1)}%`)
+    console.log('\n📊 RESUMEN DE PRUEBAS:');
+    console.log(`   Total: ${total}`);
+    console.log(`   ✅ Exitosas: ${passCount}`);
+    console.log(`   ❌ Fallidas: ${failCount}`);
+    console.log(`   📈 Tasa de éxito: ${((passCount / total) * 100).toFixed(1)}%`);
 
     if (failCount > 0) {
-      console.log("\n🔍 PRUEBAS FALLIDAS:")
+      console.log('\n🔍 PRUEBAS FALLIDAS:');
       this.testResults
-        .filter((r) => r.status === "FAIL")
+        .filter((r) => r.status === 'FAIL')
         .forEach((result) => {
-          console.log(`   ❌ ${result.test}: ${result.details || "Sin detalles"}`)
-        })
+          console.log(`   ❌ ${result.test}: ${result.details || 'Sin detalles'}`);
+        });
     }
 
     // Guardar resultados en el store para debugging
-    ;(window as any).brandingTestResults = this.testResults
+    ;(window as any).brandingTestResults = this.testResults;
 
-    logger.info("BRANDING_TESTS", "Pruebas completadas", {
+    logger.info('BRANDING_TESTS', 'Pruebas completadas', {
       total,
       passed: passCount,
       failed: failCount,
       successRate: (passCount / total) * 100,
-    })
+    });
   }
 
   /**
    * Prueba rápida del sistema
    */
   async quickTest(): Promise<boolean> {
-    console.log("⚡ Prueba rápida del sistema de branding...")
+    console.log('⚡ Prueba rápida del sistema de branding...');
 
     try {
       // Verificaciones básicas
-      const brandingStore = await this.getBrandingStore()
-      const hasStore = !!brandingStore
-      const hasConfig = !!brandingStore.config
-      const hasAppName = !!brandingStore.config.appName
-      const hasColors = !!brandingStore.config.colors.primary
+      const brandingStore = await this.getBrandingStore();
+      const hasStore = !!brandingStore;
+      const hasConfig = !!brandingStore.config;
+      const hasAppName = !!brandingStore.config.appName;
+      const hasColors = !!brandingStore.config.colors.primary;
 
-      const passed = hasStore && hasConfig && hasAppName && hasColors
+      const passed = hasStore && hasConfig && hasAppName && hasColors;
 
-      console.log(`  Store disponible: ${hasStore ? "✅" : "❌"}`)
-      console.log(`  Config disponible: ${hasConfig ? "✅" : "❌"}`)
-      console.log(`  App name: ${hasAppName ? "✅" : "❌"}`)
-      console.log(`  Colores: ${hasColors ? "✅" : "❌"}`)
-      console.log(`  Resultado: ${passed ? "✅ PASS" : "❌ FAIL"}`)
+      console.log(`  Store disponible: ${hasStore ? '✅' : '❌'}`);
+      console.log(`  Config disponible: ${hasConfig ? '✅' : '❌'}`);
+      console.log(`  App name: ${hasAppName ? '✅' : '❌'}`);
+      console.log(`  Colores: ${hasColors ? '✅' : '❌'}`);
+      console.log(`  Resultado: ${passed ? '✅ PASS' : '❌ FAIL'}`);
 
-      return passed
+      return passed;
     } catch (error) {
-      console.error("❌ Error en prueba rápida:", error)
-      return false
+      console.error('❌ Error en prueba rápida:', error);
+      return false;
     }
   }
 }
 
 // Exportar instancia global
-export const brandingTests = new BrandingTestSuite()
+export const brandingTests = new BrandingTestSuite();
 
 // Funciones globales para el navegador
-if (typeof window !== "undefined") {
+if (typeof window !== 'undefined') {
   ;(window as any).testBranding = () => brandingTests.runAllTests()
-  ;(window as any).quickTestBranding = () => brandingTests.quickTest()
+  ;(window as any).quickTestBranding = () => brandingTests.quickTest();
 }

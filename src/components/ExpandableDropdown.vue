@@ -1,59 +1,3 @@
-<script setup lang="ts">
-import {ref, watch} from "vue"
-import {ChevronUpIcon, ChevronDownIcon} from "@heroicons/vue/24/outline"
-
-interface Section {
-  label: string
-  items: string[]
-}
-
-const props = defineProps<{
-  modelValue: string
-  placeholder?: string
-  sections: Section[]
-  disabled?: boolean
-}>()
-
-const emit = defineEmits<{
-  (e: "update:modelValue", value: string): void
-}>()
-
-const isOpen = ref(false)
-const expandedSections = ref<Set<string>>(new Set())
-
-const toggleSection = (label: string) => {
-  if (expandedSections.value.has(label)) {
-    expandedSections.value.delete(label)
-  } else {
-    expandedSections.value.add(label)
-  }
-}
-
-const selectItem = (item: string) => {
-  emit("update:modelValue", item)
-  isOpen.value = false
-}
-
-// Close dropdown when clicking outside
-const dropdownRef = ref<HTMLElement | null>(null)
-const handleClickOutside = (event: MouseEvent) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
-    isOpen.value = false
-  }
-}
-
-watch(
-  () => isOpen.value,
-  (newValue) => {
-    if (newValue) {
-      document.addEventListener("click", handleClickOutside)
-    } else {
-      document.removeEventListener("click", handleClickOutside)
-    }
-  }
-)
-</script>
-
 <template>
   <div ref="dropdownRef" class="relative">
     <!-- Selected value display -->
@@ -114,6 +58,62 @@ watch(
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, watch } from 'vue';
+import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/vue/24/outline';
+
+interface Section {
+  label: string
+  items: string[]
+}
+
+const props = defineProps<{
+  modelValue: string
+  placeholder?: string
+  sections: Section[]
+  disabled?: boolean
+}>();
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+}>();
+
+const isOpen = ref(false);
+const expandedSections = ref<Set<string>>(new Set());
+
+const toggleSection = (label: string) => {
+  if (expandedSections.value.has(label)) {
+    expandedSections.value.delete(label);
+  } else {
+    expandedSections.value.add(label);
+  }
+};
+
+const selectItem = (item: string) => {
+  emit('update:modelValue', item);
+  isOpen.value = false;
+};
+
+// Close dropdown when clicking outside
+const dropdownRef = ref<HTMLElement | null>(null);
+const handleClickOutside = (event: MouseEvent) => {
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
+    isOpen.value = false;
+  }
+};
+
+watch(
+  () => isOpen.value,
+  (newValue) => {
+    if (newValue) {
+      document.addEventListener('click', handleClickOutside);
+    } else {
+      document.removeEventListener('click', handleClickOutside);
+    }
+  },
+);
+</script>
 
 <style scoped>
 .form-input {

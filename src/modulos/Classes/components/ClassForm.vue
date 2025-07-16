@@ -1,264 +1,3 @@
-<script setup lang="ts">
-import {ref, watch, onMounted, computed} from "vue"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useAuthStore} from "../../../stores/auth"
-import {useScheduleValidation} from "../composables/useScheduleValidation"
-import {useStudentScheduleValidation} from "../composables/useStudentScheduleValidation"
-import StudentConflictAnalyzer from "./StudentConflictAnalyzer.vue"
-import PermissionGuard from "@/modulos/Auth/components/PermissionGuard.vue"
-import {ResourceType} from "@/modulos/Auth/types/permissions"
-
-const props = defineProps({})
-const emit = defineEmits(["save", "cancel"])
-
-// Stores
-const teachersStore = useTeachersStore()
-const authStore = useAuthStore()
-
-// Validación de horarios
-const {
-  isValidating,
-  hasErrors,
-  hasWarnings,
-  errorMessages,
-  warningMessages,
-  suggestions,
-  showSuggestions,
-  validateSchedule,
-  clearValidation,
-  applySuggestion,
-  canSave,
-} = useScheduleValidation()
-
-// Validación específica de conflictos de estudiantes
-const {
-  isValidating: isValidatingStudents,
-  hasStudentConflicts,
-  studentConflicts,
-  conflictSummary,
-  validateStudentConflicts,
-  clearStudentValidation,
-  studentConflictMessages,
-  totalStudentConflicts,
-  formatStudentConflictSummary,
-} = useStudentScheduleValidation()
-
-// Estado del formulario
-const form = ref({
-  name: "",
-  description: "",
-  level: "Principiante",
-  instrument: "",
-  teacherId: "", // This will be set with the current user's UID
-  classroom: "",
-  schedule: {
-    slots: [
-      {day: "", startTime: "", endTime: ""}, // Sesión vacía por defecto
-    ],
-  },
-})
-
-const levels = ["Principiante", "Intermedio", "Avanzado"]
-const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-
-const errors = ref({
-  name: "",
-  level: "",
-  teacherId: "",
-  schedule: "",
-})
-
-const isSubmitting = ref(false)
-
-// Watch para validar horarios cuando cambien
-watch(
-  () => form.value.schedule.slots,
-  async (newSlots) => {
-    // Solo validar si hay slots completos
-    const completeSlots = newSlots.filter((slot) => slot.day && slot.startTime && slot.endTime)
-
-    if (completeSlots.length > 0) {
-      // Validación general de horarios
-      await validateSchedule({
-        id: props.classData?.id,
-        teacherId: form.value.teacherId,
-        studentIds: props.classData?.studentIds || [],
-        classroom: form.value.classroom,
-        schedule: {slots: completeSlots},
-      })
-
-      // Validación específica de conflictos de estudiantes
-      if (props.classData?.studentIds && props.classData.studentIds.length > 0) {
-        await validateStudentConflicts({
-          id: props.classData?.id,
-          studentIds: props.classData.studentIds,
-          schedule: {slots: completeSlots},
-        })
-      }
-    } else {
-      clearValidation()
-      clearStudentValidation()
-    }
-  },
-  {deep: true}
-)
-
-// Watch para validar cuando cambien otros campos relevantes
-watch([() => form.value.teacherId, () => form.value.classroom], async () => {
-  const completeSlots = form.value.schedule.slots.filter(
-    (slot) => slot.day && slot.startTime && slot.endTime
-  )
-
-  if (completeSlots.length > 0) {
-    // Validación general de horarios
-    await validateSchedule({
-      id: props.classData?.id,
-      teacherId: form.value.teacherId,
-      studentIds: props.classData?.studentIds || [],
-      classroom: form.value.classroom,
-      schedule: {slots: completeSlots},
-    })
-
-    // Validación específica de conflictos de estudiantes
-    if (props.classData?.studentIds && props.classData.studentIds.length > 0) {
-      await validateStudentConflicts({
-        id: props.classData?.id,
-        studentIds: props.classData.studentIds,
-        schedule: {slots: completeSlots},
-      })
-    }
-  }
-})
-
-// Función para agregar una nueva sesión de horario
-const addSession = () => {
-  form.value.schedule.slots.push({day: "", startTime: "", endTime: ""})
-}
-
-// Función para eliminar una sesión por índice
-const removeSession = (index: number) => {
-  form.value.schedule.slots.splice(index, 1)
-}
-
-// Función para aplicar sugerencia de horario
-const applySuggestionToForm = (suggestion: any) => {
-  // Reemplazar el primer slot incompleto o agregar uno nuevo
-  const incompleteSlotIndex = form.value.schedule.slots.findIndex(
-    (slot) => !slot.day || !slot.startTime || !slot.endTime
-  )
-
-  if (incompleteSlotIndex !== -1) {
-    form.value.schedule.slots[incompleteSlotIndex] = {...suggestion}
-  } else {
-    form.value.schedule.slots.push({...suggestion})
-  }
-
-  // Cerrar sugerencias después de aplicar
-  showSuggestions.value = false
-}
-
-// Validación del formulario, incluyendo horarios
-const validateForm = () => {
-  let isValid = true
-  errors.value = {
-    name: "",
-    level: "",
-    teacherId: "",
-    schedule: "",
-  }
-
-  if (!form.value.name.trim()) {
-    errors.value.name = "El nombre de la clase es requerido"
-    isValid = false
-  }
-
-  if (!form.value.level) {
-    errors.value.level = "El nivel es requerido"
-    isValid = false
-  }
-
-  if (form.value.schedule.slots.length === 0) {
-    errors.value.schedule = "Agrega al menos un horario"
-    isValid = false
-  } else {
-    form.value.schedule.slots.forEach((session) => {
-      if (!session.day || !session.startTime || !session.endTime) {
-        errors.value.schedule = "Completa todos los campos de cada horario"
-        isValid = false
-      }
-    })
-  }
-
-  return isValid
-}
-
-const handleSubmit = async () => {
-  if (!validateForm()) return
-
-  // Verificar conflictos críticos antes de guardar
-  if (hasErrors.value) {
-    errors.value.schedule = "Hay conflictos de horario que deben resolverse antes de guardar"
-    return
-  }
-
-  // Verificar conflictos específicos de estudiantes
-  if (hasStudentConflicts.value) {
-    errors.value.schedule =
-      "Algunos estudiantes tendrían conflictos de horario. Ningún alumno puede estar en más de una clase al mismo tiempo."
-    return
-  }
-
-  isSubmitting.value = true
-  try {
-    emit("save", {
-      ...form.value,
-      studentIds: props.classData?.studentIds || [],
-    })
-  } catch (error) {
-    console.error("Error al guardar la clase:", error)
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-// Inicializar formulario si se está editando
-watch(
-  () => props.classData,
-  (newVal) => {
-    if (newVal) {
-      form.value = {
-        name: newVal.name || "",
-        description: newVal.description || "",
-        level: newVal.level || "Principiante",
-        instrument: newVal.instrument || "",
-        teacherId: newVal.teacherId || authStore.user?.uid || "", // Use existing or current user's UID
-        classroom: newVal.classroom || "",
-        schedule: {
-          slots: Array.isArray(newVal.schedule?.slots)
-            ? newVal.schedule.slots.map((slot) => ({
-                day: slot.day || "",
-                startTime: slot.startTime || "",
-                endTime: slot.endTime || "",
-              }))
-            : [], // Default to empty array if not valid
-        },
-      }
-    } else {
-      // If creating a new class, set teacherId to current user's UID
-      form.value.teacherId = authStore.user?.uid || ""
-    }
-  },
-  {immediate: true}
-)
-
-onMounted(async () => {
-  // Set the teacherId to the current user's UID if not already set
-  if (!form.value.teacherId && authStore.user?.uid) {
-    form.value.teacherId = authStore.user.uid
-  }
-})
-</script>
-
 <template>
   <PermissionGuard :required-resource="ResourceType.MANAGE_CLASSES" required-action="create">
     <form class="space-y-6" @submit.prevent="handleSubmit">
@@ -593,6 +332,267 @@ onMounted(async () => {
     </template>
   </PermissionGuard>
 </template>
+
+<script setup lang="ts">
+import { ref, watch, onMounted, computed } from 'vue';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useAuthStore } from '../../../stores/auth';
+import { useScheduleValidation } from '../composables/useScheduleValidation';
+import { useStudentScheduleValidation } from '../composables/useStudentScheduleValidation';
+import StudentConflictAnalyzer from './StudentConflictAnalyzer.vue';
+import PermissionGuard from '@/modulos/Auth/components/PermissionGuard.vue';
+import { ResourceType } from '@/modulos/Auth/types/permissions';
+
+const props = defineProps({});
+const emit = defineEmits(['save', 'cancel']);
+
+// Stores
+const teachersStore = useTeachersStore();
+const authStore = useAuthStore();
+
+// Validación de horarios
+const {
+  isValidating,
+  hasErrors,
+  hasWarnings,
+  errorMessages,
+  warningMessages,
+  suggestions,
+  showSuggestions,
+  validateSchedule,
+  clearValidation,
+  applySuggestion,
+  canSave,
+} = useScheduleValidation();
+
+// Validación específica de conflictos de estudiantes
+const {
+  isValidating: isValidatingStudents,
+  hasStudentConflicts,
+  studentConflicts,
+  conflictSummary,
+  validateStudentConflicts,
+  clearStudentValidation,
+  studentConflictMessages,
+  totalStudentConflicts,
+  formatStudentConflictSummary,
+} = useStudentScheduleValidation();
+
+// Estado del formulario
+const form = ref({
+  name: '',
+  description: '',
+  level: 'Principiante',
+  instrument: '',
+  teacherId: '', // This will be set with the current user's UID
+  classroom: '',
+  schedule: {
+    slots: [
+      { day: '', startTime: '', endTime: '' }, // Sesión vacía por defecto
+    ],
+  },
+});
+
+const levels = ['Principiante', 'Intermedio', 'Avanzado'];
+const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+const errors = ref({
+  name: '',
+  level: '',
+  teacherId: '',
+  schedule: '',
+});
+
+const isSubmitting = ref(false);
+
+// Watch para validar horarios cuando cambien
+watch(
+  () => form.value.schedule.slots,
+  async (newSlots) => {
+    // Solo validar si hay slots completos
+    const completeSlots = newSlots.filter((slot) => slot.day && slot.startTime && slot.endTime);
+
+    if (completeSlots.length > 0) {
+      // Validación general de horarios
+      await validateSchedule({
+        id: props.classData?.id,
+        teacherId: form.value.teacherId,
+        studentIds: props.classData?.studentIds || [],
+        classroom: form.value.classroom,
+        schedule: { slots: completeSlots },
+      });
+
+      // Validación específica de conflictos de estudiantes
+      if (props.classData?.studentIds && props.classData.studentIds.length > 0) {
+        await validateStudentConflicts({
+          id: props.classData?.id,
+          studentIds: props.classData.studentIds,
+          schedule: { slots: completeSlots },
+        });
+      }
+    } else {
+      clearValidation();
+      clearStudentValidation();
+    }
+  },
+  { deep: true },
+);
+
+// Watch para validar cuando cambien otros campos relevantes
+watch([() => form.value.teacherId, () => form.value.classroom], async () => {
+  const completeSlots = form.value.schedule.slots.filter(
+    (slot) => slot.day && slot.startTime && slot.endTime,
+  );
+
+  if (completeSlots.length > 0) {
+    // Validación general de horarios
+    await validateSchedule({
+      id: props.classData?.id,
+      teacherId: form.value.teacherId,
+      studentIds: props.classData?.studentIds || [],
+      classroom: form.value.classroom,
+      schedule: { slots: completeSlots },
+    });
+
+    // Validación específica de conflictos de estudiantes
+    if (props.classData?.studentIds && props.classData.studentIds.length > 0) {
+      await validateStudentConflicts({
+        id: props.classData?.id,
+        studentIds: props.classData.studentIds,
+        schedule: { slots: completeSlots },
+      });
+    }
+  }
+});
+
+// Función para agregar una nueva sesión de horario
+const addSession = () => {
+  form.value.schedule.slots.push({ day: '', startTime: '', endTime: '' });
+};
+
+// Función para eliminar una sesión por índice
+const removeSession = (index: number) => {
+  form.value.schedule.slots.splice(index, 1);
+};
+
+// Función para aplicar sugerencia de horario
+const applySuggestionToForm = (suggestion: any) => {
+  // Reemplazar el primer slot incompleto o agregar uno nuevo
+  const incompleteSlotIndex = form.value.schedule.slots.findIndex(
+    (slot) => !slot.day || !slot.startTime || !slot.endTime,
+  );
+
+  if (incompleteSlotIndex !== -1) {
+    form.value.schedule.slots[incompleteSlotIndex] = { ...suggestion };
+  } else {
+    form.value.schedule.slots.push({ ...suggestion });
+  }
+
+  // Cerrar sugerencias después de aplicar
+  showSuggestions.value = false;
+};
+
+// Validación del formulario, incluyendo horarios
+const validateForm = () => {
+  let isValid = true;
+  errors.value = {
+    name: '',
+    level: '',
+    teacherId: '',
+    schedule: '',
+  };
+
+  if (!form.value.name.trim()) {
+    errors.value.name = 'El nombre de la clase es requerido';
+    isValid = false;
+  }
+
+  if (!form.value.level) {
+    errors.value.level = 'El nivel es requerido';
+    isValid = false;
+  }
+
+  if (form.value.schedule.slots.length === 0) {
+    errors.value.schedule = 'Agrega al menos un horario';
+    isValid = false;
+  } else {
+    form.value.schedule.slots.forEach((session) => {
+      if (!session.day || !session.startTime || !session.endTime) {
+        errors.value.schedule = 'Completa todos los campos de cada horario';
+        isValid = false;
+      }
+    });
+  }
+
+  return isValid;
+};
+
+const handleSubmit = async () => {
+  if (!validateForm()) return;
+
+  // Verificar conflictos críticos antes de guardar
+  if (hasErrors.value) {
+    errors.value.schedule = 'Hay conflictos de horario que deben resolverse antes de guardar';
+    return;
+  }
+
+  // Verificar conflictos específicos de estudiantes
+  if (hasStudentConflicts.value) {
+    errors.value.schedule =
+      'Algunos estudiantes tendrían conflictos de horario. Ningún alumno puede estar en más de una clase al mismo tiempo.';
+    return;
+  }
+
+  isSubmitting.value = true;
+  try {
+    emit('save', {
+      ...form.value,
+      studentIds: props.classData?.studentIds || [],
+    });
+  } catch (error) {
+    console.error('Error al guardar la clase:', error);
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+
+// Inicializar formulario si se está editando
+watch(
+  () => props.classData,
+  (newVal) => {
+    if (newVal) {
+      form.value = {
+        name: newVal.name || '',
+        description: newVal.description || '',
+        level: newVal.level || 'Principiante',
+        instrument: newVal.instrument || '',
+        teacherId: newVal.teacherId || authStore.user?.uid || '', // Use existing or current user's UID
+        classroom: newVal.classroom || '',
+        schedule: {
+          slots: Array.isArray(newVal.schedule?.slots)
+            ? newVal.schedule.slots.map((slot) => ({
+              day: slot.day || '',
+              startTime: slot.startTime || '',
+              endTime: slot.endTime || '',
+            }))
+            : [], // Default to empty array if not valid
+        },
+      };
+    } else {
+      // If creating a new class, set teacherId to current user's UID
+      form.value.teacherId = authStore.user?.uid || '';
+    }
+  },
+  { immediate: true },
+);
+
+onMounted(async () => {
+  // Set the teacherId to the current user's UID if not already set
+  if (!form.value.teacherId && authStore.user?.uid) {
+    form.value.teacherId = authStore.user.uid;
+  }
+});
+</script>
 
 <style scoped>
 /* Puedes agregar estilos personalizados aquí si es necesario */

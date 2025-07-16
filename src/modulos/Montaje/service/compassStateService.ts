@@ -13,7 +13,7 @@ import {
   writeBatch,
   serverTimestamp,
   DocumentReference,
-  Timestamp
+  Timestamp,
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { 
@@ -21,7 +21,7 @@ import {
   EstadisticasProgreso, 
   ActualizacionMasiva,
   NotificacionProgreso,
-  EstadoCompass
+  EstadoCompass,
 } from '../types';
 import { permissionsService } from './permissionsService';
 import { MontajePermission } from '../types/permissions';
@@ -50,7 +50,7 @@ export const compassStateService = {
       
       // Verificar permisos RBAC para actualizar estados de compases por instrumento
       const tienePermiso = await permissionsService.hasPermission(
-        MontajePermission.UPDATE_INSTRUMENT_COMPASS_STATES
+        MontajePermission.UPDATE_INSTRUMENT_COMPASS_STATES,
       );
       
       if (!tienePermiso) {
@@ -60,7 +60,7 @@ export const compassStateService = {
       // Verificar si el maestro tiene asignado este instrumento
       const puedeActualizarInstrumento = await permissionsService.canUpdateInstrumentState(
         currentUser.uid, 
-        estadoCompass.instrumentoId
+        estadoCompass.instrumentoId,
       );
       
       if (!puedeActualizarInstrumento) {
@@ -75,7 +75,7 @@ export const compassStateService = {
         estadosRef, 
         where('obraId', '==', estadoCompass.obraId),
         where('instrumentoId', '==', estadoCompass.instrumentoId),
-        where('numeroCompas', '==', estadoCompass.numeroCompas)
+        where('numeroCompas', '==', estadoCompass.numeroCompas),
       );
       
       const querySnapshot = await getDocs(q);
@@ -108,7 +108,7 @@ export const compassStateService = {
           notas: estadoCompass.notas,
           ultimaActualizacion: serverTimestamp(),
           actualizadoPor: estadoCompass.actualizadoPor,
-          actualizadoPorNombre: estadoCompass.actualizadoPorNombre
+          actualizadoPorNombre: estadoCompass.actualizadoPorNombre,
         });
         estadoId = querySnapshot.docs[0].id;
       }
@@ -131,7 +131,7 @@ export const compassStateService = {
    */
   async obtenerEstadosCompasesPorInstrumento(
     obraId: string, 
-    instrumentoId: string
+    instrumentoId: string,
   ): Promise<EstadoCompassInstrumento[]> {
     try {
       const auth = getAuth();
@@ -143,7 +143,7 @@ export const compassStateService = {
       
       // Verificar permisos para leer estados de compases por instrumento
       const tienePermiso = await permissionsService.hasPermission(
-        MontajePermission.READ_INSTRUMENT_COMPASS_STATES
+        MontajePermission.READ_INSTRUMENT_COMPASS_STATES,
       );
       
       if (!tienePermiso) {
@@ -155,7 +155,7 @@ export const compassStateService = {
       const q = query(
         estadosRef, 
         where('obraId', '==', obraId),
-        where('instrumentoId', '==', instrumentoId)
+        where('instrumentoId', '==', instrumentoId),
       );
       
       const querySnapshot = await getDocs(q);
@@ -174,7 +174,7 @@ export const compassStateService = {
             ? data.ultimaActualizacion.toDate() 
             : new Date(data.ultimaActualizacion),
           actualizadoPor: data.actualizadoPor,
-          actualizadoPorNombre: data.actualizadoPorNombre
+          actualizadoPorNombre: data.actualizadoPorNombre,
         });
       });
       
@@ -201,7 +201,7 @@ export const compassStateService = {
       
       // Verificar permisos RBAC
       const tienePermiso = await permissionsService.hasPermission(
-        MontajePermission.UPDATE_INSTRUMENT_COMPASS_STATES
+        MontajePermission.UPDATE_INSTRUMENT_COMPASS_STATES,
       );
       
       if (!tienePermiso) {
@@ -211,7 +211,7 @@ export const compassStateService = {
       // Verificar si el maestro tiene asignado este instrumento
       const puedeActualizarInstrumento = await permissionsService.canUpdateInstrumentState(
         currentUser.uid, 
-        actualizacion.instrumentoId
+        actualizacion.instrumentoId,
       );
       
       if (!puedeActualizarInstrumento) {
@@ -238,7 +238,7 @@ export const compassStateService = {
           estadosRef, 
           where('obraId', '==', actualizacion.obraId),
           where('instrumentoId', '==', actualizacion.instrumentoId),
-          where('numeroCompas', '==', numeroCompas)
+          where('numeroCompas', '==', numeroCompas),
         );
         
         const querySnapshot = await getDocs(q);
@@ -254,7 +254,7 @@ export const compassStateService = {
             notas: actualizacion.notas || '',
             ultimaActualizacion: serverTimestamp(),
             actualizadoPor: currentUser.uid,
-            actualizadoPorNombre: nombreUsuario
+            actualizadoPorNombre: nombreUsuario,
           });
           idsActualizados.push(nuevoEstadoRef.id);
         } else {
@@ -265,7 +265,7 @@ export const compassStateService = {
             notas: actualizacion.notas,
             ultimaActualizacion: serverTimestamp(),
             actualizadoPor: currentUser.uid,
-            actualizadoPorNombre: nombreUsuario
+            actualizadoPorNombre: nombreUsuario,
           });
           idsActualizados.push(querySnapshot.docs[0].id);
         }
@@ -328,36 +328,36 @@ export const compassStateService = {
         dominado: 0,
         completado: 0,
         noTrabajado: 0,
-        porcentajeCompletado: 0
+        porcentajeCompletado: 0,
       };
       
       // Contar compases por estado
       for (const estado of estados) {
         switch (estado.estado) {
-          case EstadoCompass.SIN_TRABAJAR:
-            estadisticas.sinTrabajar++;
-            break;
-          case EstadoCompass.LEIDO:
-            estadisticas.leido++;
-            break;
-          case EstadoCompass.EN_PROGRESO:
-            estadisticas.enProgreso++;
-            break;
-          case EstadoCompass.CON_DIFICULTAD:
-            estadisticas.conDificultad++;
-            break;
-          case EstadoCompass.LOGRADO:
-            estadisticas.logrado++;
-            break;
-          case EstadoCompass.DOMINADO:
-            estadisticas.dominado++;
-            break;
-          case EstadoCompass.COMPLETADO:
-            estadisticas.completado++;
-            break;
-          case EstadoCompass.NO_TRABAJADO:
-            estadisticas.noTrabajado++;
-            break;
+        case EstadoCompass.SIN_TRABAJAR:
+          estadisticas.sinTrabajar++;
+          break;
+        case EstadoCompass.LEIDO:
+          estadisticas.leido++;
+          break;
+        case EstadoCompass.EN_PROGRESO:
+          estadisticas.enProgreso++;
+          break;
+        case EstadoCompass.CON_DIFICULTAD:
+          estadisticas.conDificultad++;
+          break;
+        case EstadoCompass.LOGRADO:
+          estadisticas.logrado++;
+          break;
+        case EstadoCompass.DOMINADO:
+          estadisticas.dominado++;
+          break;
+        case EstadoCompass.COMPLETADO:
+          estadisticas.completado++;
+          break;
+        case EstadoCompass.NO_TRABAJADO:
+          estadisticas.noTrabajado++;
+          break;
         }
       }
       
@@ -429,7 +429,7 @@ export const compassStateService = {
         maestroNombre: estadoCompass.actualizadoPorNombre || 'Maestro',
         fechaCreacion: new Date(),
         leida: false,
-        destinatariosIds
+        destinatariosIds,
       };
       
       // Guardar notificación
@@ -441,11 +441,11 @@ export const compassStateService = {
           obraId: notificacion.obraId,
           instrumentoId: notificacion.instrumentoId,
           compassNumber: estadoCompass.numeroCompas,
-          state: estadoCompass.estado
+          state: estadoCompass.estado,
         },
         userIds: destinatariosIds,
         read: false,
-        createdAt: new Date()
+        createdAt: new Date(),
       });
       
     } catch (error) {
@@ -461,7 +461,7 @@ export const compassStateService = {
    */
   async _notificarActualizacionMasiva(
     actualizacion: ActualizacionMasiva, 
-    nombreMaestro: string
+    nombreMaestro: string,
   ): Promise<void> {
     try {
       const db = getFirestore();
@@ -512,18 +512,18 @@ export const compassStateService = {
           obraId: actualizacion.obraId,
           instrumentoId: actualizacion.instrumentoId,
           compassCount: actualizacion.compasesIds.length,
-          state: actualizacion.nuevoEstado
+          state: actualizacion.nuevoEstado,
         },
         userIds: destinatariosIds,
         read: false,
-        createdAt: new Date()
+        createdAt: new Date(),
       });
       
     } catch (error) {
       console.error('Error al notificar actualización masiva:', error);
       // No lanzar el error para evitar que falle la actualización principal
     }
-  }
+  },
 };
 
 export default compassStateService;

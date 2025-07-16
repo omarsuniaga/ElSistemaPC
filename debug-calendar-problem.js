@@ -23,10 +23,10 @@ const classesMockData = [
       slots: [
         { day: 'Martes', startTime: '17:00', endTime: '18:30' },
         { day: 'Jueves', startTime: '17:00', endTime: '18:30' },
-        { day: 'Sábado', startTime: '09:00', endTime: '12:30' }
-      ]
-    }
-  }
+        { day: 'Sábado', startTime: '09:00', endTime: '12:30' },
+      ],
+    },
+  },
 ];
 
 // Función getDayIndex corregida
@@ -52,7 +52,7 @@ const getDayIndex = (dayString) => {
     'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6,
     
     // Números como string
-    '0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6
+    '0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6,
   };
 
   const normalized = String(dayString).trim();

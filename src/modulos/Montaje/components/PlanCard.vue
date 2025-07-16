@@ -160,91 +160,91 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import type {PlanMontaje} from "../types"
-import {formatDate} from "../utils"
+import { computed } from 'vue';
+import type { PlanMontaje } from '../types';
+import { formatDate } from '../utils';
 
 interface Props {
   plan: PlanMontaje
 }
 
 interface Emits {
-  (e: "edit", plan: PlanMontaje): void
-  (e: "view-details", plan: PlanMontaje): void
+  (e: 'edit', plan: PlanMontaje): void
+  (e: 'view-details', plan: PlanMontaje): void
 }
 
-const props = defineProps<Props>()
-defineEmits<Emits>()
+const props = defineProps<Props>();
+defineEmits<Emits>();
 
 const sortedPhases = computed(() => {
-  return [...props.plan.fases].sort((a, b) => a.orden - b.orden)
-})
+  return [...props.plan.fases].sort((a, b) => a.orden - b.orden);
+});
 
 const progressPercentage = computed(() => {
-  if (props.plan.fases.length === 0) return 0
+  if (props.plan.fases.length === 0) return 0;
 
   const completedPhases = props.plan.fases.filter((fase) => {
-    const now = new Date()
-    const endDate = new Date(fase.fechaFin)
-    return endDate <= now
-  }).length
+    const now = new Date();
+    const endDate = new Date(fase.fechaFin);
+    return endDate <= now;
+  }).length;
 
-  return (completedPhases / props.plan.fases.length) * 100
-})
+  return (completedPhases / props.plan.fases.length) * 100;
+});
 
 const daysRemaining = computed(() => {
-  const now = new Date()
-  const endDate = new Date(props.plan.fechaFin)
-  const diffTime = endDate.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return Math.max(0, diffDays)
-})
+  const now = new Date();
+  const endDate = new Date(props.plan.fechaFin);
+  const diffTime = endDate.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
+});
 
 const statusText = computed(() => {
-  const now = new Date()
-  const startDate = new Date(props.plan.fechaInicio)
-  const endDate = new Date(props.plan.fechaFin)
+  const now = new Date();
+  const startDate = new Date(props.plan.fechaInicio);
+  const endDate = new Date(props.plan.fechaFin);
 
-  if (now < startDate) return "Pendiente"
-  if (now > endDate) return "Finalizado"
-  return "En Progreso"
-})
+  if (now < startDate) return 'Pendiente';
+  if (now > endDate) return 'Finalizado';
+  return 'En Progreso';
+});
 
 const statusClasses = computed(() => {
-  const status = statusText.value
+  const status = statusText.value;
   switch (status) {
-    case "Pendiente":
-      return "bg-yellow-100 text-yellow-800"
-    case "En Progreso":
-      return "bg-blue-100 text-blue-800"
-    case "Finalizado":
-      return "bg-green-100 text-green-800"
-    default:
-      return "bg-gray-100 text-gray-800"
+  case 'Pendiente':
+    return 'bg-yellow-100 text-yellow-800';
+  case 'En Progreso':
+    return 'bg-blue-100 text-blue-800';
+  case 'Finalizado':
+    return 'bg-green-100 text-green-800';
+  default:
+    return 'bg-gray-100 text-gray-800';
   }
-})
+});
 
 const getPhaseStatus = (fase: any) => {
-  const now = new Date()
-  const startDate = new Date(fase.fechaInicio)
-  const endDate = new Date(fase.fechaFin)
+  const now = new Date();
+  const startDate = new Date(fase.fechaInicio);
+  const endDate = new Date(fase.fechaFin);
 
-  if (now < startDate) return "Pendiente"
-  if (now > endDate) return "Completada"
-  return "Activa"
-}
+  if (now < startDate) return 'Pendiente';
+  if (now > endDate) return 'Completada';
+  return 'Activa';
+};
 
 const getPhaseStatusClasses = (fase: any) => {
-  const status = getPhaseStatus(fase)
+  const status = getPhaseStatus(fase);
   switch (status) {
-    case "Pendiente":
-      return "bg-gray-100 text-gray-800"
-    case "Activa":
-      return "bg-blue-100 text-blue-800"
-    case "Completada":
-      return "bg-green-100 text-green-800"
-    default:
-      return "bg-gray-100 text-gray-800"
+  case 'Pendiente':
+    return 'bg-gray-100 text-gray-800';
+  case 'Activa':
+    return 'bg-blue-100 text-blue-800';
+  case 'Completada':
+    return 'bg-green-100 text-green-800';
+  default:
+    return 'bg-gray-100 text-gray-800';
   }
-}
+};
 </script>

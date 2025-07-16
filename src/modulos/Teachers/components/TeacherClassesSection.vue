@@ -1,205 +1,3 @@
-<script setup lang="ts">
-import {ref, computed} from "vue"
-import {useRouter} from "vue-router"
-import {PlusIcon} from "@heroicons/vue/24/outline"
-import TeacherClassesCard from "./TeacherClassesCard.vue"
-
-// Define emits
-const emit = defineEmits<{
-  "edit-class": [classId: string]
-  "delete-class": [classId: string]
-  "manage-students": [classId: string]
-  "add-class": []
-  "collaboration-updated": []
-}>()
-
-// Define types for class data
-interface ClassData {
-  id: string
-  name: string
-  level?: string // Hacer opcional
-  instrument?: string
-  schedule?: {
-    slots: {day: string | number; startTime: string; endTime: string}[]
-  }
-  classroom?: string
-  studentIds?: string[]
-  teacherId?: string
-  description?: string
-  status?: string
-  // Propiedades adicionales para clases compartidas
-  myRole?: "lead" | "assistant"
-  myPermissions?: any
-  leadTeacher?: {
-    id: string
-    name: string
-  }
-  assistantTeachers?: any[]
-}
-
-const props = defineProps<{
-  classes: ClassData[] // Recibe las clases (probablemente ya ordenadas por el padre)
-}>()
-
-// Estado para el modo de visualización (tarjeta o lista)
-const viewMode = ref("card") // 'card' | 'list'
-
-// Computed para calcular el total de estudiantes
-const totalStudents = computed(() => {
-  return props.classes.reduce((total, classItem) => {
-    return total + (classItem.studentIds?.length || 0)
-  }, 0)
-})
-
-// Función para obtener el número del día de la semana (0 = domingo, 1 = lunes, etc.)
-const getDayNumber = (day: string | number): number => {
-  if (typeof day === "number") return day
-
-  const dayMap: Record<string, number> = {
-    domingo: 0,
-    dom: 0,
-    sunday: 0,
-    "0": 0,
-    lunes: 1,
-    lun: 1,
-    monday: 1,
-    "1": 1,
-    martes: 2,
-    mar: 2,
-    tuesday: 2,
-    "2": 2,
-    miércoles: 3,
-    miercoles: 3,
-    mié: 3,
-    wednesday: 3,
-    "3": 3,
-    jueves: 4,
-    jue: 4,
-    thursday: 4,
-    "4": 4,
-    viernes: 5,
-    vie: 5,
-    friday: 5,
-    "5": 5,
-    sábado: 6,
-    sabado: 6,
-    sáb: 6,
-    saturday: 6,
-    "6": 6,
-  }
-
-  return dayMap[day.toString().toLowerCase()] ?? 7 // 7 para días desconocidos
-}
-
-// Computed para ordenar las clases por día de la semana, empezando por el día actual
-const sortedClasses = computed(() => {
-  if (!props.classes.length) return []
-
-  const today = new Date().getDay() // 0 = domingo, 1 = lunes, etc.
-
-  return [...props.classes].sort((a, b) => {
-    const dayA = a.schedule?.slots?.[0]?.day
-    const dayB = b.schedule?.slots?.[0]?.day
-
-    if (!dayA && !dayB) return 0
-    if (!dayA) return 1
-    if (!dayB) return -1
-
-    const numA = getDayNumber(dayA)
-    const numB = getDayNumber(dayB)
-
-    // Calcular la distancia desde el día actual
-    const getDistanceFromToday = (dayNum: number): number => {
-      if (dayNum >= 7) return 999 // Días desconocidos al final
-      let distance = dayNum - today
-      if (distance < 0) distance += 7 // Si el día ya pasó esta semana, contar para la próxima
-      return distance
-    }
-
-    const distanceA = getDistanceFromToday(numA)
-    const distanceB = getDistanceFromToday(numB)
-
-    return distanceA - distanceB
-  })
-})
-
-const router = useRouter() // <-- Inicializamos router
-
-// Handler para el clic principal en la tarjeta (escucha el evento 'view' de TeacherClassesCard)
-const handleCardView = async (classId: string) => {
-  // Importar el utilitario de manejo de errores
-  try {
-    // Para maestros, siempre usar la vista específica para maestros
-    const userDataStr = localStorage.getItem("user")
-    let userRole = ""
-
-    if (userDataStr) {
-      try {
-        const userData = JSON.parse(userDataStr)
-        userRole = userData.role
-      } catch (e) {
-        console.warn("Error al parsear datos de usuario:", e)
-      }
-    }
-
-    if (userRole === "Maestro") {
-      await router.push({
-        name: "TeacherClassDetail",
-        params: {id: classId},
-      })
-    } else {
-      // Para otros roles, usar la vista general de detalles
-      await router.push({
-        name: "ClassDetail",
-        params: {id: classId},
-      })
-    }
-  } catch (error) {
-    console.error("Error al navegar a vista detallada:", error)
-
-    // Importar dinámicamente el manejador de errores para evitar problemas de circular imports
-    import("../../../utils/errorHandling")
-      .then(({handleModuleLoadingError}) => {
-        // Si la función de manejo específico no resuelve el problema
-        if (!handleModuleLoadingError(error, router)) {
-          // Intentar la navegación de respaldo
-          try {
-            router.push({
-              name: "TeacherClassDetail",
-              params: {id: classId},
-            })
-          } catch (secondError) {
-            console.error("Error en navegación de fallback:", secondError)
-            alert("Hubo un problema al cargar los detalles de la clase.")
-            router.push("/dashboard")
-          }
-        }
-      })
-      .catch(() => {
-        // En caso de error al importar el manejador
-        router.push("/dashboard")
-      })
-  }
-}
-
-// Handlers para las otras acciones emitidas por TeacherClassesCard (edit, delete, manage-students)
-// Estas funciones simplemente re-emiten los eventos hacia el componente padre de TeachersClassesSection
-const handleCardAction = (
-  action: "edit-class" | "delete-class" | "manage-students",
-  classId: string
-) => {
-  // El evento 'take-attendance' es manejado internamente por TeacherClassesCard
-  // y realiza la navegación directamente, no necesita re-emitirse aquí.
-  if (action === "edit-class") {
-    emit("edit-class", classId)
-  } else if (action === "delete-class") {
-    emit("delete-class", classId)
-  } else if (action === "manage-students") {
-    emit("manage-students", classId)
-  }
-}
-</script>
-
 <template>
   <!-- Contenedor principal mejorado -->
   <div
@@ -368,6 +166,208 @@ const handleCardAction = (
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { PlusIcon } from '@heroicons/vue/24/outline';
+import TeacherClassesCard from './TeacherClassesCard.vue';
+
+// Define emits
+const emit = defineEmits<{
+  'edit-class': [classId: string]
+  'delete-class': [classId: string]
+  'manage-students': [classId: string]
+  'add-class': []
+  'collaboration-updated': []
+}>();
+
+// Define types for class data
+interface ClassData {
+  id: string
+  name: string
+  level?: string // Hacer opcional
+  instrument?: string
+  schedule?: {
+    slots: {day: string | number; startTime: string; endTime: string}[]
+  }
+  classroom?: string
+  studentIds?: string[]
+  teacherId?: string
+  description?: string
+  status?: string
+  // Propiedades adicionales para clases compartidas
+  myRole?: 'lead' | 'assistant'
+  myPermissions?: any
+  leadTeacher?: {
+    id: string
+    name: string
+  }
+  assistantTeachers?: any[]
+}
+
+const props = defineProps<{
+  classes: ClassData[] // Recibe las clases (probablemente ya ordenadas por el padre)
+}>();
+
+// Estado para el modo de visualización (tarjeta o lista)
+const viewMode = ref('card'); // 'card' | 'list'
+
+// Computed para calcular el total de estudiantes
+const totalStudents = computed(() => {
+  return props.classes.reduce((total, classItem) => {
+    return total + (classItem.studentIds?.length || 0);
+  }, 0);
+});
+
+// Función para obtener el número del día de la semana (0 = domingo, 1 = lunes, etc.)
+const getDayNumber = (day: string | number): number => {
+  if (typeof day === 'number') return day;
+
+  const dayMap: Record<string, number> = {
+    domingo: 0,
+    dom: 0,
+    sunday: 0,
+    '0': 0,
+    lunes: 1,
+    lun: 1,
+    monday: 1,
+    '1': 1,
+    martes: 2,
+    mar: 2,
+    tuesday: 2,
+    '2': 2,
+    miércoles: 3,
+    miercoles: 3,
+    mié: 3,
+    wednesday: 3,
+    '3': 3,
+    jueves: 4,
+    jue: 4,
+    thursday: 4,
+    '4': 4,
+    viernes: 5,
+    vie: 5,
+    friday: 5,
+    '5': 5,
+    sábado: 6,
+    sabado: 6,
+    sáb: 6,
+    saturday: 6,
+    '6': 6,
+  };
+
+  return dayMap[day.toString().toLowerCase()] ?? 7; // 7 para días desconocidos
+};
+
+// Computed para ordenar las clases por día de la semana, empezando por el día actual
+const sortedClasses = computed(() => {
+  if (!props.classes.length) return [];
+
+  const today = new Date().getDay(); // 0 = domingo, 1 = lunes, etc.
+
+  return [...props.classes].sort((a, b) => {
+    const dayA = a.schedule?.slots?.[0]?.day;
+    const dayB = b.schedule?.slots?.[0]?.day;
+
+    if (!dayA && !dayB) return 0;
+    if (!dayA) return 1;
+    if (!dayB) return -1;
+
+    const numA = getDayNumber(dayA);
+    const numB = getDayNumber(dayB);
+
+    // Calcular la distancia desde el día actual
+    const getDistanceFromToday = (dayNum: number): number => {
+      if (dayNum >= 7) return 999; // Días desconocidos al final
+      let distance = dayNum - today;
+      if (distance < 0) distance += 7; // Si el día ya pasó esta semana, contar para la próxima
+      return distance;
+    };
+
+    const distanceA = getDistanceFromToday(numA);
+    const distanceB = getDistanceFromToday(numB);
+
+    return distanceA - distanceB;
+  });
+});
+
+const router = useRouter(); // <-- Inicializamos router
+
+// Handler para el clic principal en la tarjeta (escucha el evento 'view' de TeacherClassesCard)
+const handleCardView = async (classId: string) => {
+  // Importar el utilitario de manejo de errores
+  try {
+    // Para maestros, siempre usar la vista específica para maestros
+    const userDataStr = localStorage.getItem('user');
+    let userRole = '';
+
+    if (userDataStr) {
+      try {
+        const userData = JSON.parse(userDataStr);
+        userRole = userData.role;
+      } catch (e) {
+        console.warn('Error al parsear datos de usuario:', e);
+      }
+    }
+
+    if (userRole === 'Maestro') {
+      await router.push({
+        name: 'TeacherClassDetail',
+        params: { id: classId },
+      });
+    } else {
+      // Para otros roles, usar la vista general de detalles
+      await router.push({
+        name: 'ClassDetail',
+        params: { id: classId },
+      });
+    }
+  } catch (error) {
+    console.error('Error al navegar a vista detallada:', error);
+
+    // Importar dinámicamente el manejador de errores para evitar problemas de circular imports
+    import('../../../utils/errorHandling')
+      .then(({ handleModuleLoadingError }) => {
+        // Si la función de manejo específico no resuelve el problema
+        if (!handleModuleLoadingError(error, router)) {
+          // Intentar la navegación de respaldo
+          try {
+            router.push({
+              name: 'TeacherClassDetail',
+              params: { id: classId },
+            });
+          } catch (secondError) {
+            console.error('Error en navegación de fallback:', secondError);
+            alert('Hubo un problema al cargar los detalles de la clase.');
+            router.push('/dashboard');
+          }
+        }
+      })
+      .catch(() => {
+        // En caso de error al importar el manejador
+        router.push('/dashboard');
+      });
+  }
+};
+
+// Handlers para las otras acciones emitidas por TeacherClassesCard (edit, delete, manage-students)
+// Estas funciones simplemente re-emiten los eventos hacia el componente padre de TeachersClassesSection
+const handleCardAction = (
+  action: 'edit-class' | 'delete-class' | 'manage-students',
+  classId: string,
+) => {
+  // El evento 'take-attendance' es manejado internamente por TeacherClassesCard
+  // y realiza la navegación directamente, no necesita re-emitirse aquí.
+  if (action === 'edit-class') {
+    emit('edit-class', classId);
+  } else if (action === 'delete-class') {
+    emit('delete-class', classId);
+  } else if (action === 'manage-students') {
+    emit('manage-students', classId);
+  }
+};
+</script>
 
 <style scoped>
 /* Añade aquí cualquier estilo específico para la sección de clases */

@@ -88,7 +88,7 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, ref, computed, onMounted, watch} from "vue"
+import { defineComponent, ref, computed, onMounted, watch } from 'vue';
 import {
   format,
   startOfWeek,
@@ -96,30 +96,30 @@ import {
   eachDayOfInterval,
   eachWeekOfInterval,
   eachMonthOfInterval,
-} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAttendanceStore} from "../store/attendance"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useOptimizedAttendance} from "../composables/useOptimizedAttendance"
-import AttendanceTrendChart from "./AttendanceTrendChart.vue"
-import {ChartData, TrendData, TrendDataPoint} from "../types/chartTypes"
+} from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAttendanceStore } from '../store/attendance';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useAttendanceOptimized } from '../../../obsoleto/useAttendanceOptimized';
+import AttendanceTrendChart from './AttendanceTrendChart.vue';
+import { ChartData, TrendData, TrendDataPoint } from '../types/chartTypes';
 
 interface AttendanceRecord {
   id: string
   Fecha: string
   classId: string
   studentId: string
-  status: "Presente" | "Ausente" | "Tardanza" | "Justificado"
+  status: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado'
 }
 
 export default defineComponent({
-  name: "AttendanceTrends",
+  name: 'AttendanceTrends',
   components: {
     AttendanceTrendChart,
   },
   setup() {
-    const attendanceStore = useAttendanceStore()
-    const classesStore = useClassesStore()
+    const attendanceStore = useAttendanceStore();
+    const classesStore = useClassesStore();
 
     // Composable optimizado
     const {
@@ -127,33 +127,33 @@ export default defineComponent({
       error: optimizedError,
       documents: attendanceDocuments,
       searchByDateRange,
-    } = useOptimizedAttendance()
+    } = useAttendanceOptimized();
 
-    const localError = ref<string>("")
-    const isLoading = computed(() => optimizedLoading.value)
-    const error = computed(() => optimizedError.value || localError.value)
+    const localError = ref<string>('');
+    const isLoading = computed(() => optimizedLoading.value);
+    const error = computed(() => optimizedError.value || localError.value);
 
     // Obtener la fecha actual y restar 3 meses para el rango predeterminado
-    const today = new Date()
-    const threeMonthsAgo = new Date()
-    threeMonthsAgo.setMonth(today.getMonth() - 3)
+    const today = new Date();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(today.getMonth() - 3);
 
     // Filtros
     const filters = ref({
-      startDate: format(threeMonthsAgo, "yyyy-MM-dd"),
-      endDate: format(today, "yyyy-MM-dd"),
-      class: "",
-      groupBy: "week", // 'day', 'week', 'month'
-    }) // Datos para el gráfico
+      startDate: format(threeMonthsAgo, 'yyyy-MM-dd'),
+      endDate: format(today, 'yyyy-MM-dd'),
+      class: '',
+      groupBy: 'week', // 'day', 'week', 'month'
+    }); // Datos para el gráfico
     const trendData = ref<TrendData>({
       present: [],
       absent: [],
       late: [],
       justified: [],
-    })
+    });
 
     // Clases disponibles
-    const classes = computed(() => classesStore.classes)
+    const classes = computed(() => classesStore.classes);
 
     // Verificar si hay datos para mostrar
     const hasTrendData = computed(
@@ -161,8 +161,8 @@ export default defineComponent({
         trendData.value.present.length > 0 ||
         trendData.value.absent.length > 0 ||
         trendData.value.late.length > 0 ||
-        trendData.value.justified.length > 0
-    ) // Datos formateados para el gráfico de líneas
+        trendData.value.justified.length > 0,
+    ); // Datos formateados para el gráfico de líneas
     const trendChartData = computed<ChartData>(() => {
       // Obtener todas las fechas únicas de todos los conjuntos de datos
       const allDates = [
@@ -170,132 +170,132 @@ export default defineComponent({
         ...trendData.value.absent.map((item) => item.date),
         ...trendData.value.late.map((item) => item.date),
         ...trendData.value.justified.map((item) => item.date),
-      ]
+      ];
 
       // Eliminar duplicados y ordenar
-      const uniqueDates = [...new Set(allDates)].sort()
+      const uniqueDates = [...new Set(allDates)].sort();
 
       // Formatear las fechas según la agrupación
       const formattedLabels = uniqueDates.map((date) => {
-        if (filters.value.groupBy === "day") {
-          return format(new Date(date), "dd/MM/yyyy")
-        } else if (filters.value.groupBy === "week") {
-          return `Semana del ${format(new Date(date), "dd/MM/yyyy")}`
+        if (filters.value.groupBy === 'day') {
+          return format(new Date(date), 'dd/MM/yyyy');
+        } else if (filters.value.groupBy === 'week') {
+          return `Semana del ${format(new Date(date), 'dd/MM/yyyy')}`;
         } else {
-          return format(new Date(date), "MMMM yyyy", {locale: es})
+          return format(new Date(date), 'MMMM yyyy', { locale: es });
         }
-      })
+      });
 
       // Crear los conjuntos de datos para el gráfico
       return {
         labels: formattedLabels,
         datasets: [
           {
-            label: "Presentes",
+            label: 'Presentes',
             data: uniqueDates.map((date) => {
-              const found = trendData.value.present.find((item) => item.date === date)
-              return found ? found.value : 0
+              const found = trendData.value.present.find((item) => item.date === date);
+              return found ? found.value : 0;
             }),
-            borderColor: "rgb(34, 197, 94)",
-            backgroundColor: "rgba(34, 197, 94, 0.5)",
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.5)',
           },
           {
-            label: "Ausentes",
+            label: 'Ausentes',
             data: uniqueDates.map((date) => {
-              const found = trendData.value.absent.find((item) => item.date === date)
-              return found ? found.value : 0
+              const found = trendData.value.absent.find((item) => item.date === date);
+              return found ? found.value : 0;
             }),
-            borderColor: "rgb(239, 68, 68)",
-            backgroundColor: "rgba(239, 68, 68, 0.5)",
+            borderColor: 'rgb(239, 68, 68)',
+            backgroundColor: 'rgba(239, 68, 68, 0.5)',
           },
           {
-            label: "Tardanzas",
+            label: 'Tardanzas',
             data: uniqueDates.map((date) => {
-              const found = trendData.value.late.find((item) => item.date === date)
-              return found ? found.value : 0
+              const found = trendData.value.late.find((item) => item.date === date);
+              return found ? found.value : 0;
             }),
-            borderColor: "rgb(234, 179, 8)",
-            backgroundColor: "rgba(234, 179, 8, 0.5)",
+            borderColor: 'rgb(234, 179, 8)',
+            backgroundColor: 'rgba(234, 179, 8, 0.5)',
           },
           {
-            label: "Justificados",
+            label: 'Justificados',
             data: uniqueDates.map((date) => {
-              const found = trendData.value.justified.find((item) => item.date === date)
-              return found ? found.value : 0
+              const found = trendData.value.justified.find((item) => item.date === date);
+              return found ? found.value : 0;
             }),
-            borderColor: "rgb(59, 130, 246)",
-            backgroundColor: "rgba(59, 130, 246, 0.5)",
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.5)',
           },
         ],
-      }
-    })
+      };
+    });
 
     // Generar puntos de fecha según la agrupación
     const generateDatePoints = (startDate, endDate, groupBy) => {
-      if (groupBy === "day") {
-        return eachDayOfInterval({start: startDate, end: endDate})
-      } else if (groupBy === "week") {
+      if (groupBy === 'day') {
+        return eachDayOfInterval({ start: startDate, end: endDate });
+      } else if (groupBy === 'week') {
         return eachWeekOfInterval(
-          {start: startDate, end: endDate},
-          {weekStartsOn: 1} // Semana comienza el lunes
-        )
+          { start: startDate, end: endDate },
+          { weekStartsOn: 1 }, // Semana comienza el lunes
+        );
       } else {
-        return eachMonthOfInterval({start: startDate, end: endDate})
+        return eachMonthOfInterval({ start: startDate, end: endDate });
       }
-    }
+    };
 
     // Filtrar registros por punto de fecha
     const filterRecordsByDatePoint = (records, datePoint, groupBy) => {
       return records.filter((record) => {
-        const recordDate = new Date(record.Fecha)
+        const recordDate = new Date(record.Fecha);
 
-        if (groupBy === "day") {
+        if (groupBy === 'day') {
           // Para agrupación diaria, comparar año, mes y día
           return (
             recordDate.getFullYear() === datePoint.getFullYear() &&
             recordDate.getMonth() === datePoint.getMonth() &&
             recordDate.getDate() === datePoint.getDate()
-          )
-        } else if (groupBy === "week") {
+          );
+        } else if (groupBy === 'week') {
           // Para agrupación semanal, verificar si el registro está en la misma semana
-          const recordWeekStart = startOfWeek(recordDate, {weekStartsOn: 1})
-          const pointWeekStart = startOfWeek(datePoint, {weekStartsOn: 1})
+          const recordWeekStart = startOfWeek(recordDate, { weekStartsOn: 1 });
+          const pointWeekStart = startOfWeek(datePoint, { weekStartsOn: 1 });
 
-          return recordWeekStart.getTime() === pointWeekStart.getTime()
+          return recordWeekStart.getTime() === pointWeekStart.getTime();
         } else {
           // Para agrupación mensual, comparar año y mes
-          const recordMonthStart = startOfMonth(recordDate)
-          const pointMonthStart = startOfMonth(datePoint)
+          const recordMonthStart = startOfMonth(recordDate);
+          const pointMonthStart = startOfMonth(datePoint);
 
-          return recordMonthStart.getTime() === pointMonthStart.getTime()
+          return recordMonthStart.getTime() === pointMonthStart.getTime();
         }
-      })
-    } // Generar tendencias
+      });
+    }; // Generar tendencias
     const generateTrends = async () => {
       try {
         // Validar fechas
         if (!filters.value.startDate || !filters.value.endDate) {
-          localError.value = "Por favor seleccione un rango de fechas válido"
-          return
+          localError.value = 'Por favor seleccione un rango de fechas válido';
+          return;
         }
         // Asegurarse de que la fecha de inicio es anterior a la fecha de fin
         if (new Date(filters.value.startDate) > new Date(filters.value.endDate)) {
-          localError.value = "La fecha de inicio debe ser anterior a la fecha de fin"
-          return
+          localError.value = 'La fecha de inicio debe ser anterior a la fecha de fin';
+          return;
         }
 
-        localError.value = "" // Limpiar errores previos
+        localError.value = ''; // Limpiar errores previos
 
         // Obtener registros de asistencia optimizados por rango de fechas
-        await searchByDateRange(filters.value.startDate, filters.value.endDate)
-        const documents = attendanceDocuments.value
+        await searchByDateRange(filters.value.startDate, filters.value.endDate);
+        const documents = attendanceDocuments.value;
         // Convertir documentos a registros con filtros aplicados
-        const records: AttendanceRecord[] = []
+        const records: AttendanceRecord[] = [];
 
         documents.forEach((doc) => {
           // Aplicar filtro de clase si está seleccionado
           if (filters.value.class && doc.classId !== filters.value.class) {
-            return
+            return;
           }
 
           // Procesar presentes
@@ -305,74 +305,74 @@ export default defineComponent({
               Fecha: doc.fecha,
               classId: doc.classId,
               studentId,
-              status: "Presente",
-            })
-          })
+              status: 'Presente',
+            });
+          });
 
           // Procesar ausentes
           doc.data.ausentes?.forEach((studentId) => {
-            const justification = doc.data.justificacion?.find((j) => j.id === studentId)
+            const justification = doc.data.justificacion?.find((j) => j.id === studentId);
             records.push({
               id: `${doc.fecha}_${doc.classId}_${studentId}_ausente`,
               Fecha: doc.fecha,
               classId: doc.classId,
               studentId,
-              status: justification ? "Justificado" : "Ausente",
-            })
-          })
+              status: justification ? 'Justificado' : 'Ausente',
+            });
+          });
 
           // Procesar tarde
           doc.data.tarde?.forEach((studentId) => {
-            const justification = doc.data.justificacion?.find((j) => j.id === studentId)
+            const justification = doc.data.justificacion?.find((j) => j.id === studentId);
             records.push({
               id: `${doc.fecha}_${doc.classId}_${studentId}_tarde`,
               Fecha: doc.fecha,
               classId: doc.classId,
               studentId,
-              status: justification ? "Justificado" : "Tardanza",
-            })
-          })
-        })
+              status: justification ? 'Justificado' : 'Tardanza',
+            });
+          });
+        });
 
         // Generar los puntos de datos según la agrupación seleccionada
         const datePoints = generateDatePoints(
           new Date(filters.value.startDate),
           new Date(filters.value.endDate),
-          filters.value.groupBy
-        )
+          filters.value.groupBy,
+        );
         // Inicializar los datos de tendencias
-        const present: TrendDataPoint[] = []
-        const absent: TrendDataPoint[] = []
-        const late: TrendDataPoint[] = []
-        const justified: TrendDataPoint[] = []
+        const present: TrendDataPoint[] = [];
+        const absent: TrendDataPoint[] = [];
+        const late: TrendDataPoint[] = [];
+        const justified: TrendDataPoint[] = [];
 
         // Calcular los porcentajes para cada punto de fecha
         datePoints.forEach((datePoint) => {
           // Filtrar registros para este punto de fecha
-          const pointRecords = filterRecordsByDatePoint(records, datePoint, filters.value.groupBy)
+          const pointRecords = filterRecordsByDatePoint(records, datePoint, filters.value.groupBy);
 
           // Si no hay registros para este punto, omitirlo
-          if (pointRecords.length === 0) return
+          if (pointRecords.length === 0) return;
 
           // Contar los diferentes estados
-          const presentCount = pointRecords.filter((r) => r.status === "Presente").length
-          const absentCount = pointRecords.filter((r) => r.status === "Ausente").length
-          const lateCount = pointRecords.filter((r) => r.status === "Tardanza").length
-          const justifiedCount = pointRecords.filter((r) => r.status === "Justificado").length
+          const presentCount = pointRecords.filter((r) => r.status === 'Presente').length;
+          const absentCount = pointRecords.filter((r) => r.status === 'Ausente').length;
+          const lateCount = pointRecords.filter((r) => r.status === 'Tardanza').length;
+          const justifiedCount = pointRecords.filter((r) => r.status === 'Justificado').length;
 
           // Calcular porcentajes
-          const total = pointRecords.length
-          const presentPercentage = (presentCount / total) * 100
-          const absentPercentage = (absentCount / total) * 100
-          const latePercentage = (lateCount / total) * 100
-          const justifiedPercentage = (justifiedCount / total) * 100
+          const total = pointRecords.length;
+          const presentPercentage = (presentCount / total) * 100;
+          const absentPercentage = (absentCount / total) * 100;
+          const latePercentage = (lateCount / total) * 100;
+          const justifiedPercentage = (justifiedCount / total) * 100;
 
           // Agregar los datos a los arrays
-          present.push({date: datePoint.toISOString(), value: Math.round(presentPercentage)})
-          absent.push({date: datePoint.toISOString(), value: Math.round(absentPercentage)})
-          late.push({date: datePoint.toISOString(), value: Math.round(latePercentage)})
-          justified.push({date: datePoint.toISOString(), value: Math.round(justifiedPercentage)})
-        })
+          present.push({ date: datePoint.toISOString(), value: Math.round(presentPercentage) });
+          absent.push({ date: datePoint.toISOString(), value: Math.round(absentPercentage) });
+          late.push({ date: datePoint.toISOString(), value: Math.round(latePercentage) });
+          justified.push({ date: datePoint.toISOString(), value: Math.round(justifiedPercentage) });
+        });
 
         // Actualizar los datos de tendencias
         trendData.value = {
@@ -380,21 +380,21 @@ export default defineComponent({
           absent,
           late,
           justified,
-        }
+        };
       } catch (err) {
-        console.error("Error generando tendencias:", err)
+        console.error('Error generando tendencias:', err);
       }
-    }
+    };
 
     // Cargar datos iniciales
     onMounted(async () => {
       try {
-        await classesStore.fetchClasses()
-        await generateTrends()
+        await classesStore.fetchClasses();
+        await generateTrends();
       } catch (err) {
-        console.error("Error cargando datos iniciales:", err)
+        console.error('Error cargando datos iniciales:', err);
       }
-    })
+    });
 
     // Observar cambios en los filtros para regenerar tendencias
     watch(
@@ -403,8 +403,8 @@ export default defineComponent({
         // No regenerar automáticamente para evitar muchas llamadas
         // El usuario debe hacer clic en el botón "Generar Tendencias"
       },
-      {deep: true}
-    )
+      { deep: true },
+    );
 
     return {
       isLoading,
@@ -414,7 +414,7 @@ export default defineComponent({
       hasTrendData,
       trendChartData,
       generateTrends,
-    }
+    };
   },
-})
+});
 </script>

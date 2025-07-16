@@ -99,115 +99,115 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useNotificationsStore, type Notification} from "../../stores/notifications"
-import {formatDistance} from "date-fns"
-import {es} from "date-fns/locale"
-import {useRouter} from "vue-router"
-import {safeGet, safeArrayLength} from "../../utils/safeAccess"
-import {useAdminErrorHandling} from "../../composables/useAdminErrorHandling"
+import { ref, computed, onMounted } from 'vue';
+import { useNotificationsStore, type Notification } from '../../stores/notifications';
+import { formatDistance } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useRouter } from 'vue-router';
+import { safeGet, safeArrayLength } from '../../utils/safeAccess';
+import { useAdminErrorHandling } from '../../composables/useAdminErrorHandling';
 
-const notificationsStore = useNotificationsStore()
-const router = useRouter()
-const activeFilter = ref("all")
-const {handleError, logError} = useAdminErrorHandling()
+const notificationsStore = useNotificationsStore();
+const router = useRouter();
+const activeFilter = ref('all');
+const { handleError, logError } = useAdminErrorHandling();
 
 // Computed properties
-const isLoading = computed(() => notificationsStore.isLoading)
-const unreadCount = computed(() => notificationsStore.unreadCount)
+const isLoading = computed(() => notificationsStore.isLoading);
+const unreadCount = computed(() => notificationsStore.unreadCount);
 
 const filteredNotifications = computed(() => {
-  let notifications = [...notificationsStore.notifications]
+  let notifications = [...notificationsStore.notifications];
 
   // Apply filters
-  if (activeFilter.value === "unread") {
-    notifications = notifications.filter((n) => !safeGet(n, "read", false))
-  } else if (activeFilter.value === "absences") {
+  if (activeFilter.value === 'unread') {
+    notifications = notifications.filter((n) => !safeGet(n, 'read', false));
+  } else if (activeFilter.value === 'absences') {
     notifications = notifications.filter(
       (n) =>
-        safeGet(n, "title", "").includes("Alerta de Inasistencias") ||
-        (safeGet(n, "details") && safeGet(n, "details.studentId"))
-    )
+        safeGet(n, 'title', '').includes('Alerta de Inasistencias') ||
+        (safeGet(n, 'details') && safeGet(n, 'details.studentId')),
+    );
   }
 
-  return notifications
-})
+  return notifications;
+});
 
 // Methods
 const fetchNotifications = async () => {
-  await notificationsStore.fetchNotifications()
-}
+  await notificationsStore.fetchNotifications();
+};
 
 const markAsRead = async (notificationId: string) => {
-  await notificationsStore.markAsRead(notificationId)
-}
+  await notificationsStore.markAsRead(notificationId);
+};
 
 const handleNotificationClick = (notification: Notification) => {
   // If not read, mark as read
   if (!notification.read && notification.id) {
-    markAsRead(notification.id)
+    markAsRead(notification.id);
   }
 
   // If it has a link, navigate to it
   if (notification.link) {
-    router.push(notification.link)
+    router.push(notification.link);
   }
-}
+};
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
-    case "error":
-      return XCircleIcon
-    case "success":
-      return CheckCircleIcon
-    case "warning":
-      return ExclamationTriangleIcon
-    case "info":
-    default:
-      return InformationCircleIcon
+  case 'error':
+    return XCircleIcon;
+  case 'success':
+    return CheckCircleIcon;
+  case 'warning':
+    return ExclamationTriangleIcon;
+  case 'info':
+  default:
+    return InformationCircleIcon;
   }
-}
+};
 
 const formatNotificationTime = (createdAt: any) => {
-  if (!createdAt) return ""
+  if (!createdAt) return '';
 
   const date =
     createdAt instanceof Date
       ? createdAt
-      : typeof createdAt === "string"
+      : typeof createdAt === 'string'
         ? new Date(createdAt)
         : createdAt.toDate
           ? createdAt.toDate()
-          : new Date()
+          : new Date();
 
-  return formatDistance(date, new Date(), {addSuffix: true, locale: es})
-}
+  return formatDistance(date, new Date(), { addSuffix: true, locale: es });
+};
 
 const isAbsenceNotification = (notification: Notification) => {
   return (
-    safeGet(notification, "title", "").includes("Alerta de Inasistencias") ||
-    (safeGet(notification, "details") && safeGet(notification, "details.studentId"))
-  )
-}
+    safeGet(notification, 'title', '').includes('Alerta de Inasistencias') ||
+    (safeGet(notification, 'details') && safeGet(notification, 'details.studentId'))
+  );
+};
 
 const getSeverityClass = (severity: string) => {
-  const severityLower = (severity || "").toLowerCase()
+  const severityLower = (severity || '').toLowerCase();
   switch (severityLower) {
-    case "alta":
-      return "severity-high"
-    case "media":
-      return "severity-medium"
-    case "baja":
-      return "severity-low"
-    default:
-      return "severity-medium"
+  case 'alta':
+    return 'severity-high';
+  case 'media':
+    return 'severity-medium';
+  case 'baja':
+    return 'severity-low';
+  default:
+    return 'severity-medium';
   }
-}
+};
 
 // Lifecycle hooks
 onMounted(() => {
-  fetchNotifications()
-})
+  fetchNotifications();
+});
 </script>
 
 <style scoped>

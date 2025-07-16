@@ -5,8 +5,8 @@
   <div v-else-if="!currentWork || !currentInstrument" class="flex justify-center items-center p-10">
     <div class="text-2xl text-red-500">No se encontró el instrumento o la obra.</div>
     <button 
-      @click="goBack"
       class="ml-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+      @click="goBack"
     >
       Volver
     </button>
@@ -20,8 +20,8 @@
           <p class="text-gray-600 dark:text-gray-100">{{ currentInstrument.family }} • {{ currentWork.name }}</p>
         </div>
         <button
-          @click="goBack"
           class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          @click="goBack"
         >
           ← Volver
         </button>
@@ -58,50 +58,50 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import InstrumentHeatMap from '../components/InstrumentHeatMap.vue'
-import { useMusicalWorks } from '../composables/useHeatMapProjects'
-import type { MusicalWork, Instrument } from '../types/heatmap'
+import { ref, onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import InstrumentHeatMap from '../components/InstrumentHeatMap.vue';
+import { useMusicalWorks } from '../composables/useHeatMapProjects';
+import type { MusicalWork, Instrument } from '../types/heatmap';
 
 // Obtener parámetros de ruta
-const route = useRoute()
-const router = useRouter()
-const workId = computed(() => route.params.workId as string)
-const instrumentId = computed(() => route.params.instrumentId as string)
+const route = useRoute();
+const router = useRouter();
+const workId = computed(() => route.params.workId as string);
+const instrumentId = computed(() => route.params.instrumentId as string);
 
 // Configurar estado
-const loading = ref(true)
-const { loadWork, currentWork } = useMusicalWorks()
-const currentInstrument = ref<Instrument | null>(null)
+const loading = ref(true);
+const { loadWork, currentWork } = useMusicalWorks();
+const currentInstrument = ref<Instrument | null>(null);
 
 // Cargar datos
 onMounted(async () => {
   try {
     if (workId.value) {
-      await loadWork(workId.value)
+      await loadWork(workId.value);
       
       // Una vez cargada la obra, buscar el instrumento por su ID
       if (currentWork.value && currentWork.value.instruments) {
         const instrument = currentWork.value.instruments.find(i => 
           i.id === instrumentId.value || 
-          i.id.toLowerCase() === instrumentId.value.toLowerCase()
-        )
+          i.id.toLowerCase() === instrumentId.value.toLowerCase(),
+        );
         
         if (instrument) {
-          currentInstrument.value = instrument
+          currentInstrument.value = instrument;
         }
       }
     }
   } catch (error) {
-    console.error('Error cargando datos del instrumento:', error)
+    console.error('Error cargando datos del instrumento:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 
 // Navegación
 const goBack = () => {
-  router.push({ name: 'montaje-work-detail', params: { id: workId.value } })
-}
+  router.push({ name: 'montaje-work-detail', params: { id: workId.value } });
+};
 </script>

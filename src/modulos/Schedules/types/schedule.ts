@@ -1,9 +1,9 @@
 // /types/schedules.ts
 
 // Importamos los tipos necesarios de otros módulos
-import type {Teacher} from "../../Teachers/types/teachers"
-import type {Student} from "../../Students/types/student"
-import type {Class} from "../../Classes/types/class"
+import type { Teacher } from '../../Teachers/types/teachers';
+import type { Student } from '../../Students/types/student';
+import type { Class } from '../../Classes/types/class';
 
 /**
  * TimeSlot: Representa un intervalo de tiempo con hora de inicio, fin y duración (en minutos)
@@ -20,7 +20,7 @@ export interface TimeSlot {
  * y las referencias a la clase, profesor, salón y estudiantes.
  */
 export interface ScheduleDay {
-  dayOfWeek: "Lunes" | "Martes" | "Miércoles" | "Jueves" | "Viernes" | "Sábado" | "Domingo"
+  dayOfWeek: 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes' | 'Sábado' | 'Domingo'
   timeSlot: TimeSlot
   classId: string
   teacherId: string
@@ -49,7 +49,7 @@ export interface Room {
  */
 export interface ScheduleConfiguration {
   academicYear: string
-  term: "Primavera" | "Verano" | "Otoño" | "Invierno"
+  term: 'Primavera' | 'Verano' | 'Otoño' | 'Invierno'
   startDate: Date
   endDate: Date
   holidayDates: Date[]
@@ -71,9 +71,9 @@ export interface ScheduleAssignment {
   room: Room
   createdAt: Date
   updatedAt: Date
-  status: "active" | "cancelled" | "completed"
+  status: 'active' | 'cancelled' | 'completed'
   conflicts?: {
-    type: "teacher" | "room" | "student"
+    type: 'teacher' | 'room' | 'student'
     description: string
   }[]
 }
@@ -149,7 +149,7 @@ export interface ScheduleCreationRequest {
   teacherId: string
   roomId: string
   studentIds: string[]
-  dayOfWeek: ScheduleDay["dayOfWeek"]
+  dayOfWeek: ScheduleDay['dayOfWeek']
   timeSlot: TimeSlot
 }
 
@@ -159,7 +159,7 @@ export interface ScheduleCreationRequest {
  */
 export interface ScheduleUpdateRequest {
   scheduleId: string
-  updates: Partial<Omit<ScheduleAssignment, "id" | "createdAt">>
+  updates: Partial<Omit<ScheduleAssignment, 'id' | 'createdAt'>>
 }
 
 /**
@@ -186,7 +186,7 @@ export interface LegacySchedule {
   isActive?: boolean
   createdAt?: Date
   updatedAt?: Date
-  status?: "active" | "cancelled" | "completed"
+  status?: 'active' | 'cancelled' | 'completed'
 }
 
 /**

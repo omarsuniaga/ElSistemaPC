@@ -1,57 +1,4 @@
 <!-- src/components/StudentProgression.vue -->
-<script setup lang="ts">
-import {ref, computed} from "vue"
-import {useClassesStore} from "../modulos/Classes/store/classes"
-import {useStudentsStore} from "../modulos/Students/store/students"
-
-const props = defineProps<{
-  studentId: string
-  classId: string
-}>()
-
-const emit = defineEmits<{
-  (e: "promoted", classId: string): void
-}>()
-
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-const isLoading = ref(false)
-const error = ref("")
-const progressionData = ref<any>(null)
-
-const student = computed(() => studentsStore.students.find((s) => s.id === props.studentId))
-
-const currentClass = computed(() => classesStore.getClassById(props.classId))
-
-const checkProgression = async () => {
-  try {
-    isLoading.value = true
-    error.value = ""
-    progressionData.value = await classesStore.checkStudentProgression(
-      props.studentId,
-      props.classId
-    )
-  } catch (err: any) {
-    error.value = err.message || "Error al verificar progresión"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const promoteStudent = async () => {
-  try {
-    isLoading.value = true
-    error.value = ""
-    const newClass = await classesStore.promoteStudent(props.studentId, props.classId)
-    emit("promoted", newClass.id)
-  } catch (err: any) {
-    error.value = err.message || "Error al promover estudiante"
-  } finally {
-    isLoading.value = false
-  }
-}
-</script>
-
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
     <div v-if="student && currentClass" class="space-y-4">
@@ -133,3 +80,56 @@ const promoteStudent = async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useClassesStore } from '../modulos/Classes/store/classes';
+import { useStudentsStore } from '../modulos/Students/store/students';
+
+const props = defineProps<{
+  studentId: string
+  classId: string
+}>();
+
+const emit = defineEmits<{
+  (e: 'promoted', classId: string): void
+}>();
+
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+const isLoading = ref(false);
+const error = ref('');
+const progressionData = ref<any>(null);
+
+const student = computed(() => studentsStore.students.find((s) => s.id === props.studentId));
+
+const currentClass = computed(() => classesStore.getClassById(props.classId));
+
+const checkProgression = async () => {
+  try {
+    isLoading.value = true;
+    error.value = '';
+    progressionData.value = await classesStore.checkStudentProgression(
+      props.studentId,
+      props.classId,
+    );
+  } catch (err: any) {
+    error.value = err.message || 'Error al verificar progresión';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const promoteStudent = async () => {
+  try {
+    isLoading.value = true;
+    error.value = '';
+    const newClass = await classesStore.promoteStudent(props.studentId, props.classId);
+    emit('promoted', newClass.id);
+  } catch (err: any) {
+    error.value = err.message || 'Error al promover estudiante';
+  } finally {
+    isLoading.value = false;
+  }
+};
+</script>

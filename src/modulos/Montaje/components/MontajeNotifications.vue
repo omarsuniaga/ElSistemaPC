@@ -2,8 +2,8 @@
   <div class="relative">
     <!-- Notification Bell -->
     <button
-      @click="toggleNotifications"
       class="relative p-2 text-gray-600 hover:text-gray-900 transition-colors"
+      @click="toggleNotifications"
     >
       <span class="text-xl">🔔</span>
       <span 
@@ -24,14 +24,14 @@
           <h3 class="text-lg font-semibold text-gray-900">Notificaciones</h3>
           <div class="flex gap-2">
             <button
-              @click="markAllAsRead"
               class="text-sm text-blue-600 hover:text-blue-800"
+              @click="markAllAsRead"
             >
               Marcar todas
             </button>
             <button
-              @click="showSettings = true"
               class="text-sm text-gray-600 hover:text-gray-800"
+              @click="showSettings = true"
             >
               ⚙️
             </button>
@@ -45,13 +45,13 @@
           <button
             v-for="filter in notificationFilters"
             :key="filter.key"
-            @click="activeFilter = filter.key"
             :class="[
               'px-2 py-1 rounded-full transition-colors',
               activeFilter === filter.key 
                 ? 'bg-blue-500 text-white' 
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             ]"
+            @click="activeFilter = filter.key"
           >
             {{ filter.label }} ({{ getFilterCount(filter.key) }})
           </button>
@@ -62,9 +62,9 @@
         <div 
           v-for="notification in filteredNotifications" 
           :key="notification.id"
-          @click="handleNotificationClick(notification)"
           class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
           :class="{ 'bg-blue-50 border-l-4 border-l-blue-500': !notification.read }"
+          @click="handleNotificationClick(notification)"
         >
           <div class="flex items-start gap-3">
             <span class="text-lg flex-shrink-0">{{ getNotificationIcon(notification.type) }}</span>
@@ -101,8 +101,8 @@
 
       <div class="p-4 border-t border-gray-200 bg-gray-50">
         <button
-          @click="viewAllNotifications"
           class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
+          @click="viewAllNotifications"
         >
           Ver todas las notificaciones ({{ notifications.length }})
         </button>
@@ -117,32 +117,32 @@
         <div class="space-y-4">
           <div class="flex items-center justify-between">
             <span class="text-sm text-gray-700">Notificaciones por email</span>
-            <input type="checkbox" v-model="settings.email" class="rounded">
+            <input v-model="settings.email" type="checkbox" class="rounded">
           </div>
           <div class="flex items-center justify-between">
             <span class="text-sm text-gray-700">Notificaciones push</span>
-            <input type="checkbox" v-model="settings.push" class="rounded">
+            <input v-model="settings.push" type="checkbox" class="rounded">
           </div>
           <div class="flex items-center justify-between">
             <span class="text-sm text-gray-700">Recordatorios de evaluación</span>
-            <input type="checkbox" v-model="settings.evaluationReminders" class="rounded">
+            <input v-model="settings.evaluationReminders" type="checkbox" class="rounded">
           </div>
           <div class="flex items-center justify-between">
             <span class="text-sm text-gray-700">Alertas de progreso</span>
-            <input type="checkbox" v-model="settings.progressAlerts" class="rounded">
+            <input v-model="settings.progressAlerts" type="checkbox" class="rounded">
           </div>
         </div>
         
         <div class="flex gap-3 mt-6">
           <button
-            @click="saveSettings"
             class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            @click="saveSettings"
           >
             Guardar
           </button>
           <button
-            @click="showSettings = false"
             class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            @click="showSettings = false"
           >
             Cancelar
           </button>
@@ -153,76 +153,76 @@
     <!-- Overlay -->
     <div 
       v-if="showNotifications"
-      @click="showNotifications = false"
       class="fixed inset-0 z-40"
+      @click="showNotifications = false"
     ></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import type { MontajeNotification } from '../types/notifications'
+import { ref, computed, onMounted } from 'vue';
+import type { MontajeNotification } from '../types/notifications';
 
-const showNotifications = ref(false)
-const showSettings = ref(false)
-const activeFilter = ref('all')
-const notifications = ref<MontajeNotification[]>([])
+const showNotifications = ref(false);
+const showSettings = ref(false);
+const activeFilter = ref('all');
+const notifications = ref<MontajeNotification[]>([]);
 
 const settings = ref({
   email: true,
   push: true,
   evaluationReminders: true,
-  progressAlerts: true
-})
+  progressAlerts: true,
+});
 
 const notificationFilters = [
   { key: 'all', label: 'Todas' },
   { key: 'evaluation', label: 'Evaluaciones' },
   { key: 'session', label: 'Ensayos' },
   { key: 'progress', label: 'Progreso' },
-  { key: 'system', label: 'Sistema' }
-]
+  { key: 'system', label: 'Sistema' },
+];
 
 const unreadCount = computed(() => 
-  notifications.value.filter(n => !n.read).length
-)
+  notifications.value.filter(n => !n.read).length,
+);
 
 const filteredNotifications = computed(() => {
   if (activeFilter.value === 'all') {
-    return notifications.value.slice(0, 10)
+    return notifications.value.slice(0, 10);
   }
   return notifications.value
     .filter(n => n.category === activeFilter.value)
-    .slice(0, 10)
-})
+    .slice(0, 10);
+});
 
 const getFilterCount = (filterKey: string): number => {
-  if (filterKey === 'all') return notifications.value.length
-  return notifications.value.filter(n => n.category === filterKey).length
-}
+  if (filterKey === 'all') return notifications.value.length;
+  return notifications.value.filter(n => n.category === filterKey).length;
+};
 
 const toggleNotifications = () => {
-  showNotifications.value = !showNotifications.value
-}
+  showNotifications.value = !showNotifications.value;
+};
 
 const markAllAsRead = async () => {
-  notifications.value.forEach(n => n.read = true)
+  notifications.value.forEach(n => n.read = true);
   // Save to backend
-}
+};
 
 const handleNotificationClick = (notification: MontajeNotification) => {
   if (!notification.read) {
-    notification.read = true
+    notification.read = true;
     // Save to backend
   }
   
   if (notification.actionUrl) {
     // Navigate to the action URL
-    console.log('Navigate to:', notification.actionUrl)
+    console.log('Navigate to:', notification.actionUrl);
   }
   
-  showNotifications.value = false
-}
+  showNotifications.value = false;
+};
 
 const getNotificationIcon = (type: string): string => {
   const icons = {
@@ -235,55 +235,55 @@ const getNotificationIcon = (type: string): string => {
     'report_ready': '📊',
     'system_update': '⚙️',
     'deadline_approaching': '⏰',
-    'achievement_unlocked': '🏆'
-  }
-  return icons[type] || '📢'
-}
+    'achievement_unlocked': '🏆',
+  };
+  return icons[type] || '📢';
+};
 
 const getPriorityColor = (priority: string): string => {
   const colors = {
     low: 'bg-gray-100 text-gray-600',
     medium: 'bg-blue-100 text-blue-600',
     high: 'bg-orange-100 text-orange-600',
-    urgent: 'bg-red-100 text-red-600'
-  }
-  return colors[priority] || 'bg-gray-100 text-gray-600'
-}
+    urgent: 'bg-red-100 text-red-600',
+  };
+  return colors[priority] || 'bg-gray-100 text-gray-600';
+};
 
 const getPriorityText = (priority: string): string => {
   const texts = {
     low: 'Baja',
     medium: 'Media',
     high: 'Alta',
-    urgent: 'Urgente'
-  }
-  return texts[priority] || priority
-}
+    urgent: 'Urgente',
+  };
+  return texts[priority] || priority;
+};
 
 const formatTime = (dateString: string): string => {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
   
-  const minutes = Math.floor(diff / 60000)
-  const hours = Math.floor(diff / 3600000)
-  const days = Math.floor(diff / 86400000)
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
   
-  if (minutes < 60) return `hace ${minutes} min`
-  if (hours < 24) return `hace ${hours}h`
-  if (days < 7) return `hace ${days}d`
-  return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' })
-}
+  if (minutes < 60) return `hace ${minutes} min`;
+  if (hours < 24) return `hace ${hours}h`;
+  if (days < 7) return `hace ${days}d`;
+  return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+};
 
 const viewAllNotifications = () => {
-  showNotifications.value = false
+  showNotifications.value = false;
   // Navigate to notifications page
-}
+};
 
 const saveSettings = () => {
   // Save settings to backend
-  showSettings.value = false
-}
+  showSettings.value = false;
+};
 
 const loadNotifications = () => {
   // Mock notifications with enhanced data
@@ -301,7 +301,7 @@ const loadNotifications = () => {
       read: false,
       actionUrl: '/evaluations/weekly',
       actionLabel: 'Evaluar Ahora',
-      createdAt: new Date(Date.now() - 3600000).toISOString()
+      createdAt: new Date(Date.now() - 3600000).toISOString(),
     },
     {
       id: '2',
@@ -314,7 +314,7 @@ const loadNotifications = () => {
       category: 'progress',
       data: { workId: 'work_1', milestone: 'memorization_80' },
       read: false,
-      createdAt: new Date(Date.now() - 7200000).toISOString()
+      createdAt: new Date(Date.now() - 7200000).toISOString(),
     },
     {
       id: '3',
@@ -329,7 +329,7 @@ const loadNotifications = () => {
       read: false,
       actionUrl: '/calendar',
       actionLabel: 'Ver Calendario',
-      createdAt: new Date(Date.now() - 14400000).toISOString()
+      createdAt: new Date(Date.now() - 14400000).toISOString(),
     },
     {
       id: '4',
@@ -344,7 +344,7 @@ const loadNotifications = () => {
       read: true,
       actionUrl: '/analytics',
       actionLabel: 'Ver Análisis',
-      createdAt: new Date(Date.now() - 86400000).toISOString()
+      createdAt: new Date(Date.now() - 86400000).toISOString(),
     },
     {
       id: '5',
@@ -357,12 +357,12 @@ const loadNotifications = () => {
       category: 'social',
       data: { memberId: 'member_5' },
       read: true,
-      createdAt: new Date(Date.now() - 172800000).toISOString()
-    }
-  ]
-}
+      createdAt: new Date(Date.now() - 172800000).toISOString(),
+    },
+  ];
+};
 
 onMounted(() => {
-  loadNotifications()
-})
+  loadNotifications();
+});
 </script>

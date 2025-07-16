@@ -129,110 +129,110 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed, watch} from "vue"
-import {useEmergencyClassStore} from "../modulos/Attendance/store/emergencyClass"
-import {useNotificationsStore} from "../stores/notifications"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
+import { ref, onMounted, computed, watch } from 'vue';
+import { useEmergencyClassStore } from '../modulos/Attendance/store/emergencyClass';
+import { useNotificationsStore } from '../stores/notifications';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 // Definir emisiones
-const emit = defineEmits(["request-processed"])
+const emit = defineEmits(['request-processed']);
 
 // Referencias a los stores
-const emergencyClassStore = useEmergencyClassStore()
-const notificationsStore = useNotificationsStore()
+const emergencyClassStore = useEmergencyClassStore();
+const notificationsStore = useNotificationsStore();
 
 // Variables reactivas
-const isLoading = ref(false)
-const error = ref("")
-const processingId = ref<string | null>(null)
+const isLoading = ref(false);
+const error = ref('');
+const processingId = ref<string | null>(null);
 
 // Solicitudes pendientes
 const pendingRequests = computed(() => {
-  return emergencyClassStore.getPendingEmergencyClasses
-})
+  return emergencyClassStore.getPendingEmergencyClasses;
+});
 
 // Formatear fecha
 const formatDate = (dateString: string) => {
   try {
-    const date = new Date(dateString)
-    return format(date, "d 'de' MMMM, yyyy", {locale: es})
+    const date = new Date(dateString);
+    return format(date, 'd \'de\' MMMM, yyyy', { locale: es });
   } catch (error) {
-    return dateString
+    return dateString;
   }
-}
+};
 
 // Cargar solicitudes pendientes
 const loadEmergencyClasses = async () => {
-  isLoading.value = true
-  error.value = ""
+  isLoading.value = true;
+  error.value = '';
 
   try {
-    await emergencyClassStore.fetchEmergencyClasses("Pendiente")
+    await emergencyClassStore.fetchEmergencyClasses('Pendiente');
   } catch (err) {
-    error.value = "Error al cargar las solicitudes de clases emergentes"
-    console.error("Error loading emergency class requests:", err)
+    error.value = 'Error al cargar las solicitudes de clases emergentes';
+    console.error('Error loading emergency class requests:', err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Aprobar solicitud
 const approveRequest = async (request) => {
-  processingId.value = request.id
+  processingId.value = request.id;
 
   try {
-    await emergencyClassStore.updateEmergencyClassStatus(request.id, "Aceptada")
+    await emergencyClassStore.updateEmergencyClassStatus(request.id, 'Aceptada');
     notificationsStore.showNotification({
-      title: "Solicitud aprobada",
+      title: 'Solicitud aprobada',
       message: `La clase emergente ${request.className} ha sido aprobada.`,
-      type: "success",
-    })
+      type: 'success',
+    });
 
     // Emitir evento para actualizar contadores en componente padre
-    emit("request-processed")
+    emit('request-processed');
   } catch (error) {
-    console.error("Error al aprobar la solicitud:", error)
+    console.error('Error al aprobar la solicitud:', error);
     notificationsStore.showNotification({
-      title: "Error",
-      message: "No se pudo aprobar la solicitud. Inténtalo de nuevo.",
-      type: "error",
-    })
+      title: 'Error',
+      message: 'No se pudo aprobar la solicitud. Inténtalo de nuevo.',
+      type: 'error',
+    });
   } finally {
-    processingId.value = null
+    processingId.value = null;
   }
-}
+};
 
 // Rechazar solicitud
 const rejectRequest = async (request) => {
-  processingId.value = request.id
+  processingId.value = request.id;
 
   try {
-    await emergencyClassStore.updateEmergencyClassStatus(request.id, "Rechazada")
+    await emergencyClassStore.updateEmergencyClassStatus(request.id, 'Rechazada');
     notificationsStore.showNotification({
-      title: "Solicitud rechazada",
+      title: 'Solicitud rechazada',
       message: `La clase emergente ${request.className} ha sido rechazada.`,
-      type: "info",
-    })
+      type: 'info',
+    });
 
     // Emitir evento para actualizar contadores en componente padre
-    emit("request-processed")
+    emit('request-processed');
   } catch (error) {
-    console.error("Error al rechazar la solicitud:", error)
+    console.error('Error al rechazar la solicitud:', error);
     notificationsStore.showNotification({
-      title: "Error",
-      message: "No se pudo rechazar la solicitud. Inténtalo de nuevo.",
-      type: "error",
-    })
+      title: 'Error',
+      message: 'No se pudo rechazar la solicitud. Inténtalo de nuevo.',
+      type: 'error',
+    });
   } finally {
-    processingId.value = null
+    processingId.value = null;
   }
-}
+};
 
 // Cargar datos al montar el componente
 onMounted(() => {
-  loadEmergencyClasses()
-})
+  loadEmergencyClasses();
+});
 </script>
 
 <style scoped>

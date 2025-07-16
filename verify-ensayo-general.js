@@ -8,12 +8,12 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore';
 
 // Configuración Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyABBRlIV63EqwEH0YhtePTwqkCtqv6_CmY",
-  authDomain: "musicacademymanager.firebaseapp.com",
-  projectId: "musicacademymanager",
-  storageBucket: "musicacademymanager.appspot.com",
-  messagingSenderId: "754252734445",
-  appId: "1:754252734445:web:d73dd2cc0f4b1c4b74e5ba"
+  apiKey: 'AIzaSyABBRlIV63EqwEH0YhtePTwqkCtqv6_CmY',
+  authDomain: 'musicacademymanager.firebaseapp.com',
+  projectId: 'musicacademymanager',
+  storageBucket: 'musicacademymanager.appspot.com',
+  messagingSenderId: '754252734445',
+  appId: '1:754252734445:web:d73dd2cc0f4b1c4b74e5ba',
 };
 
 const app = initializeApp(firebaseConfig);
@@ -21,7 +21,7 @@ const db = getFirestore(app);
 
 async function verifyEnsayoGeneral() {
   try {
-    console.log("🔍 BUSCANDO ENSAYO GENERAL EN FIRESTORE...\n");
+    console.log('🔍 BUSCANDO ENSAYO GENERAL EN FIRESTORE...\n');
     
     const classesRef = collection(db, 'classes');
     const snapshot = await getDocs(classesRef);
@@ -36,19 +36,19 @@ async function verifyEnsayoGeneral() {
     });
     
     if (!ensayoGeneral) {
-      console.log("❌ NO SE ENCONTRÓ ENSAYO GENERAL");
+      console.log('❌ NO SE ENCONTRÓ ENSAYO GENERAL');
       return;
     }
     
-    console.log("✅ ENSAYO GENERAL ENCONTRADO:");
-    console.log("📋 ID:", ensayoGeneral.id);
-    console.log("📋 Nombre:", ensayoGeneral.name);
-    console.log("📋 Estructura completa:", JSON.stringify(ensayoGeneral, null, 2));
+    console.log('✅ ENSAYO GENERAL ENCONTRADO:');
+    console.log('📋 ID:', ensayoGeneral.id);
+    console.log('📋 Nombre:', ensayoGeneral.name);
+    console.log('📋 Estructura completa:', JSON.stringify(ensayoGeneral, null, 2));
     
-    console.log("\n🗓️ ANÁLISIS DE HORARIOS:");
+    console.log('\n🗓️ ANÁLISIS DE HORARIOS:');
     
     if (ensayoGeneral.schedule) {
-      console.log("📅 Schedule encontrado:", JSON.stringify(ensayoGeneral.schedule, null, 2));
+      console.log('📅 Schedule encontrado:', JSON.stringify(ensayoGeneral.schedule, null, 2));
       
       if (ensayoGeneral.schedule.slots && Array.isArray(ensayoGeneral.schedule.slots)) {
         console.log(`\n🎯 SLOTS ENCONTRADOS: ${ensayoGeneral.schedule.slots.length}`);
@@ -70,7 +70,7 @@ async function verifyEnsayoGeneral() {
             'jueves': 3,
             'viernes': 4,
             'sábado': 5,
-            'domingo': 6
+            'domingo': 6,
           };
           
           // Mapeo DOMINGO=0 (JavaScript estándar)
@@ -81,7 +81,7 @@ async function verifyEnsayoGeneral() {
             'miércoles': 3,
             'jueves': 4,
             'viernes': 5,
-            'sábado': 6
+            'sábado': 6,
           };
           
           const diaLower = dia.toLowerCase();
@@ -89,29 +89,29 @@ async function verifyEnsayoGeneral() {
           console.log(`   📊 En formato DOMINGO=0: ${mapeoDomingo0[diaLower] ?? 'NO ENCONTRADO'}`);
         });
       } else if (ensayoGeneral.schedule.day) {
-        console.log("\n📅 Formato legacy con día directo:");
+        console.log('\n📅 Formato legacy con día directo:');
         console.log(`   Día: "${ensayoGeneral.schedule.day}"`);
       } else {
-        console.log("\n❌ ESTRUCTURA DE SCHEDULE NO RECONOCIDA");
+        console.log('\n❌ ESTRUCTURA DE SCHEDULE NO RECONOCIDA');
       }
     } else {
-      console.log("\n❌ NO HAY SCHEDULE DEFINIDO");
+      console.log('\n❌ NO HAY SCHEDULE DEFINIDO');
     }
     
-    console.log("\n🎯 RESUMEN:");
-    console.log("• Los días están guardados como strings en español");
-    console.log("• martes = 1 en LUNES=0, 2 en DOMINGO=0");
-    console.log("• jueves = 3 en LUNES=0, 4 en DOMINGO=0");  
-    console.log("• sábado = 5 en LUNES=0, 6 en DOMINGO=0");
-    console.log("• domingo = 6 en LUNES=0, 0 en DOMINGO=0");
+    console.log('\n🎯 RESUMEN:');
+    console.log('• Los días están guardados como strings en español');
+    console.log('• martes = 1 en LUNES=0, 2 en DOMINGO=0');
+    console.log('• jueves = 3 en LUNES=0, 4 en DOMINGO=0');  
+    console.log('• sábado = 5 en LUNES=0, 6 en DOMINGO=0');
+    console.log('• domingo = 6 en LUNES=0, 0 en DOMINGO=0');
     
-    console.log("\n🚨 PROBLEMA IDENTIFICADO:");
-    console.log("Si el domingo aparece en la fecha 2025-07-06 (que es domingo),");
-    console.log("y Ensayo General tiene días martes/jueves/sábado,");
-    console.log("entonces hay un error en la conversión o comparación.");
+    console.log('\n🚨 PROBLEMA IDENTIFICADO:');
+    console.log('Si el domingo aparece en la fecha 2025-07-06 (que es domingo),');
+    console.log('y Ensayo General tiene días martes/jueves/sábado,');
+    console.log('entonces hay un error en la conversión o comparación.');
     
   } catch (error) {
-    console.error("❌ Error:", error);
+    console.error('❌ Error:', error);
   }
 }
 

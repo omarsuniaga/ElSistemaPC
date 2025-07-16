@@ -16,53 +16,53 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {useRouter, useRoute} from "vue-router"
-import DateClassSelector from "../../Classes/components/DateClassSelector.vue"
-import {useAttendanceStore} from "../store/attendance"
-import {getCurrentDate} from "../../../utils/dateUtils"
+import { ref, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import DateClassSelector from '../../Classes/components/DateClassSelector.vue';
+import { useAttendanceStore } from '../store/attendance';
+import { getCurrentDate } from '../../../utils/dateUtils';
 
-const router = useRouter()
-const route = useRoute()
-const attendanceStore = useAttendanceStore()
+const router = useRouter();
+const route = useRoute();
+const attendanceStore = useAttendanceStore();
 
 // Iniciar desde query o hoy
-const selectedDate = ref<string>((route.query.date as string) || getCurrentDate())
-const selectedClass = ref<string>((route.query.class as string) || "")
-const isLoading = ref(false)
+const selectedDate = ref<string>((route.query.date as string) || getCurrentDate());
+const selectedClass = ref<string>((route.query.class as string) || '');
+const isLoading = ref(false);
 
 // Clases con registro en la fecha actual
 const classesWithRecords = computed(() =>
   attendanceStore.attendanceDocuments
     .filter((doc) => doc.fecha === selectedDate.value)
-    .map((doc) => ({classId: doc.classId, date: doc.fecha}))
-)
+    .map((doc) => ({ classId: doc.classId, date: doc.fecha })),
+);
 
 // Fechas que tienen registros (para marcar en el calendario)
 const markedDates = computed(() => {
   // Get unique dates from attendance documents
-  const uniqueDates = new Set<string>()
+  const uniqueDates = new Set<string>();
   attendanceStore.attendanceDocuments.forEach((doc) => {
-    if (doc.fecha && typeof doc.fecha === "string") {
-      uniqueDates.add(doc.fecha)
+    if (doc.fecha && typeof doc.fecha === 'string') {
+      uniqueDates.add(doc.fecha);
     }
-  })
+  });
 
   // Convert to array and ensure it's populated
-  const datesArray = Array.from(uniqueDates)
-  console.log("Marked dates:", datesArray) // Debug to see what's being passed
+  const datesArray = Array.from(uniqueDates);
+  console.log('Marked dates:', datesArray); // Debug to see what's being passed
 
-  return datesArray
-})
+  return datesArray;
+});
 
 function onDateChange(date: string) {
-  selectedDate.value = date
-  router.replace({query: {date}})
+  selectedDate.value = date;
+  router.replace({ query: { date } });
 }
 
 function goToAttendance() {
-  if (!selectedClass.value) return
-  const formatted = selectedDate.value.replace(/-/g, "")
-  router.push(`/attendance/${formatted}/${selectedClass.value}`)
+  if (!selectedClass.value) return;
+  const formatted = selectedDate.value.replace(/-/g, '');
+  router.push(`/attendance/${formatted}/${selectedClass.value}`);
 }
 </script>

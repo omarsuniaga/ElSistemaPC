@@ -81,7 +81,7 @@
     <!-- Contenido del sidebar con scroll optimizado -->
     <div class="flex-1 overflow-hidden">
       <!-- Contenido expandido con scroll suave -->
-      <div v-show="expanded" class="h-full overflow-y-auto custom-scrollbar">
+      <div v-show="expanded" class="h-full overflow-y-auto custom-scrollbar mb-16">
         <div class="p-4 space-y-6">
           <!-- Estado del día mejorado -->
           <div class="space-y-3">
@@ -245,18 +245,18 @@ interface Props {
   }
   dayStatus: {
     type: string
-    color: "green" | "yellow" | "blue" | "gray"
+    color: 'green' | 'yellow' | 'blue' | 'gray'
     text: string
   }
   showQuickActions?: boolean
   hasClasses?: boolean
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 defineEmits<{
   toggle: []
-}>()
+}>();
 </script>
 
 <style scoped>

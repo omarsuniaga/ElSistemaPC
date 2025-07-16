@@ -133,15 +133,15 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
+import { ref, computed, watch } from 'vue';
 import {
   CalendarIcon,
   DocumentArrowDownIcon,
   ChartBarIcon,
   SaveIcon,
   UserGroupIcon,
-} from "@heroicons/vue/24/outline"
-import {generateAttendancePDF} from "@/utils/pdf/pdf-export"
+} from '@heroicons/vue/24/outline';
+import { generateAttendancePDF } from '@/utils/pdf/pdf-export';
 
 interface Student {
   id: string
@@ -168,43 +168,43 @@ const props = defineProps<{
     present: boolean
     notes?: string
   }>
-}>()
+}>();
 
-const emit = defineEmits(["save-attendance"])
+const emit = defineEmits(['save-attendance']);
 
 // Date management
-const currentDate = ref(new Date())
-const showDatePicker = ref(false)
-const selectedDate = ref(currentDate.value.toISOString().split("T")[0])
+const currentDate = ref(new Date());
+const showDatePicker = ref(false);
+const selectedDate = ref(currentDate.value.toISOString().split('T')[0]);
 
 // Watch for date changes
 watch(selectedDate, (newDate) => {
-  currentDate.value = new Date(newDate)
-  showDatePicker.value = false
-  loadSavedAttendance()
-})
+  currentDate.value = new Date(newDate);
+  showDatePicker.value = false;
+  loadSavedAttendance();
+});
 
 const formattedDate = computed(() => {
-  return currentDate.value.toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-})
+  return currentDate.value.toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+});
 
 // Initialize attendance records with students data
-const attendanceRecords = ref<AttendanceRecord[]>([])
+const attendanceRecords = ref<AttendanceRecord[]>([]);
 
 // Watch for students changes
 watch(
   () => props.students,
   (newStudents) => {
-    initializeAttendanceRecords()
-    loadSavedAttendance()
+    initializeAttendanceRecords();
+    loadSavedAttendance();
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 // Initialize attendance records
 const initializeAttendanceRecords = () => {
@@ -212,84 +212,84 @@ const initializeAttendanceRecords = () => {
     id: student.id,
     name: student.name,
     present: null,
-    notes: "",
-  }))
-}
+    notes: '',
+  }));
+};
 
 // Load saved attendance if available
 const loadSavedAttendance = () => {
-  if (!props.savedAttendance) return
+  if (!props.savedAttendance) return;
 
-  const dateStr = currentDate.value.toISOString().split("T")[0]
-  const savedForDate = props.savedAttendance.filter((a) => a.date === dateStr)
+  const dateStr = currentDate.value.toISOString().split('T')[0];
+  const savedForDate = props.savedAttendance.filter((a) => a.date === dateStr);
 
   if (savedForDate.length > 0) {
     attendanceRecords.value = attendanceRecords.value.map((record) => {
-      const saved = savedForDate.find((s) => s.studentId === record.id)
+      const saved = savedForDate.find((s) => s.studentId === record.id);
       if (saved) {
         return {
           ...record,
           present: saved.present,
-          notes: saved.notes || "",
-        }
+          notes: saved.notes || '',
+        };
       }
-      return record
-    })
+      return record;
+    });
   } else {
     // Reset if no saved attendance for this date
-    initializeAttendanceRecords()
+    initializeAttendanceRecords();
   }
-}
+};
 
 // Check if we have any attendance records
 const hasAttendanceRecords = computed(() => {
-  return attendanceRecords.value.some((record) => record.present !== null)
-})
+  return attendanceRecords.value.some((record) => record.present !== null);
+});
 
 // Set attendance status for a student
 const setAttendance = (index: number, present: boolean) => {
-  attendanceRecords.value[index].present = present
-}
+  attendanceRecords.value[index].present = present;
+};
 
 // Save attendance data
 const saveAttendance = () => {
   // Format the attendance data
   const attendanceData = attendanceRecords.value.map((record) => ({
     studentId: record.id,
-    date: currentDate.value.toISOString().split("T")[0],
+    date: currentDate.value.toISOString().split('T')[0],
     present: record.present === true,
     notes: record.notes,
-  }))
+  }));
 
   // Emit the data to parent component to save
-  emit("save-attendance", {
+  emit('save-attendance', {
     classId: props.classId,
     date: currentDate.value,
     records: attendanceData,
-  })
-}
+  });
+};
 
 // Download attendance report
 const downloadAttendanceReport = async () => {
   try {
     // Create attendance data in the format expected by the PDF generator
     const studentsWithAttendance = props.students.map((student) => {
-      const record = attendanceRecords.value.find((r) => r.id === student.id)
+      const record = attendanceRecords.value.find((r) => r.id === student.id);
 
       return {
         ...student,
         attendance:
           record && record.present !== null
             ? [
-                {
-                  present: record.present === true,
-                  date: currentDate.value.toISOString().split("T")[0],
-                  notes: record.notes,
-                },
-              ]
+              {
+                present: record.present === true,
+                date: currentDate.value.toISOString().split('T')[0],
+                notes: record.notes,
+              },
+            ]
             : [],
-      }
-    })
+      };
+    });
 
     // Generate the PDF report
     await generateAttendanceReportPDF({
@@ -298,51 +298,51 @@ const downloadAttendanceReport = async () => {
       teacherName: props.teacherName,
       date: currentDate.value,
       students: studentsWithAttendance,
-    })
+    });
   } catch (error) {
-    console.error("Error generating attendance report:", error)
-    alert("Hubo un problema al generar el reporte de asistencia.")
+    console.error('Error generating attendance report:', error);
+    alert('Hubo un problema al generar el reporte de asistencia.');
   }
-}
+};
 
 // Download monthly report
 const downloadMonthlyReport = async () => {
   try {
-    const month = currentDate.value.getMonth() + 1 // JavaScript months are 0-indexed
-    const year = currentDate.value.getFullYear()
+    const month = currentDate.value.getMonth() + 1; // JavaScript months are 0-indexed
+    const year = currentDate.value.getFullYear();
 
     // For this example, we'll just use current attendance data
     // In a real app, you would load all attendance data for the month
     const studentsWithAttendance = props.students.map((student) => {
-      const record = attendanceRecords.value.find((r) => r.id === student.id)
+      const record = attendanceRecords.value.find((r) => r.id === student.id);
 
       return {
         ...student,
         attendance:
           record && record.present !== null
             ? [
-                {
-                  present: record.present === true,
-                  date: currentDate.value.toISOString().split("T")[0],
-                  notes: record.notes,
-                },
-              ]
+              {
+                present: record.present === true,
+                date: currentDate.value.toISOString().split('T')[0],
+                notes: record.notes,
+              },
+            ]
             : [],
-      }
-    })
+      };
+    });
 
     await generateMonthlyAttendanceReportPDF(
       props.className,
       props.teacherName,
       month,
       year,
-      studentsWithAttendance
-    )
+      studentsWithAttendance,
+    );
   } catch (error) {
-    console.error("Error generating monthly report:", error)
-    alert("Hubo un problema al generar el reporte mensual.")
+    console.error('Error generating monthly report:', error);
+    alert('Hubo un problema al generar el reporte mensual.');
   }
-}
+};
 </script>
 
 <style scoped>

@@ -25,50 +25,50 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useRoute} from "vue-router"
-import {useAuthStore} from "@/stores/auth"
-import {shouldUseAdminRoute, getAdminRoute} from "@/router/guards/roleBasedRedirect"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { shouldUseAdminRoute, getAdminRoute } from '@/router/guards/roleBasedRedirect';
 
-const route = useRoute()
-const authStore = useAuthStore()
+const route = useRoute();
+const authStore = useAuthStore();
 
-const showRedirectInfo = ref(false)
-const redirectInfo = ref("")
+const showRedirectInfo = ref(false);
+const redirectInfo = ref('');
 
-const currentRoute = computed(() => route.path)
-const userInfo = computed(() => authStore.user)
+const currentRoute = computed(() => route.path);
+const userInfo = computed(() => authStore.user);
 
 const shouldRedirect = computed(() => {
-  if (!userInfo.value?.role) return false
-  return shouldUseAdminRoute(userInfo.value.role, currentRoute.value)
-})
+  if (!userInfo.value?.role) return false;
+  return shouldUseAdminRoute(userInfo.value.role, currentRoute.value);
+});
 
 const adminRouteForCurrent = computed(() => {
-  return getAdminRoute(currentRoute.value)
-})
+  return getAdminRoute(currentRoute.value);
+});
 
 // Mostrar información de redirección cuando sea aplicable
 watch(
   [currentRoute, userInfo],
   () => {
     if (shouldRedirect.value && adminRouteForCurrent.value) {
-      redirectInfo.value = `Redirigiendo a: ${adminRouteForCurrent.value}`
-      showRedirectInfo.value = true
+      redirectInfo.value = `Redirigiendo a: ${adminRouteForCurrent.value}`;
+      showRedirectInfo.value = true;
 
       // Ocultar después de 3 segundos
       setTimeout(() => {
-        showRedirectInfo.value = false
-      }, 3000)
+        showRedirectInfo.value = false;
+      }, 3000);
     }
   },
-  {immediate: true}
-)
+  { immediate: true },
+);
 
 onMounted(() => {
-  console.log("🔧 RedirectIndicator montado")
-  console.log("👤 Usuario actual:", userInfo.value)
-  console.log("📍 Ruta actual:", currentRoute.value)
-  console.log("🔄 Debería redirigir:", shouldRedirect.value)
-})
+  console.log('🔧 RedirectIndicator montado');
+  console.log('👤 Usuario actual:', userInfo.value);
+  console.log('📍 Ruta actual:', currentRoute.value);
+  console.log('🔄 Debería redirigir:', shouldRedirect.value);
+});
 </script>

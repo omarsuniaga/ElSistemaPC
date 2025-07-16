@@ -128,9 +128,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed, watch, onMounted} from "vue"
-import {useStudentScheduleValidation} from "../composables/useStudentScheduleValidation"
-import type {TimeSlot} from "../../../utils/scheduleConflicts"
+import { computed, watch, onMounted } from 'vue';
+import { useStudentScheduleValidation } from '../composables/useStudentScheduleValidation';
+import type { TimeSlot } from '../../../utils/scheduleConflicts';
 
 const props = defineProps<{
   classId?: string
@@ -139,12 +139,12 @@ const props = defineProps<{
     slots: TimeSlot[]
   }
   autoValidate?: boolean
-}>()
+}>();
 
 const emit = defineEmits<{
   conflictsDetected: [hasConflicts: boolean, conflictCount: number]
   validationComplete: [result: any]
-}>()
+}>();
 
 const {
   isValidating,
@@ -155,86 +155,86 @@ const {
   formatStudentConflictSummary,
   validateStudentConflicts,
   clearStudentValidation,
-} = useStudentScheduleValidation()
+} = useStudentScheduleValidation();
 
 // Computed styles based on validation state
 const summaryClasses = computed(() => {
   if (hasStudentConflicts.value) {
-    return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+    return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
   }
-  return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-})
+  return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
+});
 
 const summaryIcon = computed(() => {
-  return hasStudentConflicts.value ? "svg" : "svg"
-})
+  return hasStudentConflicts.value ? 'svg' : 'svg';
+});
 
 const summaryIconClasses = computed(() => {
-  return hasStudentConflicts.value ? "text-red-500" : "text-green-500"
-})
+  return hasStudentConflicts.value ? 'text-red-500' : 'text-green-500';
+});
 
 const summaryTextClasses = computed(() => {
   if (hasStudentConflicts.value) {
-    return "text-red-800 dark:text-red-300"
+    return 'text-red-800 dark:text-red-300';
   }
-  return "text-green-800 dark:text-green-300"
-})
+  return 'text-green-800 dark:text-green-300';
+});
 
 // Helper function to extract student name from conflict
 const getStudentNameFromConflict = (conflict: any) => {
-  return conflict.conflictingEntity?.name || "Estudiante"
-}
+  return conflict.conflictingEntity?.name || 'Estudiante';
+};
 
 // Validation logic
 const runValidation = async () => {
   if (!props.studentIds || props.studentIds.length === 0) {
-    clearStudentValidation()
-    return
+    clearStudentValidation();
+    return;
   }
 
   const result = await validateStudentConflicts({
     id: props.classId,
     studentIds: props.studentIds,
     schedule: props.schedule,
-  })
+  });
 
-  emit("conflictsDetected", result.hasConflicts, totalStudentConflicts.value)
-  emit("validationComplete", result)
-}
+  emit('conflictsDetected', result.hasConflicts, totalStudentConflicts.value);
+  emit('validationComplete', result);
+};
 
 // Actions
 const analyzeAgain = () => {
-  runValidation()
-}
+  runValidation();
+};
 
 const showDetailedReport = () => {
   // Implementar modal o vista detallada
-  console.log("Showing detailed report:", conflictedStudents.value)
-}
+  console.log('Showing detailed report:', conflictedStudents.value);
+};
 
 // Watchers
 watch(
   () => [props.studentIds, props.schedule],
   () => {
     if (props.autoValidate !== false) {
-      runValidation()
+      runValidation();
     }
   },
-  {deep: true}
-)
+  { deep: true },
+);
 
 // Initialize
 onMounted(() => {
   if (props.autoValidate !== false) {
-    runValidation()
+    runValidation();
   }
-})
+});
 
 // Expose validation method for manual triggering
 defineExpose({
   validate: runValidation,
   clearValidation: clearStudentValidation,
-})
+});
 </script>
 
 <style scoped>

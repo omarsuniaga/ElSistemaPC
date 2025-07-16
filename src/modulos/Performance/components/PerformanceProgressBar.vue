@@ -182,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 import {
   ChatBubbleLeftEllipsisIcon,
   ArrowTrendingUpIcon,
@@ -190,8 +190,8 @@ import {
   MinusIcon,
   LightBulbIcon,
   ArrowRightIcon,
-} from "@heroicons/vue/24/solid"
-import type {StudentPerformance} from "../types/performance"
+} from '@heroicons/vue/24/solid';
+import type { StudentPerformance } from '../types/performance';
 
 interface Props {
   performance?: StudentPerformance
@@ -208,12 +208,12 @@ interface Props {
   showDetails?: boolean
   showTrend?: boolean
   showRecommendations?: boolean
-  size?: "small" | "medium" | "large"
+  size?: 'small' | 'medium' | 'large'
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: "Rendimiento General",
-  classification: "Sin datos",
+  title: 'Rendimiento General',
+  classification: 'Sin datos',
   attendanceRate: 0,
   repertoireScore: 0,
   individualWorkScore: 0,
@@ -223,72 +223,72 @@ const props = withDefaults(defineProps<Props>(), {
   showDetails: true,
   showTrend: true,
   showRecommendations: false,
-  size: "medium",
-})
+  size: 'medium',
+});
 
 // Computed properties para colores y estilos
 const progressComputedClass = computed(() => {
-  if (props.score >= 90) return "bg-gradient-to-r from-green-400 to-green-600"
-  if (props.score >= 80) return "bg-gradient-to-r from-blue-400 to-blue-600"
-  if (props.score >= 70) return "bg-gradient-to-r from-yellow-400 to-yellow-600"
-  if (props.score >= 60) return "bg-gradient-to-r from-orange-400 to-orange-600"
-  return "bg-gradient-to-r from-red-400 to-red-600"
-})
+  if (props.score >= 90) return 'bg-gradient-to-r from-green-400 to-green-600';
+  if (props.score >= 80) return 'bg-gradient-to-r from-blue-400 to-blue-600';
+  if (props.score >= 70) return 'bg-gradient-to-r from-yellow-400 to-yellow-600';
+  if (props.score >= 60) return 'bg-gradient-to-r from-orange-400 to-orange-600';
+  return 'bg-gradient-to-r from-red-400 to-red-600';
+});
 
 const classificationComputedClass = computed(() => {
-  const classification = props.classification.toLowerCase()
-  if (classification.includes("excelente")) return "bg-green-100 text-green-800"
-  if (classification.includes("bueno")) return "bg-blue-100 text-blue-800"
-  if (classification.includes("regular")) return "bg-yellow-100 text-yellow-800"
-  if (classification.includes("mejora")) return "bg-orange-100 text-orange-800"
-  return "bg-red-100 text-red-800"
-})
+  const classification = props.classification.toLowerCase();
+  if (classification.includes('excelente')) return 'bg-green-100 text-green-800';
+  if (classification.includes('bueno')) return 'bg-blue-100 text-blue-800';
+  if (classification.includes('regular')) return 'bg-yellow-100 text-yellow-800';
+  if (classification.includes('mejora')) return 'bg-orange-100 text-orange-800';
+  return 'bg-red-100 text-red-800';
+});
 
 // Funciones para colores de métricas
 const getAttendanceColor = (rate: number) => {
-  if (rate >= 95) return "bg-green-500"
-  if (rate >= 85) return "bg-blue-500"
-  if (rate >= 75) return "bg-yellow-500"
-  if (rate >= 65) return "bg-orange-500"
-  return "bg-red-500"
-}
+  if (rate >= 95) return 'bg-green-500';
+  if (rate >= 85) return 'bg-blue-500';
+  if (rate >= 75) return 'bg-yellow-500';
+  if (rate >= 65) return 'bg-orange-500';
+  return 'bg-red-500';
+};
 
 const getRepertoireColor = (score: number) => {
-  if (score >= 90) return "bg-green-500"
-  if (score >= 80) return "bg-blue-500"
-  if (score >= 70) return "bg-yellow-500"
-  if (score >= 60) return "bg-orange-500"
-  return "bg-red-500"
-}
+  if (score >= 90) return 'bg-green-500';
+  if (score >= 80) return 'bg-blue-500';
+  if (score >= 70) return 'bg-yellow-500';
+  if (score >= 60) return 'bg-orange-500';
+  return 'bg-red-500';
+};
 
 const getWorkColor = (score: number) => {
-  if (score >= 85) return "bg-green-500"
-  if (score >= 75) return "bg-blue-500"
-  if (score >= 65) return "bg-yellow-500"
-  if (score >= 55) return "bg-orange-500"
-  return "bg-red-500"
-}
+  if (score >= 85) return 'bg-green-500';
+  if (score >= 75) return 'bg-blue-500';
+  if (score >= 65) return 'bg-yellow-500';
+  if (score >= 55) return 'bg-orange-500';
+  return 'bg-red-500';
+};
 
 // Funciones para tendencias
 const getTrendIcon = (trend: number) => {
-  if (trend > 5) return ArrowTrendingUpIcon
-  if (trend < -5) return ArrowTrendingDownIcon
-  return MinusIcon
-}
+  if (trend > 5) return ArrowTrendingUpIcon;
+  if (trend < -5) return ArrowTrendingDownIcon;
+  return MinusIcon;
+};
 
 const getTrendColor = (trend: number) => {
-  if (trend > 5) return "text-green-500"
-  if (trend < -5) return "text-red-500"
-  return "text-gray-500"
-}
+  if (trend > 5) return 'text-green-500';
+  if (trend < -5) return 'text-red-500';
+  return 'text-gray-500';
+};
 
 const getTrendText = (trend: number) => {
-  if (trend > 10) return "Mejorando significativamente"
-  if (trend > 5) return "Mejorando"
-  if (trend < -10) return "Declinando significativamente"
-  if (trend < -5) return "Declinando"
-  return "Estable"
-}
+  if (trend > 10) return 'Mejorando significativamente';
+  if (trend > 5) return 'Mejorando';
+  if (trend < -10) return 'Declinando significativamente';
+  if (trend < -5) return 'Declinando';
+  return 'Estable';
+};
 </script>
 
 <style scoped>

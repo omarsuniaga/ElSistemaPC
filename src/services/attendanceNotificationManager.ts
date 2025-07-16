@@ -1,8 +1,8 @@
 // Inicializador del Sistema de Notificaciones de Asistencia
 // Se ejecuta al iniciar la aplicación para configurar listeners automáticos
 
-import {attendanceNotificationSystem} from "./attendanceNotificationTrigger"
-import {isFirebaseReady} from "../firebase"
+import { attendanceNotificationSystem } from './attendanceNotificationTrigger';
+import { isFirebaseReady } from '../firebase';
 // import { useAuthStore } from '../stores/authStore' // No se puede usar aquí directamente
 
 interface NotificationSystemState {
@@ -18,7 +18,7 @@ class AttendanceNotificationManager {
     unsubscribeFunction: null,
     lastError: null,
     startTime: null,
-  }
+  };
 
   /**
    * Inicializa el sistema de notificaciones
@@ -26,15 +26,15 @@ class AttendanceNotificationManager {
    */
   async initialize(): Promise<void> {
     try {
-      console.log("🔧 Inicializando sistema de notificaciones de asistencia...")
+      console.log('🔧 Inicializando sistema de notificaciones de asistencia...');
 
       // Verificar que Firebase esté listo
       if (!isFirebaseReady()) {
         console.warn(
-          "⚠️ Firebase no está listo, no se inicializarán las notificaciones de asistencia"
-        )
-        this.state.lastError = "Firebase no está inicializado"
-        return
+          '⚠️ Firebase no está listo, no se inicializarán las notificaciones de asistencia',
+        );
+        this.state.lastError = 'Firebase no está inicializado';
+        return;
       }
 
       // TEMPORAL: Comentado verificación de permisos debido a problema con useAuthStore
@@ -48,24 +48,24 @@ class AttendanceNotificationManager {
 
       // Evitar doble inicialización
       if (this.state.isActive) {
-        console.log("⚠️ Sistema de notificaciones ya está activo")
-        return
+        console.log('⚠️ Sistema de notificaciones ya está activo');
+        return;
       }
 
       // Iniciar observador de asistencia
-      this.state.unsubscribeFunction = attendanceNotificationSystem.watchForNewAttendance()
-      this.state.isActive = true
-      this.state.startTime = new Date()
-      this.state.lastError = null
+      this.state.unsubscribeFunction = attendanceNotificationSystem.watchForNewAttendance();
+      this.state.isActive = true;
+      this.state.startTime = new Date();
+      this.state.lastError = null;
 
-      console.log("✅ Sistema de notificaciones de asistencia iniciado correctamente")
+      console.log('✅ Sistema de notificaciones de asistencia iniciado correctamente');
 
       // Log de estado inicial
-      this.logSystemStatus()
+      this.logSystemStatus();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido"
-      this.state.lastError = errorMessage
-      console.error("❌ Error inicializando sistema de notificaciones:", errorMessage)
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      this.state.lastError = errorMessage;
+      console.error('❌ Error inicializando sistema de notificaciones:', errorMessage);
       
       // NO reintentar automáticamente para evitar bucles infinitos
     }
@@ -76,19 +76,19 @@ class AttendanceNotificationManager {
    */
   shutdown(): void {
     try {
-      console.log("🛑 Deteniendo sistema de notificaciones de asistencia...")
+      console.log('🛑 Deteniendo sistema de notificaciones de asistencia...');
 
       if (this.state.unsubscribeFunction) {
-        this.state.unsubscribeFunction()
-        this.state.unsubscribeFunction = null
+        this.state.unsubscribeFunction();
+        this.state.unsubscribeFunction = null;
       }
 
-      this.state.isActive = false
-      this.state.startTime = null
+      this.state.isActive = false;
+      this.state.startTime = null;
 
-      console.log("✅ Sistema de notificaciones detenido correctamente")
+      console.log('✅ Sistema de notificaciones detenido correctamente');
     } catch (error) {
-      console.error("❌ Error deteniendo sistema de notificaciones:", error)
+      console.error('❌ Error deteniendo sistema de notificaciones:', error);
     }
   }
 
@@ -96,18 +96,18 @@ class AttendanceNotificationManager {
    * Reinicia el sistema de notificaciones
    */
   async restart(): Promise<void> {
-    console.log("🔄 Reiniciando sistema de notificaciones...")
-    this.shutdown()
-    await new Promise((resolve) => setTimeout(resolve, 1000)) // Esperar 1 segundo
-    await this.initialize()
+    console.log('🔄 Reiniciando sistema de notificaciones...');
+    this.shutdown();
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Esperar 1 segundo
+    await this.initialize();
   }
 
   /**
    * Verifica si el usuario tiene permisos para recibir notificaciones
    */
   private hasNotificationPermissions(userRole: string): boolean {
-    const allowedRoles = ["Admin", "Director", "SuperAdmin", "Maestro"]
-    return allowedRoles.includes(userRole)
+    const allowedRoles = ['Admin', 'Director', 'SuperAdmin', 'Maestro'];
+    return allowedRoles.includes(userRole);
   }
 
   /**
@@ -116,14 +116,14 @@ class AttendanceNotificationManager {
   private logSystemStatus(): void {
     const uptime = this.state.startTime
       ? Math.floor((Date.now() - this.state.startTime.getTime()) / 1000)
-      : 0
+      : 0;
 
-    console.log(`📊 Estado del Sistema de Notificaciones:`, {
+    console.log('📊 Estado del Sistema de Notificaciones:', {
       activo: this.state.isActive,
       tiempoActivo: `${uptime} segundos`,
-      ultimoError: this.state.lastError || "Ninguno",
-      iniciadoEn: this.state.startTime?.toLocaleString() || "No iniciado",
-    })
+      ultimoError: this.state.lastError || 'Ninguno',
+      iniciadoEn: this.state.startTime?.toLocaleString() || 'No iniciado',
+    });
   }
 
   /**
@@ -132,44 +132,44 @@ class AttendanceNotificationManager {
   getStatus(): NotificationSystemState & {uptime: number} {
     const uptime = this.state.startTime
       ? Math.floor((Date.now() - this.state.startTime.getTime()) / 1000)
-      : 0
+      : 0;
 
     return {
       ...this.state,
       uptime,
-    }
+    };
   }
 
   /**
    * Verifica si el sistema está funcionando correctamente
    */
   healthCheck(): boolean {
-    return this.state.isActive && !this.state.lastError
+    return this.state.isActive && !this.state.lastError;
   }
 }
 
 // Instancia singleton
-const notificationManager = new AttendanceNotificationManager()
+const notificationManager = new AttendanceNotificationManager();
 
 /**
  * Inicializa el sistema automáticamente cuando se importa el módulo
  * Se ejecuta una sola vez por sesión
  */
-let isAutoInitialized = false
+let isAutoInitialized = false;
 
 const autoInitialize = async () => {
-  if (isAutoInitialized) return
+  if (isAutoInitialized) return;
 
   try {
     // Esperar a que el sistema de autenticación esté listo
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    await notificationManager.initialize()
-    isAutoInitialized = true
+    await notificationManager.initialize();
+    isAutoInitialized = true;
   } catch (error) {
-    console.error("Error en auto-inicialización de notificaciones:", error)
+    console.error('Error en auto-inicialización de notificaciones:', error);
   }
-}
+};
 
 // Funciones exportadas para control manual
 export const notificationSystem = {
@@ -202,7 +202,7 @@ export const notificationSystem = {
    * Fuerza la auto-inicialización
    */
   forceAutoInitialize: autoInitialize,
-}
+};
 
 // Auto-inicializar si estamos en el browser (DESACTIVADO por problemas de rendimiento)
 // if (typeof window !== "undefined") {
@@ -210,7 +210,7 @@ export const notificationSystem = {
 //   setTimeout(autoInitialize, 100)
 // }
 
-export default notificationSystem
+export default notificationSystem;
 
 // Log de carga del módulo
-console.log("📦 Módulo de gestión de notificaciones de asistencia cargado")
+console.log('📦 Módulo de gestión de notificaciones de asistencia cargado');

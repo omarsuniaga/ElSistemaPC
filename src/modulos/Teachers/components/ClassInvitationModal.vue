@@ -182,13 +182,13 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import {Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot} from "@headlessui/vue"
-import {UserPlusIcon, CheckIcon, XMarkIcon} from "@heroicons/vue/24/outline"
+import { ref, computed } from 'vue';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue';
+import { UserPlusIcon, CheckIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
-import type {TeacherNotification} from "../services/teacherNotifications"
+import type { TeacherNotification } from '../services/teacherNotifications';
 
 interface Props {
   show: boolean
@@ -198,48 +198,48 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "accept", notificationId: string): void
-  (e: "reject", notificationId: string): void
-  (e: "remind-later"): void
+  (e: 'close'): void
+  (e: 'accept', notificationId: string): void
+  (e: 'reject', notificationId: string): void
+  (e: 'remind-later'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isLoading: false,
   error: null,
-})
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // Formatear fecha de expiración
 const formatExpirationDate = (date: Date | string) => {
-  const expDate = typeof date === "string" ? new Date(date) : date
-  return format(expDate, "d 'de' MMMM 'de' yyyy 'a las' HH:mm", {locale: es})
-}
+  const expDate = typeof date === 'string' ? new Date(date) : date;
+  return format(expDate, 'd \'de\' MMMM \'de\' yyyy \'a las\' HH:mm', { locale: es });
+};
 
 // Manejadores de eventos
 const handleClose = () => {
   if (!props.isLoading) {
-    emit("close")
+    emit('close');
   }
-}
+};
 
 const handleAccept = () => {
   if (props.invitation?.id) {
-    emit("accept", props.invitation.id)
+    emit('accept', props.invitation.id);
   }
-}
+};
 
 const handleReject = () => {
   if (props.invitation?.id) {
-    emit("reject", props.invitation.id)
+    emit('reject', props.invitation.id);
   }
-}
+};
 
 const handleRemindLater = () => {
-  emit("remind-later")
-  emit("close")
-}
+  emit('remind-later');
+  emit('close');
+};
 </script>
 
 <style scoped>

@@ -398,7 +398,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 const instruments = [
   { id: 'violin1', name: 'Violín I', family: 'Cuerdas', count: 16 },
@@ -420,27 +420,27 @@ const instruments = [
   { id: 'soprano', name: 'Soprano', family: 'Voces', count: 12 },
   { id: 'alto', name: 'Alto', family: 'Voces', count: 10 },
   { id: 'tenor', name: 'Tenor', family: 'Voces', count: 8 },
-  { id: 'bass_voice', name: 'Bajo', family: 'Voces', count: 8 }
-]
+  { id: 'bass_voice', name: 'Bajo', family: 'Voces', count: 8 },
+];
 
 const musicians = [
   { id: 1, name: 'María García', position: 'Principal' },
   { id: 2, name: 'Juan Pérez', position: 'Asistente' },
   { id: 3, name: 'Ana Rodríguez', position: 'Fila' },
   { id: 4, name: 'Carlos López', position: 'Fila' },
-  { id: 5, name: 'Laura Martínez', position: 'Fila' }
-]
+  { id: 5, name: 'Laura Martínez', position: 'Fila' },
+];
 
-const selectedInstrument = ref(null)
+const selectedInstrument = ref(null);
 
 const selectInstrument = (instrumentId) => {
-  selectedInstrument.value = instrumentId
-}
+  selectedInstrument.value = instrumentId;
+};
 
 const getInstrumentName = (instrumentId) => {
-  const instrument = instruments.find(i => i.id === instrumentId)
-  return instrument ? instrument.name : ''
-}
+  const instrument = instruments.find(i => i.id === instrumentId);
+  return instrument ? instrument.name : '';
+};
 
 const getInstrumentTechniques = (instrumentId) => {
   // Técnicas específicas por tipo de instrumento
@@ -464,9 +464,9 @@ const getInstrumentTechniques = (instrumentId) => {
     'soprano': ['Respiración', 'Colocación', 'Registro agudo', 'Dicción', 'Proyección'],
     'alto': ['Respiración', 'Colocación', 'Registro medio', 'Dicción', 'Proyección'],
     'tenor': ['Respiración', 'Colocación', 'Passaggio', 'Dicción', 'Proyección'],
-    'bass_voice': ['Respiración', 'Colocación', 'Registro grave', 'Dicción', 'Proyección']
-  }
+    'bass_voice': ['Respiración', 'Colocación', 'Registro grave', 'Dicción', 'Proyección'],
+  };
   
-  return techniques[instrumentId] || ['Técnica general', 'Articulación', 'Expresión', 'Dinámica']
-}
+  return techniques[instrumentId] || ['Técnica general', 'Articulación', 'Expresión', 'Dinámica'];
+};
 </script>

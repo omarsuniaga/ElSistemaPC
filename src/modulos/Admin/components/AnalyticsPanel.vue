@@ -240,7 +240,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 
 interface Analytics {
   activeStudents: number
@@ -278,10 +278,10 @@ interface TopTeacher {
 const emit = defineEmits<{
   refreshData: []
   exportReport: [period: string]
-}>()
+}>();
 
 // State
-const selectedPeriod = ref("month")
+const selectedPeriod = ref('month');
 
 const analytics = ref<Analytics>({
   activeStudents: 156,
@@ -292,79 +292,79 @@ const analytics = ref<Analytics>({
   classesTrend: -2.1,
   satisfaction: 94,
   satisfactionTrend: 3.2,
-})
+});
 
 const revenueChart = ref<ChartData[]>([
-  {month: "Ene", value: 35000},
-  {month: "Feb", value: 42000},
-  {month: "Mar", value: 38000},
-  {month: "Abr", value: 45000},
-  {month: "May", value: 48000},
-  {month: "Jun", value: 45320},
-])
+  { month: 'Ene', value: 35000 },
+  { month: 'Feb', value: 42000 },
+  { month: 'Mar', value: 38000 },
+  { month: 'Abr', value: 45000 },
+  { month: 'May', value: 48000 },
+  { month: 'Jun', value: 45320 },
+]);
 
 const attendanceChart = ref<ChartData[]>([
-  {week: "S1", value: 92},
-  {week: "S2", value: 88},
-  {week: "S3", value: 95},
-  {week: "S4", value: 91},
-])
+  { week: 'S1', value: 92 },
+  { week: 'S2', value: 88 },
+  { week: 'S3', value: 95 },
+  { week: 'S4', value: 91 },
+]);
 
 const instrumentDistribution = ref<InstrumentData[]>([
-  {name: "Piano", count: 45, percentage: 29, color: "#3B82F6"},
-  {name: "Guitarra", count: 38, percentage: 24, color: "#10B981"},
-  {name: "Violín", count: 32, percentage: 21, color: "#8B5CF6"},
-  {name: "Batería", count: 25, percentage: 16, color: "#F59E0B"},
-  {name: "Canto", count: 16, percentage: 10, color: "#EF4444"},
-])
+  { name: 'Piano', count: 45, percentage: 29, color: '#3B82F6' },
+  { name: 'Guitarra', count: 38, percentage: 24, color: '#10B981' },
+  { name: 'Violín', count: 32, percentage: 21, color: '#8B5CF6' },
+  { name: 'Batería', count: 25, percentage: 16, color: '#F59E0B' },
+  { name: 'Canto', count: 16, percentage: 10, color: '#EF4444' },
+]);
 
 const topTeachers = ref<TopTeacher[]>([
-  {id: "1", name: "Prof. Elena Martínez", students: 15, classes: 68, rating: 4.8, revenue: 8500},
-  {id: "2", name: "Mtro. Jorge Díaz", students: 12, classes: 54, rating: 4.6, revenue: 7200},
-  {id: "3", name: "Mtra. Carmen Vásquez", students: 10, classes: 45, rating: 4.9, revenue: 6800},
-  {id: "4", name: "Prof. Ricardo Moreno", students: 14, classes: 62, rating: 4.7, revenue: 7800},
-  {id: "5", name: "Mtra. Lucía Fernández", students: 11, classes: 48, rating: 4.5, revenue: 6400},
-])
+  { id: '1', name: 'Prof. Elena Martínez', students: 15, classes: 68, rating: 4.8, revenue: 8500 },
+  { id: '2', name: 'Mtro. Jorge Díaz', students: 12, classes: 54, rating: 4.6, revenue: 7200 },
+  { id: '3', name: 'Mtra. Carmen Vásquez', students: 10, classes: 45, rating: 4.9, revenue: 6800 },
+  { id: '4', name: 'Prof. Ricardo Moreno', students: 14, classes: 62, rating: 4.7, revenue: 7800 },
+  { id: '5', name: 'Mtra. Lucía Fernández', students: 11, classes: 48, rating: 4.5, revenue: 6400 },
+]);
 
 // Methods
 const getTrendClass = (trend: number) => {
-  return trend > 0 ? "text-green-200" : "text-red-200"
-}
+  return trend > 0 ? 'text-green-200' : 'text-red-200';
+};
 
 const formatNumber = (num: number) => {
-  return new Intl.NumberFormat("es-ES").format(num)
-}
+  return new Intl.NumberFormat('es-ES').format(num);
+};
 
 const refreshData = () => {
-  emit("refreshData")
+  emit('refreshData');
   // Simular actualización de datos
-  loadAnalytics()
-}
+  loadAnalytics();
+};
 
 const exportReport = () => {
-  emit("exportReport", selectedPeriod.value)
-}
+  emit('exportReport', selectedPeriod.value);
+};
 
 const loadAnalytics = () => {
   // Simular carga de datos analíticos
   // En una aplicación real, esto haría una llamada a la API
-  console.log("Loading analytics for period:", selectedPeriod.value)
+  console.log('Loading analytics for period:', selectedPeriod.value);
 
   // Actualizar datos basados en el período seleccionado
-  if (selectedPeriod.value === "today") {
-    analytics.value.activeStudents = 142
-    analytics.value.revenue = 1580
-    analytics.value.classesCompleted = 28
-  } else if (selectedPeriod.value === "week") {
-    analytics.value.activeStudents = 148
-    analytics.value.revenue = 8950
-    analytics.value.classesCompleted = 156
+  if (selectedPeriod.value === 'today') {
+    analytics.value.activeStudents = 142;
+    analytics.value.revenue = 1580;
+    analytics.value.classesCompleted = 28;
+  } else if (selectedPeriod.value === 'week') {
+    analytics.value.activeStudents = 148;
+    analytics.value.revenue = 8950;
+    analytics.value.classesCompleted = 156;
   }
   // ... más lógica para otros períodos
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadAnalytics()
-})
+  loadAnalytics();
+});
 </script>

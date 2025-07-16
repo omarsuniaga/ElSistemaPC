@@ -1,7 +1,7 @@
-import {defineStore} from "pinia"
-import {ref} from "vue"
-import {db} from "@/firebase"
-import {collection, doc, getDoc, getDocs, setDoc, updateDoc} from "firebase/firestore"
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
+import { db } from '@/firebase';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
 
 interface Room {
   id: string
@@ -11,34 +11,34 @@ interface Room {
   available?: boolean
 }
 
-export const useRoomsStore = defineStore("rooms", () => {
-  const rooms = ref<Room[]>([])
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
+export const useRoomsStore = defineStore('rooms', () => {
+  const rooms = ref<Room[]>([]);
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
 
   const fetchRooms = async () => {
     try {
-      isLoading.value = true
-      error.value = null
-      const querySnapshot = await getDocs(collection(db, "ROOMS"))
+      isLoading.value = true;
+      error.value = null;
+      const querySnapshot = await getDocs(collection(db, 'ROOMS'));
       rooms.value = querySnapshot.docs.map(
         (doc) =>
           ({
             id: doc.id,
             ...doc.data(),
-          }) as Room
-      )
+          }) as Room,
+      );
     } catch (err: any) {
-      console.error("Error fetching rooms:", err)
-      error.value = err.message || "Failed to fetch rooms"
+      console.error('Error fetching rooms:', err);
+      error.value = err.message || 'Failed to fetch rooms';
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
-  }
+  };
 
   const getRoomById = (id: string) => {
-    return rooms.value.find((room) => room.id === id)
-  }
+    return rooms.value.find((room) => room.id === id);
+  };
 
   return {
     rooms,
@@ -46,5 +46,5 @@ export const useRoomsStore = defineStore("rooms", () => {
     error,
     fetchRooms,
     getRoomById,
-  }
-})
+  };
+});

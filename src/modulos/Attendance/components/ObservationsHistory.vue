@@ -232,14 +232,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {format, parseISO} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAttendanceStore} from "../store/attendance"
-import type {ClassObservation} from "../types/attendance"
-import * as _ from "lodash"
-import {useAuthStore} from "../../../stores/auth"
-import {useTeachersStore} from "../../Teachers/store/teachers"
+import { ref, computed, onMounted, watch } from 'vue';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAttendanceStore } from '../store/attendance';
+import type { ClassObservation } from '../types/attendance';
+import * as _ from 'lodash';
+import { useAuthStore } from '../../../stores/auth';
+import { useTeachersStore } from '../../Teachers/store/teachers';
 
 interface Timestamp {
   seconds: number
@@ -249,325 +249,325 @@ interface Timestamp {
 const props = defineProps<{
   classId: string
   date?: string
-}>()
+}>();
 
-const emit = defineEmits(["request-edit"])
+const emit = defineEmits(['request-edit']);
 
-const attendanceStore = useAttendanceStore()
-const authStore = useAuthStore()
-const teachersStore = useTeachersStore()
+const attendanceStore = useAttendanceStore();
+const authStore = useAuthStore();
+const teachersStore = useTeachersStore();
 
 // Function to get teacher name from teacher ID
 const getTeacherName = (teacherId: string): string => {
-  if (!teacherId) return "Usuario desconocido"
+  if (!teacherId) return 'Usuario desconocido';
 
   // If it's 'Sistema', return as is
-  if (teacherId === "Sistema") return "Sistema"
+  if (teacherId === 'Sistema') return 'Sistema';
 
   // Try to find teacher by ID in the teachers store
-  const teacher = teachersStore.getTeacherById(teacherId)
+  const teacher = teachersStore.getTeacherById(teacherId);
   if (teacher) {
-    return teacher.name
+    return teacher.name;
   }
 
   // If not found, try to find by auth UID (fallback)
-  const teacherByUid = teachersStore.teachers.find((t) => t.uid === teacherId)
+  const teacherByUid = teachersStore.teachers.find((t) => t.uid === teacherId);
   if (teacherByUid) {
-    return teacherByUid.name
+    return teacherByUid.name;
   }
 
   // Return the original ID if no teacher found
-  return teacherId || "Usuario desconocido"
-}
+  return teacherId || 'Usuario desconocido';
+};
 
-const localObservations = ref<ClassObservation[]>([])
-const loading = ref(true)
-const showImageViewer = ref(false)
-const currentViewedImage = ref("")
-const error = ref<string | null>(null)
+const localObservations = ref<ClassObservation[]>([]);
+const loading = ref(true);
+const showImageViewer = ref(false);
+const currentViewedImage = ref('');
+const error = ref<string | null>(null);
 
 const fetchObservations = async () => {
-  loading.value = true
-  error.value = null
+  loading.value = true;
+  error.value = null;
   try {
     console.log(
-      `[ObservationsHistory] Fetching ALL observations for classId: ${props.classId}, date: ${props.date}`
-    )
+      `[ObservationsHistory] Fetching ALL observations for classId: ${props.classId}, date: ${props.date}`,
+    );
 
     // Obtener TODAS las observaciones de la clase, no solo las del profesor actual
     // Usar el método que obtiene observaciones de todos los profesores
-    const allObservations = await attendanceStore.fetchObservationsForClass(props.classId)
+    const allObservations = await attendanceStore.fetchObservationsForClass(props.classId);
 
-    let filteredObservations = allObservations
+    let filteredObservations = allObservations;
 
     // Filtrar por fecha solo si se especifica una fecha
     if (props.date) {
-      filteredObservations = filteredObservations.filter((obs) => obs.fecha === props.date)
+      filteredObservations = filteredObservations.filter((obs) => obs.fecha === props.date);
       console.log(
         `[ObservationsHistory] Filtered observations for specific date ${props.date}:`,
-        filteredObservations
-      )
+        filteredObservations,
+      );
     } else {
       console.log(
         `[ObservationsHistory] Fetched all observations for class ${props.classId} (no date filter):`,
-        filteredObservations
-      )
+        filteredObservations,
+      );
     }
 
-    localObservations.value = filteredObservations
+    localObservations.value = filteredObservations;
 
     if (!localObservations.value || localObservations.value.length === 0) {
-      console.log("[ObservationsHistory] No observations found after fetch/filter.")
+      console.log('[ObservationsHistory] No observations found after fetch/filter.');
     } else {
       console.log(
-        `[ObservationsHistory] Found ${localObservations.value.length} observations for display`
-      )
+        `[ObservationsHistory] Found ${localObservations.value.length} observations for display`,
+      );
     }
   } catch (err) {
-    console.error("[ObservationsHistory] Error fetching observations:", err)
-    error.value = "Error al cargar el historial de observaciones. " + (err.message || "")
+    console.error('[ObservationsHistory] Error fetching observations:', err);
+    error.value = 'Error al cargar el historial de observaciones. ' + (err.message || '');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const sortedObservations = computed(() => {
   return [...localObservations.value].sort((a, b) => {
     const getDate = (obs: ClassObservation): Date | null => {
-      if (obs.fecha) return parseISO(obs.fecha)
+      if (obs.fecha) return parseISO(obs.fecha);
       if (obs.createdAt) {
-        if (typeof obs.createdAt === "string") return parseISO(obs.createdAt)
-        if (typeof obs.createdAt === "object" && obs.createdAt instanceof Date) {
-          return obs.createdAt
+        if (typeof obs.createdAt === 'string') return parseISO(obs.createdAt);
+        if (typeof obs.createdAt === 'object' && obs.createdAt instanceof Date) {
+          return obs.createdAt;
         }
-        if (typeof obs.createdAt === "object" && "seconds" in obs.createdAt) {
-          return new Date((obs.createdAt as any).seconds * 1000)
+        if (typeof obs.createdAt === 'object' && 'seconds' in obs.createdAt) {
+          return new Date((obs.createdAt as any).seconds * 1000);
         }
       }
-      return null
-    }
-    const dateA = getDate(a)
-    const dateB = getDate(b)
-    if (dateA && dateB) return dateB.getTime() - dateA.getTime()
-    if (dateA) return -1
-    if (dateB) return 1
-    return 0
-  })
-})
+      return null;
+    };
+    const dateA = getDate(a);
+    const dateB = getDate(b);
+    if (dateA && dateB) return dateB.getTime() - dateA.getTime();
+    if (dateA) return -1;
+    if (dateB) return 1;
+    return 0;
+  });
+});
 
 const formatDateTime = (dateValue: string | Timestamp | Date | any): string => {
-  if (!dateValue) return "Fecha desconocida"
+  if (!dateValue) return 'Fecha desconocida';
   try {
-    let date
+    let date;
     if (
-      typeof dateValue === "object" &&
+      typeof dateValue === 'object' &&
       dateValue !== null &&
-      "seconds" in dateValue &&
-      "nanoseconds" in dateValue
+      'seconds' in dateValue &&
+      'nanoseconds' in dateValue
     ) {
-      date = new Date((dateValue as Timestamp).seconds * 1000)
-    } else if (typeof dateValue === "string") {
-      date = parseISO(dateValue)
+      date = new Date((dateValue as Timestamp).seconds * 1000);
+    } else if (typeof dateValue === 'string') {
+      date = parseISO(dateValue);
     } else if (dateValue instanceof Date) {
-      date = dateValue
+      date = dateValue;
     } else {
-      return "Fecha desconocida"
+      return 'Fecha desconocida';
     }
-    return format(date, "d 'de' MMMM yyyy, HH:mm", {locale: es})
+    return format(date, 'd \'de\' MMMM yyyy, HH:mm', { locale: es });
   } catch (error) {
-    return typeof dateValue === "string" ? dateValue : "Fecha desconocida"
+    return typeof dateValue === 'string' ? dateValue : 'Fecha desconocida';
   }
-}
+};
 
 const formatDate = (dateString?: string): string => {
-  if (!dateString) return "Fecha desconocida"
+  if (!dateString) return 'Fecha desconocida';
   try {
-    const date = parseISO(dateString)
-    return format(date, "d 'de' MMMM yyyy", {locale: es})
+    const date = parseISO(dateString);
+    return format(date, 'd \'de\' MMMM yyyy', { locale: es });
   } catch (error) {
-    return dateString
+    return dateString;
   }
-}
+};
 
 const processTextForDisplay = (text: string): {__html: string} => {
-  if (!text) return {__html: ""}
-  let processedText = _.escape(text)
+  if (!text) return { __html: '' };
+  let processedText = _.escape(text);
   processedText = processedText.replace(
     /@([A-Za-z0-9À-ÖØ-öø-ÿ]+(?:\s+[A-Za-z0-9À-ÖØ-öø-ÿ]+)*)/g,
-    '<span class="student-tag">@$1</span>'
-  )
+    '<span class="student-tag">@$1</span>',
+  );
   processedText = processedText.replace(
     /#([A-Za-z0-9À-ÖØ-öø-ÿ]+(?:\s+[A-Za-z0-9À-ÖØ-öø-ÿ]+)*)/g,
-    '<span class="student-tag">#$1</span>'
-  )
-  const keywords = ["importante", "urgente", "pendiente", "completado", "revisar"]
+    '<span class="student-tag">#$1</span>',
+  );
+  const keywords = ['importante', 'urgente', 'pendiente', 'completado', 'revisar'];
   keywords.forEach((keyword) => {
-    const regex = new RegExp(`\\b(${keyword})\\b`, "gi")
+    const regex = new RegExp(`\\b(${keyword})\\b`, 'gi');
     processedText = processedText.replace(
       regex,
-      `<span class="keyword-tag keyword-${keyword.toLowerCase()}">$1</span>`
-    )
-  })
-  const lines = processedText.split(/\r\n|\n|\r/)
-  let htmlOutput = ""
-  let inList = false
-  let listType: "ul" | "ol" | null = null
+      `<span class="keyword-tag keyword-${keyword.toLowerCase()}">$1</span>`,
+    );
+  });
+  const lines = processedText.split(/\r\n|\n|\r/);
+  let htmlOutput = '';
+  let inList = false;
+  let listType: 'ul' | 'ol' | null = null;
   for (const line of lines) {
-    const trimmedLine = line.trim()
-    let listItem = null
+    const trimmedLine = line.trim();
+    let listItem = null;
     if (trimmedLine.match(/^[-•*]\s+/)) {
-      listItem = `<li>${trimmedLine.substring(trimmedLine.indexOf(" ") + 1)}</li>`
-      if (!inList || listType === "ol") {
-        if (inList && listType === "ol") htmlOutput += `</ol>`
-        htmlOutput += `<ul class="list-disc pl-5">`
-        listType = "ul"
-        inList = true
+      listItem = `<li>${trimmedLine.substring(trimmedLine.indexOf(' ') + 1)}</li>`;
+      if (!inList || listType === 'ol') {
+        if (inList && listType === 'ol') htmlOutput += '</ol>';
+        htmlOutput += '<ul class="list-disc pl-5">';
+        listType = 'ul';
+        inList = true;
       }
     } else if (trimmedLine.match(/^\d+\.\s+/)) {
-      listItem = `<li>${trimmedLine.substring(trimmedLine.indexOf(".") + 2)}</li>`
-      if (!inList || listType === "ul") {
-        if (inList && listType === "ul") htmlOutput += `</ul>`
-        htmlOutput += `<ol class="list-decimal pl-5">`
-        listType = "ol"
-        inList = true
+      listItem = `<li>${trimmedLine.substring(trimmedLine.indexOf('.') + 2)}</li>`;
+      if (!inList || listType === 'ul') {
+        if (inList && listType === 'ul') htmlOutput += '</ul>';
+        htmlOutput += '<ol class="list-decimal pl-5">';
+        listType = 'ol';
+        inList = true;
       }
     } else {
       if (inList) {
-        htmlOutput += listType === "ul" ? `</ul>` : `</ol>`
-        inList = false
-        listType = null
+        htmlOutput += listType === 'ul' ? '</ul>' : '</ol>';
+        inList = false;
+        listType = null;
       }
-      htmlOutput += line + "\n"
+      htmlOutput += line + '\n';
     }
     if (listItem) {
-      htmlOutput += listItem
+      htmlOutput += listItem;
     }
   }
   if (inList) {
-    htmlOutput += listType === "ul" ? `</ul>` : `</ol>`
+    htmlOutput += listType === 'ul' ? '</ul>' : '</ol>';
   }
-  const finalHtml = htmlOutput.replace(/\n/g, "<br />").replace(/<br \/>(<(ul|ol|li))/g, "$1")
-  return {__html: finalHtml}
-}
+  const finalHtml = htmlOutput.replace(/\n/g, '<br />').replace(/<br \/>(<(ul|ol|li))/g, '$1');
+  return { __html: finalHtml };
+};
 
 const getObservationDisplayText = (observation: ClassObservation): string => {
   // Prioridad: usar el campo text directamente
-  if (observation.text && typeof observation.text === "string") {
-    return observation.text
+  if (observation.text && typeof observation.text === 'string') {
+    return observation.text;
   }
 
   // Fallback: usar content.text
   if (observation.content && observation.content.text) {
-    return observation.content.text
+    return observation.content.text;
   }
 
   // Compatibilidad con formato anterior
   if (
     (observation as any).formattedText &&
-    typeof (observation as any).formattedText === "string"
+    typeof (observation as any).formattedText === 'string'
   ) {
-    return (observation as any).formattedText
+    return (observation as any).formattedText;
   }
 
-  if (typeof (observation as any).text === "object" && (observation as any).text !== null) {
-    const textObj = (observation as any).text as any
-    if (textObj.formattedText && typeof textObj.formattedText === "string") {
-      return textObj.formattedText
+  if (typeof (observation as any).text === 'object' && (observation as any).text !== null) {
+    const textObj = (observation as any).text as any;
+    if (textObj.formattedText && typeof textObj.formattedText === 'string') {
+      return textObj.formattedText;
     }
-    if (textObj.text && typeof textObj.text === "string") {
-      return textObj.text
+    if (textObj.text && typeof textObj.text === 'string') {
+      return textObj.text;
     }
   }
 
-  console.log("[ObservationsHistory] No se pudo extraer texto de la observación:", observation)
-  return "Sin contenido de texto"
-}
+  console.log('[ObservationsHistory] No se pudo extraer texto de la observación:', observation);
+  return 'Sin contenido de texto';
+};
 
 const openImageViewer = (imageSrc: string) => {
-  currentViewedImage.value = imageSrc
-  showImageViewer.value = true
-  document.body.style.overflow = "hidden"
-}
+  currentViewedImage.value = imageSrc;
+  showImageViewer.value = true;
+  document.body.style.overflow = 'hidden';
+};
 
 const closeImageViewer = () => {
-  showImageViewer.value = false
-  currentViewedImage.value = ""
-  document.body.style.overflow = ""
-}
+  showImageViewer.value = false;
+  currentViewedImage.value = '';
+  document.body.style.overflow = '';
+};
 
 const editObservation = (observation: ClassObservation) => {
-  console.log("[ObservationsHistory] Requesting edit for:", JSON.parse(JSON.stringify(observation)))
-  emit("request-edit", JSON.parse(JSON.stringify(observation)))
-}
+  console.log('[ObservationsHistory] Requesting edit for:', JSON.parse(JSON.stringify(observation)));
+  emit('request-edit', JSON.parse(JSON.stringify(observation)));
+};
 
 // Function to delete an observation
 const deleteObservation = async (observation: ClassObservation) => {
   if (!observation.id) {
-    console.error("No observation ID provided for deletion")
-    return
+    console.error('No observation ID provided for deletion');
+    return;
   }
 
   const confirmDelete = confirm(
-    "¿Está seguro de que desea eliminar esta observación? Esta acción no se puede deshacer."
-  )
-  if (!confirmDelete) return
+    '¿Está seguro de que desea eliminar esta observación? Esta acción no se puede deshacer.',
+  );
+  if (!confirmDelete) return;
 
   try {
-    loading.value = true
+    loading.value = true;
     // Call store method to delete observation
-    await attendanceStore.deleteObservation(observation.id)
+    await attendanceStore.deleteObservation(observation.id);
 
     // Remove from local array
-    localObservations.value = localObservations.value.filter((obs) => obs.id !== observation.id)
+    localObservations.value = localObservations.value.filter((obs) => obs.id !== observation.id);
 
-    console.log("Observation deleted successfully")
+    console.log('Observation deleted successfully');
   } catch (error) {
-    console.error("Error deleting observation:", error)
+    console.error('Error deleting observation:', error);
     alert(
-      "Error al eliminar la observación: " +
-        (error instanceof Error ? error.message : "Error desconocido")
-    )
+      'Error al eliminar la observación: ' +
+        (error instanceof Error ? error.message : 'Error desconocido'),
+    );
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Function to download observations as PDF
 const downloadObservationsPDF = async () => {
   try {
-    loading.value = true
+    loading.value = true;
 
     // Dynamic import of jsPDF and autoTable
-    const {jsPDF} = await import("jspdf")
-    await import("jspdf-autotable")
+    const { jsPDF } = await import('jspdf');
+    await import('jspdf-autotable');
 
-    const doc = new jsPDF()
+    const doc = new jsPDF();
 
     // Add title
-    doc.setFontSize(16)
-    doc.text("Historial de Observaciones", 14, 20)
+    doc.setFontSize(16);
+    doc.text('Historial de Observaciones', 14, 20);
 
     // Add subtitle with class and date info
-    doc.setFontSize(12)
-    let subtitle = `Clase: ${props.classId}`
+    doc.setFontSize(12);
+    let subtitle = `Clase: ${props.classId}`;
     if (props.date) {
-      subtitle += ` | Fecha: ${formatDate(props.date)}`
+      subtitle += ` | Fecha: ${formatDate(props.date)}`;
     }
-    doc.text(subtitle, 14, 30)
+    doc.text(subtitle, 14, 30);
 
     // Prepare data for table
     const tableData = sortedObservations.value.map((obs) => [
       formatDateTime(obs.createdAt),
-      getTeacherName(obs.authorId || obs.author || ""),
+      getTeacherName(obs.authorId || obs.author || ''),
       getObservationDisplayText(obs).substring(0, 200) +
-        (getObservationDisplayText(obs).length > 200 ? "..." : ""),
-      obs.type || "General",
-      obs.priority || "Media",
+        (getObservationDisplayText(obs).length > 200 ? '...' : ''),
+      obs.type || 'General',
+      obs.priority || 'Media',
     ])
 
     // Create table
     ;(doc as any).autoTable({
-      head: [["Fecha", "Autor", "Observación", "Tipo", "Prioridad"]],
+      head: [['Fecha', 'Autor', 'Observación', 'Tipo', 'Prioridad']],
       body: tableData,
       startY: 40,
       styles: {
@@ -575,43 +575,43 @@ const downloadObservationsPDF = async () => {
         cellPadding: 3,
       },
       columnStyles: {
-        0: {cellWidth: 30},
-        1: {cellWidth: 30},
-        2: {cellWidth: 80},
-        3: {cellWidth: 25},
-        4: {cellWidth: 25},
+        0: { cellWidth: 30 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 80 },
+        3: { cellWidth: 25 },
+        4: { cellWidth: 25 },
       },
-    })
+    });
 
     // Save the PDF
-    const fileName = `observaciones_${props.classId}_${props.date || "todas"}_${new Date().toISOString().split("T")[0]}.pdf`
-    doc.save(fileName)
+    const fileName = `observaciones_${props.classId}_${props.date || 'todas'}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
 
-    console.log("PDF downloaded successfully")
+    console.log('PDF downloaded successfully');
   } catch (error) {
-    console.error("Error generating PDF:", error)
+    console.error('Error generating PDF:', error);
     alert(
-      "Error al generar el PDF: " + (error instanceof Error ? error.message : "Error desconocido")
-    )
+      'Error al generar el PDF: ' + (error instanceof Error ? error.message : 'Error desconocido'),
+    );
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Expose functions for parent component
 defineExpose({
   fetchObservations,
   downloadObservationsPDF,
-})
+});
 
 watch(() => [props.classId, props.date, authStore.user?.uid], fetchObservations, {
   immediate: true,
   deep: true,
-})
+});
 
 onMounted(() => {
   // Initial fetch handled by watcher
-})
+});
 </script>
 
 <style scoped>

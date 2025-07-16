@@ -161,7 +161,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
+import { ref } from 'vue';
 import {
   XMarkIcon,
   UserPlusIcon,
@@ -169,93 +169,93 @@ import {
   AcademicCapIcon,
   CogIcon,
   ShieldCheckIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 const emit = defineEmits<{
   close: []
   success: [user: any]
-}>()
+}>();
 
 const form = ref({
-  userType: "",
-  fullName: "",
-  email: "",
-  phone: "",
-  status: "active",
+  userType: '',
+  fullName: '',
+  email: '',
+  phone: '',
+  status: 'active',
   permissions: [] as string[],
-})
+});
 
 const userTypes = [
   {
-    value: "student",
-    label: "Estudiante",
-    description: "Usuario estudiante",
+    value: 'student',
+    label: 'Estudiante',
+    description: 'Usuario estudiante',
     icon: UserIcon,
   },
   {
-    value: "teacher",
-    label: "Maestro",
-    description: "Usuario maestro",
+    value: 'teacher',
+    label: 'Maestro',
+    description: 'Usuario maestro',
     icon: AcademicCapIcon,
   },
   {
-    value: "admin",
-    label: "Administrador",
-    description: "Usuario administrador",
+    value: 'admin',
+    label: 'Administrador',
+    description: 'Usuario administrador',
     icon: ShieldCheckIcon,
   },
-]
+];
 
 const availablePermissions = [
   {
-    key: "view_all_students",
-    label: "Ver todos los estudiantes",
-    description: "Acceso completo a la lista de estudiantes",
+    key: 'view_all_students',
+    label: 'Ver todos los estudiantes',
+    description: 'Acceso completo a la lista de estudiantes',
   },
   {
-    key: "manage_teachers",
-    label: "Gestionar maestros",
-    description: "Crear, editar y eliminar maestros",
+    key: 'manage_teachers',
+    label: 'Gestionar maestros',
+    description: 'Crear, editar y eliminar maestros',
   },
   {
-    key: "manage_classes",
-    label: "Gestionar clases",
-    description: "Crear, editar y eliminar clases",
+    key: 'manage_classes',
+    label: 'Gestionar clases',
+    description: 'Crear, editar y eliminar clases',
   },
   {
-    key: "view_reports",
-    label: "Ver reportes",
-    description: "Acceso a todos los reportes",
+    key: 'view_reports',
+    label: 'Ver reportes',
+    description: 'Acceso a todos los reportes',
   },
   {
-    key: "system_config",
-    label: "Configuración del sistema",
-    description: "Modificar configuraciones del sistema",
+    key: 'system_config',
+    label: 'Configuración del sistema',
+    description: 'Modificar configuraciones del sistema',
   },
   {
-    key: "backup_restore",
-    label: "Respaldos",
-    description: "Crear y restaurar respaldos",
+    key: 'backup_restore',
+    label: 'Respaldos',
+    description: 'Crear y restaurar respaldos',
   },
-]
+];
 
 const handleSubmit = async () => {
   try {
     const userData = {
       ...form.value,
       createdAt: new Date(),
-      createdBy: "admin", // This should be the current admin user
-    }
+      createdBy: 'admin', // This should be the current admin user
+    };
 
-    console.log("Creating user:", userData)
+    console.log('Creating user:', userData);
 
     // Here you would call your API to create the user
     // await createUser(userData)
 
-    emit("success", userData)
-    emit("close")
+    emit('success', userData);
+    emit('close');
   } catch (error) {
-    console.error("Error creating user:", error)
+    console.error('Error creating user:', error);
   }
-}
+};
 </script>

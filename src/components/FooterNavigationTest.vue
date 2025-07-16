@@ -71,11 +71,11 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {useAuthStore} from "../stores/auth"
-import {superusuarioMenuItems} from "../modulos/Superusuario/constants/menuItems"
+import { computed } from 'vue';
+import { useAuthStore } from '../stores/auth';
+import { superusuarioMenuItems } from '../modulos/Superusuario/constants/menuItems';
 
-const authStore = useAuthStore()
+const authStore = useAuthStore();
 
 // Obtener los items del footer navigation para Superusuario
 const footerItems = computed(() => {
@@ -86,8 +86,8 @@ const footerItems = computed(() => {
       superusuarioMenuItems[2], // Roles
       superusuarioMenuItems[3], // Permisos
       superusuarioMenuItems[4], // Sistema
-    ]
+    ];
   }
-  return []
-})
+  return [];
+});
 </script>

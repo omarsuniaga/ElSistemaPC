@@ -351,7 +351,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 const instrumentFamilies = [
   { id: 'strings', name: 'Cuerdas', icon: '🎻', count: 42 },
@@ -359,17 +359,17 @@ const instrumentFamilies = [
   { id: 'brass', name: 'Viento-Metal', icon: '🎺', count: 10 },
   { id: 'percussion', name: 'Percusión', icon: '🥁', count: 6 },
   { id: 'keyboard', name: 'Teclados', icon: '🎹', count: 2 },
-  { id: 'voices', name: 'Voces', icon: '🎤', count: 24 }
-]
+  { id: 'voices', name: 'Voces', icon: '🎤', count: 24 },
+];
 
-const selectedFamily = ref(null)
+const selectedFamily = ref(null);
 
 const selectFamily = (familyId) => {
-  selectedFamily.value = familyId
-}
+  selectedFamily.value = familyId;
+};
 
 const getFamilyName = (familyId) => {
-  const family = instrumentFamilies.find(f => f.id === familyId)
-  return family ? family.name : ''
-}
+  const family = instrumentFamilies.find(f => f.id === familyId);
+  return family ? family.name : '';
+};
 </script>

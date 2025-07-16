@@ -16,30 +16,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed } from 'vue';
 
-type RoleType = "primary" | "collaborator"
+type RoleType = 'primary' | 'collaborator'
 
 interface Props {
   role: RoleType
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const roleConfig = {
   primary: {
-    text: "Principal",
-    badgeClass: "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
-    iconClass: "text-blue-600 dark:text-blue-400",
+    text: 'Principal',
+    badgeClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
+    iconClass: 'text-blue-600 dark:text-blue-400',
   },
   collaborator: {
-    text: "Colaborador",
-    badgeClass: "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400",
-    iconClass: "text-purple-600 dark:text-purple-400",
+    text: 'Colaborador',
+    badgeClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
+    iconClass: 'text-purple-600 dark:text-purple-400',
   },
-}
+};
 
-const roleText = computed(() => roleConfig[props.role].text)
-const roleClasses = computed(() => roleConfig[props.role].badgeClass)
-const iconClasses = computed(() => roleConfig[props.role].iconClass)
+const roleText = computed(() => roleConfig[props.role].text);
+const roleClasses = computed(() => roleConfig[props.role].badgeClass);
+const iconClasses = computed(() => roleConfig[props.role].iconClass);
 </script>

@@ -1,46 +1,3 @@
-<script setup lang="ts">
-import {type PropType} from "vue"
-import {PencilIcon, UserGroupIcon} from "@heroicons/vue/24/outline"
-
-// Define types for class data
-interface ClassScheduleSlot {
-  day: string | number
-  startTime: string
-  endTime: string
-}
-interface ClassData {
-  id: string
-  name: string
-  level: string
-  instrument?: string
-  classroom?: string
-  studentIds?: string[]
-  schedule?: {
-    slots?: ClassScheduleSlot[]
-  }
-  nextSessionDate?: Date // Added in parent's computed property
-}
-
-const props = defineProps({
-  upcomingClasses: {
-    type: Array as PropType<ClassData[]>,
-    required: true,
-  },
-  formatDateTime: {
-    // Function prop
-    type: Function as PropType<(date: Date) => string>,
-    required: true,
-  },
-  getNextSession: {
-    // Function prop
-    type: Function as PropType<(classItem: ClassData) => Date>,
-    required: true,
-  },
-})
-
-const emit = defineEmits(["edit-class", "manage-students"]) // Emits for actions
-</script>
-
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Próximas Clases (24h)</h2>
@@ -105,6 +62,49 @@ const emit = defineEmits(["edit-class", "manage-students"]) // Emits for actions
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { type PropType } from 'vue';
+import { PencilIcon, UserGroupIcon } from '@heroicons/vue/24/outline';
+
+// Define types for class data
+interface ClassScheduleSlot {
+  day: string | number
+  startTime: string
+  endTime: string
+}
+interface ClassData {
+  id: string
+  name: string
+  level: string
+  instrument?: string
+  classroom?: string
+  studentIds?: string[]
+  schedule?: {
+    slots?: ClassScheduleSlot[]
+  }
+  nextSessionDate?: Date // Added in parent's computed property
+}
+
+const props = defineProps({
+  upcomingClasses: {
+    type: Array as PropType<ClassData[]>,
+    required: true,
+  },
+  formatDateTime: {
+    // Function prop
+    type: Function as PropType<(date: Date) => string>,
+    required: true,
+  },
+  getNextSession: {
+    // Function prop
+    type: Function as PropType<(classItem: ClassData) => Date>,
+    required: true,
+  },
+});
+
+const emit = defineEmits(['edit-class', 'manage-students']); // Emits for actions
+</script>
 
 <style scoped>
 /* Add any specific styles for the upcoming classes section here */

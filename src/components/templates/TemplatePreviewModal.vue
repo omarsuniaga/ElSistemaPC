@@ -227,124 +227,124 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {templateRenderer} from "../../services/templates/templateRenderer"
-import type {MessageTemplate} from "../../services/templates/templateManager"
+import { ref, computed } from 'vue';
+import { templateRenderer } from '../../services/templates/templateRenderer';
+import type { MessageTemplate } from '../../services/templates/templateManager';
 
 // Props
 interface Props {
   template: MessageTemplate
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
   close: []
-}>()
+}>();
 
 // Estado reactivo
-const variableValues = ref<Record<string, string>>({})
+const variableValues = ref<Record<string, string>>({});
 
 // Computed
 const currentTime = computed(() => {
-  return new Date().toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-})
+  return new Date().toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+});
 
 const renderedMessage = computed(() => {
   try {
-    return templateRenderer.renderTemplate(props.template, variableValues.value)
+    return templateRenderer.renderTemplate(props.template, variableValues.value);
   } catch (error) {
-    console.error("Error renderizando plantilla:", error)
-    return props.template.content
+    console.error('Error renderizando plantilla:', error);
+    return props.template.content;
   }
-})
+});
 
 const detectedVariables = computed(() => {
-  const content = props.template.content || ""
-  const matches = content.match(/\{[^}]+\}/g)
-  return matches ? [...new Set(matches)] : []
-})
+  const content = props.template.content || '';
+  const matches = content.match(/\{[^}]+\}/g);
+  return matches ? [...new Set(matches)] : [];
+});
 
 const wordCount = computed(() => {
-  return renderedMessage.value.trim().split(/\s+/).length
-})
+  return renderedMessage.value.trim().split(/\s+/).length;
+});
 
 const lineCount = computed(() => {
-  return renderedMessage.value.split("\n").length
-})
+  return renderedMessage.value.split('\n').length;
+});
 
 // Métodos
 const getCategoryBadgeClass = (category: string): string => {
   switch (category) {
-    case "tardanza":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-    case "ausencia_justificada":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-    case "inasistencia":
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-    case "general":
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+  case 'tardanza':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+  case 'ausencia_justificada':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+  case 'inasistencia':
+    return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+  case 'general':
+    return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
   }
-}
+};
 
 const getCategoryLabel = (category: string): string => {
   switch (category) {
-    case "tardanza":
-      return "Tardanza"
-    case "ausencia_justificada":
-      return "Justificada"
-    case "inasistencia":
-      return "Inasistencia"
-    case "general":
-      return "General"
-    case "custom":
-      return "Personalizada"
-    default:
-      return "Otra"
+  case 'tardanza':
+    return 'Tardanza';
+  case 'ausencia_justificada':
+    return 'Justificada';
+  case 'inasistencia':
+    return 'Inasistencia';
+  case 'general':
+    return 'General';
+  case 'custom':
+    return 'Personalizada';
+  default:
+    return 'Otra';
   }
-}
+};
 
 const copyToClipboard = async (): Promise<void> => {
   try {
-    await navigator.clipboard.writeText(renderedMessage.value)
-    alert("✅ Mensaje copiado al portapapeles")
+    await navigator.clipboard.writeText(renderedMessage.value);
+    alert('✅ Mensaje copiado al portapapeles');
   } catch (error) {
-    console.error("Error copiando al portapapeles:", error)
-    alert("❌ Error copiando al portapapeles")
+    console.error('Error copiando al portapapeles:', error);
+    alert('❌ Error copiando al portapapeles');
   }
-}
+};
 
 // Inicializar valores de variables
 const initializeVariableValues = (): void => {
-  const values: Record<string, string> = {}
+  const values: Record<string, string> = {};
 
   // Variables personalizadas de la plantilla
   props.template.variables.forEach((variable) => {
-    values[variable.key] = variable.defaultValue || ""
-  })
+    values[variable.key] = variable.defaultValue || '';
+  });
 
   // Variables globales con valores de ejemplo
-  values["{studentName}"] = "María González"
-  values["{className}"] = "Violín Intermedio"
-  values["{date}"] = new Date().toLocaleDateString("es-ES")
-  values["{time}"] = new Date().toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-  values["{academyName}"] = "Academia Musical El Sistema"
-  values["{teacherName}"] = "Prof. Carlos Rodríguez"
-  values["{parentName}"] = "Ana María González"
-  values["{phoneNumber}"] = "+58 414-123-4567"
+  values['{studentName}'] = 'María González';
+  values['{className}'] = 'Violín Intermedio';
+  values['{date}'] = new Date().toLocaleDateString('es-ES');
+  values['{time}'] = new Date().toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  values['{academyName}'] = 'Academia Musical El Sistema';
+  values['{teacherName}'] = 'Prof. Carlos Rodríguez';
+  values['{parentName}'] = 'Ana María González';
+  values['{phoneNumber}'] = '+58 414-123-4567';
 
-  variableValues.value = values
-}
+  variableValues.value = values;
+};
 
 // Inicializar al montar
-initializeVariableValues()
+initializeVariableValues();
 </script>

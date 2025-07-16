@@ -1,44 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useProfileStore} from "../store/profile"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import {
-  UserIcon,
-  CogIcon,
-  BellIcon,
-  ClockIcon,
-  TrophyIcon,
-  PencilIcon,
-  CameraIcon,
-} from "@heroicons/vue/24/outline"
-
-const profileStore = useProfileStore()
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-
-const formatDate = (dateString: string): string => {
-  return format(new Date(dateString), "d 'de' MMMM 'de' yyyy", {locale: es})
-}
-
-const loadProfile = async () => {
-  try {
-    isLoading.value = true
-    error.value = null
-    await profileStore.fetchProfile()
-  } catch (err: any) {
-    console.error("Error loading profile:", err)
-    error.value = err.message || "Error loading profile"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(async () => {
-  await loadProfile()
-})
-</script>
-
 <template>
   <div class="p-4 max-w-5xl mx-auto">
     <!-- Header -->
@@ -286,6 +245,47 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useProfileStore } from '../store/profile';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import {
+  UserIcon,
+  CogIcon,
+  BellIcon,
+  ClockIcon,
+  TrophyIcon,
+  PencilIcon,
+  CameraIcon,
+} from '@heroicons/vue/24/outline';
+
+const profileStore = useProfileStore();
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+
+const formatDate = (dateString: string): string => {
+  return format(new Date(dateString), 'd \'de\' MMMM \'de\' yyyy', { locale: es });
+};
+
+const loadProfile = async () => {
+  try {
+    isLoading.value = true;
+    error.value = null;
+    await profileStore.fetchProfile();
+  } catch (err: any) {
+    console.error('Error loading profile:', err);
+    error.value = err.message || 'Error loading profile';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(async () => {
+  await loadProfile();
+});
+</script>
 
 <style scoped>
 .btn {

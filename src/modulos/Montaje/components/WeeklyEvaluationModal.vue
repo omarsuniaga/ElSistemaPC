@@ -27,8 +27,8 @@
             <button
               v-for="template in evaluationTemplates"
               :key="template.id"
-              @click="applyTemplate(template.id)"
               class="p-3 border-2 border-blue-200 rounded-lg text-left hover:bg-blue-100 transition-colors"
+              @click="applyTemplate(template.id)"
             >
               <div class="flex items-center gap-2">
                 <span class="text-xl">{{ template.icon }}</span>
@@ -58,13 +58,13 @@
                   <button
                     v-for="score in 5"
                     :key="score"
-                    @click="setScore('ensayoGeneral', key, score)"
                     :class="[
                       'flex-1 py-2 border-2 rounded-md transition-colors',
                       formData.ensayoGeneral[key] === score
                         ? 'bg-blue-500 text-white border-blue-500'
                         : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                     ]"
+                    @click="setScore('ensayoGeneral', key, score)"
                   >
                     {{ score }}
                   </button>
@@ -91,13 +91,13 @@
                   <button
                     v-for="score in 5"
                     :key="score"
-                    @click="setScore('ensayoSeccional', key, score)"
                     :class="[
                       'flex-1 py-2 border-2 rounded-md transition-colors',
                       formData.ensayoSeccional[key] === score
                         ? 'bg-green-500 text-white border-green-500'
                         : 'border-gray-200 hover:border-green-300 hover:bg-green-50'
                     ]"
+                    @click="setScore('ensayoSeccional', key, score)"
                   >
                     {{ score }}
                   </button>
@@ -124,13 +124,13 @@
                   <button
                     v-for="score in 5"
                     :key="score"
-                    @click="setScore('ensayoPorFila', key, score)"
                     :class="[
                       'flex-1 py-2 border-2 rounded-md transition-colors',
                       formData.ensayoPorFila[key] === score
                         ? 'bg-purple-500 text-white border-purple-500'
                         : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                     ]"
+                    @click="setScore('ensayoPorFila', key, score)"
                   >
                     {{ score }}
                   </button>
@@ -185,16 +185,16 @@
       
       <div class="flex gap-3 mt-6">
         <button
-          @click="saveEvaluation"
           :disabled="saving || !formData.week"
           class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          @click="saveEvaluation"
         >
           {{ saving ? 'Guardando...' : (evaluation ? 'Actualizar' : 'Guardar') }} Evaluación
         </button>
         <button
-          @click="$emit('close')"
           :disabled="saving"
           class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          @click="$emit('close')"
         >
           Cancelar
         </button>
@@ -204,21 +204,21 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
-import type { MusicalWork, WeeklyEvaluation } from '../types/heatmap'
-import { EVALUATION_CRITERIA } from '../types/heatmap'
+import { reactive, ref, onMounted } from 'vue';
+import type { MusicalWork, WeeklyEvaluation } from '../types/heatmap';
+import { EVALUATION_CRITERIA } from '../types/heatmap';
 
 const props = defineProps<{
   work: MusicalWork
   evaluation?: WeeklyEvaluation | null
-}>()
+}>();
 
 const emit = defineEmits<{
   evaluationSaved: [evaluation: WeeklyEvaluation]
   close: []
-}>()
+}>();
 
-const saving = ref(false)
+const saving = ref(false);
 
 const formData = reactive({
   week: '',
@@ -228,7 +228,7 @@ const formData = reactive({
     ritmo: 0,
     cohesion: 0,
     dinamica: 0,
-    memorizacion: 0
+    memorizacion: 0,
   },
   ensayoSeccional: {
     afinacion: 0,
@@ -236,7 +236,7 @@ const formData = reactive({
     ritmo: 0,
     cohesion: 0,
     dinamica: 0,
-    memorizacion: 0
+    memorizacion: 0,
   },
   ensayoPorFila: {
     afinacion: 0,
@@ -244,49 +244,49 @@ const formData = reactive({
     ritmo: 0,
     cohesion: 0,
     dinamica: 0,
-    memorizacion: 0
+    memorizacion: 0,
   },
   comentarios: '',
   achievements: '',
   challenges: '',
-  nextWeekGoals: ''
-})
+  nextWeekGoals: '',
+});
 
 const evaluationTemplates = [
   {
     id: 'orquesta',
     name: 'Orquesta Sinfónica',
     icon: '🎻',
-    description: 'Evaluación para orquesta completa'
+    description: 'Evaluación para orquesta completa',
   },
   {
     id: 'coro',
     name: 'Coro',
     icon: '🎵',
-    description: 'Evaluación para coro'
+    description: 'Evaluación para coro',
   },
   {
     id: 'banda',
     name: 'Banda',
     icon: '🎺',
-    description: 'Evaluación para banda'
-  }
-]
+    description: 'Evaluación para banda',
+  },
+];
 
 // Get next Saturday date
 const getNextSaturday = (): string => {
-  const today = new Date()
-  const dayOfWeek = today.getDay()
-  const daysUntilSaturday = (6 - dayOfWeek) % 7
-  const nextSaturday = new Date(today)
-  nextSaturday.setDate(today.getDate() + daysUntilSaturday)
-  return nextSaturday.toISOString().split('T')[0]
-}
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const daysUntilSaturday = (6 - dayOfWeek) % 7;
+  const nextSaturday = new Date(today);
+  nextSaturday.setDate(today.getDate() + daysUntilSaturday);
+  return nextSaturday.toISOString().split('T')[0];
+};
 
 // Set score for a specific evaluation type and criterion
 const setScore = (evaluationType: string, criterion: string, score: number) => {
-  formData[evaluationType][criterion] = score
-}
+  formData[evaluationType][criterion] = score;
+};
 
 // Apply template presets
 const applyTemplate = (templateId: string) => {
@@ -298,24 +298,24 @@ const applyTemplate = (templateId: string) => {
       ritmo: 0,
       cohesion: 0,
       dinamica: 0,
-      memorizacion: 0
-    }
+      memorizacion: 0,
+    };
     formData.ensayoSeccional = {
       afinacion: 0,
       articulacion: 0,
       ritmo: 0,
       cohesion: 0,
       dinamica: 0,
-      memorizacion: 0
-    }
+      memorizacion: 0,
+    };
     formData.ensayoPorFila = {
       afinacion: 0,
       articulacion: 0,
       ritmo: 0,
       cohesion: 0,
       dinamica: 0,
-      memorizacion: 0
-    }
+      memorizacion: 0,
+    };
   } else if (templateId === 'coro') {
     // Preset for choir
     formData.ensayoGeneral = {
@@ -324,24 +324,24 @@ const applyTemplate = (templateId: string) => {
       ritmo: 0,
       cohesion: 0,
       dinamica: 0,
-      memorizacion: 0
-    }
+      memorizacion: 0,
+    };
     formData.ensayoSeccional = {
       afinacion: 0,
       articulacion: 0,
       ritmo: 0,
       cohesion: 0,
       dinamica: 0,
-      memorizacion: 0
-    }
+      memorizacion: 0,
+    };
     formData.ensayoPorFila = {
       afinacion: 0,
       articulacion: 0,
       ritmo: 0,
       cohesion: 0,
       dinamica: 0,
-      memorizacion: 0
-    }
+      memorizacion: 0,
+    };
   } else if (templateId === 'banda') {
     // Preset for band
     formData.ensayoGeneral = {
@@ -350,32 +350,32 @@ const applyTemplate = (templateId: string) => {
       ritmo: 0,
       cohesion: 0,
       dinamica: 0,
-      memorizacion: 0
-    }
+      memorizacion: 0,
+    };
     formData.ensayoSeccional = {
       afinacion: 0,
       articulacion: 0,
       ritmo: 0,
       cohesion: 0,
       dinamica: 0,
-      memorizacion: 0
-    }
+      memorizacion: 0,
+    };
     formData.ensayoPorFila = {
       afinacion: 0,
       articulacion: 0,
       ritmo: 0,
       cohesion: 0,
       dinamica: 0,
-      memorizacion: 0
-    }
+      memorizacion: 0,
+    };
   }
-}
+};
 
 // Save evaluation
 const saveEvaluation = async () => {
-  if (!formData.week) return
+  if (!formData.week) return;
   
-  saving.value = true
+  saving.value = true;
   
   try {
     const evaluationData: WeeklyEvaluation = {
@@ -397,23 +397,23 @@ const saveEvaluation = async () => {
       energyLevel: 0,
       focusLevel: 0,
       createdAt: props.evaluation?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
+      updatedAt: new Date().toISOString(),
+    };
     
     // Here you would save to your backend/Firebase
-    console.log('Saving weekly evaluation:', evaluationData)
+    console.log('Saving weekly evaluation:', evaluationData);
     
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    emit('evaluationSaved', evaluationData)
+    emit('evaluationSaved', evaluationData);
   } catch (error) {
-    console.error('Error saving evaluation:', error)
-    alert('Error al guardar la evaluación. Por favor, intenta de nuevo.')
+    console.error('Error saving evaluation:', error);
+    alert('Error al guardar la evaluación. Por favor, intenta de nuevo.');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 onMounted(() => {
   if (props.evaluation) {
@@ -426,11 +426,11 @@ onMounted(() => {
       comentarios: props.evaluation.comentarios,
       achievements: props.evaluation.achievements?.join('\n') || '',
       challenges: props.evaluation.challenges?.join('\n') || '',
-      nextWeekGoals: props.evaluation.nextWeekGoals?.join('\n') || ''
-    })
+      nextWeekGoals: props.evaluation.nextWeekGoals?.join('\n') || '',
+    });
   } else {
     // Create mode - set default week to next Saturday
-    formData.week = getNextSaturday()
+    formData.week = getNextSaturday();
   }
-})
+});
 </script>

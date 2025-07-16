@@ -185,14 +185,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import type {ClassData} from "../types/class"
-import ClassList from "../components/ClassList.vue"
-import ClassAssignmentManager from "../components/ClassAssignmentManager.vue"
-import ClassFormDialog from "../components/ClassFormDialog.vue"
-import TabContainer from "../../Admin/components/TabContainer.vue"
-import MetricCard from "../../Admin/components/MetricCard.vue"
-import Modal from "../../../components/Modal.vue"
+import { ref, computed } from 'vue';
+import type { ClassData } from '../types/class';
+import ClassList from '../components/ClassList.vue';
+import ClassAssignmentManager from '../components/ClassAssignmentManager.vue';
+import ClassFormDialog from '../components/ClassFormDialog.vue';
+import TabContainer from '../../Admin/components/TabContainer.vue';
+import MetricCard from '../../Admin/components/MetricCard.vue';
+import Modal from '../../../components/Modal.vue';
 import {
   PlusIcon,
   ClockIcon,
@@ -200,42 +200,42 @@ import {
   ListBulletIcon,
   UserGroupIcon,
   ChartBarIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // State
-const currentView = ref<"list" | "assignments" | "analytics">("list")
-const loading = ref(false)
-const showClassModal = ref(false)
-const showScheduleModal = ref(false)
-const showDeleteModal = ref(false)
-const selectedClass = ref<ClassData | null>(null)
+const currentView = ref<'list' | 'assignments' | 'analytics'>('list');
+const loading = ref(false);
+const showClassModal = ref(false);
+const showScheduleModal = ref(false);
+const showDeleteModal = ref(false);
+const selectedClass = ref<ClassData | null>(null);
 
 // Mock data - replace with actual store
 const classes = ref<ClassData[]>([
   {
-    id: "1",
-    name: "Piano Básico",
-    level: "Principiante",
-    instrument: "Piano",
-    teacherId: "1",
-    studentIds: ["1", "2", "3"],
+    id: '1',
+    name: 'Piano Básico',
+    level: 'Principiante',
+    instrument: 'Piano',
+    teacherId: '1',
+    studentIds: ['1', '2', '3'],
     schedule: {
-      day: "Lunes",
-      startTime: "10:00",
-      endTime: "11:00",
+      day: 'Lunes',
+      startTime: '10:00',
+      endTime: '11:00',
     },
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   // Add more mock classes...
-])
+]);
 
 // View configuration
 const viewTabs = [
-  {id: "list", label: "Lista de Clases", icon: "ListBulletIcon"},
-  {id: "assignments", label: "Asignaciones", icon: "UserGroupIcon"},
-  {id: "analytics", label: "Analíticas", icon: "ChartBarIcon"},
-]
+  { id: 'list', label: 'Lista de Clases', icon: 'ListBulletIcon' },
+  { id: 'assignments', label: 'Asignaciones', icon: 'UserGroupIcon' },
+  { id: 'analytics', label: 'Analíticas', icon: 'ChartBarIcon' },
+];
 
 // Computed
 const currentViewIcon = computed(() => {
@@ -243,18 +243,18 @@ const currentViewIcon = computed(() => {
     list: ListBulletIcon,
     assignments: UserGroupIcon,
     analytics: ChartBarIcon,
-  }
-  return iconMap[currentView.value]
-})
+  };
+  return iconMap[currentView.value];
+});
 
 const currentViewText = computed(() => {
   const textMap = {
-    list: "Vista Lista",
-    assignments: "Asignaciones",
-    analytics: "Analíticas",
-  }
-  return textMap[currentView.value]
-})
+    list: 'Vista Lista',
+    assignments: 'Asignaciones',
+    analytics: 'Analíticas',
+  };
+  return textMap[currentView.value];
+});
 
 const analyticsData = computed(() => ({
   totalClasses: classes.value.length,
@@ -265,51 +265,51 @@ const analyticsData = computed(() => ({
   activeGrowth: 8,
   teachersGrowth: 5,
   studentsGrowth: 15,
-}))
+}));
 
 // Methods
 function toggleView() {
-  const views: Array<"list" | "assignments" | "analytics"> = ["list", "assignments", "analytics"]
-  const currentIndex = views.indexOf(currentView.value)
-  const nextIndex = (currentIndex + 1) % views.length
-  currentView.value = views[nextIndex]
+  const views: Array<'list' | 'assignments' | 'analytics'> = ['list', 'assignments', 'analytics'];
+  const currentIndex = views.indexOf(currentView.value);
+  const nextIndex = (currentIndex + 1) % views.length;
+  currentView.value = views[nextIndex];
 }
 
 function setCurrentView(tabId: string) {
-  currentView.value = tabId as "list" | "assignments" | "analytics"
+  currentView.value = tabId as 'list' | 'assignments' | 'analytics';
 }
 
 function createNewClass() {
-  selectedClass.value = null
-  showClassModal.value = true
+  selectedClass.value = null;
+  showClassModal.value = true;
 }
 
 function editClass(classData: ClassData) {
-  selectedClass.value = classData
-  showClassModal.value = true
+  selectedClass.value = classData;
+  showClassModal.value = true;
 }
 
 function viewClassSchedule(classData: ClassData) {
-  selectedClass.value = classData
-  showScheduleModal.value = true
+  selectedClass.value = classData;
+  showScheduleModal.value = true;
 }
 
 function confirmDeleteClass(classData: ClassData) {
-  selectedClass.value = classData
-  showDeleteModal.value = true
+  selectedClass.value = classData;
+  showDeleteModal.value = true;
 }
 
 function updateClass(classId: string, updates: Partial<ClassData>) {
-  const index = classes.value.findIndex((c) => c.id === classId)
+  const index = classes.value.findIndex((c) => c.id === classId);
   if (index > -1) {
-    classes.value[index] = {...classes.value[index], ...updates}
+    classes.value[index] = { ...classes.value[index], ...updates };
   }
 }
 
 function saveClass(classData: ClassData) {
   if (selectedClass.value) {
     // Update existing class
-    updateClass(selectedClass.value.id, classData)
+    updateClass(selectedClass.value.id, classData);
   } else {
     // Create new class
     classes.value.push({
@@ -317,51 +317,51 @@ function saveClass(classData: ClassData) {
       id: Date.now().toString(),
       createdAt: new Date(),
       updatedAt: new Date(),
-    })
+    });
   }
-  closeClassModal()
+  closeClassModal();
 }
 
 function deleteClass() {
   if (selectedClass.value) {
-    const index = classes.value.findIndex((c) => c.id === selectedClass.value!.id)
+    const index = classes.value.findIndex((c) => c.id === selectedClass.value!.id);
     if (index > -1) {
-      classes.value.splice(index, 1)
+      classes.value.splice(index, 1);
     }
   }
-  closeDeleteModal()
+  closeDeleteModal();
 }
 
 function saveClassAssignments(classId: string) {
   // Here you would save to your backend/store
-  console.log(`Saving assignments for class ${classId}`)
+  console.log(`Saving assignments for class ${classId}`);
   // Show success message
 }
 
 function formatScheduleDisplay(schedule: any): string {
-  if (!schedule) return "Sin horario"
+  if (!schedule) return 'Sin horario';
 
   if (schedule.day && schedule.startTime && schedule.endTime) {
-    return `${schedule.day} de ${schedule.startTime} a ${schedule.endTime}`
+    return `${schedule.day} de ${schedule.startTime} a ${schedule.endTime}`;
   }
 
-  return "Horario incompleto"
+  return 'Horario incompleto';
 }
 
 // Modal handlers
 function closeClassModal() {
-  showClassModal.value = false
-  selectedClass.value = null
+  showClassModal.value = false;
+  selectedClass.value = null;
 }
 
 function closeScheduleModal() {
-  showScheduleModal.value = false
-  selectedClass.value = null
+  showScheduleModal.value = false;
+  selectedClass.value = null;
 }
 
 function closeDeleteModal() {
-  showDeleteModal.value = false
-  selectedClass.value = null
+  showDeleteModal.value = false;
+  selectedClass.value = null;
 }
 </script>
 

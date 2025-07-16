@@ -196,7 +196,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
+import { ref, computed, onMounted, watch } from 'vue';
 import {
   collection,
   query,
@@ -206,9 +206,9 @@ import {
   Timestamp,
   doc,
   getDoc,
-} from "firebase/firestore"
-import {db} from "@/firebase"
-import {ChevronLeftIcon, ChevronRightIcon, XMarkIcon} from "@heroicons/vue/20/solid"
+} from 'firebase/firestore';
+import { db } from '@/firebase';
+import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/vue/20/solid';
 
 // Interfaces
 interface Alumno {
@@ -231,212 +231,212 @@ interface Clase {
 }
 
 // Estado reactivo
-const selectedDate = ref(new Date().toISOString().split("T")[0]) // Formato YYYY-MM-DD
-const clases = ref<Clase[]>([])
-const loading = ref(false)
-const teacherNames = ref<Record<string, string>>({})
-const showStudentModal = ref(false)
-const selectedClase = ref<Clase | null>(null)
+const selectedDate = ref(new Date().toISOString().split('T')[0]); // Formato YYYY-MM-DD
+const clases = ref<Clase[]>([]);
+const loading = ref(false);
+const teacherNames = ref<Record<string, string>>({});
+const showStudentModal = ref(false);
+const selectedClase = ref<Clase | null>(null);
 
 // Cambiar de día
 const changeDate = (days: number) => {
-  const date = new Date(selectedDate.value)
-  date.setDate(date.getDate() + days)
-  selectedDate.value = date.toISOString().split("T")[0]
-}
+  const date = new Date(selectedDate.value);
+  date.setDate(date.getDate() + days);
+  selectedDate.value = date.toISOString().split('T')[0];
+};
 
 // Ir al día de hoy
 const goToToday = () => {
-  selectedDate.value = new Date().toISOString().split("T")[0]
-}
+  selectedDate.value = new Date().toISOString().split('T')[0];
+};
 
 // Formatear hora (Timestamp a string "HH:MM")
 const formatTime = (timestamp: Timestamp): string => {
-  if (!timestamp) return "--:--"
+  if (!timestamp) return '--:--';
 
-  const date = timestamp.toDate()
-  return date.toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
+  const date = timestamp.toDate();
+  return date.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
     hour12: false,
-  })
-}
+  });
+};
 
 // Obtener texto y clase CSS para el estado de la clase
 const getStatusClass = (clase: Clase): string => {
-  const now = new Date()
-  const inicio = clase.horarioInicio?.toDate()
-  const fin = clase.horarioFin?.toDate()
+  const now = new Date();
+  const inicio = clase.horarioInicio?.toDate();
+  const fin = clase.horarioFin?.toDate();
 
-  if (!inicio || !fin) return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+  if (!inicio || !fin) return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
 
   // Si la fecha es hoy
   if (isToday(clase.fecha?.toDate())) {
     if (now < inicio) {
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
     } else if (now >= inicio && now <= fin) {
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
     } else {
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
     }
   } else if (clase.fecha?.toDate() < now) {
     // Fecha pasada
-    return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
   } else {
     // Fecha futura
-    return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
+    return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
   }
-}
+};
 
 const getStatusText = (clase: Clase): string => {
-  const now = new Date()
-  const inicio = clase.horarioInicio?.toDate()
-  const fin = clase.horarioFin?.toDate()
+  const now = new Date();
+  const inicio = clase.horarioInicio?.toDate();
+  const fin = clase.horarioFin?.toDate();
 
-  if (!inicio || !fin) return "Sin horario"
+  if (!inicio || !fin) return 'Sin horario';
 
   // Si la fecha es hoy
   if (isToday(clase.fecha?.toDate())) {
     if (now < inicio) {
-      return "Próxima"
+      return 'Próxima';
     } else if (now >= inicio && now <= fin) {
-      return "En curso"
+      return 'En curso';
     } else {
-      return "Finalizada"
+      return 'Finalizada';
     }
   } else if (clase.fecha?.toDate() < now) {
     // Fecha pasada
-    return "Histórico"
+    return 'Histórico';
   } else {
     // Fecha futura
-    return "Programada"
+    return 'Programada';
   }
-}
+};
 
 // Comprobar si una fecha es hoy
 const isToday = (date?: Date): boolean => {
-  if (!date) return false
-  const today = new Date()
+  if (!date) return false;
+  const today = new Date();
   return (
     date.getDate() === today.getDate() &&
     date.getMonth() === today.getMonth() &&
     date.getFullYear() === today.getFullYear()
-  )
-}
+  );
+};
 
 // Obtener iniciales de un nombre
 const getInitials = (name: string): string => {
-  if (!name) return "?"
+  if (!name) return '?';
   return name
-    .split(" ")
+    .split(' ')
     .map((n) => n[0])
-    .join("")
+    .join('')
     .toUpperCase()
-    .substring(0, 2)
-}
+    .substring(0, 2);
+};
 
 // Cargar datos de las clases
 const fetchClases = async () => {
-  if (!selectedDate.value) return
+  if (!selectedDate.value) return;
 
-  loading.value = true
-  clases.value = []
+  loading.value = true;
+  clases.value = [];
 
   try {
     // Convertir la fecha seleccionada a objeto Date (inicio y fin del día)
-    const startDate = new Date(selectedDate.value)
-    startDate.setHours(0, 0, 0, 0)
+    const startDate = new Date(selectedDate.value);
+    startDate.setHours(0, 0, 0, 0);
 
-    const endDate = new Date(selectedDate.value)
-    endDate.setHours(23, 59, 59, 999)
+    const endDate = new Date(selectedDate.value);
+    endDate.setHours(23, 59, 59, 999);
 
     // Convertir a Timestamps de Firestore
-    const startTimestamp = Timestamp.fromDate(startDate)
-    const endTimestamp = Timestamp.fromDate(endDate)
+    const startTimestamp = Timestamp.fromDate(startDate);
+    const endTimestamp = Timestamp.fromDate(endDate);
 
     // Consulta a Firestore
-    const clasesRef = collection(db, "CLASES")
+    const clasesRef = collection(db, 'CLASES');
     const q = query(
       clasesRef,
-      where("fecha", ">=", startTimestamp),
-      where("fecha", "<=", endTimestamp),
-      orderBy("fecha"),
-      orderBy("horarioInicio")
-    )
+      where('fecha', '>=', startTimestamp),
+      where('fecha', '<=', endTimestamp),
+      orderBy('fecha'),
+      orderBy('horarioInicio'),
+    );
 
-    const querySnapshot = await getDocs(q)
-    const clasesData: Clase[] = []
+    const querySnapshot = await getDocs(q);
+    const clasesData: Clase[] = [];
 
     querySnapshot.forEach((doc) => {
-      const data = doc.data() as Omit<Clase, "id">
+      const data = doc.data() as Omit<Clase, 'id'>;
       clasesData.push({
         id: doc.id,
         ...data,
-      })
-    })
+      });
+    });
 
-    clases.value = clasesData
+    clases.value = clasesData;
 
     // Cargar nombres de profesores
-    await loadTeacherNames()
+    await loadTeacherNames();
   } catch (error) {
-    console.error("Error al cargar las clases:", error)
+    console.error('Error al cargar las clases:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Cargar nombres de profesores
 const loadTeacherNames = async () => {
-  const teacherIds = new Set<string>()
+  const teacherIds = new Set<string>();
 
   // Recopilar todos los IDs de profesores
   clases.value.forEach((clase) => {
     if (clase.teacherId) {
-      teacherIds.add(clase.teacherId)
+      teacherIds.add(clase.teacherId);
     }
-  })
+  });
 
   // Consultar la información de cada profesor
   for (const teacherId of teacherIds) {
     try {
-      const teacherDoc = await getDoc(doc(db, "PROFESORES", teacherId))
+      const teacherDoc = await getDoc(doc(db, 'PROFESORES', teacherId));
       if (teacherDoc.exists()) {
-        const teacherData = teacherDoc.data()
-        teacherNames.value[teacherId] = `${teacherData.nombre} ${teacherData.apellido}`
+        const teacherData = teacherDoc.data();
+        teacherNames.value[teacherId] = `${teacherData.nombre} ${teacherData.apellido}`;
       } else {
-        teacherNames.value[teacherId] = "Profesor no encontrado"
+        teacherNames.value[teacherId] = 'Profesor no encontrado';
       }
     } catch (error) {
-      console.error(`Error al cargar profesor con ID ${teacherId}:`, error)
-      teacherNames.value[teacherId] = "Error al cargar"
+      console.error(`Error al cargar profesor con ID ${teacherId}:`, error);
+      teacherNames.value[teacherId] = 'Error al cargar';
     }
   }
-}
+};
 
 // Abrir modal de estudiantes
 const openStudentModal = (clase: Clase) => {
-  selectedClase.value = clase
-  showStudentModal.value = true
-}
+  selectedClase.value = clase;
+  showStudentModal.value = true;
+};
 
 // Agregar observación a una clase
 const addObservation = async (clase: Clase) => {
   // Implementar lógica para agregar observación
   // Esta funcionalidad requeriría un modal adicional o una UI específica
-  console.log("Agregar observación a clase:", clase.id)
+  console.log('Agregar observación a clase:', clase.id);
   // Ejemplo: mostrar un modal para agregar observación
-}
+};
 
 // Observar cambios en la fecha seleccionada
 watch(selectedDate, () => {
-  fetchClases()
-})
+  fetchClases();
+});
 
 // Cargar datos al montar el componente
 onMounted(() => {
-  fetchClases()
-})
+  fetchClases();
+});
 </script>
 
 <style scoped>

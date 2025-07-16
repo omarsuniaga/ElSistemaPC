@@ -275,8 +275,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted} from "vue"
-import {useRouter} from "vue-router"
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   CogIcon,
   BellIcon,
@@ -310,37 +310,37 @@ import {
   DocumentArrowUpIcon,
   ChatBubbleLeftRightIcon,
   ChatBubbleLeftIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Composables
-import {useSuperAdminData} from "../composables/useSuperAdminData"
-import {useSuperAdminFilters} from "../composables/useSuperAdminFilters"
-import {useSuperAdminActions} from "../composables/useSuperAdminActions"
-import {useSuperAdminCharts} from "../composables/useSuperAdminCharts"
+import { useSuperAdminData } from '../composables/useSuperAdminData';
+import { useSuperAdminFilters } from '../composables/useSuperAdminFilters';
+import { useSuperAdminActions } from '../composables/useSuperAdminActions';
+import { useSuperAdminCharts } from '../composables/useSuperAdminCharts';
 
 // Components
-import SuperPowerCard from "../components/SuperPowerCard.vue"
-import ManagementCard from "../components/ManagementCard.vue"
-import SystemStatusCard from "../components/SystemStatusCard.vue"
-import RecentActivityCard from "../components/RecentActivityCard.vue"
-import NotificationsDropdown from "../components/NotificationsDropdown.vue"
-import CriticalAlertsBar from "../components/CriticalAlertsBar.vue"
-import StudentsManagementPanel from "../components/StudentsManagementPanel.vue"
-import TeachersManagementPanel from "../components/TeachersManagementPanel.vue"
-import ClassesManagementPanel from "../components/ClassesManagementPanel.vue"
-import AnalyticsPanel from "../components/AnalyticsPanel.vue"
-import SystemConfigPanel from "../components/SystemConfigPanel.vue"
-import AdvancedToolCard from "../components/AdvancedToolCard.vue"
+import SuperPowerCard from '../components/SuperPowerCard.vue';
+import ManagementCard from '../components/ManagementCard.vue';
+import SystemStatusCard from '../components/SystemStatusCard.vue';
+import RecentActivityCard from '../components/RecentActivityCard.vue';
+import NotificationsDropdown from '../components/NotificationsDropdown.vue';
+import CriticalAlertsBar from '../components/CriticalAlertsBar.vue';
+import StudentsManagementPanel from '../components/StudentsManagementPanel.vue';
+import TeachersManagementPanel from '../components/TeachersManagementPanel.vue';
+import ClassesManagementPanel from '../components/ClassesManagementPanel.vue';
+import AnalyticsPanel from '../components/AnalyticsPanel.vue';
+import SystemConfigPanel from '../components/SystemConfigPanel.vue';
+import AdvancedToolCard from '../components/AdvancedToolCard.vue';
 
 // Modales
-import CreateUserModal from "../components/CreateUserModal.vue"
-import GlobalViewModal from "../components/GlobalViewModal.vue"
-import SystemConfigModal from "../components/SystemConfigModal.vue"
-import PDFGeneratorModal from "../components/PDFGeneratorModal.vue"
-import BulkActionModal from "../components/BulkActionModal.vue"
+import CreateUserModal from '../components/CreateUserModal.vue';
+import GlobalViewModal from '../components/GlobalViewModal.vue';
+import SystemConfigModal from '../components/SystemConfigModal.vue';
+import PDFGeneratorModal from '../components/PDFGeneratorModal.vue';
+import BulkActionModal from '../components/BulkActionModal.vue';
 
 // Setup
-const router = useRouter()
+const router = useRouter();
 
 // Composables principales
 const {
@@ -356,7 +356,7 @@ const {
   loadAllData,
   refreshData,
   startAutoRefresh,
-} = useSuperAdminData()
+} = useSuperAdminData();
 
 const {
   searchQuery,
@@ -374,7 +374,7 @@ const {
   clearAllFilters,
   toggleSortOrder,
   applyQuickFilter,
-} = useSuperAdminFilters()
+} = useSuperAdminFilters();
 
 const {
   isProcessing,
@@ -400,7 +400,7 @@ const {
   selectAllItems,
   clearSelection,
   toggleBulkActions,
-} = useSuperAdminActions()
+} = useSuperAdminActions();
 
 const {
   instrumentDistributionChart,
@@ -412,295 +412,295 @@ const {
   advancedAnalytics,
   chartTheme,
   exportChartData,
-} = useSuperAdminCharts()
+} = useSuperAdminCharts();
 
 // State local
-const activeTab = ref("overview")
-const showNotifications = ref(false)
-const showCreateUserModal = ref(false)
-const showGlobalViewModal = ref(false)
-const showSystemConfigModal = ref(false)
-const showPDFGeneratorModal = ref(false)
-const showBulkActionModal = ref(false)
-const bulkActionType = ref("")
-const bulkSelection = ref([])
-const autoRefreshInterval = ref(null)
+const activeTab = ref('overview');
+const showNotifications = ref(false);
+const showCreateUserModal = ref(false);
+const showGlobalViewModal = ref(false);
+const showSystemConfigModal = ref(false);
+const showPDFGeneratorModal = ref(false);
+const showBulkActionModal = ref(false);
+const bulkActionType = ref('');
+const bulkSelection = ref([]);
+const autoRefreshInterval = ref(null);
 
 // Computed
 const currentDate = computed(() => {
-  return new Date().toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-})
+  return new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+});
 
 const unreadCount = computed(() => {
-  return recentActivities.value.filter((activity) => !activity.read).length
-})
+  return recentActivities.value.filter((activity) => !activity.read).length;
+});
 
 const criticalAlerts = computed(() => {
   return recentActivities.value.filter(
-    (activity) => activity.type === "error" || activity.type === "critical"
-  )
-})
+    (activity) => activity.type === 'error' || activity.type === 'critical',
+  );
+});
 
 // Data
 const tabs = ref([
-  {id: "overview", label: "Panel General", icon: CogIcon},
+  { id: 'overview', label: 'Panel General', icon: CogIcon },
   {
-    id: "students",
-    label: "Estudiantes",
+    id: 'students',
+    label: 'Estudiantes',
     icon: UsersIcon,
     count: computed(() => students.value.length),
   },
-  {id: "teachers", label: "Maestros", icon: UserIcon, count: computed(() => teachers.value.length)},
+  { id: 'teachers', label: 'Maestros', icon: UserIcon, count: computed(() => teachers.value.length) },
   {
-    id: "classes",
-    label: "Clases",
+    id: 'classes',
+    label: 'Clases',
     icon: AcademicCapIcon,
     count: computed(() => classes.value.length),
   },
-  {id: "analytics", label: "Análisis", icon: ChartBarIcon},
-  {id: "system", label: "Sistema", icon: Cog6ToothIcon},
-])
+  { id: 'analytics', label: 'Análisis', icon: ChartBarIcon },
+  { id: 'system', label: 'Sistema', icon: Cog6ToothIcon },
+]);
 
 const superActions = ref([
   {
-    id: "create-user",
-    title: "Nuevo Usuario",
-    description: "Crear cualquier tipo de usuario",
-    icon: "UserPlusIcon",
-    gradient: "from-blue-500 to-blue-600",
+    id: 'create-user',
+    title: 'Nuevo Usuario',
+    description: 'Crear cualquier tipo de usuario',
+    icon: 'UserPlusIcon',
+    gradient: 'from-blue-500 to-blue-600',
     action: () => (showCreateUserModal.value = true),
   },
   {
-    id: "global-view",
-    title: "Vista Global",
-    description: "Monitoreo integral del sistema",
-    icon: "GlobeAltIcon",
-    gradient: "from-purple-500 to-purple-600",
+    id: 'global-view',
+    title: 'Vista Global',
+    description: 'Monitoreo integral del sistema',
+    icon: 'GlobeAltIcon',
+    gradient: 'from-purple-500 to-purple-600',
     action: () => (showGlobalViewModal.value = true),
   },
   {
-    id: "advanced-reports",
-    title: "Reportes Pro",
-    description: "Análisis y reportes avanzados",
-    icon: "ChartBarIcon",
-    gradient: "from-green-500 to-green-600",
-    action: () => (activeTab.value = "analytics"),
+    id: 'advanced-reports',
+    title: 'Reportes Pro',
+    description: 'Análisis y reportes avanzados',
+    icon: 'ChartBarIcon',
+    gradient: 'from-green-500 to-green-600',
+    action: () => (activeTab.value = 'analytics'),
   },
   {
-    id: "system-config",
-    title: "Config Sistema",
-    description: "Configuración avanzada",
-    icon: "CogIcon",
-    gradient: "from-orange-500 to-orange-600",
+    id: 'system-config',
+    title: 'Config Sistema',
+    description: 'Configuración avanzada',
+    icon: 'CogIcon',
+    gradient: 'from-orange-500 to-orange-600',
     action: () => (showSystemConfigModal.value = true),
   },
   {
-    id: "bulk-operations",
-    title: "Operaciones Masivas",
-    description: "Acciones en lote",
-    icon: "CommandLineIcon",
-    gradient: "from-red-500 to-red-600",
+    id: 'bulk-operations',
+    title: 'Operaciones Masivas',
+    description: 'Acciones en lote',
+    icon: 'CommandLineIcon',
+    gradient: 'from-red-500 to-red-600',
     action: () => toggleBulkActions(),
   },
   {
-    id: "pdf-generator",
-    title: "PDFs Avanzados",
-    description: "Generación de documentos",
-    icon: "DocumentTextIcon",
-    gradient: "from-emerald-500 to-emerald-600",
+    id: 'pdf-generator',
+    title: 'PDFs Avanzados',
+    description: 'Generación de documentos',
+    icon: 'DocumentTextIcon',
+    gradient: 'from-emerald-500 to-emerald-600',
     action: () => (showPDFGeneratorModal.value = true),
   },
   {
-    id: "whatsapp-management",
-    title: "WhatsApp",
-    description: "Gestión de comunicaciones",
-    icon: "ChatBubbleLeftRightIcon",
-    gradient: "from-green-500 to-green-600",
+    id: 'whatsapp-management',
+    title: 'WhatsApp',
+    description: 'Gestión de comunicaciones',
+    icon: 'ChatBubbleLeftRightIcon',
+    gradient: 'from-green-500 to-green-600',
     action: () => navigateToWhatsApp(),
   },
-])
+]);
 
 const managementCards = ref([
   {
-    id: "students",
-    title: "Estudiantes",
-    description: "Gestión integral de estudiantes",
-    icon: "UsersIcon",
+    id: 'students',
+    title: 'Estudiantes',
+    description: 'Gestión integral de estudiantes',
+    icon: 'UsersIcon',
     count: computed(() => students.value.length),
-    color: "blue",
-    actions: ["view", "create", "export", "bulk"],
+    color: 'blue',
+    actions: ['view', 'create', 'export', 'bulk'],
   },
   {
-    id: "teachers",
-    title: "Maestros",
-    description: "Gestión de maestros y permisos",
-    icon: "UserIcon",
+    id: 'teachers',
+    title: 'Maestros',
+    description: 'Gestión de maestros y permisos',
+    icon: 'UserIcon',
     count: computed(() => teachers.value.length),
-    color: "green",
-    actions: ["view", "create", "schedule", "permissions"],
+    color: 'green',
+    actions: ['view', 'create', 'schedule', 'permissions'],
   },
   {
-    id: "classes",
-    title: "Clases",
-    description: "Administración de clases",
-    icon: "AcademicCapIcon",
+    id: 'classes',
+    title: 'Clases',
+    description: 'Administración de clases',
+    icon: 'AcademicCapIcon',
     count: computed(() => classes.value.length),
-    color: "purple",
-    actions: ["view", "create", "schedule", "monitor"],
+    color: 'purple',
+    actions: ['view', 'create', 'schedule', 'monitor'],
   },
   {
-    id: "finances",
-    title: "Finanzas",
-    description: "Control financiero",
-    icon: "CurrencyDollarIcon",
+    id: 'finances',
+    title: 'Finanzas',
+    description: 'Control financiero',
+    icon: 'CurrencyDollarIcon',
     count: computed(() => kpis.value.monthlyRevenue),
-    color: "yellow",
-    actions: ["view", "reports", "invoices"],
+    color: 'yellow',
+    actions: ['view', 'reports', 'invoices'],
   },
-])
+]);
 
 const communicationTools = ref([
-  {id: "mass-email", label: "Email Masivo", icon: "EnvelopeIcon"},
-  {id: "mass-whatsapp", label: "WhatsApp Masivo", icon: "ChatBubbleLeftIcon"},
-  {id: "notifications", label: "Notificaciones Push", icon: "BellIcon"},
-  {id: "announcements", label: "Anuncios Generales", icon: "SpeakerWaveIcon"},
-])
+  { id: 'mass-email', label: 'Email Masivo', icon: 'EnvelopeIcon' },
+  { id: 'mass-whatsapp', label: 'WhatsApp Masivo', icon: 'ChatBubbleLeftIcon' },
+  { id: 'notifications', label: 'Notificaciones Push', icon: 'BellIcon' },
+  { id: 'announcements', label: 'Anuncios Generales', icon: 'SpeakerWaveIcon' },
+]);
 
 const dataTools = ref([
-  {id: "import-students", label: "Importar Estudiantes", icon: "ArrowUpTrayIcon"},
-  {id: "export-all", label: "Exportar Todo", icon: "ArrowDownTrayIcon"},
-  {id: "backup-system", label: "Respaldo Completo", icon: "CloudArrowUpIcon"},
-  {id: "migrate-data", label: "Migrar Datos", icon: "ArrowsRightLeftIcon"},
-])
+  { id: 'import-students', label: 'Importar Estudiantes', icon: 'ArrowUpTrayIcon' },
+  { id: 'export-all', label: 'Exportar Todo', icon: 'ArrowDownTrayIcon' },
+  { id: 'backup-system', label: 'Respaldo Completo', icon: 'CloudArrowUpIcon' },
+  { id: 'migrate-data', label: 'Migrar Datos', icon: 'ArrowsRightLeftIcon' },
+]);
 
 // Methods
 const toggleNotifications = () => {
-  showNotifications.value = !showNotifications.value
-}
+  showNotifications.value = !showNotifications.value;
+};
 
 const handleSuperAction = (actionId: string) => {
-  const action = superActions.value.find((a) => a.id === actionId)
+  const action = superActions.value.find((a) => a.id === actionId);
   if (action && action.action) {
-    action.action()
+    action.action();
   }
-}
+};
 
 const handleManagementAction = (action: string, type: string) => {
   switch (type) {
-    case "students":
-      if (action === "view") activeTab.value = "students"
-      else if (action === "create") navigateToAddStudent()
-      else if (action === "export") exportSelectedData()
-      else if (action === "bulk") toggleBulkActions()
-      break
-    case "teachers":
-      if (action === "view") activeTab.value = "teachers"
-      else if (action === "create") navigateToAddTeacher()
-      break
-    case "classes":
-      if (action === "view") activeTab.value = "classes"
-      else if (action === "create") navigateToCreateClass()
-      break
-    case "finances":
-      if (action === "view") activeTab.value = "analytics"
-      break
+  case 'students':
+    if (action === 'view') activeTab.value = 'students';
+    else if (action === 'create') navigateToAddStudent();
+    else if (action === 'export') exportSelectedData();
+    else if (action === 'bulk') toggleBulkActions();
+    break;
+  case 'teachers':
+    if (action === 'view') activeTab.value = 'teachers';
+    else if (action === 'create') navigateToAddTeacher();
+    break;
+  case 'classes':
+    if (action === 'view') activeTab.value = 'classes';
+    else if (action === 'create') navigateToCreateClass();
+    break;
+  case 'finances':
+    if (action === 'view') activeTab.value = 'analytics';
+    break;
   }
-}
+};
 
 const handleBulkAction = (action: string, selection: any[]) => {
-  bulkActionType.value = action
-  bulkSelection.value = selection
-  confirmBulkAction(action, `Ejecutar ${action} en ${selection.length} elementos`)
-}
+  bulkActionType.value = action;
+  bulkSelection.value = selection;
+  confirmBulkAction(action, `Ejecutar ${action} en ${selection.length} elementos`);
+};
 
 const handleBulkActionExecute = async (action: string, data: any) => {
   // Implementar lógica específica de cada acción masiva
-  await executeConfirmedAction()
-}
+  await executeConfirmedAction();
+};
 
 const handleExport = (format: string, data: any) => {
-  exportSelectedData()
-}
+  exportSelectedData();
+};
 
 const handleImport = (file: File) => {
   // Implementar importación de datos
-  console.log("Importing file:", file.name)
-}
+  console.log('Importing file:', file.name);
+};
 
 const handleSchedule = (data: any) => {
   // Implementar programación
-  console.log("Scheduling:", data)
-}
+  console.log('Scheduling:', data);
+};
 
 const handleCreateClass = (data: any) => {
-  navigateToCreateClass()
-}
+  navigateToCreateClass();
+};
 
 const handleScheduleClass = (data: any) => {
-  console.log("Scheduling class:", data)
-}
+  console.log('Scheduling class:', data);
+};
 
 const handleGenerateReport = (type: string, params: any) => {
-  console.log("Generating report:", type, params)
-}
+  console.log('Generating report:', type, params);
+};
 
 const handleSystemUpdate = (config: any) => {
-  console.log("Updating system config:", config)
-}
+  console.log('Updating system config:', config);
+};
 
 const handleUserCreated = (user: any) => {
-  console.log("User created:", user)
-  showCreateUserModal.value = false
-  refreshData()
-}
+  console.log('User created:', user);
+  showCreateUserModal.value = false;
+  refreshData();
+};
 
 const handleSystemConfigUpdated = (config: any) => {
-  console.log("System config updated:", config)
-  showSystemConfigModal.value = false
-}
+  console.log('System config updated:', config);
+  showSystemConfigModal.value = false;
+};
 
 const handlePDFGeneration = (params: any) => {
-  console.log("Generating PDF:", params)
-  showPDFGeneratorModal.value = false
-}
+  console.log('Generating PDF:', params);
+  showPDFGeneratorModal.value = false;
+};
 
 const handleCommunicationAction = (toolId: string) => {
-  console.log("Communication action:", toolId)
-}
+  console.log('Communication action:', toolId);
+};
 
 const handleDataAction = (toolId: string) => {
   switch (toolId) {
-    case "backup-system":
-      performBackup()
-      break
-    case "export-all":
-      exportSelectedData()
-      break
-    default:
-      console.log("Data action:", toolId)
+  case 'backup-system':
+    performBackup();
+    break;
+  case 'export-all':
+    exportSelectedData();
+    break;
+  default:
+    console.log('Data action:', toolId);
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
   try {
-    await loadAllData()
-    autoRefreshInterval.value = startAutoRefresh()
+    await loadAllData();
+    autoRefreshInterval.value = startAutoRefresh();
   } catch (error) {
-    console.error("Error loading dashboard data:", error)
+    console.error('Error loading dashboard data:', error);
   }
-})
+});
 
 onUnmounted(() => {
   if (autoRefreshInterval.value) {
-    clearInterval(autoRefreshInterval.value)
+    clearInterval(autoRefreshInterval.value);
   }
-})
+});
 </script>
 
 <style scoped>

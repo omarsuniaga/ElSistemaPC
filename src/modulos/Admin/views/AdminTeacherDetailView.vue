@@ -338,8 +338,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRoute} from "vue-router"
+import { ref, computed, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import {
   HomeIcon,
   ChevronRightIcon,
@@ -353,22 +353,22 @@ import {
   ClockIcon,
   PencilIcon,
   ExclamationTriangleIcon,
-} from "@heroicons/vue/24/outline"
-import {useRBACStore} from "../../../stores/rbacStore"
-import {useTeachersStore} from "../../../stores/teachers"
-import {TeacherStatus, type Teacher} from "../../../modulos/Teachers/types/teachers"
+} from '@heroicons/vue/24/outline';
+import { useRBACStore } from '../../../stores/rbacStore';
+import { useTeachersStore } from '../../../stores/teachers';
+import { TeacherStatus, type Teacher } from '../../../modulos/Teachers/types/teachers';
 
 // Router and stores
-const route = useRoute()
-const rbacStore = useRBACStore()
-const teachersStore = useTeachersStore()
+const route = useRoute();
+const rbacStore = useRBACStore();
+const teachersStore = useTeachersStore();
 
 // State
-const teacher = ref<Teacher | null>(null)
-const isLoading = ref(true)
+const teacher = ref<Teacher | null>(null);
+const isLoading = ref(true);
 
 // Computed
-const canEditTeacher = computed(() => rbacStore.canAccess("teachers", "edit"))
+const canEditTeacher = computed(() => rbacStore.canAccess('teachers', 'edit'));
 
 // Mock stats - in a real app, this would come from the store or API
 const teacherStats = computed(() => ({
@@ -376,64 +376,64 @@ const teacherStats = computed(() => ({
   totalClasses: 0,
   totalStudents: 0,
   weeklyHours: 0,
-}))
+}));
 
 // Colors and styling
 const statusColors = {
-  active: "bg-green-500",
-  on_leave: "bg-yellow-500",
-  inactive: "bg-red-500",
-}
+  active: 'bg-green-500',
+  on_leave: 'bg-yellow-500',
+  inactive: 'bg-red-500',
+};
 
 const statusBadgeColors = {
-  active: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  on_leave: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  inactive: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-}
+  active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  on_leave: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  inactive: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+};
 
 // Methods
 const getStatusLabel = (status: TeacherStatus | undefined): string => {
   switch (status) {
-    case TeacherStatus.ACTIVE:
-      return "Activo"
-    case TeacherStatus.ON_LEAVE:
-      return "En Licencia"
-    case TeacherStatus.INACTIVE:
-      return "Inactivo"
-    default:
-      return "Desconocido"
+  case TeacherStatus.ACTIVE:
+    return 'Activo';
+  case TeacherStatus.ON_LEAVE:
+    return 'En Licencia';
+  case TeacherStatus.INACTIVE:
+    return 'Inactivo';
+  default:
+    return 'Desconocido';
   }
-}
+};
 
 const formatDate = (date: Date | any): string => {
-  if (!date) return ""
+  if (!date) return '';
 
   // Handle Firestore Timestamp or Date object
-  const dateObj = date.toDate ? date.toDate() : new Date(date)
-  return dateObj.toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
+  const dateObj = date.toDate ? date.toDate() : new Date(date);
+  return dateObj.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
 
 const loadTeacher = async () => {
   try {
-    isLoading.value = true
-    const teacherId = route.params.id as string
-    teacher.value = await teachersStore.fetchTeacherById(teacherId)
+    isLoading.value = true;
+    const teacherId = route.params.id as string;
+    teacher.value = await teachersStore.fetchTeacherById(teacherId);
   } catch (error) {
-    console.error("Error loading teacher:", error)
-    teacher.value = null
+    console.error('Error loading teacher:', error);
+    teacher.value = null;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadTeacher()
-})
+  loadTeacher();
+});
 </script>
 
 <style scoped>

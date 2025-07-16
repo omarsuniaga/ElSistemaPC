@@ -39,27 +39,27 @@
 </template>
 
 <script lang="ts" setup>
-import {ref, watch} from "vue"
-const props = defineProps<{show: boolean}>()
-const emit = defineEmits(["update:show", "apply-filters"])
+import { ref, watch } from 'vue';
+const props = defineProps<{show: boolean}>();
+const emit = defineEmits(['update:show', 'apply-filters']);
 
-const familias = ["cuerdas", "maderas", "metales", "percusion", "coro", "accesorios"]
+const familias = ['cuerdas', 'maderas', 'metales', 'percusion', 'coro', 'accesorios'];
 
 const filters = ref({
-  familia: "",
-  state: "",
-})
+  familia: '',
+  state: '',
+});
 
 function apply() {
-  emit("apply-filters", {...filters.value})
+  emit('apply-filters', { ...filters.value });
 }
 
 watch(
   () => props.show,
   (val) => {
     if (!val) {
-      filters.value = {familia: "", state: ""}
+      filters.value = { familia: '', state: '' };
     }
-  }
-)
+  },
+);
 </script>

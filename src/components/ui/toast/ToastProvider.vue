@@ -1,10 +1,3 @@
-<script setup lang="ts">
-import {useToast} from "./use-toast"
-import {XMarkIcon} from "@heroicons/vue/24/outline"
-
-const {toasts, dismiss} = useToast()
-</script>
-
 <template>
   <div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
     <template v-for="toast in toasts" :key="toast.id">
@@ -28,6 +21,13 @@ const {toasts, dismiss} = useToast()
     </template>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useToast } from './use-toast';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
+
+const { toasts, dismiss } = useToast();
+</script>
 
 <style scoped>
 .animate-in {

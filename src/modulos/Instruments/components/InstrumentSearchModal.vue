@@ -29,22 +29,22 @@
 </template>
 
 <script lang="ts" setup>
-import {ref, watch} from "vue"
-const props = defineProps<{show: boolean}>()
-const emit = defineEmits(["update:show", "apply-search"])
+import { ref, watch } from 'vue';
+const props = defineProps<{show: boolean}>();
+const emit = defineEmits(['update:show', 'apply-search']);
 
-const searchTerm = ref("")
+const searchTerm = ref('');
 
 function applySearch() {
-  emit("apply-search", searchTerm.value)
+  emit('apply-search', searchTerm.value);
 }
 
 watch(
   () => props.show,
   (val) => {
     if (!val) {
-      searchTerm.value = ""
+      searchTerm.value = '';
     }
-  }
-)
+  },
+);
 </script>

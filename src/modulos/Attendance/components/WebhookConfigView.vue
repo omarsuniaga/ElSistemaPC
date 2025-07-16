@@ -119,99 +119,99 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed} from "vue"
-import {useConfigStore} from "../../../stores/config"
-import {useAuthStore} from "../../../stores/auth"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import {sendToMake} from "../../../utils/webhook"
+import { ref, onMounted, computed } from 'vue';
+import { useConfigStore } from '../../../stores/config';
+import { useAuthStore } from '../../../stores/auth';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { sendToMake } from '../../../utils/webhook';
 
-const configStore = useConfigStore()
-const authStore = useAuthStore()
+const configStore = useConfigStore();
+const authStore = useAuthStore();
 
 // Estado
-const webhookUrl = ref("")
-const lastTestResult = ref<{success: boolean; message: string; details?: string} | null>(null)
+const webhookUrl = ref('');
+const lastTestResult = ref<{success: boolean; message: string; details?: string} | null>(null);
 
 // Comprobar permisos
 const hasPermission = computed(() => {
   if (!authStore.user || !Array.isArray(authStore.user.role)) {
-    return false
+    return false;
   }
-  const requiredRoles = ["admin", "director"]
-  return authStore.user.role.some((rol) => requiredRoles.includes(rol))
-})
+  const requiredRoles = ['admin', 'director'];
+  return authStore.user.role.some((rol) => requiredRoles.includes(rol));
+});
 
 // Formatear fecha para el historial
 const formatDate = (timestamp: string): string => {
-  if (!timestamp) return "-"
+  if (!timestamp) return '-';
   try {
     // Assuming 'format' and 'es' are correctly imported and typed elsewhere
-    return format(new Date(timestamp), "d MMM yyyy, HH:mm", {locale: es})
+    return format(new Date(timestamp), 'd MMM yyyy, HH:mm', { locale: es });
   } catch (e) {
     // Return the original timestamp if formatting fails
-    return timestamp
+    return timestamp;
   }
-}
+};
 
 // Cargar configuración
 onMounted(async () => {
-  await configStore.fetchConfigs()
-  webhookUrl.value = configStore.attendanceWebhookUrl || ""
-})
+  await configStore.fetchConfigs();
+  webhookUrl.value = configStore.attendanceWebhookUrl || '';
+});
 
 // Guardar configuración
 const saveConfig = async () => {
-  if (!webhookUrl.value) return
+  if (!webhookUrl.value) return;
 
   try {
-    await configStore.updateAttendanceWebhook(webhookUrl.value)
+    await configStore.updateAttendanceWebhook(webhookUrl.value);
     lastTestResult.value = {
       success: true,
-      message: "Configuración guardada correctamente",
-    }
+      message: 'Configuración guardada correctamente',
+    };
   } catch (error: any) {
     lastTestResult.value = {
       success: false,
-      message: "Error al guardar la configuración",
+      message: 'Error al guardar la configuración',
       details: error.message,
-    }
+    };
   }
-}
+};
 
 // Probar webhook
 const testWebhook = async () => {
-  if (!webhookUrl.value) return
+  if (!webhookUrl.value) return;
 
   lastTestResult.value = {
     success: false,
-    message: "Probando conexión...",
-  }
+    message: 'Probando conexión...',
+  };
 
   try {
     const testPayload = {
-      type: "test",
-      action: "test_connection",
+      type: 'test',
+      action: 'test_connection',
       data: {
         timestamp: new Date().toISOString(),
-        user: authStore.user?.email || "usuario_anónimo",
-        message: "Esta es una prueba de conexión desde El Sistema PC",
+        user: authStore.user?.email || 'usuario_anónimo',
+        message: 'Esta es una prueba de conexión desde El Sistema PC',
       },
-    }
+    };
 
-    await sendToMake(webhookUrl.value, testPayload)
+    await sendToMake(webhookUrl.value, testPayload);
 
     lastTestResult.value = {
       success: true,
-      message: "Conexión exitosa con el webhook",
-      details: "El servidor respondió correctamente a la petición de prueba",
-    }
+      message: 'Conexión exitosa con el webhook',
+      details: 'El servidor respondió correctamente a la petición de prueba',
+    };
   } catch (error: any) {
     lastTestResult.value = {
       success: false,
-      message: "Error al probar la conexión",
+      message: 'Error al probar la conexión',
       details: error.message,
-    }
+    };
   }
-}
+};
 </script>

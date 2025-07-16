@@ -52,8 +52,8 @@
 </template>
 
 <script setup>
-import {XMarkIcon, ChevronLeftIcon, ChevronRightIcon} from "@heroicons/vue/20/solid"
-import RecursiveMenu from "./RecursiveMenu.vue"
+import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/20/solid';
+import RecursiveMenu from './RecursiveMenu.vue';
 
 defineProps({
   contents: {
@@ -68,7 +68,7 @@ defineProps({
     type: Boolean,
     default: false,
   },
-})
+});
 
-defineEmits(["toggle-panel", "select-content"])
+defineEmits(['toggle-panel', 'select-content']);
 </script>

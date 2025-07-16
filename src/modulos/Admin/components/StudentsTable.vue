@@ -296,11 +296,11 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
+import { ref } from 'vue';
 // Define component name
 defineOptions({
-  name: "StudentsTable",
-})
+  name: 'StudentsTable',
+});
 
 import {
   ChevronUpDownIcon,
@@ -314,9 +314,9 @@ import {
   TrashIcon,
   UserGroupIcon,
   ChatBubbleLeftRightIcon,
-} from "@heroicons/vue/24/outline"
-import {Student} from "../store/adminStudents"
-import ConversationHistoryModal from "../../../components/SuperAdmin/ConversationHistoryModal.vue"
+} from '@heroicons/vue/24/outline';
+import { Student } from '../store/adminStudents';
+import ConversationHistoryModal from '../../../components/SuperAdmin/ConversationHistoryModal.vue';
 
 // Props
 interface Props {
@@ -327,186 +327,186 @@ interface Props {
     canDelete: boolean
   }
   sortField?: string
-  sortOrder?: "asc" | "desc"
+  sortOrder?: 'asc' | 'desc'
 }
 
 const _props = withDefaults(defineProps<Props>(), {
-  sortField: "name",
-  sortOrder: "asc",
-})
+  sortField: 'name',
+  sortOrder: 'asc',
+});
 
 // Emits
 interface Emits {
   view: [student: Student]
   edit: [student: Student]
   delete: [student: Student]
-  "toggle-status": [student: Student]
+  'toggle-status': [student: Student]
   sort: [field: string]
 }
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // State for Modal
-const isHistoryModalVisible = ref(false)
-const selectedStudentId = ref("")
+const isHistoryModalVisible = ref(false);
+const selectedStudentId = ref('');
 
 // Colors and styling
 const statusColors = {
-  active: "bg-green-500",
-  inactive: "bg-red-500",
-  pending: "bg-yellow-500",
-}
+  active: 'bg-green-500',
+  inactive: 'bg-red-500',
+  pending: 'bg-yellow-500',
+};
 
 const statusBadgeColors = {
-  active: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  inactive: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-}
+  active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  inactive: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+};
 
 const gradeColors = {
-  beginner: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  intermediate: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-  advanced: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-}
+  beginner: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  intermediate: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  advanced: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+};
 
 // Methods
 const getInitials = (name: string): string => {
   return name
-    .split(" ")
+    .split(' ')
     .map((word) => word.charAt(0))
-    .join("")
+    .join('')
     .substring(0, 2)
-    .toUpperCase()
-}
+    .toUpperCase();
+};
 
 const formatPhone = (phone: string | undefined | null): string => {
-  if (!phone) return "Sin teléfono"
+  if (!phone) return 'Sin teléfono';
   
   // Limpiar el teléfono de caracteres no numéricos
-  const cleanPhone = phone.toString().replace(/\D/g, "")
+  const cleanPhone = phone.toString().replace(/\D/g, '');
   
   // Si no tiene suficientes dígitos, devolver tal como está
-  if (cleanPhone.length < 10) return phone.toString()
+  if (cleanPhone.length < 10) return phone.toString();
   
   // Formatear solo si tiene 10 dígitos o más
   if (cleanPhone.length === 10) {
-    return cleanPhone.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3")
+    return cleanPhone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
   }
   
   // Si tiene más de 10 dígitos, tomar los últimos 10
-  const last10 = cleanPhone.slice(-10)
-  return last10.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3")
-}
+  const last10 = cleanPhone.slice(-10);
+  return last10.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+};
 
 const formatDate = (date: string | Date | undefined): string => {
-  if (!date) return "Sin fecha"
+  if (!date) return 'Sin fecha';
   
-  let dateObj: Date
-  if (typeof date === "string") {
-    dateObj = new Date(date)
+  let dateObj: Date;
+  if (typeof date === 'string') {
+    dateObj = new Date(date);
   } else {
-    dateObj = date
+    dateObj = date;
   }
   
-  if (isNaN(dateObj.getTime())) return "Fecha inválida"
+  if (isNaN(dateObj.getTime())) return 'Fecha inválida';
   
-  return dateObj.toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
-}
+  return dateObj.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
 
 const getStudentStatus = (student: Student): string => {
-  if (student.activo === true) return "active"
-  if (student.activo === false) return "inactive"
-  if (student.status) return student.status
-  return "pending"
-}
+  if (student.activo === true) return 'active';
+  if (student.activo === false) return 'inactive';
+  if (student.status) return student.status;
+  return 'pending';
+};
 
 const getStudentFullName = (student: Student): string => {
-  const nombre = student.nombre || ""
-  const apellido = student.apellido || ""
-  return `${nombre} ${apellido}`.trim() || "Sin nombre"
-}
+  const nombre = student.nombre || '';
+  const apellido = student.apellido || '';
+  return `${nombre} ${apellido}`.trim() || 'Sin nombre';
+};
 
 const getInstrumentName = (instrument: string): string => {
   const instruments: Record<string, string> = {
-    piano: "Piano",
-    guitar: "Guitarra",
-    violin: "Violín",
-    drums: "Batería",
-    voice: "Canto",
-    bass: "Bajo",
-    flute: "Flauta",
-    saxophone: "Saxofón",
-    trumpet: "Trompeta",
-    cello: "Violonchelo",
-  }
-  return instruments[instrument] || instrument
-}
+    piano: 'Piano',
+    guitar: 'Guitarra',
+    violin: 'Violín',
+    drums: 'Batería',
+    voice: 'Canto',
+    bass: 'Bajo',
+    flute: 'Flauta',
+    saxophone: 'Saxofón',
+    trumpet: 'Trompeta',
+    cello: 'Violonchelo',
+  };
+  return instruments[instrument] || instrument;
+};
 
 const getParentName = (student: Student): string => {
   if (student.padre && student.madre) {
-    return `${student.padre} / ${student.madre}`
+    return `${student.padre} / ${student.madre}`;
   }
-  if (student.padre) return student.padre
-  if (student.madre) return student.madre
-  if (student.tutor) return student.tutor
-  return "Sin contacto"
-}
+  if (student.padre) return student.padre;
+  if (student.madre) return student.madre;
+  if (student.tutor) return student.tutor;
+  return 'Sin contacto';
+};
 
 const getGradeName = (grade: string | undefined): string => {
-  if (!grade) return "Sin asignar"
+  if (!grade) return 'Sin asignar';
   const grades: Record<string, string> = {
-    beginner: "Principiante",
-    intermediate: "Intermedio",
-    advanced: "Avanzado",
-    principiante: "Principiante",
-    intermedio: "Intermedio",
-    avanzado: "Avanzado",
-  }
-  return grades[grade] || grade
-}
+    beginner: 'Principiante',
+    intermediate: 'Intermedio',
+    advanced: 'Avanzado',
+    principiante: 'Principiante',
+    intermedio: 'Intermedio',
+    avanzado: 'Avanzado',
+  };
+  return grades[grade] || grade;
+};
 
 const getStatusName = (status: string | undefined): string => {
-  if (!status) return "Sin estado"
+  if (!status) return 'Sin estado';
   const statuses: Record<string, string> = {
-    active: "Activo",
-    inactive: "Inactivo",
-    pending: "Pendiente",
-    activo: "Activo",
-    inactivo: "Inactivo",
-    pendiente: "Pendiente",
-  }
-  return statuses[status] || status
-}
+    active: 'Activo',
+    inactive: 'Inactivo',
+    pending: 'Pendiente',
+    activo: 'Activo',
+    inactivo: 'Inactivo',
+    pendiente: 'Pendiente',
+  };
+  return statuses[status] || status;
+};
 
 // Event handlers
 const handleSort = (field: string) => {
-  emit("sort", field)
-}
+  emit('sort', field);
+};
 
 const handleView = (student: Student) => {
-  emit("view", student)
-}
+  emit('view', student);
+};
 
 const handleEdit = (student: Student) => {
-  emit("edit", student)
-}
+  emit('edit', student);
+};
 
 const handleDelete = (student: Student) => {
-  emit("delete", student)
-}
+  emit('delete', student);
+};
 
 const handleToggleStatus = (student: Student) => {
-  emit("toggle-status", student)
-}
+  emit('toggle-status', student);
+};
 
 const handleShowHistory = (student: Student) => {
-  selectedStudentId.value = student.id
-  isHistoryModalVisible.value = true
-}
+  selectedStudentId.value = student.id;
+  isHistoryModalVisible.value = true;
+};
 </script>
 
 <style scoped>

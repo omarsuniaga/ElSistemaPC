@@ -305,11 +305,11 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
+import { ref, computed, onMounted, watch } from 'vue';
 // import { Icon } from '@iconify/vue'; // Commented temporarily for build
-import {usePerformanceDashboard} from "../composables/usePerformanceDashboard"
-import StudentPerformanceCard from "./StudentPerformanceCard.vue"
-import type {PerformanceFilters} from "../types/performance"
+import { usePerformanceDashboard } from '../composables/usePerformanceDashboard';
+import StudentPerformanceCard from './StudentPerformanceCard.vue';
+import type { PerformanceFilters } from '../types/performance';
 
 // Props
 interface Props {
@@ -321,7 +321,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   autoRefresh: false,
   refreshInterval: 300000, // 5 minutos
-})
+});
 
 // Composable
 const {
@@ -335,73 +335,73 @@ const {
   fetchStudentsPerformance,
   updateFilters,
   exportData: exportPerformanceData,
-} = usePerformanceDashboard()
+} = usePerformanceDashboard();
 
 // Estado local
-const showFilters = ref(false)
-const activeTab = ref("general")
-const currentPage = ref(1)
-const pageSize = 12
+const showFilters = ref(false);
+const activeTab = ref('general');
+const currentPage = ref(1);
+const pageSize = 12;
 
 // Filtros
-const selectedClassifications = ref<string[]>([])
-const minAttendance = ref(0)
-const minScore = ref(0)
+const selectedClassifications = ref<string[]>([]);
+const minAttendance = ref(0);
+const minScore = ref(0);
 const dateRange = ref({
-  start: "",
-  end: "",
-})
+  start: '',
+  end: '',
+});
 
 // Opciones
 const classificationOptions = [
-  "Excelente",
-  "Muy bueno",
-  "Bueno",
-  "Regular",
-  "Necesita mejora",
-  "Preocupante",
-]
+  'Excelente',
+  'Muy bueno',
+  'Bueno',
+  'Regular',
+  'Necesita mejora',
+  'Preocupante',
+];
 
 // Tabs
 const tabs = computed(() => [
   {
-    id: "general",
-    label: "Vista General",
-    icon: "heroicons:squares-2x2",
+    id: 'general',
+    label: 'Vista General',
+    icon: 'heroicons:squares-2x2',
     count: filteredStudents.value.length,
   },
   {
-    id: "top",
-    label: "Top Performers",
-    icon: "heroicons:trophy",
+    id: 'top',
+    label: 'Top Performers',
+    icon: 'heroicons:trophy',
     count: topPerformers.value.length,
   },
   {
-    id: "attention",
-    label: "Necesitan Atención",
-    icon: "heroicons:exclamation-triangle",
+    id: 'attention',
+    label: 'Necesitan Atención',
+    icon: 'heroicons:exclamation-triangle',
     count: studentsNeedingAttention.value.length,
   },
   {
-    id: "analysis",
-    label: "Análisis",
-    icon: "heroicons:chart-bar-square",
+    id: 'analysis',
+    label: 'Análisis',
+    icon: 'heroicons:chart-bar-square',
   },
-])
+]);
 
 // Paginación
-const totalPages = computed(() => Math.ceil(filteredStudents.value.length / pageSize))
+const totalPages = computed(() => Math.ceil(filteredStudents.value.length / pageSize));
 
 const paginatedStudents = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  const end = start + pageSize
-  return filteredStudents.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * pageSize;
+  const end = start + pageSize;
+  return filteredStudents.value.slice(start, end);
+});
 
 // Métodos
 const refreshData = async () => {
-  await fetchStudentsPerformance(props.studentIds)
-}
+  await fetchStudentsPerformance(props.studentIds);
+};
 
 const applyFilters = () => {
   const filters: Partial<PerformanceFilters> = {
@@ -409,97 +409,97 @@ const applyFilters = () => {
     minAttendance: minAttendance.value,
     minScore: minScore.value,
     dateRange: dateRange.value,
-  }
+  };
 
-  updateFilters(filters)
-  currentPage.value = 1 // Reset a primera página
-}
+  updateFilters(filters);
+  currentPage.value = 1; // Reset a primera página
+};
 
 const clearFilters = () => {
-  selectedClassifications.value = []
-  minAttendance.value = 0
-  minScore.value = 0
-  dateRange.value = {start: "", end: ""}
+  selectedClassifications.value = [];
+  minAttendance.value = 0;
+  minScore.value = 0;
+  dateRange.value = { start: '', end: '' };
 
   updateFilters({
     classification: [],
     minAttendance: 0,
     minScore: 0,
-    dateRange: {start: "", end: ""},
-  })
+    dateRange: { start: '', end: '' },
+  });
 
-  currentPage.value = 1
-}
+  currentPage.value = 1;
+};
 
 const exportData = () => {
-  const data = exportPerformanceData()
+  const data = exportPerformanceData();
   // Implementar descarga de CSV/Excel
-  console.log("Exporting data:", data)
-}
+  console.log('Exporting data:', data);
+};
 
 // Handlers de eventos
 const handleViewDetails = (studentId: string) => {
   // Emit event o navigate to details
-  console.log("View details for student:", studentId)
-}
+  console.log('View details for student:', studentId);
+};
 
 const handleViewProfile = (studentId: string) => {
   // Navigate to student profile
-  console.log("View profile for student:", studentId)
-}
+  console.log('View profile for student:', studentId);
+};
 
 const handleNeedsAttention = (studentId: string) => {
   // Handle attention needed action
-  console.log("Student needs attention:", studentId)
-}
+  console.log('Student needs attention:', studentId);
+};
 
 // Utilidades
 const getClassificationColor = (classification: string) => {
   const classMap: Record<string, string> = {
-    Excelente: "bg-green-500",
-    "Muy bueno": "bg-blue-500",
-    Bueno: "bg-blue-400",
-    Regular: "bg-yellow-500",
-    "Necesita mejora": "bg-orange-500",
-    Preocupante: "bg-red-500",
-  }
-  return classMap[classification] || "bg-gray-500"
-}
+    Excelente: 'bg-green-500',
+    'Muy bueno': 'bg-blue-500',
+    Bueno: 'bg-blue-400',
+    Regular: 'bg-yellow-500',
+    'Necesita mejora': 'bg-orange-500',
+    Preocupante: 'bg-red-500',
+  };
+  return classMap[classification] || 'bg-gray-500';
+};
 
 const getRankClass = (index: number) => {
-  if (index === 0) return "rank-gold"
-  if (index === 1) return "rank-silver"
-  if (index === 2) return "rank-bronze"
-  return "rank-default"
-}
+  if (index === 0) return 'rank-gold';
+  if (index === 1) return 'rank-silver';
+  if (index === 2) return 'rank-bronze';
+  return 'rank-default';
+};
 
-const getAlertsCount = (type: "attendance" | "performance" | "trend") => {
+const getAlertsCount = (type: 'attendance' | 'performance' | 'trend') => {
   return students.value.filter((student) => {
     switch (type) {
-      case "attendance":
-        return student.attendanceMetrics.attendanceRate < 75
-      case "performance":
-        return student.overallScore < 60
-      case "trend":
-        return student.trends.overall < -10
-      default:
-        return false
+    case 'attendance':
+      return student.attendanceMetrics.attendanceRate < 75;
+    case 'performance':
+      return student.overallScore < 60;
+    case 'trend':
+      return student.trends.overall < -10;
+    default:
+      return false;
     }
-  }).length
-}
+  }).length;
+};
 
 // Watchers
-watch(() => props.studentIds, refreshData, {immediate: false})
+watch(() => props.studentIds, refreshData, { immediate: false });
 
 // Lifecycle
 onMounted(() => {
-  refreshData()
+  refreshData();
 
   // Auto refresh si está habilitado
   if (props.autoRefresh) {
-    setInterval(refreshData, props.refreshInterval)
+    setInterval(refreshData, props.refreshInterval);
   }
-})
+});
 </script>
 
 <style scoped>

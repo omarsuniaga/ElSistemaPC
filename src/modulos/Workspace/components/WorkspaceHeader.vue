@@ -72,17 +72,17 @@
 </template>
 
 <script setup>
-import {ref, computed, watchEffect} from "vue"
-import {AdjustmentsHorizontalIcon, ArrowDownTrayIcon} from "@heroicons/vue/20/solid"
+import { ref, computed, watchEffect } from 'vue';
+import { AdjustmentsHorizontalIcon, ArrowDownTrayIcon } from '@heroicons/vue/20/solid';
 
 const props = defineProps({
   title: {
     type: String,
-    default: "Espacio de Trabajo",
+    default: 'Espacio de Trabajo',
   },
   subtitle: {
     type: String,
-    default: "Gestiona y evalúa el progreso académico de los estudiantes",
+    default: 'Gestiona y evalúa el progreso académico de los estudiantes',
   },
   filtersVisible: {
     type: Boolean,
@@ -94,43 +94,43 @@ const props = defineProps({
   },
   selectedClass: {
     type: String,
-    default: "",
+    default: '',
   },
   selectedPeriod: {
     type: String,
-    default: "month",
+    default: 'month',
   },
   sortBy: {
     type: String,
-    default: "name",
+    default: 'name',
   },
-})
+});
 
-const emit = defineEmits(["toggle-filters", "export", "filter"])
+const emit = defineEmits(['toggle-filters', 'export', 'filter']);
 
 // Local state that syncs with props
-const selectedClassLocal = ref(props.selectedClass)
-const selectedPeriodLocal = ref(props.selectedPeriod)
-const sortByLocal = ref(props.sortBy)
+const selectedClassLocal = ref(props.selectedClass);
+const selectedPeriodLocal = ref(props.selectedPeriod);
+const sortByLocal = ref(props.sortBy);
 
 // Watch for prop changes and update local state
 watchEffect(() => {
-  selectedClassLocal.value = props.selectedClass
-  selectedPeriodLocal.value = props.selectedPeriod
-  sortByLocal.value = props.sortBy
-})
+  selectedClassLocal.value = props.selectedClass;
+  selectedPeriodLocal.value = props.selectedPeriod;
+  sortByLocal.value = props.sortBy;
+});
 
 const handleClassChange = () => {
-  emit("filter", {type: "class", value: selectedClassLocal.value})
-}
+  emit('filter', { type: 'class', value: selectedClassLocal.value });
+};
 
 const handlePeriodChange = () => {
-  emit("filter", {type: "period", value: selectedPeriodLocal.value})
-}
+  emit('filter', { type: 'period', value: selectedPeriodLocal.value });
+};
 
 const handleSortChange = () => {
-  emit("filter", {type: "sort", value: sortByLocal.value})
-}
+  emit('filter', { type: 'sort', value: sortByLocal.value });
+};
 </script>
 
 <style scoped>

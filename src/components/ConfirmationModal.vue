@@ -48,13 +48,13 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
   CheckCircleIcon,
   XCircleIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Props
 const props = withDefaults(
@@ -62,81 +62,81 @@ const props = withDefaults(
     isVisible: boolean
     title: string
     message: string
-    type?: "warning" | "danger" | "info" | "success"
+    type?: 'warning' | 'danger' | 'info' | 'success'
     confirmText?: string
     cancelText?: string
     loadingText?: string
     loading?: boolean
   }>(),
   {
-    type: "warning",
-    confirmText: "Confirmar",
-    cancelText: "Cancelar",
-    loadingText: "Procesando...",
+    type: 'warning',
+    confirmText: 'Confirmar',
+    cancelText: 'Cancelar',
+    loadingText: 'Procesando...',
     loading: false,
-  }
-)
+  },
+);
 
 // Emits
 defineEmits<{
   confirm: []
   cancel: []
-}>()
+}>();
 
 // Computed styles based on type
 const iconComponent = computed(() => {
   switch (props.type) {
-    case "danger":
-      return ExclamationTriangleIcon
-    case "info":
-      return InformationCircleIcon
-    case "success":
-      return CheckCircleIcon
-    case "warning":
-    default:
-      return ExclamationTriangleIcon
+  case 'danger':
+    return ExclamationTriangleIcon;
+  case 'info':
+    return InformationCircleIcon;
+  case 'success':
+    return CheckCircleIcon;
+  case 'warning':
+  default:
+    return ExclamationTriangleIcon;
   }
-})
+});
 
 const iconBgClass = computed(() => {
   switch (props.type) {
-    case "danger":
-      return "bg-red-100"
-    case "info":
-      return "bg-blue-100"
-    case "success":
-      return "bg-green-100"
-    case "warning":
-    default:
-      return "bg-yellow-100"
+  case 'danger':
+    return 'bg-red-100';
+  case 'info':
+    return 'bg-blue-100';
+  case 'success':
+    return 'bg-green-100';
+  case 'warning':
+  default:
+    return 'bg-yellow-100';
   }
-})
+});
 
 const iconColorClass = computed(() => {
   switch (props.type) {
-    case "danger":
-      return "text-red-600"
-    case "info":
-      return "text-blue-600"
-    case "success":
-      return "text-green-600"
-    case "warning":
-    default:
-      return "text-yellow-600"
+  case 'danger':
+    return 'text-red-600';
+  case 'info':
+    return 'text-blue-600';
+  case 'success':
+    return 'text-green-600';
+  case 'warning':
+  default:
+    return 'text-yellow-600';
   }
-})
+});
 
 const confirmButtonClass = computed(() => {
   switch (props.type) {
-    case "danger":
-      return "bg-red-600 hover:bg-red-700 focus:ring-red-500"
-    case "info":
-      return "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
-    case "success":
-      return "bg-green-600 hover:bg-green-700 focus:ring-green-500"
-    case "warning":
-    default:
-      return "bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500"
+  case 'danger':
+    return 'bg-red-600 hover:bg-red-700 focus:ring-red-500';
+  case 'info':
+    return 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500';
+  case 'success':
+    return 'bg-green-600 hover:bg-green-700 focus:ring-green-500';
+  case 'warning':
+  default:
+    return 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500';
   }
-})
+});
 </script>

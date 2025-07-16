@@ -201,18 +201,18 @@
 </template>
 
 <script>
-import {ref, onMounted, watch} from "vue"
-import DateRangeSelector from "./components/DateRangeSelector.vue"
-import AttendanceOverview from "./components/AttendanceOverview.vue"
-import ClassAttendanceCard from "./components/ClassAttendanceCard.vue"
-import AttendanceCharts from "./components/AttendanceCharts.vue"
-import StudentAttendanceGrid from "./components/StudentAttendanceGrid.vue"
-import ExportControls from "./components/ExportControls.vue"
-import ClassDetailsModal from "./components/ClassDetailsModal.vue"
-import {useAttendanceReport} from "./composables/useAttendanceReport"
+import { ref, onMounted, watch } from 'vue';
+import DateRangeSelector from './components/DateRangeSelector.vue';
+import AttendanceOverview from './components/AttendanceOverview.vue';
+import ClassAttendanceCard from './components/ClassAttendanceCard.vue';
+import AttendanceCharts from './components/AttendanceCharts.vue';
+import StudentAttendanceGrid from './components/StudentAttendanceGrid.vue';
+import ExportControls from './components/ExportControls.vue';
+import ClassDetailsModal from './components/ClassDetailsModal.vue';
+import { useAttendanceReport } from './composables/useAttendanceReport';
 
 export default {
-  name: "TeacherAttendanceReport",
+  name: 'TeacherAttendanceReport',
   components: {
     DateRangeSelector,
     AttendanceOverview,
@@ -230,8 +230,8 @@ export default {
   },
   setup(props) {
     // Estado local del componente
-    const selectedClassDetails = ref(null)
-    const activeView = ref("overview") // 'overview', 'grid', 'charts', 'export'
+    const selectedClassDetails = ref(null);
+    const activeView = ref('overview'); // 'overview', 'grid', 'charts', 'export'
 
     // Estado del composable principal
     const {
@@ -248,41 +248,41 @@ export default {
       totalStudents,
       refreshData,
       handlePeriodChange,
-    } = useAttendanceReport()
+    } = useAttendanceReport();
 
     // Métodos del componente
     const showClassDetails = (classData) => {
-      selectedClassDetails.value = classData
-    }
+      selectedClassDetails.value = classData;
+    };
 
     const closeClassDetails = () => {
-      selectedClassDetails.value = null
-    }
+      selectedClassDetails.value = null;
+    };
 
     const handleExport = (exportConfig) => {
-      console.log("Exportando con configuración:", exportConfig)
+      console.log('Exportando con configuración:', exportConfig);
       // Aquí implementar la lógica de exportación
-    }
+    };
 
     const handleStudentExport = (student) => {
-      console.log("Exportando datos del estudiante:", student)
+      console.log('Exportando datos del estudiante:', student);
       // Aquí implementar la lógica de exportación de estudiante
-    }
+    };
 
     // Inicialización
     onMounted(() => {
-      refreshData()
-    })
+      refreshData();
+    });
 
     // Watchers
     watch(
       () => selectedPeriod.value,
       () => {
-        if (selectedPeriod.value !== "custom") {
-          handlePeriodChange()
+        if (selectedPeriod.value !== 'custom') {
+          handlePeriodChange();
         }
-      }
-    )
+      },
+    );
 
     return {
       // Estado local
@@ -309,9 +309,9 @@ export default {
       closeClassDetails,
       handleExport,
       handleStudentExport,
-    }
+    };
   },
-}
+};
 </script>
 
 <style scoped>

@@ -331,10 +331,10 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useRouter} from "vue-router"
-import {useRBACStore} from "../../../stores/rbacStore"
-import {useAdminStudentsStore} from "../store/adminStudents"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useRBACStore } from '../../../stores/rbacStore';
+import { useAdminStudentsStore } from '../store/adminStudents';
 import {
   HomeIcon,
   PlusIcon,
@@ -345,218 +345,218 @@ import {
   ListBulletIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Components
-import StudentCard from "../components/StudentCard.vue"
-import StudentsTable from "../components/StudentsTable.vue"
-import StudentCreateModal from "../components/StudentCreateModal.vue"
-import StudentEditModal from "../components/StudentEditModal.vue"
-import ConfirmationModal from "@/components/ConfirmationModal.vue"
+import StudentCard from '../components/StudentCard.vue';
+import StudentsTable from '../components/StudentsTable.vue';
+import StudentCreateModal from '../components/StudentCreateModal.vue';
+import StudentEditModal from '../components/StudentEditModal.vue';
+import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 // Stores
-const router = useRouter()
-const rbacStore = useRBACStore()
-const studentsStore = useAdminStudentsStore()
+const router = useRouter();
+const rbacStore = useRBACStore();
+const studentsStore = useAdminStudentsStore();
 
 // State
-const searchQuery = ref("")
-const statusFilter = ref("")
-const gradeFilter = ref("")
-const instrumentFilter = ref("")
-const viewMode = ref<"grid" | "list">("grid")
-const sortField = ref("name")
-const sortOrder = ref<"asc" | "desc">("asc")
+const searchQuery = ref('');
+const statusFilter = ref('');
+const gradeFilter = ref('');
+const instrumentFilter = ref('');
+const viewMode = ref<'grid' | 'list'>('grid');
+const sortField = ref('name');
+const sortOrder = ref<'asc' | 'desc'>('asc');
 
 // Pagination
-const currentPage = ref(1)
-const itemsPerPage = ref(20)
+const currentPage = ref(1);
+const itemsPerPage = ref(20);
 
 // Modals
-const showCreateModal = ref(false)
-const showEditModal = ref(false)
-const showDeleteModal = ref(false)
-const selectedStudent = ref<any>(null)
+const showCreateModal = ref(false);
+const showEditModal = ref(false);
+const showDeleteModal = ref(false);
+const selectedStudent = ref<any>(null);
 
 // Computed
-const students = computed(() => studentsStore.students)
-const isLoading = computed(() => studentsStore.isLoading)
-const totalStudents = computed(() => students.value.length)
-const activeStudents = computed(() => students.value.filter((s) => s.status === "active").length)
+const students = computed(() => studentsStore.students);
+const isLoading = computed(() => studentsStore.isLoading);
+const totalStudents = computed(() => students.value.length);
+const activeStudents = computed(() => students.value.filter((s) => s.status === 'active').length);
 const newThisMonth = computed(() => {
-  const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  return students.value.filter((s) => new Date(s.createdAt) >= startOfMonth).length
-})
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  return students.value.filter((s) => new Date(s.createdAt) >= startOfMonth).length;
+});
 
 // Permissions
-const canCreateStudent = computed(() => rbacStore.hasPermission("students", "create"))
-const canViewStudent = computed(() => rbacStore.hasPermission("students", "view"))
-const canEditStudent = computed(() => rbacStore.hasPermission("students", "edit"))
-const canDeleteStudent = computed(() => rbacStore.hasPermission("students", "delete"))
+const canCreateStudent = computed(() => rbacStore.hasPermission('students', 'create'));
+const canViewStudent = computed(() => rbacStore.hasPermission('students', 'view'));
+const canEditStudent = computed(() => rbacStore.hasPermission('students', 'edit'));
+const canDeleteStudent = computed(() => rbacStore.hasPermission('students', 'delete'));
 
 // Filters
 const hasActiveFilters = computed(
-  () => searchQuery.value || statusFilter.value || gradeFilter.value || instrumentFilter.value
-)
+  () => searchQuery.value || statusFilter.value || gradeFilter.value || instrumentFilter.value,
+);
 
 const filteredStudents = computed(() => {
-  let filtered = [...students.value]
+  let filtered = [...students.value];
 
   // Search filter
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(
       (student) =>
         student.name.toLowerCase().includes(query) ||
         student.email.toLowerCase().includes(query) ||
-        student.phone.toLowerCase().includes(query)
-    )
+        student.phone.toLowerCase().includes(query),
+    );
   }
 
   // Status filter
   if (statusFilter.value) {
-    filtered = filtered.filter((student) => student.status === statusFilter.value)
+    filtered = filtered.filter((student) => student.status === statusFilter.value);
   }
 
   // Grade filter
   if (gradeFilter.value) {
-    filtered = filtered.filter((student) => student.grade === gradeFilter.value)
+    filtered = filtered.filter((student) => student.grade === gradeFilter.value);
   }
 
   // Instrument filter
   if (instrumentFilter.value) {
-    filtered = filtered.filter((student) => student.instruments?.includes(instrumentFilter.value))
+    filtered = filtered.filter((student) => student.instruments?.includes(instrumentFilter.value));
   }
 
   // Sorting
   filtered.sort((a, b) => {
-    const aValue = a[sortField.value]
-    const bValue = b[sortField.value]
+    const aValue = a[sortField.value];
+    const bValue = b[sortField.value];
 
-    if (typeof aValue === "string" && typeof bValue === "string") {
-      return sortOrder.value === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return sortOrder.value === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
     }
 
-    return sortOrder.value === "asc" ? aValue - bValue : bValue - aValue
-  })
+    return sortOrder.value === 'asc' ? aValue - bValue : bValue - aValue;
+  });
 
-  return filtered
-})
+  return filtered;
+});
 
 // Pagination
-const totalPages = computed(() => Math.ceil(filteredStudents.value.length / itemsPerPage.value))
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
-const endIndex = computed(() => startIndex.value + itemsPerPage.value)
+const totalPages = computed(() => Math.ceil(filteredStudents.value.length / itemsPerPage.value));
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
+const endIndex = computed(() => startIndex.value + itemsPerPage.value);
 
 const paginatedStudents = computed(() =>
-  filteredStudents.value.slice(startIndex.value, endIndex.value)
-)
+  filteredStudents.value.slice(startIndex.value, endIndex.value),
+);
 
 const visiblePages = computed(() => {
-  const pages = []
-  const maxVisible = 7
-  const half = Math.floor(maxVisible / 2)
+  const pages = [];
+  const maxVisible = 7;
+  const half = Math.floor(maxVisible / 2);
 
-  let start = Math.max(1, currentPage.value - half)
-  const end = Math.min(totalPages.value, start + maxVisible - 1)
+  let start = Math.max(1, currentPage.value - half);
+  const end = Math.min(totalPages.value, start + maxVisible - 1);
 
   if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1)
+    start = Math.max(1, end - maxVisible + 1);
   }
 
   for (let i = start; i <= end; i++) {
-    pages.push(i)
+    pages.push(i);
   }
 
-  return pages
-})
+  return pages;
+});
 
 // Methods
 const clearFilters = () => {
-  searchQuery.value = ""
-  statusFilter.value = ""
-  gradeFilter.value = ""
-  instrumentFilter.value = ""
-  currentPage.value = 1
-}
+  searchQuery.value = '';
+  statusFilter.value = '';
+  gradeFilter.value = '';
+  instrumentFilter.value = '';
+  currentPage.value = 1;
+};
 
 const handleSort = (field: string) => {
   if (sortField.value === field) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc"
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
   } else {
-    sortField.value = field
-    sortOrder.value = "asc"
+    sortField.value = field;
+    sortOrder.value = 'asc';
   }
-}
+};
 
 const previousPage = () => {
   if (currentPage.value > 1) {
-    currentPage.value--
+    currentPage.value--;
   }
-}
+};
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
-    currentPage.value++
+    currentPage.value++;
   }
-}
+};
 
 const goToPage = (page: number) => {
-  currentPage.value = page
-}
+  currentPage.value = page;
+};
 
 const viewStudent = (student: any) => {
-  router.push(`/admin/students/${student.id}`)
-}
+  router.push(`/admin/students/${student.id}`);
+};
 
 const editStudent = (student: any) => {
-  selectedStudent.value = student
-  showEditModal.value = true
-}
+  selectedStudent.value = student;
+  showEditModal.value = true;
+};
 
 const deleteStudent = (student: any) => {
-  selectedStudent.value = student
-  showDeleteModal.value = true
-}
+  selectedStudent.value = student;
+  showDeleteModal.value = true;
+};
 
 const confirmDelete = async () => {
   if (selectedStudent.value) {
-    await studentsStore.deleteStudent(selectedStudent.value.id)
-    showDeleteModal.value = false
-    selectedStudent.value = null
+    await studentsStore.deleteStudent(selectedStudent.value.id);
+    showDeleteModal.value = false;
+    selectedStudent.value = null;
   }
-}
+};
 
 const toggleStudentStatus = async (student: any) => {
-  const newStatus = student.status === "active" ? "inactive" : "active"
-  await studentsStore.updateStudentStatus(student.id, newStatus)
-}
+  const newStatus = student.status === 'active' ? 'inactive' : 'active';
+  await studentsStore.updateStudentStatus(student.id, newStatus);
+};
 
 const handleStudentCreated = (student: any) => {
-  showCreateModal.value = false
-  studentsStore.loadStudents() // Refresh list
-}
+  showCreateModal.value = false;
+  studentsStore.loadStudents(); // Refresh list
+};
 
 const handleStudentUpdated = (student: any) => {
-  showEditModal.value = false
-  selectedStudent.value = null
-  studentsStore.loadStudents() // Refresh list
-}
+  showEditModal.value = false;
+  selectedStudent.value = null;
+  studentsStore.loadStudents(); // Refresh list
+};
 
 const exportStudents = () => {
-  studentsStore.exportStudents(filteredStudents.value)
-}
+  studentsStore.exportStudents(filteredStudents.value);
+};
 
 // Watch for filter changes to reset pagination
 watch([searchQuery, statusFilter, gradeFilter, instrumentFilter], () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
 
 // Lifecycle
 onMounted(() => {
-  studentsStore.loadStudents()
-})
+  studentsStore.loadStudents();
+});
 </script>
 
 <style scoped>

@@ -150,12 +150,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
+import { ref, computed } from 'vue';
 
 interface ToolStat {
   label: string
   value: string | number
-  type: "success" | "warning" | "error" | "info"
+  type: 'success' | 'warning' | 'error' | 'info'
 }
 
 interface AdvancedTool {
@@ -175,76 +175,76 @@ interface AdvancedTool {
   stats?: ToolStat[]
   lastUsed?: Date
   usage?: number
-  status?: "online" | "offline" | "maintenance"
+  status?: 'online' | 'offline' | 'maintenance'
 }
 
 const props = defineProps<{
   tool: AdvancedTool
   favoriteTools?: string[]
-}>()
+}>();
 
 const emit = defineEmits<{
   useTool: [toolId: string]
   openSettings: [toolId: string]
   toggleFavorite: [toolId: string, isFavorite: boolean]
-}>()
+}>();
 
 // State
-const isLoading = ref(false)
-const loadingText = ref("Cargando...")
+const isLoading = ref(false);
+const loadingText = ref('Cargando...');
 
 // Computed
 const isFavorite = computed(() => {
-  return props.favoriteTools?.includes(props.tool.id) || false
-})
+  return props.favoriteTools?.includes(props.tool.id) || false;
+});
 
 // Methods
 const useTool = () => {
-  if (props.tool.isDisabled) return
+  if (props.tool.isDisabled) return;
 
-  isLoading.value = true
-  loadingText.value = "Iniciando herramienta..."
+  isLoading.value = true;
+  loadingText.value = 'Iniciando herramienta...';
 
   // Simular delay de carga
   setTimeout(() => {
-    isLoading.value = false
-    emit("useTool", props.tool.id)
-  }, 1000)
-}
+    isLoading.value = false;
+    emit('useTool', props.tool.id);
+  }, 1000);
+};
 
 const openSettings = () => {
-  emit("openSettings", props.tool.id)
-}
+  emit('openSettings', props.tool.id);
+};
 
 const toggleFavorite = () => {
-  emit("toggleFavorite", props.tool.id, !isFavorite.value)
-}
+  emit('toggleFavorite', props.tool.id, !isFavorite.value);
+};
 
 const getStatColor = (type: string) => {
   const colors = {
-    success: "text-green-600",
-    warning: "text-yellow-600",
-    error: "text-red-600",
-    info: "text-blue-600",
-  }
-  return colors[type as keyof typeof colors] || "text-gray-600"
-}
+    success: 'text-green-600',
+    warning: 'text-yellow-600',
+    error: 'text-red-600',
+    info: 'text-blue-600',
+  };
+  return colors[type as keyof typeof colors] || 'text-gray-600';
+};
 
 const getStatusColor = (status: string) => {
   const colors = {
-    online: "bg-green-500",
-    offline: "bg-red-500",
-    maintenance: "bg-yellow-500",
-  }
-  return colors[status as keyof typeof colors] || "bg-gray-500"
-}
+    online: 'bg-green-500',
+    offline: 'bg-red-500',
+    maintenance: 'bg-yellow-500',
+  };
+  return colors[status as keyof typeof colors] || 'bg-gray-500';
+};
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: "short",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+  }).format(date);
+};
 </script>
 
 <style scoped>

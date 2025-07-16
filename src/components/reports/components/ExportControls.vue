@@ -214,7 +214,7 @@
 </template>
 
 <script setup>
-import {ref, computed} from "vue"
+import { ref, computed } from 'vue';
 import {
   ArrowDownTrayIcon,
   DocumentTextIcon,
@@ -222,9 +222,9 @@ import {
   DocumentChartBarIcon,
   PrinterIcon,
   XMarkIcon,
-} from "@heroicons/vue/24/outline"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
+} from '@heroicons/vue/24/outline';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const props = defineProps({
   attendanceData: {
@@ -237,88 +237,88 @@ const props = defineProps({
   },
   teacherName: {
     type: String,
-    default: "",
+    default: '',
   },
-})
+});
 
-const emit = defineEmits(["export"])
+const emit = defineEmits(['export']);
 
 // Estado reactivo
-const selectedFormat = ref("excel")
-const selectedData = ref(["basic", "attendance", "statistics"])
+const selectedFormat = ref('excel');
+const selectedData = ref(['basic', 'attendance', 'statistics']);
 const exportFilters = ref({
   classes: [],
-  status: "",
+  status: '',
   minAttendance: null,
-})
+});
 const reportConfig = ref({
-  title: "",
+  title: '',
   includeCharts: true,
   includeObservations: false,
   groupByClass: true,
   includeSummary: true,
-})
-const isExporting = ref(false)
-const showPreview = ref(false)
-const savedTemplates = ref([])
+});
+const isExporting = ref(false);
+const showPreview = ref(false);
+const savedTemplates = ref([]);
 
 // Opciones de formato
 const exportFormats = [
-  {value: "excel", label: "Excel", icon: TableCellsIcon},
-  {value: "pdf", label: "PDF", icon: DocumentTextIcon},
-  {value: "csv", label: "CSV", icon: DocumentChartBarIcon},
-  {value: "print", label: "Imprimir", icon: PrinterIcon},
-]
+  { value: 'excel', label: 'Excel', icon: TableCellsIcon },
+  { value: 'pdf', label: 'PDF', icon: DocumentTextIcon },
+  { value: 'csv', label: 'CSV', icon: DocumentChartBarIcon },
+  { value: 'print', label: 'Imprimir', icon: PrinterIcon },
+];
 
 // Opciones de datos
 const dataOptions = [
-  {value: "basic", label: "Información básica del estudiante"},
-  {value: "attendance", label: "Registros de asistencia"},
-  {value: "statistics", label: "Estadísticas de asistencia"},
-  {value: "observations", label: "Observaciones de clase"},
-  {value: "justifications", label: "Justificaciones"},
-  {value: "trends", label: "Tendencias temporales"},
-  {value: "performance", label: "Análisis de rendimiento"},
-]
+  { value: 'basic', label: 'Información básica del estudiante' },
+  { value: 'attendance', label: 'Registros de asistencia' },
+  { value: 'statistics', label: 'Estadísticas de asistencia' },
+  { value: 'observations', label: 'Observaciones de clase' },
+  { value: 'justifications', label: 'Justificaciones' },
+  { value: 'trends', label: 'Tendencias temporales' },
+  { value: 'performance', label: 'Análisis de rendimiento' },
+];
 
 // Clases disponibles
 const availableClasses = computed(() => {
   return props.attendanceData.map((cls) => ({
     id: cls.classId,
-    name: cls.className || "Clase sin nombre",
-  }))
-})
+    name: cls.className || 'Clase sin nombre',
+  }));
+});
 
 // Conteo de registros
 const totalRecords = computed(() => {
   return props.attendanceData.reduce((total, cls) => {
-    return total + (cls.students?.length || 0)
-  }, 0)
-})
+    return total + (cls.students?.length || 0);
+  }, 0);
+});
 
 const filteredRecordsCount = computed(() => {
   // Aquí se implementaría la lógica de filtrado
-  return totalRecords.value
-})
+  return totalRecords.value;
+});
 
 // Formateo de fecha
 const formatDateRange = computed(() => {
-  if (!props.dateRange.startDate || !props.dateRange.endDate) return "Rango no especificado"
+  if (!props.dateRange.startDate || !props.dateRange.endDate) return 'Rango no especificado';
 
-  const start = format(new Date(props.dateRange.startDate), "dd/MM/yyyy", {locale: es})
-  const end = format(new Date(props.dateRange.endDate), "dd/MM/yyyy", {locale: es})
+  const start = format(new Date(props.dateRange.startDate), 'dd/MM/yyyy', { locale: es });
+  const end = format(new Date(props.dateRange.endDate), 'dd/MM/yyyy', { locale: es });
 
-  return `${start} - ${end}`
-})
+  return `${start} - ${end}`;
+});
 
 // Métodos
 const getFormatLabel = (formatValue) => {
-  const format = exportFormats.find((f) => f.value === formatValue)
-  return format?.label || formatValue
-}
+  const format = exportFormats.find((f) => f.value === formatValue);
+  return format?.label || formatValue;
+};
 
 const exportData = async () => {
-  isExporting.value = true
+  isExporting.value = true;
 
   try {
     const exportConfig = {
@@ -329,64 +329,64 @@ const exportData = async () => {
       attendanceData: props.attendanceData,
       dateRange: props.dateRange,
       teacherName: props.teacherName,
-    }
+    };
 
-    emit("export", exportConfig)
+    emit('export', exportConfig);
   } catch (error) {
-    console.error("Error al exportar:", error)
+    console.error('Error al exportar:', error);
   } finally {
-    isExporting.value = false
+    isExporting.value = false;
   }
-}
+};
 
 const saveAsTemplate = () => {
-  const templateName = prompt("Nombre de la plantilla:")
-  if (!templateName) return
+  const templateName = prompt('Nombre de la plantilla:');
+  if (!templateName) return;
 
   const template = {
     id: Date.now().toString(),
     name: templateName,
     format: selectedFormat.value,
     data: [...selectedData.value],
-    filters: {...exportFilters.value},
-    config: {...reportConfig.value},
-  }
+    filters: { ...exportFilters.value },
+    config: { ...reportConfig.value },
+  };
 
-  savedTemplates.value.push(template)
+  savedTemplates.value.push(template);
 
   // Guardar en localStorage
-  localStorage.setItem("attendanceReportTemplates", JSON.stringify(savedTemplates.value))
-}
+  localStorage.setItem('attendanceReportTemplates', JSON.stringify(savedTemplates.value));
+};
 
 const loadTemplate = (template) => {
-  selectedFormat.value = template.format
-  selectedData.value = [...template.data]
-  exportFilters.value = {...template.filters}
-  reportConfig.value = {...template.config}
-}
+  selectedFormat.value = template.format;
+  selectedData.value = [...template.data];
+  exportFilters.value = { ...template.filters };
+  reportConfig.value = { ...template.config };
+};
 
 const deleteTemplate = (templateId) => {
-  savedTemplates.value = savedTemplates.value.filter((t) => t.id !== templateId)
-  localStorage.setItem("attendanceReportTemplates", JSON.stringify(savedTemplates.value))
-}
+  savedTemplates.value = savedTemplates.value.filter((t) => t.id !== templateId);
+  localStorage.setItem('attendanceReportTemplates', JSON.stringify(savedTemplates.value));
+};
 
 // Cargar plantillas guardadas al montar el componente
 const loadSavedTemplates = () => {
-  const saved = localStorage.getItem("attendanceReportTemplates")
+  const saved = localStorage.getItem('attendanceReportTemplates');
   if (saved) {
     try {
-      savedTemplates.value = JSON.parse(saved)
+      savedTemplates.value = JSON.parse(saved);
     } catch (error) {
-      console.error("Error al cargar plantillas:", error)
+      console.error('Error al cargar plantillas:', error);
     }
   }
-}
+};
 
 // Inicializar título
 if (!reportConfig.value.title) {
-  reportConfig.value.title = `Reporte de Asistencia${props.teacherName ? ` - ${props.teacherName}` : ""}`
+  reportConfig.value.title = `Reporte de Asistencia${props.teacherName ? ` - ${props.teacherName}` : ''}`;
 }
 
 // Cargar plantillas al montar
-loadSavedTemplates()
+loadSavedTemplates();
 </script>

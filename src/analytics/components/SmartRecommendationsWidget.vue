@@ -136,102 +136,102 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import type {SmartRecommendation} from "@/analytics/composables/useAdvancedAnalytics"
+import { computed } from 'vue';
+import type { SmartRecommendation } from '@/analytics/composables/useAdvancedAnalytics';
 
 interface Props {
   recommendations: SmartRecommendation[]
   loading?: boolean
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 function getTypeIcon(type: string): string {
   const iconMap = {
-    schedule: "📅",
-    communication: "📞",
-    engagement: "🎯",
-    capacity: "📊",
-  }
-  return iconMap[type as keyof typeof iconMap] || "💡"
+    schedule: '📅',
+    communication: '📞',
+    engagement: '🎯',
+    capacity: '📊',
+  };
+  return iconMap[type as keyof typeof iconMap] || '💡';
 }
 
 function getPriorityColor(priority: number): string {
-  if (priority >= 8) return "bg-red-100 text-red-800"
-  if (priority >= 6) return "bg-yellow-100 text-yellow-800"
-  return "bg-green-100 text-green-800"
+  if (priority >= 8) return 'bg-red-100 text-red-800';
+  if (priority >= 6) return 'bg-yellow-100 text-yellow-800';
+  return 'bg-green-100 text-green-800';
 }
 
 function getRecommendationBorder(priority: number): string {
-  if (priority >= 8) return "border-l-4 border-l-red-500"
-  if (priority >= 6) return "border-l-4 border-l-yellow-500"
-  return "border-l-4 border-l-green-500"
+  if (priority >= 8) return 'border-l-4 border-l-red-500';
+  if (priority >= 6) return 'border-l-4 border-l-yellow-500';
+  return 'border-l-4 border-l-green-500';
 }
 
 function getEffortColor(effort: string): string {
   const colorMap = {
-    low: "text-green-600",
-    medium: "text-yellow-600",
-    high: "text-red-600",
-  }
-  return colorMap[effort as keyof typeof colorMap] || "text-gray-600"
+    low: 'text-green-600',
+    medium: 'text-yellow-600',
+    high: 'text-red-600',
+  };
+  return colorMap[effort as keyof typeof colorMap] || 'text-gray-600';
 }
 
 function getEffortText(effort: string): string {
   const textMap = {
-    low: "Bajo",
-    medium: "Medio",
-    high: "Alto",
-  }
-  return textMap[effort as keyof typeof textMap] || "Desconocido"
+    low: 'Bajo',
+    medium: 'Medio',
+    high: 'Alto',
+  };
+  return textMap[effort as keyof typeof textMap] || 'Desconocido';
 }
 
 function getImpactColor(impact: number): string {
-  if (impact >= 0.15) return "bg-green-500"
-  if (impact >= 0.1) return "bg-yellow-500"
-  return "bg-blue-500"
+  if (impact >= 0.15) return 'bg-green-500';
+  if (impact >= 0.1) return 'bg-yellow-500';
+  return 'bg-blue-500';
 }
 
 function getTotalImpact(): number {
-  const total = props.recommendations.reduce((sum, rec) => sum + rec.impact, 0)
-  return Math.round(total * 100)
+  const total = props.recommendations.reduce((sum, rec) => sum + rec.impact, 0);
+  return Math.round(total * 100);
 }
 
 function getHighPriorityCount(): number {
-  return props.recommendations.filter((rec) => rec.priority >= 7).length
+  return props.recommendations.filter((rec) => rec.priority >= 7).length;
 }
 
 function getLowEffortCount(): number {
-  return props.recommendations.filter((rec) => rec.effort === "low").length
+  return props.recommendations.filter((rec) => rec.effort === 'low').length;
 }
 
 function implementRecommendation(recommendation: SmartRecommendation) {
-  console.log("Implementando recomendación:", recommendation.title)
+  console.log('Implementando recomendación:', recommendation.title);
 
   // Aquí implementarías la lógica específica para cada tipo
   switch (recommendation.type) {
-    case "schedule":
-      // Abrir modal de optimización de horarios
-      break
-    case "communication":
-      // Configurar comunicación automática
-      break
-    case "engagement":
-      // Implementar estrategias de engagement
-      break
-    case "capacity":
-      // Ajustar capacidad de clases
-      break
+  case 'schedule':
+    // Abrir modal de optimización de horarios
+    break;
+  case 'communication':
+    // Configurar comunicación automática
+    break;
+  case 'engagement':
+    // Implementar estrategias de engagement
+    break;
+  case 'capacity':
+    // Ajustar capacidad de clases
+    break;
   }
 }
 
 function getMoreDetails(recommendation: SmartRecommendation) {
-  console.log("Mostrando detalles de:", recommendation.title)
+  console.log('Mostrando detalles de:', recommendation.title);
   // Abrir modal con análisis detallado
 }
 
 function dismissRecommendation(recommendation: SmartRecommendation) {
-  console.log("Descartando recomendación:", recommendation.id)
+  console.log('Descartando recomendación:', recommendation.id);
   // Implementar lógica para ocultar recomendación
 }
 </script>

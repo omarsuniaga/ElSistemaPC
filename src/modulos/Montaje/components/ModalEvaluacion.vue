@@ -14,13 +14,13 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  title: "Modal",
-})
+  title: 'Modal',
+});
 
 defineEmits<{
-  (e: "close"): void
-  (e: "guardar", data: any): void
-}>()
+  (e: 'close'): void
+  (e: 'guardar', data: any): void
+}>();
 </script>
 
 <style scoped>

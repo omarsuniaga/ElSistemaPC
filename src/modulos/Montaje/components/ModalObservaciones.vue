@@ -243,95 +243,95 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {useAuthStore} from "@/stores/auth"
-import type {Obra, ObservacionPedagogica} from "../types"
+import { ref, computed } from 'vue';
+import { useAuthStore } from '@/stores/auth';
+import type { Obra, ObservacionPedagogica } from '../types';
 
 interface Props {
   obra: Obra | null
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "guardar", observacion: ObservacionPedagogica): void
+  (e: 'close'): void
+  (e: 'guardar', observacion: ObservacionPedagogica): void
 }
 
-defineProps<Props>()
-defineEmits<Emits>()
+defineProps<Props>();
+defineEmits<Emits>();
 
-const authStore = useAuthStore()
+const authStore = useAuthStore();
 
 // Estado reactivo
 const nuevaObservacion = ref({
-  tipo: "",
-  contenido: "",
+  tipo: '',
+  contenido: '',
   compassInicio: null as number | null,
   compassFin: null as number | null,
   instrumentos: [] as string[],
-  prioridad: "media",
-  tipoEvaluacion: "general",
+  prioridad: 'media',
+  tipoEvaluacion: 'general',
   evaluacionesIndividuales: {} as Record<string, string>,
-})
+});
 
 // Datos simulados (reemplazar con datos reales)
 const observacionesExistentes = ref<any[]>([
   {
-    id: "1",
-    tipo: "articulacion",
-    contenido: "Mejorar la articulación en los pasajes rápidos de cuerda.",
-    prioridad: "alta",
+    id: '1',
+    tipo: 'articulacion',
+    contenido: 'Mejorar la articulación en los pasajes rápidos de cuerda.',
+    prioridad: 'alta',
     fechaCreacion: new Date(Date.now() - 24 * 60 * 60 * 1000),
     compassInicio: 45,
     compassFin: 60,
-    instrumentos: ["Violín I", "Violín II"],
+    instrumentos: ['Violín I', 'Violín II'],
   },
-])
+]);
 
 const estudiantesDisponibles = ref([
-  {id: "1", nombre: "Ana María González"},
-  {id: "2", nombre: "Carlos Mendoza"},
-  {id: "3", nombre: "Sofia Rodriguez"},
-])
+  { id: '1', nombre: 'Ana María González' },
+  { id: '2', nombre: 'Carlos Mendoza' },
+  { id: '3', nombre: 'Sofia Rodriguez' },
+]);
 
 // Computed
 const puedeEvaluarEstudiantes = computed(() => {
-  return authStore.user?.role === "Maestro"
-})
+  return authStore.user?.role === 'Maestro';
+});
 
 // Methods
 function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
 
 function getTipoObservacionClass(tipo: string): string {
   const clases = {
-    dinamica: "bg-blue-100 text-blue-800",
-    articulacion: "bg-green-100 text-green-800",
-    tempo: "bg-yellow-100 text-yellow-800",
-    afinacion: "bg-purple-100 text-purple-800",
-    ritmo: "bg-red-100 text-red-800",
-    ensemble: "bg-indigo-100 text-indigo-800",
-    tecnica: "bg-orange-100 text-orange-800",
-    expresion: "bg-pink-100 text-pink-800",
-    general: "bg-gray-100 text-gray-800",
-  }
-  return clases[tipo as keyof typeof clases] || clases.general
+    dinamica: 'bg-blue-100 text-blue-800',
+    articulacion: 'bg-green-100 text-green-800',
+    tempo: 'bg-yellow-100 text-yellow-800',
+    afinacion: 'bg-purple-100 text-purple-800',
+    ritmo: 'bg-red-100 text-red-800',
+    ensemble: 'bg-indigo-100 text-indigo-800',
+    tecnica: 'bg-orange-100 text-orange-800',
+    expresion: 'bg-pink-100 text-pink-800',
+    general: 'bg-gray-100 text-gray-800',
+  };
+  return clases[tipo as keyof typeof clases] || clases.general;
 }
 
 function getPrioridadClass(prioridad: string): string {
   const clases = {
-    baja: "bg-green-100 text-green-800",
-    media: "bg-yellow-100 text-yellow-800",
-    alta: "bg-orange-100 text-orange-800",
-    critica: "bg-red-100 text-red-800",
-  }
-  return clases[prioridad as keyof typeof clases] || clases.media
+    baja: 'bg-green-100 text-green-800',
+    media: 'bg-yellow-100 text-yellow-800',
+    alta: 'bg-orange-100 text-orange-800',
+    critica: 'bg-red-100 text-red-800',
+  };
+  return clases[prioridad as keyof typeof clases] || clases.media;
 }
 
 function guardarObservacion() {
@@ -343,17 +343,17 @@ function guardarObservacion() {
     instrumentosInvolucrados: nuevaObservacion.value.instrumentos,
     prioridad: nuevaObservacion.value.prioridad as any,
     fechaCreacion: new Date(),
-    autorId: authStore.user?.uid || "",
+    autorId: authStore.user?.uid || '',
     // Agregar otros campos según el tipo definido
-  }
+  };
 
   // Incluir evaluaciones si es necesario
-  if (nuevaObservacion.value.tipoEvaluacion === "individual") {
+  if (nuevaObservacion.value.tipoEvaluacion === 'individual') {
     // Lógica para manejar evaluaciones individuales
-    console.log("Evaluaciones individuales:", nuevaObservacion.value.evaluacionesIndividuales)
+    console.log('Evaluaciones individuales:', nuevaObservacion.value.evaluacionesIndividuales);
   }
 
-  emit("guardar", observacion as ObservacionPedagogica)
+  emit('guardar', observacion as ObservacionPedagogica);
 }
 </script>
 

@@ -32,8 +32,8 @@
           </div>
           <div class="mt-4 md:mt-0">
             <button
-              @click="showCreateProject = true"
               class="px-6 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+              @click="showCreateProject = true"
             >
               ➕ Nuevo Proyecto
             </button>
@@ -142,8 +142,8 @@
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-bold text-gray-900">🎼 Obras del Proyecto</h2>
             <button
-              @click="showCreateWork = true"
               class="text-sm text-blue-600 hover:text-blue-800"
+              @click="showCreateWork = true"
             >
               ➕ Agregar
             </button>
@@ -170,7 +170,8 @@
                 <span>{{ work.totalMeasures || work.compas || 0 }} compases</span>
               </div>
               <div class="mt-2 w-full bg-gray-200 rounded-full h-1">
-                <div  class="bg-blue-500 h-1 rounded-full transition-all duration-300"
+                <div
+class="bg-blue-500 h-1 rounded-full transition-all duration-300"
                   :style="{ width: `${getWorkProgress(work)}%` }">
                 </div>
               </div>
@@ -180,8 +181,8 @@
             <div class="text-4xl mb-2">🎵</div>
             <p>No hay obras en este proyecto</p>
             <button
-              @click="showCreateWork = true"
               class="mt-2 text-blue-600 hover:text-blue-800 text-sm"
+              @click="showCreateWork = true"
             >
               Crear la primera obra
             </button>
@@ -277,114 +278,114 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineEmits, watch } from "vue"
-import { useRouter, useRoute } from "vue-router"
-import type { MusicalWork } from "../types"
-import ScheduleSessionModal from "./ScheduleSessionModal.vue"
-import EvaluationCenterModal from "./EvaluationCenterModal.vue"
-import ReportsModal from "./ReportsModal.vue"
-import CreateWorkModal from "./CreateWorkModal.vue"
-import CreateProjectModal from "./CreateProjectModal.vue"
+import { ref, computed, onMounted, defineEmits, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import type { MusicalWork } from '../types';
+import ScheduleSessionModal from './ScheduleSessionModal.vue';
+import EvaluationCenterModal from './EvaluationCenterModal.vue';
+import ReportsModal from './ReportsModal.vue';
+import CreateWorkModal from './CreateWorkModal.vue';
+import CreateProjectModal from './CreateProjectModal.vue';
 
 // Importar composables reales
-import { useMontaje } from "../composables/useMontaje"
-import { useMusicalWorks } from "../composables/useHeatMapProjects"
+import { useMontaje } from '../composables/useMontaje';
+import { useMusicalWorks } from '../composables/useHeatMapProjects';
 
 /**
  * Emits:
  * - work-selected: Cuando el usuario selecciona una obra (MusicalWork)
  * - create-project: Cuando el usuario solicita crear un nuevo proyecto
  */
-const emit = defineEmits(["work-selected", "create-project"])
-const router = useRouter()
-const route = useRoute()
+const emit = defineEmits(['work-selected', 'create-project']);
+const router = useRouter();
+const route = useRoute();
 
 // Usar composables reales
-const { currentProject, projectStats, loading: loadingProjects, loadProjects, projects } = useMontaje()
-const { works, loading: loadingWorks, loadWorks } = useMusicalWorks()
+const { currentProject, projectStats, loading: loadingProjects, loadProjects, projects } = useMontaje();
+const { works, loading: loadingWorks, loadWorks } = useMusicalWorks();
 
 // Combinar estados de carga
-const loading = computed(() => loadingProjects.value || loadingWorks.value)
+const loading = computed(() => loadingProjects.value || loadingWorks.value);
 
 // Variables de control de modales
-const showCreateWork = ref(false)
-const showScheduleSession = ref(false)
-const showEvaluationCenter = ref(false)
-const showReports = ref(false)
-const showCreateProject = ref(false)
+const showCreateWork = ref(false);
+const showScheduleSession = ref(false);
+const showEvaluationCenter = ref(false);
+const showReports = ref(false);
+const showCreateProject = ref(false);
 
 // Datos simulados (ahora se cargarán desde Firestore)
-const recentEvaluations = ref<any[]>([]) // TODO: Cargar desde Firestore
-const upcomingEvents = ref<any[]>([]) // TODO: Cargar desde Firestore
+const recentEvaluations = ref<any[]>([]); // TODO: Cargar desde Firestore
+const upcomingEvents = ref<any[]>([]); // TODO: Cargar desde Firestore
 
 const completedWorks = computed(() =>
-  works.value.filter((w) => w.status === "performance_ready" || w.status === "performed").length
-)
+  works.value.filter((w) => w.status === 'performance_ready' || w.status === 'performed').length,
+);
 
 const activeMembers = computed(() =>
-  currentProject.value?.members?.filter((m) => m.role !== "musician" || true).length || 0
-)
+  currentProject.value?.members?.filter((m) => m.role !== 'musician' || true).length || 0,
+);
 
 const getStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
-    planning: "bg-gray-100 text-gray-700",
-    learning: "bg-blue-100 text-blue-700",
-    polishing: "bg-yellow-100 text-yellow-700",
-    performance_ready: "bg-green-100 text-green-700",
-    performed: "bg-purple-100 text-purple-700",
-  }
-  return colors[status] || "bg-gray-100 text-gray-700"
-}
+    planning: 'bg-gray-100 text-gray-700',
+    learning: 'bg-blue-100 text-blue-700',
+    polishing: 'bg-yellow-100 text-yellow-700',
+    performance_ready: 'bg-green-100 text-green-700',
+    performed: 'bg-purple-100 text-purple-700',
+  };
+  return colors[status] || 'bg-gray-100 text-gray-700';
+};
 
 const getStatusText = (status: string): string => {
   const texts: Record<string, string> = {
-    planning: "Planificación",
-    learning: "Aprendizaje",
-    polishing: "Pulimiento",
-    performance_ready: "Lista",
-    performed: "Interpretada",
-  }
-  return texts[status] || status
-}
+    planning: 'Planificación',
+    learning: 'Aprendizaje',
+    polishing: 'Pulimiento',
+    performance_ready: 'Lista',
+    performed: 'Interpretada',
+  };
+  return texts[status] || status;
+};
 
 const getWorkProgress = (work: MusicalWork): number => {
   try {
-    if (!work || !work.startDate || !work.endDate) return 0
+    if (!work || !work.startDate || !work.endDate) return 0;
     
     // Asegurar que las fechas sean válidas
-    const start = new Date(work.startDate)
-    const end = new Date(work.endDate)
+    const start = new Date(work.startDate);
+    const end = new Date(work.endDate);
     
     // Verificar que las fechas sean válidas
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      console.warn('Fechas inválidas para la obra:', work.name || work.id)
-      return 0
+      console.warn('Fechas inválidas para la obra:', work.name || work.id);
+      return 0;
     }
     
-    const startTime = start.getTime()
-    const endTime = end.getTime()
-    const now = new Date().getTime()
+    const startTime = start.getTime();
+    const endTime = end.getTime();
+    const now = new Date().getTime();
     
-    if (now < startTime) return 0
-    if (now > endTime) return 100
+    if (now < startTime) return 0;
+    if (now > endTime) return 100;
     
-    return Math.round(((now - startTime) / (endTime - startTime)) * 100)
+    return Math.round(((now - startTime) / (endTime - startTime)) * 100);
   } catch (error) {
-    console.error('Error calculando progreso para obra:', work.name || work.id, error)
-    return 0
+    console.error('Error calculando progreso para obra:', work.name || work.id, error);
+    return 0;
   }
-}
+};
 
 const getEventIcon = (type: string): string => {
   const icons: Record<string, string> = {
-    rehearsal: "🎼",
-    sectional: "🎵",
-    performance: "🎭",
-    evaluation: "📋",
-    meeting: "👥",
-  }
-  return icons[type] || "📅"
-}
+    rehearsal: '🎼',
+    sectional: '🎵',
+    performance: '🎭',
+    evaluation: '📋',
+    meeting: '👥',
+  };
+  return icons[type] || '📅';
+};
 
 const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleDateString('es-ES', {
@@ -392,19 +393,19 @@ const formatDate = (dateString: string): string => {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+    minute: '2-digit',
+  });
+};
 
 const onWorkCreated = (work: MusicalWork) => {
-  showCreateWork.value = false
-  emit("work-selected", work)
+  showCreateWork.value = false;
+  emit('work-selected', work);
   // Después de crear una obra, recargar las obras para que aparezca en la lista
-  loadWorks()
-}
+  loadWorks();
+};
 
 const onProjectCreated = (projectId: string) => {
-  showCreateProject.value = false
+  showCreateProject.value = false;
   // Después de crear un proyecto, recargar los proyectos y seleccionar el nuevo
   loadProjects().then(() => {
     if (projects.value.length > 0) {
@@ -421,32 +422,32 @@ const onProjectCreated = (projectId: string) => {
       }
     }
   });
-}
+};
 
 const onSessionScheduled = (session: any) => {
-  showScheduleSession.value = false
+  showScheduleSession.value = false;
   // Add to upcoming events
   upcomingEvents.value.unshift({
     id: session.id,
     title: session.title,
     type: session.type,
     date: `${session.date}T${session.startTime}:00`,
-    location: session.location
-  })
-}
+    location: session.location,
+  });
+};
 
 const goToWorkDetail = (work: MusicalWork) => {
-  router.push({ name: 'montaje-work-detail', params: { id: work.id } })
-}
+  router.push({ name: 'montaje-work-detail', params: { id: work.id } });
+};
 
 const goToRoute = (routeName: string) => {
-  router.push({ name: routeName })
-}
+  router.push({ name: routeName });
+};
 
 onMounted(async () => {
-  await loadProjects()
-  await loadWorks()
-})
+  await loadProjects();
+  await loadWorks();
+});
 
 // Observar cambios en currentProject para recargar obras si el proyecto cambia
 watch(currentProject, (newProject, oldProject) => {

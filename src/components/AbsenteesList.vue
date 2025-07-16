@@ -1,269 +1,5 @@
 <!-- components/AbsenteesList.vue -->
 
-<script setup lang="ts">
-import {computed, ref, onMounted, watch} from "vue"
-import {
-  format,
-  parseISO,
-  differenceInDays,
-  differenceInWeeks,
-  subDays,
-  subMonths,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  isValid,
-} from "date-fns"
-import {es} from "date-fns/locale"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import {useAttendanceStore} from "../modulos/Attendance/store/attendance"
-
-// Definición de propiedades (props) del componente
-const props = defineProps<{
-  className?: string
-  limit?: number
-}>()
-
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
-
-// Track which groups are expanded
-const expandedGroups = ref({
-  critical: true,
-  concerning: true,
-  moderate: false,
-})
-
-// Date range selection with default values set immediately
-const dateRanges = {
-  "7d": "Últimos 7 días",
-  "14d": "Últimos 14 días",
-  "30d": "Últimos 30 días",
-  month: "Este mes",
-  prevMonth: "Mes anterior",
-  custom: "Personalizado",
-}
-
-// Initialize with a default value that's guaranteed to exist
-const selectedDateRange = ref("30d")
-const today = new Date()
-const customDateRange = ref({
-  start: format(subDays(today, 30), "yyyy-MM-dd"),
-  end: format(today, "yyyy-MM-dd"),
-})
-
-const showDateRangePicker = ref(false)
-
-// Add defensive logic to ensure actualDateRange always returns an object with a label
-const actualDateRange = computed(() => {
-  if (!selectedDateRange.value || !dateRanges[selectedDateRange.value]) {
-    // Return a default if selectedDateRange is invalid
-    return {
-      start: format(subDays(new Date(), 30), "yyyy-MM-dd"),
-      end: format(new Date(), "yyyy-MM-dd"),
-      label: "Últimos 30 días", // Default label
-    }
-  }
-
-  const today = new Date()
-  let start, end
-
-  try {
-    switch (selectedDateRange.value) {
-      case "7d":
-        start = subDays(today, 7)
-        end = today
-        break
-      case "14d":
-        start = subDays(today, 14)
-        end = today
-        break
-      case "30d":
-        start = subDays(today, 30)
-        end = today
-        break
-      case "month":
-        start = startOfMonth(today)
-        end = endOfMonth(today)
-        break
-      case "prevMonth":
-        const lastMonth = subMonths(today, 1)
-        start = startOfMonth(lastMonth)
-        end = endOfMonth(lastMonth)
-        break
-      case "custom":
-        // Add validation to ensure custom dates are valid
-        start = parseISO(customDateRange.value?.start || format(subDays(today, 30), "yyyy-MM-dd"))
-        end = parseISO(customDateRange.value?.end || format(today, "yyyy-MM-dd"))
-        if (!isValid(start) || !isValid(end)) {
-          console.error("Invalid custom date range", customDateRange.value)
-          start = subDays(today, 30)
-          end = today
-        }
-        break
-      default:
-        start = subDays(today, 30)
-        end = today
-    }
-
-    return {
-      start: format(start, "yyyy-MM-dd"),
-      end: format(end, "yyyy-MM-dd"),
-      label:
-        selectedDateRange.value === "custom"
-          ? `${format(start, "P", {locale: es})} - ${format(end, "P", {locale: es})}`
-          : dateRanges[selectedDateRange.value] || "Periodo personalizado",
-    }
-  } catch (err) {
-    console.error("Error calculating date range:", err)
-    // Return safe fallback values
-    return {
-      start: format(subDays(today, 30), "yyyy-MM-dd"),
-      end: format(today, "yyyy-MM-dd"),
-      label: "Últimos 30 días",
-    }
-  }
-})
-
-// Apply custom date range
-function applyCustomRange() {
-  selectedDateRange.value = "custom"
-  showDateRangePicker.value = false
-  fetchAbsenceData()
-}
-
-// Toggle group expansion
-const toggleGroup = (group) => {
-  expandedGroups.value[group] = !expandedGroups.value[group]
-}
-
-// Attendance data state
-const absenceData = ref([])
-const isLoading = ref(false)
-const error = ref(null)
-
-// Fetch attendance data with date range
-async function fetchAbsenceData() {
-  isLoading.value = true
-  error.value = null
-
-  try {
-    const {start, end} = actualDateRange.value
-    // Use the AttendanceStore to get data within the specified date range
-    const data = await attendanceStore.getStudentAbsencesByDateRange(
-      start,
-      end,
-      props.className,
-      props.limit ? props.limit * 3 : 15
-    )
-    absenceData.value = data
-  } catch (err) {
-    console.error("Error fetching absence data:", err)
-    error.value = err.message || "Error al obtener datos de ausencia"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Watch for date range changes to refresh data
-watch(selectedDateRange, fetchAbsenceData)
-
-// Group students by absence severity
-const groupedAbsentStudents = computed(() => {
-  const today = new Date()
-
-  // Group students into categories
-  const groups = {
-    critical: [], // Students with many absences or long time since last attendance
-    concerning: [], // Students with moderate absences
-    moderate: [], // Students with few absences
-  }
-
-  absenceData.value.forEach((student) => {
-    const attendanceRate = getAttendanceRate(student.studentId)
-    const daysSinceLastAttendance = differenceInDays(today, parseISO(student.lastAttendance))
-    const absenceRatio =
-      student.absences / differenceInWeeks(today, parseISO(actualDateRange.value.start))
-
-    // Updated thresholds to include specific absence counts:
-    // - Critical: 6+ absences or attendance < 50% or 30+ days since last attendance
-    // - Concerning: 4-5 absences or attendance < 75% or 14+ days since last attendance
-    // - Moderate: fewer than 4 absences and better metrics
-    if (student.absences >= 6 || attendanceRate < 50 || daysSinceLastAttendance > 30) {
-      groups.critical.push(student)
-    } else if (student.absences >= 4 || attendanceRate < 75 || daysSinceLastAttendance > 14) {
-      groups.concerning.push(student)
-    } else {
-      groups.moderate.push(student)
-    }
-  })
-
-  return groups
-})
-
-// Count students in each group
-const groupCounts = computed(() => ({
-  critical: groupedAbsentStudents.value.critical.length,
-  concerning: groupedAbsentStudents.value.concerning.length,
-  moderate: groupedAbsentStudents.value.moderate.length,
-  total: absenceData.value.length,
-}))
-
-// Funciones para obtener información del estudiante y tasa de asistencia
-const getStudent = (studentId: string) => studentsStore.students.find((s) => s.id === studentId)
-
-const getAttendanceRate = (studentId: string) => {
-  if (props.className) {
-    return attendanceStore.getStudentAttendanceRate(
-      studentId,
-      props.className,
-      actualDateRange.value.start,
-      actualDateRange.value.end
-    )
-  }
-  return attendanceStore.getStudentAttendanceRate(
-    studentId,
-    undefined,
-    actualDateRange.value.start,
-    actualDateRange.value.end
-  )
-}
-
-// Función para formatear la fecha
-const formatDate = (date: string) => format(parseISO(date), "PPP", {locale: es})
-
-// Función para obtener la clase de estilo según la tasa de asistencia
-const getAttendanceRateClass = (rate: number) => {
-  if (rate >= 90) return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-  if (rate >= 75) return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200"
-  return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
-}
-
-// Get style for absence level indicator
-const getAbsenceSeverityClass = (level) => {
-  switch (level) {
-    case "critical":
-      return "bg-red-600 dark:bg-red-700"
-    case "concerning":
-      return "bg-orange-500 dark:bg-orange-600"
-    case "moderate":
-      return "bg-yellow-400 dark:bg-yellow-500"
-    default:
-      return "bg-gray-400 dark:bg-gray-500"
-  }
-}
-
-// Ensure data is fetched on mount with proper error handling
-onMounted(() => {
-  try {
-    fetchAbsenceData()
-  } catch (error) {
-    console.error("Error loading absence data:", error)
-  }
-})
-</script>
-
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
@@ -678,3 +414,267 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed, ref, onMounted, watch } from 'vue';
+import {
+  format,
+  parseISO,
+  differenceInDays,
+  differenceInWeeks,
+  subDays,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  isValid,
+} from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
+
+// Definición de propiedades (props) del componente
+const props = defineProps<{
+  className?: string
+  limit?: number
+}>();
+
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
+
+// Track which groups are expanded
+const expandedGroups = ref({
+  critical: true,
+  concerning: true,
+  moderate: false,
+});
+
+// Date range selection with default values set immediately
+const dateRanges = {
+  '7d': 'Últimos 7 días',
+  '14d': 'Últimos 14 días',
+  '30d': 'Últimos 30 días',
+  month: 'Este mes',
+  prevMonth: 'Mes anterior',
+  custom: 'Personalizado',
+};
+
+// Initialize with a default value that's guaranteed to exist
+const selectedDateRange = ref('30d');
+const today = new Date();
+const customDateRange = ref({
+  start: format(subDays(today, 30), 'yyyy-MM-dd'),
+  end: format(today, 'yyyy-MM-dd'),
+});
+
+const showDateRangePicker = ref(false);
+
+// Add defensive logic to ensure actualDateRange always returns an object with a label
+const actualDateRange = computed(() => {
+  if (!selectedDateRange.value || !dateRanges[selectedDateRange.value]) {
+    // Return a default if selectedDateRange is invalid
+    return {
+      start: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+      end: format(new Date(), 'yyyy-MM-dd'),
+      label: 'Últimos 30 días', // Default label
+    };
+  }
+
+  const today = new Date();
+  let start, end;
+
+  try {
+    switch (selectedDateRange.value) {
+    case '7d':
+      start = subDays(today, 7);
+      end = today;
+      break;
+    case '14d':
+      start = subDays(today, 14);
+      end = today;
+      break;
+    case '30d':
+      start = subDays(today, 30);
+      end = today;
+      break;
+    case 'month':
+      start = startOfMonth(today);
+      end = endOfMonth(today);
+      break;
+    case 'prevMonth':
+      const lastMonth = subMonths(today, 1);
+      start = startOfMonth(lastMonth);
+      end = endOfMonth(lastMonth);
+      break;
+    case 'custom':
+      // Add validation to ensure custom dates are valid
+      start = parseISO(customDateRange.value?.start || format(subDays(today, 30), 'yyyy-MM-dd'));
+      end = parseISO(customDateRange.value?.end || format(today, 'yyyy-MM-dd'));
+      if (!isValid(start) || !isValid(end)) {
+        console.error('Invalid custom date range', customDateRange.value);
+        start = subDays(today, 30);
+        end = today;
+      }
+      break;
+    default:
+      start = subDays(today, 30);
+      end = today;
+    }
+
+    return {
+      start: format(start, 'yyyy-MM-dd'),
+      end: format(end, 'yyyy-MM-dd'),
+      label:
+        selectedDateRange.value === 'custom'
+          ? `${format(start, 'P', { locale: es })} - ${format(end, 'P', { locale: es })}`
+          : dateRanges[selectedDateRange.value] || 'Periodo personalizado',
+    };
+  } catch (err) {
+    console.error('Error calculating date range:', err);
+    // Return safe fallback values
+    return {
+      start: format(subDays(today, 30), 'yyyy-MM-dd'),
+      end: format(today, 'yyyy-MM-dd'),
+      label: 'Últimos 30 días',
+    };
+  }
+});
+
+// Apply custom date range
+function applyCustomRange() {
+  selectedDateRange.value = 'custom';
+  showDateRangePicker.value = false;
+  fetchAbsenceData();
+}
+
+// Toggle group expansion
+const toggleGroup = (group) => {
+  expandedGroups.value[group] = !expandedGroups.value[group];
+};
+
+// Attendance data state
+const absenceData = ref([]);
+const isLoading = ref(false);
+const error = ref(null);
+
+// Fetch attendance data with date range
+async function fetchAbsenceData() {
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    const { start, end } = actualDateRange.value;
+    // Use the AttendanceStore to get data within the specified date range
+    const data = await attendanceStore.getStudentAbsencesByDateRange(
+      start,
+      end,
+      props.className,
+      props.limit ? props.limit * 3 : 15,
+    );
+    absenceData.value = data;
+  } catch (err) {
+    console.error('Error fetching absence data:', err);
+    error.value = err.message || 'Error al obtener datos de ausencia';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Watch for date range changes to refresh data
+watch(selectedDateRange, fetchAbsenceData);
+
+// Group students by absence severity
+const groupedAbsentStudents = computed(() => {
+  const today = new Date();
+
+  // Group students into categories
+  const groups = {
+    critical: [], // Students with many absences or long time since last attendance
+    concerning: [], // Students with moderate absences
+    moderate: [], // Students with few absences
+  };
+
+  absenceData.value.forEach((student) => {
+    const attendanceRate = getAttendanceRate(student.studentId);
+    const daysSinceLastAttendance = differenceInDays(today, parseISO(student.lastAttendance));
+    const absenceRatio =
+      student.absences / differenceInWeeks(today, parseISO(actualDateRange.value.start));
+
+    // Updated thresholds to include specific absence counts:
+    // - Critical: 6+ absences or attendance < 50% or 30+ days since last attendance
+    // - Concerning: 4-5 absences or attendance < 75% or 14+ days since last attendance
+    // - Moderate: fewer than 4 absences and better metrics
+    if (student.absences >= 6 || attendanceRate < 50 || daysSinceLastAttendance > 30) {
+      groups.critical.push(student);
+    } else if (student.absences >= 4 || attendanceRate < 75 || daysSinceLastAttendance > 14) {
+      groups.concerning.push(student);
+    } else {
+      groups.moderate.push(student);
+    }
+  });
+
+  return groups;
+});
+
+// Count students in each group
+const groupCounts = computed(() => ({
+  critical: groupedAbsentStudents.value.critical.length,
+  concerning: groupedAbsentStudents.value.concerning.length,
+  moderate: groupedAbsentStudents.value.moderate.length,
+  total: absenceData.value.length,
+}));
+
+// Funciones para obtener información del estudiante y tasa de asistencia
+const getStudent = (studentId: string) => studentsStore.students.find((s) => s.id === studentId);
+
+const getAttendanceRate = (studentId: string) => {
+  if (props.className) {
+    return attendanceStore.getStudentAttendanceRate(
+      studentId,
+      props.className,
+      actualDateRange.value.start,
+      actualDateRange.value.end,
+    );
+  }
+  return attendanceStore.getStudentAttendanceRate(
+    studentId,
+    undefined,
+    actualDateRange.value.start,
+    actualDateRange.value.end,
+  );
+};
+
+// Función para formatear la fecha
+const formatDate = (date: string) => format(parseISO(date), 'PPP', { locale: es });
+
+// Función para obtener la clase de estilo según la tasa de asistencia
+const getAttendanceRateClass = (rate: number) => {
+  if (rate >= 90) return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
+  if (rate >= 75) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
+  return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200';
+};
+
+// Get style for absence level indicator
+const getAbsenceSeverityClass = (level) => {
+  switch (level) {
+  case 'critical':
+    return 'bg-red-600 dark:bg-red-700';
+  case 'concerning':
+    return 'bg-orange-500 dark:bg-orange-600';
+  case 'moderate':
+    return 'bg-yellow-400 dark:bg-yellow-500';
+  default:
+    return 'bg-gray-400 dark:bg-gray-500';
+  }
+};
+
+// Ensure data is fetched on mount with proper error handling
+onMounted(() => {
+  try {
+    fetchAbsenceData();
+  } catch (error) {
+    console.error('Error loading absence data:', error);
+  }
+});
+</script>

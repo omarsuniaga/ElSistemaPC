@@ -177,132 +177,132 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAttendanceStore} from "../store/attendance"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useTeachersStore} from "../../Teachers/store/teachers" // Import teachers store
-import type {ClassObservation} from "../types/attendance"
+import { ref, computed, onMounted } from 'vue';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAttendanceStore } from '../store/attendance';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useTeachersStore } from '../../Teachers/store/teachers'; // Import teachers store
+import type { ClassObservation } from '../types/attendance';
 
 // Stores
-const attendanceStore = useAttendanceStore()
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore() // Instantiate teachers store
+const attendanceStore = useAttendanceStore();
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore(); // Instantiate teachers store
 
 // Function to get teacher name from teacher ID
 const getTeacherName = (teacherId: string): string => {
-  if (!teacherId) return "Usuario no registrado"
+  if (!teacherId) return 'Usuario no registrado';
 
   // If it's 'Sistema', return as is
-  if (teacherId === "Sistema") return "Sistema"
+  if (teacherId === 'Sistema') return 'Sistema';
 
   // Try to find teacher by ID in the teachers store
-  const teacher = teachersStore.getTeacherById(teacherId)
+  const teacher = teachersStore.getTeacherById(teacherId);
   if (teacher) {
-    return teacher.name
+    return teacher.name;
   }
 
   // If not found, try to find by auth UID (fallback)
-  const teacherByUid = teachersStore.teachers.find((t) => t.uid === teacherId)
+  const teacherByUid = teachersStore.teachers.find((t) => t.uid === teacherId);
   if (teacherByUid) {
-    return teacherByUid.name
+    return teacherByUid.name;
   }
 
   // Return the original ID if no teacher found
-  return teacherId || "Usuario no registrado"
-}
+  return teacherId || 'Usuario no registrado';
+};
 
 // State
-const observations = ref<ClassObservation[]>([])
-const loading = ref(true)
-const error = ref<string | null>(null)
-const selectedClassFilter = ref("")
-const selectedDateFilter = ref("")
+const observations = ref<ClassObservation[]>([]);
+const loading = ref(true);
+const error = ref<string | null>(null);
+const selectedClassFilter = ref('');
+const selectedDateFilter = ref('');
 
 // Fetch all observations on component mount
 onMounted(() => {
-  fetchAllObservations()
-})
+  fetchAllObservations();
+});
 
 // Fetch observations from all classes
 async function fetchAllObservations() {
-  loading.value = true
-  error.value = null
-  observations.value = []
+  loading.value = true;
+  error.value = null;
+  observations.value = [];
 
   try {
     // Get all classes
     if (classesStore.classes.length === 0) {
-      await classesStore.fetchClasses()
+      await classesStore.fetchClasses();
     }
     // Fetch all observations in one call
-    const allObservations = await attendanceStore.fetchAllObservationsForTeacher("")
+    const allObservations = await attendanceStore.fetchAllObservationsForTeacher('');
     if (allObservations.length > 0) {
-      observations.value = allObservations
+      observations.value = allObservations;
     }
   } catch (err) {
-    console.error("Error fetching all observations:", err)
-    error.value = "Ocurrió un error al cargar las observaciones. Por favor, intente nuevamente."
+    console.error('Error fetching all observations:', err);
+    error.value = 'Ocurrió un error al cargar las observaciones. Por favor, intente nuevamente.';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 // Get unique class IDs from all observations
 const uniqueClasses = computed(() => {
-  return [...new Set(observations.value.map((obs) => obs.classId))]
-})
+  return [...new Set(observations.value.map((obs) => obs.classId))];
+});
 
 // Filter observations based on selected class and date
 const filteredObservations = computed(() => {
   return observations.value.filter((obs) => {
-    let matchesClass = true
-    let matchesDate = true
+    let matchesClass = true;
+    let matchesDate = true;
 
     if (selectedClassFilter.value) {
-      matchesClass = obs.classId === selectedClassFilter.value
+      matchesClass = obs.classId === selectedClassFilter.value;
     }
     if (selectedDateFilter.value) {
-      matchesDate = obs.fecha === selectedDateFilter.value
+      matchesDate = obs.fecha === selectedDateFilter.value;
     }
 
-    return matchesClass && matchesDate
-  })
-})
+    return matchesClass && matchesDate;
+  });
+});
 
 // Group observations by classId for display
 const groupedObservations = computed(() => {
-  const grouped: Record<string, ClassObservation[]> = {}
+  const grouped: Record<string, ClassObservation[]> = {};
 
   filteredObservations.value.forEach((obs) => {
     if (!grouped[obs.classId]) {
-      grouped[obs.classId] = []
+      grouped[obs.classId] = [];
     }
-    grouped[obs.classId].push(obs)
-  })
+    grouped[obs.classId].push(obs);
+  });
   // Sort observations by date (newest first)
   for (const classId in grouped) {
     grouped[classId].sort((a, b) => {
-      return new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
-    })
+      return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+    });
   }
 
-  return grouped
-})
+  return grouped;
+});
 
 // Helper to get class name from classId
 function getClassName(classId: string): string {
-  const classData = classesStore.getClassById(classId)
-  return classData ? classData.name : `Clase ${classId}`
+  const classData = classesStore.getClassById(classId);
+  return classData ? classData.name : `Clase ${classId}`;
 }
 
 // Format date for display
 function formatDate(dateString: string): string {
   try {
-    return format(new Date(dateString), "d 'de' MMMM yyyy", {locale: es})
+    return format(new Date(dateString), 'd \'de\' MMMM yyyy', { locale: es });
   } catch (err) {
-    return dateString || "Fecha desconocida"
+    return dateString || 'Fecha desconocida';
   }
 }
 </script>

@@ -1,4 +1,4 @@
-import {db} from "../../../firebase"
+import { db } from '../../../firebase';
 import {
   collection,
   doc,
@@ -8,16 +8,16 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
-} from "firebase/firestore"
-import type {Teacher} from "../../Teachers/types/teachers"
+} from 'firebase/firestore';
+import type { Teacher } from '../../Teachers/types/teachers';
 
 // Nombre de la colección en Firestore
-const COLLECTION_NAME = "MAESTROS"
+const COLLECTION_NAME = 'MAESTROS';
 
 // Clave para almacenar en localStorage (modo desarrollo)
-const LOCAL_STORAGE_KEY = "cached_teachers"
+const LOCAL_STORAGE_KEY = 'cached_teachers';
 // Determina si estamos en modo desarrollo
-const isDevelopment = process.env.NODE_ENV === "development"
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 /* ========= FUNCIONES CRUD BÁSICAS ========= */
 
@@ -29,47 +29,47 @@ export const fetchTeachersFromFirebase = async (): Promise<Teacher[]> => {
   try {
     // Si estamos en desarrollo, buscar datos cacheados
     if (isDevelopment) {
-      const cached = localStorage.getItem(LOCAL_STORAGE_KEY)
+      const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (cached) {
-        return JSON.parse(cached) as Teacher[]
+        return JSON.parse(cached) as Teacher[];
       }
     }
-    const querySnapshot = await getDocs(collection(db, COLLECTION_NAME))
+    const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
     const teachers = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as Teacher[]
+    })) as Teacher[];
 
     // Cachear en localStorage en modo desarrollo
     if (isDevelopment) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(teachers))
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(teachers));
     }
-    return teachers
+    return teachers;
   } catch (error) {
-    console.error("Error fetching teachers from Firestore:", error)
-    throw new Error("Failed to fetch teachers")
+    console.error('Error fetching teachers from Firestore:', error);
+    throw new Error('Failed to fetch teachers');
   }
-}
+};
 
 /**
  * Agrega un nuevo maestro a Firestore.
  * Invalida el caché en desarrollo para asegurar datos actualizados.
  */
-export const addTeacherToFirebase = async (teacher: Omit<Teacher, "id">): Promise<Teacher> => {
+export const addTeacherToFirebase = async (teacher: Omit<Teacher, 'id'>): Promise<Teacher> => {
   try {
     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...teacher,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    })
+    });
     // Invalida caché en desarrollo
-    if (isDevelopment) localStorage.removeItem(LOCAL_STORAGE_KEY)
-    return {id: docRef.id, ...teacher} as Teacher
+    if (isDevelopment) localStorage.removeItem(LOCAL_STORAGE_KEY);
+    return { id: docRef.id, ...teacher } as Teacher;
   } catch (error) {
-    console.error("Error adding teacher to Firestore:", error)
-    throw new Error("Failed to add teacher")
+    console.error('Error adding teacher to Firestore:', error);
+    throw new Error('Failed to add teacher');
   }
-}
+};
 
 /**
  * Actualiza un maestro existente en Firestore.
@@ -77,21 +77,21 @@ export const addTeacherToFirebase = async (teacher: Omit<Teacher, "id">): Promis
  */
 export const updateTeacherInFirebase = async (
   id: string,
-  updates: Partial<Teacher>
+  updates: Partial<Teacher>,
 ): Promise<void> => {
   try {
-    const docRef = doc(db, COLLECTION_NAME, id)
+    const docRef = doc(db, COLLECTION_NAME, id);
     await updateDoc(docRef, {
       ...updates,
       updatedAt: serverTimestamp(),
-    })
+    });
     // Invalida caché en desarrollo
-    if (isDevelopment) localStorage.removeItem(LOCAL_STORAGE_KEY)
+    if (isDevelopment) localStorage.removeItem(LOCAL_STORAGE_KEY);
   } catch (error) {
-    console.error(`Error updating teacher with ID ${id} in Firestore:`, error)
-    throw new Error("Failed to update teacher")
+    console.error(`Error updating teacher with ID ${id} in Firestore:`, error);
+    throw new Error('Failed to update teacher');
   }
-}
+};
 
 /**
  * Elimina un maestro de Firestore.
@@ -99,15 +99,15 @@ export const updateTeacherInFirebase = async (
  */
 export const deleteTeacherFromFirebase = async (id: string): Promise<void> => {
   try {
-    const docRef = doc(db, COLLECTION_NAME, id)
-    await deleteDoc(docRef)
+    const docRef = doc(db, COLLECTION_NAME, id);
+    await deleteDoc(docRef);
     // Invalida caché en desarrollo
-    if (isDevelopment) localStorage.removeItem(LOCAL_STORAGE_KEY)
+    if (isDevelopment) localStorage.removeItem(LOCAL_STORAGE_KEY);
   } catch (error) {
-    console.error(`Error deleting teacher with ID ${id} from Firestore:`, error)
-    throw new Error("Failed to delete teacher")
+    console.error(`Error deleting teacher with ID ${id} from Firestore:`, error);
+    throw new Error('Failed to delete teacher');
   }
-}
+};
 
 /* ========= FUNCIONES AUXILIARES ========= */
 
@@ -116,14 +116,14 @@ export const deleteTeacherFromFirebase = async (id: string): Promise<void> => {
  */
 export const fetchTeacherByIdFromFirebase = async (id: string): Promise<Teacher | null> => {
   try {
-    const docRef = doc(db, COLLECTION_NAME, id)
-    const teacherDoc = await getDoc(docRef)
+    const docRef = doc(db, COLLECTION_NAME, id);
+    const teacherDoc = await getDoc(docRef);
     if (!teacherDoc.exists()) {
-      return null
+      return null;
     }
-    return {id: teacherDoc.id, ...teacherDoc.data()} as Teacher
+    return { id: teacherDoc.id, ...teacherDoc.data() } as Teacher;
   } catch (error) {
-    console.error(`Error fetching teacher with ID ${id} from Firestore:`, error)
-    throw new Error("Failed to fetch teacher by ID")
+    console.error(`Error fetching teacher with ID ${id} from Firestore:`, error);
+    throw new Error('Failed to fetch teacher by ID');
   }
-}
+};

@@ -1,63 +1,3 @@
-<script setup lang="ts">
-import {ref, onMounted} from "vue"
-import type {JustificationData} from "../types/attendance"
-import {useAttendanceStore} from "../store/attendance"
-
-const props = defineProps<{
-  studentId: string
-  classId?: string
-  date?: string
-}>()
-
-const attendanceStore = useAttendanceStore()
-const justifications = ref<JustificationData[]>([])
-const loading = ref(true)
-const error = ref<string | null>(null)
-
-const statusLabels = {
-  pending: "Pendiente",
-  approved: "Aprobada",
-  rejected: "Rechazada",
-}
-
-const statusColors = {
-  pending: "bg-yellow-100 text-yellow-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-}
-
-const loadJustifications = async () => {
-  try {
-    loading.value = true
-    error.value = null
-    justifications.value = await attendanceStore.fetchJustifications(
-      props.studentId,
-      props.classId,
-      props.date
-    )
-  } catch (err) {
-    error.value = "Error al cargar las justificaciones"
-    console.error(err)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(loadJustifications)
-
-const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-}
-
-const isExpired = (timeLimit: string) => {
-  return new Date(timeLimit) < new Date()
-}
-</script>
-
 <template>
   <div class="space-y-4">
     <!-- Estado de carga -->
@@ -138,3 +78,63 @@ const isExpired = (timeLimit: string) => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import type { JustificationData } from '../types/attendance';
+import { useAttendanceStore } from '../store/attendance';
+
+const props = defineProps<{
+  studentId: string
+  classId?: string
+  date?: string
+}>();
+
+const attendanceStore = useAttendanceStore();
+const justifications = ref<JustificationData[]>([]);
+const loading = ref(true);
+const error = ref<string | null>(null);
+
+const statusLabels = {
+  pending: 'Pendiente',
+  approved: 'Aprobada',
+  rejected: 'Rechazada',
+};
+
+const statusColors = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  approved: 'bg-green-100 text-green-800',
+  rejected: 'bg-red-100 text-red-800',
+};
+
+const loadJustifications = async () => {
+  try {
+    loading.value = true;
+    error.value = null;
+    justifications.value = await attendanceStore.fetchJustifications(
+      props.studentId,
+      props.classId,
+      props.date,
+    );
+  } catch (err) {
+    error.value = 'Error al cargar las justificaciones';
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(loadJustifications);
+
+const formatDate = (date: string) => {
+  return new Date(date).toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+};
+
+const isExpired = (timeLimit: string) => {
+  return new Date(timeLimit) < new Date();
+};
+</script>

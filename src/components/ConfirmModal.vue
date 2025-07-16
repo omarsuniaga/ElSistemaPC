@@ -27,10 +27,10 @@
 </template>
 
 <script lang="ts">
-import {defineComponent} from "vue"
+import { defineComponent } from 'vue';
 
 export default defineComponent({
-  name: "ConfirmModal",
+  name: 'ConfirmModal',
   props: {
     show: {
       type: Boolean,
@@ -50,22 +50,22 @@ export default defineComponent({
       default: false,
     },
   },
-  emits: ["confirm", "cancel"],
-  setup(_, {emit}) {
+  emits: ['confirm', 'cancel'],
+  setup(_, { emit }) {
     const handleConfirm = () => {
-      emit("confirm")
-    }
+      emit('confirm');
+    };
 
     const handleCancel = () => {
-      emit("cancel")
-    }
+      emit('cancel');
+    };
 
     return {
       handleConfirm,
       handleCancel,
-    }
+    };
   },
-})
+});
 </script>
 
 <style scoped>

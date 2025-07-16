@@ -8,13 +8,13 @@
         <button
           v-for="tab in tabs"
           :key="tab.key"
-          @click="activeTab = tab.key"
           :class="[
             'px-4 py-2 font-medium text-sm border-b-2 transition-colors',
             activeTab === tab.key
               ? 'border-blue-500 text-blue-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
           ]"
+          @click="activeTab = tab.key"
         >
           {{ tab.icon }} {{ tab.label }}
         </button>
@@ -185,16 +185,16 @@
 
         <div class="flex gap-3">
           <button
-            @click="generateReport"
             :disabled="generating || !canGenerate"
             class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 transition-colors"
+            @click="generateReport"
           >
             {{ generating ? 'Generando...' : '📊 Generar Reporte' }}
           </button>
           <button
-            @click="previewReport"
             :disabled="generating || !canGenerate"
             class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:bg-gray-300 transition-colors"
+            @click="previewReport"
           >
             👁️ Vista Previa
           </button>
@@ -226,20 +226,20 @@
               </div>
               <div class="flex gap-2">
                 <button
-                  @click="viewReport(report)"
                   class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                  @click="viewReport(report)"
                 >
                   👁️ Ver
                 </button>
                 <button
-                  @click="downloadReport(report)"
                   class="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
+                  @click="downloadReport(report)"
                 >
                   📥 Descargar
                 </button>
                 <button
-                  @click="shareReport(report)"
                   class="px-3 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600 transition-colors"
+                  @click="shareReport(report)"
                 >
                   📤 Compartir
                 </button>
@@ -336,8 +336,8 @@
       
       <div class="flex gap-3 mt-6">
         <button
-          @click="$emit('close')"
           class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          @click="$emit('close')"
         >
           Cerrar
         </button>
@@ -347,24 +347,24 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted } from 'vue'
-import { useMusicalWorks } from '../composables/useHeatMapProjects'
+import { reactive, ref, computed, onMounted } from 'vue';
+import { useMusicalWorks } from '../composables/useHeatMapProjects';
 
 const emit = defineEmits<{
   close: []
-}>()
+}>();
 
-const { works } = useMusicalWorks()
-const activeTab = ref('generate')
-const generating = ref(false)
-const showCreateTemplate = ref(false)
+const { works } = useMusicalWorks();
+const activeTab = ref('generate');
+const generating = ref(false);
+const showCreateTemplate = ref(false);
 
 const tabs = [
   { key: 'generate', label: 'Generar', icon: '📊' },
   { key: 'saved', label: 'Guardados', icon: '💾' },
   { key: 'templates', label: 'Plantillas', icon: '📋' },
-  { key: 'analytics', label: 'Análisis', icon: '🔍' }
-]
+  { key: 'analytics', label: 'Análisis', icon: '🔍' },
+];
 
 const reportForm = reactive({
   type: 'progress',
@@ -376,10 +376,10 @@ const reportForm = reactive({
   formats: ['pdf'],
   includeCharts: true,
   includeRecommendations: true,
-  includeComparisons: false
-})
+  includeComparisons: false,
+});
 
-const availableWorks = computed(() => works.value)
+const availableWorks = computed(() => works.value);
 
 const availableMetrics = [
   { key: 'progress', label: 'Progreso General' },
@@ -389,14 +389,14 @@ const availableMetrics = [
   { key: 'milestones', label: 'Hitos Alcanzados' },
   { key: 'trends', label: 'Tendencias' },
   { key: 'comparisons', label: 'Comparaciones' },
-  { key: 'predictions', label: 'Predicciones' }
-]
+  { key: 'predictions', label: 'Predicciones' },
+];
 
 const canGenerate = computed(() => {
   return reportForm.selectedWorks.length > 0 && 
          reportForm.selectedMetrics.length > 0 && 
-         reportForm.formats.length > 0
-})
+         reportForm.formats.length > 0;
+});
 
 const savedReports = ref([
   {
@@ -406,7 +406,7 @@ const savedReports = ref([
     period: 'month',
     works: ['work1', 'work2'],
     generatedAt: new Date(Date.now() - 86400000).toISOString(),
-    formats: ['pdf', 'excel']
+    formats: ['pdf', 'excel'],
   },
   {
     id: 'report2',
@@ -415,9 +415,9 @@ const savedReports = ref([
     period: 'quarter',
     works: ['work1'],
     generatedAt: new Date(Date.now() - 172800000).toISOString(),
-    formats: ['pdf']
-  }
-])
+    formats: ['pdf'],
+  },
+]);
 
 const reportTemplates = ref([
   {
@@ -425,19 +425,19 @@ const reportTemplates = ref([
     name: 'Reporte Mensual Estándar',
     description: 'Reporte mensual con métricas básicas de progreso',
     metrics: ['progress', 'attendance', 'scores'],
-    usageCount: 12
+    usageCount: 12,
   },
   {
     id: 'template2',
     name: 'Análisis Trimestral',
     description: 'Análisis completo con tendencias y predicciones',
     metrics: ['progress', 'trends', 'predictions', 'comparisons'],
-    usageCount: 4
-  }
-])
+    usageCount: 4,
+  },
+]);
 
 const generateReport = async () => {
-  generating.value = true
+  generating.value = true;
   try {
     const reportData = {
       id: `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -452,55 +452,55 @@ const generateReport = async () => {
       config: {
         includeCharts: reportForm.includeCharts,
         includeRecommendations: reportForm.includeRecommendations,
-        includeComparisons: reportForm.includeComparisons
+        includeComparisons: reportForm.includeComparisons,
       },
       generatedAt: new Date().toISOString(),
-      generatedBy: 'current_user_id'
-    }
+      generatedBy: 'current_user_id',
+    };
     
-    console.log('Generating report:', reportData)
+    console.log('Generating report:', reportData);
     
     // Simulate report generation
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
     // Add to saved reports
-    savedReports.value.unshift(reportData)
+    savedReports.value.unshift(reportData);
     
-    alert('Reporte generado exitosamente')
-    activeTab.value = 'saved'
+    alert('Reporte generado exitosamente');
+    activeTab.value = 'saved';
   } catch (error) {
-    console.error('Error generating report:', error)
-    alert('Error al generar el reporte')
+    console.error('Error generating report:', error);
+    alert('Error al generar el reporte');
   } finally {
-    generating.value = false
+    generating.value = false;
   }
-}
+};
 
 const previewReport = () => {
-  console.log('Previewing report with config:', reportForm)
+  console.log('Previewing report with config:', reportForm);
   // Implement preview logic
-}
+};
 
 const viewReport = (report: any) => {
-  console.log('Viewing report:', report)
+  console.log('Viewing report:', report);
   // Implement view logic
-}
+};
 
 const downloadReport = (report: any) => {
-  console.log('Downloading report:', report)
+  console.log('Downloading report:', report);
   // Implement download logic
-}
+};
 
 const shareReport = (report: any) => {
-  console.log('Sharing report:', report)
+  console.log('Sharing report:', report);
   // Implement share logic
-}
+};
 
 const useTemplate = (template: any) => {
-  console.log('Using template:', template)
+  console.log('Using template:', template);
   // Apply template configuration to form
-  reportForm.selectedMetrics = [...template.metrics]
-}
+  reportForm.selectedMetrics = [...template.metrics];
+};
 
 const getReportTypeLabel = (type: string): string => {
   const labels = {
@@ -509,10 +509,10 @@ const getReportTypeLabel = (type: string): string => {
     attendance: 'Asistencia',
     comparison: 'Comparativo',
     detailed: 'Detallado',
-    summary: 'Resumen'
-  }
-  return labels[type] || type
-}
+    summary: 'Resumen',
+  };
+  return labels[type] || type;
+};
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('es-ES', {
@@ -520,20 +520,20 @@ const formatDate = (dateString: string) => {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+    minute: '2-digit',
+  });
+};
 
 onMounted(() => {
   // Set default date range
-  const endDate = new Date()
-  const startDate = new Date()
-  startDate.setMonth(startDate.getMonth() - 1)
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setMonth(startDate.getMonth() - 1);
   
-  reportForm.endDate = endDate.toISOString().split('T')[0]
-  reportForm.startDate = startDate.toISOString().split('T')[0]
+  reportForm.endDate = endDate.toISOString().split('T')[0];
+  reportForm.startDate = startDate.toISOString().split('T')[0];
   
   // Select all works by default
-  reportForm.selectedWorks = works.value.map(w => w.id)
-})
+  reportForm.selectedWorks = works.value.map(w => w.id);
+});
 </script>

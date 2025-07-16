@@ -11,8 +11,8 @@
           </p>
         </div>
         <button
-          @click="showCreateModal = true"
           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+          @click="showCreateModal = true"
         >
           ➕ Nueva Evaluación
         </button>
@@ -140,14 +140,14 @@
           <!-- Actions -->
           <div class="lg:w-24 flex lg:flex-col gap-2">
             <button
-              @click="editEvaluation(evaluation)"
               class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+              @click="editEvaluation(evaluation)"
             >
               ✏️ Editar
             </button>
             <button
-              @click="deleteEvaluation(evaluation.id)"
               class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+              @click="deleteEvaluation(evaluation.id)"
             >
               🗑️ Eliminar
             </button>
@@ -162,8 +162,8 @@
       <h3 class="text-xl font-semibold text-gray-700 mb-2">No hay evaluaciones semanales</h3>
       <p class="text-gray-500 mb-6">Comienza registrando tu primera evaluación semanal</p>
       <button
-        @click="showCreateModal = true"
         class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+        @click="showCreateModal = true"
       >
         ➕ Primera Evaluación
       </button>
@@ -181,37 +181,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import WeeklyEvaluationModal from '../components/WeeklyEvaluationModal.vue'
-import type { MusicalWork, WeeklyEvaluation } from '../types/heatmap'
-import { EVALUATION_CRITERIA } from '../types/heatmap'
+import { ref, onMounted } from 'vue';
+import WeeklyEvaluationModal from '../components/WeeklyEvaluationModal.vue';
+import type { MusicalWork, WeeklyEvaluation } from '../types/heatmap';
+import { EVALUATION_CRITERIA } from '../types/heatmap';
 
 const props = defineProps<{
   work: MusicalWork
-}>()
+}>();
 
-const weeklyEvaluations = ref<WeeklyEvaluation[]>([])
-const showCreateModal = ref(false)
-const editingEvaluation = ref<WeeklyEvaluation | null>(null)
+const weeklyEvaluations = ref<WeeklyEvaluation[]>([]);
+const showCreateModal = ref(false);
+const editingEvaluation = ref<WeeklyEvaluation | null>(null);
 
 // Get color class based on score
 const getScoreColor = (score: number): string => {
-  if (score === 0 || !score) return 'bg-gray-100 text-gray-400'
-  if (score <= 2) return 'bg-red-100 text-red-700'
-  if (score === 3) return 'bg-yellow-100 text-yellow-700'
-  if (score >= 4) return 'bg-green-100 text-green-700'
-  return 'bg-gray-100 text-gray-600'
-}
+  if (score === 0 || !score) return 'bg-gray-100 text-gray-400';
+  if (score <= 2) return 'bg-red-100 text-red-700';
+  if (score === 3) return 'bg-yellow-100 text-yellow-700';
+  if (score >= 4) return 'bg-green-100 text-green-700';
+  return 'bg-gray-100 text-gray-600';
+};
 
 // Calculate average score for an evaluation type
 const getAverageScore = (evaluationData: any): number => {
   const scores = Object.keys(EVALUATION_CRITERIA)
     .map(key => evaluationData[key])
-    .filter(score => score > 0)
+    .filter(score => score > 0);
   
-  if (scores.length === 0) return 0
-  return scores.reduce((sum, score) => sum + score, 0) / scores.length
-}
+  if (scores.length === 0) return 0;
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+};
 
 // Format date
 const formatDate = (dateString: string) => {
@@ -219,49 +219,49 @@ const formatDate = (dateString: string) => {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
-  })
-}
+    day: 'numeric',
+  });
+};
 
 // Edit evaluation
 const editEvaluation = (evaluation: WeeklyEvaluation) => {
-  editingEvaluation.value = evaluation
-}
+  editingEvaluation.value = evaluation;
+};
 
 // Delete evaluation
 const deleteEvaluation = async (evaluationId: string) => {
   if (confirm('¿Estás seguro de que quieres eliminar esta evaluación semanal?')) {
     try {
       // Here you would delete from your backend/Firebase
-      weeklyEvaluations.value = weeklyEvaluations.value.filter(e => e.id !== evaluationId)
-      console.log('Evaluation deleted:', evaluationId)
+      weeklyEvaluations.value = weeklyEvaluations.value.filter(e => e.id !== evaluationId);
+      console.log('Evaluation deleted:', evaluationId);
     } catch (error) {
-      console.error('Error deleting evaluation:', error)
-      alert('Error al eliminar la evaluación.')
+      console.error('Error deleting evaluation:', error);
+      alert('Error al eliminar la evaluación.');
     }
   }
-}
+};
 
 // Handle evaluation saved
 const onEvaluationSaved = (evaluation: WeeklyEvaluation) => {
   if (editingEvaluation.value) {
     // Update existing
-    const index = weeklyEvaluations.value.findIndex(e => e.id === evaluation.id)
+    const index = weeklyEvaluations.value.findIndex(e => e.id === evaluation.id);
     if (index !== -1) {
-      weeklyEvaluations.value[index] = evaluation
+      weeklyEvaluations.value[index] = evaluation;
     }
   } else {
     // Add new
-    weeklyEvaluations.value.unshift(evaluation)
+    weeklyEvaluations.value.unshift(evaluation);
   }
-  closeModal()
-}
+  closeModal();
+};
 
 // Close modal
 const closeModal = () => {
-  showCreateModal.value = false
-  editingEvaluation.value = null
-}
+  showCreateModal.value = false;
+  editingEvaluation.value = null;
+};
 
 // Load evaluations
 const loadEvaluations = async () => {
@@ -281,7 +281,7 @@ const loadEvaluations = async () => {
           ritmo: 4,
           cohesion: 3,
           dinamica: 4,
-          memorizacion: 2
+          memorizacion: 2,
         },
         ensayoSeccional: {
           afinacion: 4,
@@ -289,7 +289,7 @@ const loadEvaluations = async () => {
           ritmo: 4,
           cohesion: 4,
           dinamica: 3,
-          memorizacion: 3
+          memorizacion: 3,
         },
         ensayoPorFila: {
           afinacion: 5,
@@ -297,7 +297,7 @@ const loadEvaluations = async () => {
           ritmo: 5,
           cohesion: 4,
           dinamica: 4,
-          memorizacion: 3
+          memorizacion: 3,
         },
         comentarios: 'Excelente progreso en la sección de cuerdas. Los vientos necesitan más trabajo en la memorización.',
         objectives: [],
@@ -309,15 +309,15 @@ const loadEvaluations = async () => {
         energyLevel: 0,
         focusLevel: 0,
         createdAt: '2024-01-13T10:00:00Z',
-        updatedAt: '2024-01-13T10:00:00Z'
-      }
-    ]
+        updatedAt: '2024-01-13T10:00:00Z',
+      },
+    ];
   } catch (error) {
-    console.error('Error loading evaluations:', error)
+    console.error('Error loading evaluations:', error);
   }
-}
+};
 
 onMounted(() => {
-  loadEvaluations()
-})
+  loadEvaluations();
+});
 </script>

@@ -131,54 +131,54 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, provide } from "vue"
-import DashboardKPIs from "../components/admin/Dashboard/DashboardKPIs.vue"
-import WeeklyAttendanceChart from "../components/admin/Dashboard/WeeklyAttendanceChart.vue"
-import QuickActionsPanel from "../components/admin/Dashboard/QuickActionsPanel.vue"
-import SystemHealthMonitor from "../components/admin/Dashboard/SystemHealthMonitor.vue"
-import PendingNotifications from "../components/admin/Dashboard/PendingNotifications.vue"
-import GlobalOverview from "../components/admin/Dashboard/GlobalOverview.vue"
+import { ref, onMounted, computed, provide } from 'vue';
+import DashboardKPIs from '../components/admin/Dashboard/DashboardKPIs.vue';
+import WeeklyAttendanceChart from '../components/admin/Dashboard/WeeklyAttendanceChart.vue';
+import QuickActionsPanel from '../components/admin/Dashboard/QuickActionsPanel.vue';
+import SystemHealthMonitor from '../components/admin/Dashboard/SystemHealthMonitor.vue';
+import PendingNotifications from '../components/admin/Dashboard/PendingNotifications.vue';
+import GlobalOverview from '../components/admin/Dashboard/GlobalOverview.vue';
 
 defineOptions({
-  name: "AdminMotherDashboard",
-})
+  name: 'AdminMotherDashboard',
+});
 
 // ==================== DATOS REACTIVOS ====================
-const isLoading = ref(true)
+const isLoading = ref(true);
 const dashboardData = ref({
   students: {
     total: 0,
     active: 0,
     inactive: 0,
-    newThisMonth: 0
+    newThisMonth: 0,
   },
   attendance: {
     thisWeek: 0,
     lastWeek: 0,
     trend: 0,
-    weeklyData: []
+    weeklyData: [],
   },
   teachers: {
     total: 0,
     active: 0,
-    onBreak: 0
+    onBreak: 0,
   },
   classes: {
     today: 0,
     thisWeek: 0,
-    nextWeek: 0
+    nextWeek: 0,
   },
   notifications: {
     pending: 0,
     unread: 0,
-    recent: []
+    recent: [],
   },
   systemHealth: {
     status: 'healthy',
     uptime: 0,
-    issues: []
-  }
-})
+    issues: [],
+  },
+});
 
 // ==================== FUNCIONES DE DATOS ====================
 
@@ -187,42 +187,42 @@ const dashboardData = ref({
  */
 async function loadStudentsData() {
   try {
-    const { collection, getDocs, query, where } = await import("firebase/firestore")
-    const { db } = await import("@/firebase")
+    const { collection, getDocs, query, where } = await import('firebase/firestore');
+    const { db } = await import('@/firebase');
     
     // Obtener todos los estudiantes
-    const studentsRef = collection(db, "ALUMNOS")
-    const studentsSnapshot = await getDocs(studentsRef)
+    const studentsRef = collection(db, 'ALUMNOS');
+    const studentsSnapshot = await getDocs(studentsRef);
     
     const students = studentsSnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    }))
+      ...doc.data(),
+    }));
     
     // Calcular estadísticas
-    const total = students.length
-    const active = students.filter(s => s.estado === "activo" || s.estado === "Activo").length
-    const inactive = total - active
+    const total = students.length;
+    const active = students.filter(s => s.estado === 'activo' || s.estado === 'Activo').length;
+    const inactive = total - active;
     
     // Estudiantes nuevos este mes
-    const currentMonth = new Date().getMonth()
-    const currentYear = new Date().getFullYear()
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
     const newThisMonth = students.filter(student => {
-      if (!student.fechaIngreso) return false
-      const joinDate = new Date(student.fechaIngreso)
-      return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear
-    }).length
+      if (!student.fechaIngreso) return false;
+      const joinDate = new Date(student.fechaIngreso);
+      return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
+    }).length;
     
     dashboardData.value.students = {
       total,
       active,
       inactive,
-      newThisMonth
-    }
+      newThisMonth,
+    };
     
-    console.log("✅ Datos de estudiantes cargados:", dashboardData.value.students)
+    console.log('✅ Datos de estudiantes cargados:', dashboardData.value.students);
   } catch (error) {
-    console.error("❌ Error cargando datos de estudiantes:", error)
+    console.error('❌ Error cargando datos de estudiantes:', error);
   }
 }
 
@@ -231,37 +231,37 @@ async function loadStudentsData() {
  */
 async function loadAttendanceData() {
   try {
-    const { collection, getDocs, query, where, orderBy, limit } = await import("firebase/firestore")
-    const { db } = await import("@/firebase")
+    const { collection, getDocs, query, where, orderBy, limit } = await import('firebase/firestore');
+    const { db } = await import('@/firebase');
     
     // Obtener asistencias de la última semana
-    const oneWeekAgo = new Date()
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
-    const attendanceRef = collection(db, "ASISTENCIAS")
-    const attendanceSnapshot = await getDocs(attendanceRef)
+    const attendanceRef = collection(db, 'ASISTENCIAS');
+    const attendanceSnapshot = await getDocs(attendanceRef);
     
     const attendances = attendanceSnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    }))
+      ...doc.data(),
+    }));
     
     // Calcular estadísticas de asistencia
     const thisWeekAttendances = attendances.filter(att => {
-      const attDate = new Date(att.fecha || att.timestamp?.toDate?.() || att.timestamp)
-      return attDate >= oneWeekAgo
-    })
+      const attDate = new Date(att.fecha || att.timestamp?.toDate?.() || att.timestamp);
+      return attDate >= oneWeekAgo;
+    });
     
     dashboardData.value.attendance = {
       thisWeek: thisWeekAttendances.length,
       lastWeek: Math.floor(thisWeekAttendances.length * 0.85), // Estimación
       trend: 15, // Porcentaje de mejora
-      weeklyData: generateWeeklyAttendanceData(attendances)
-    }
+      weeklyData: generateWeeklyAttendanceData(attendances),
+    };
     
-    console.log("✅ Datos de asistencia cargados:", dashboardData.value.attendance)
+    console.log('✅ Datos de asistencia cargados:', dashboardData.value.attendance);
   } catch (error) {
-    console.error("❌ Error cargando datos de asistencia:", error)
+    console.error('❌ Error cargando datos de asistencia:', error);
   }
 }
 
@@ -270,30 +270,30 @@ async function loadAttendanceData() {
  */
 async function loadTeachersData() {
   try {
-    const { collection, getDocs } = await import("firebase/firestore")
-    const { db } = await import("@/firebase")
+    const { collection, getDocs } = await import('firebase/firestore');
+    const { db } = await import('@/firebase');
     
-    const teachersRef = collection(db, "MAESTROS")
-    const teachersSnapshot = await getDocs(teachersRef)
+    const teachersRef = collection(db, 'MAESTROS');
+    const teachersSnapshot = await getDocs(teachersRef);
     
     const teachers = teachersSnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    }))
+      ...doc.data(),
+    }));
     
-    const total = teachers.length
-    const active = teachers.filter(t => t.estado === "activo" || t.estado === "Activo").length
-    const onBreak = total - active
+    const total = teachers.length;
+    const active = teachers.filter(t => t.estado === 'activo' || t.estado === 'Activo').length;
+    const onBreak = total - active;
     
     dashboardData.value.teachers = {
       total,
       active,
-      onBreak
-    }
+      onBreak,
+    };
     
-    console.log("✅ Datos de maestros cargados:", dashboardData.value.teachers)
+    console.log('✅ Datos de maestros cargados:', dashboardData.value.teachers);
   } catch (error) {
-    console.error("❌ Error cargando datos de maestros:", error)
+    console.error('❌ Error cargando datos de maestros:', error);
   }
 }
 
@@ -302,39 +302,39 @@ async function loadTeachersData() {
  */
 async function loadClassesData() {
   try {
-    const { collection, getDocs, query, where } = await import("firebase/firestore")
-    const { db } = await import("@/firebase")
+    const { collection, getDocs, query, where } = await import('firebase/firestore');
+    const { db } = await import('@/firebase');
     
-    const classesRef = collection(db, "CLASES")
-    const classesSnapshot = await getDocs(classesRef)
+    const classesRef = collection(db, 'CLASES');
+    const classesSnapshot = await getDocs(classesRef);
     
     const classes = classesSnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    }))
+      ...doc.data(),
+    }));
     
-    const today = new Date()
-    const todayString = today.toISOString().split('T')[0]
-    const thisWeekStart = new Date(today)
-    thisWeekStart.setDate(today.getDate() - today.getDay())
-    const nextWeekStart = new Date(thisWeekStart)
-    nextWeekStart.setDate(thisWeekStart.getDate() + 7)
+    const today = new Date();
+    const todayString = today.toISOString().split('T')[0];
+    const thisWeekStart = new Date(today);
+    thisWeekStart.setDate(today.getDate() - today.getDay());
+    const nextWeekStart = new Date(thisWeekStart);
+    nextWeekStart.setDate(thisWeekStart.getDate() + 7);
     
-    const todayClasses = classes.filter(c => c.fecha === todayString).length
+    const todayClasses = classes.filter(c => c.fecha === todayString).length;
     const thisWeekClasses = classes.filter(c => {
-      const classDate = new Date(c.fecha)
-      return classDate >= thisWeekStart && classDate < nextWeekStart
-    }).length
+      const classDate = new Date(c.fecha);
+      return classDate >= thisWeekStart && classDate < nextWeekStart;
+    }).length;
     
     dashboardData.value.classes = {
       today: todayClasses,
       thisWeek: thisWeekClasses,
-      nextWeek: Math.floor(thisWeekClasses * 1.1) // Estimación
-    }
+      nextWeek: Math.floor(thisWeekClasses * 1.1), // Estimación
+    };
     
-    console.log("✅ Datos de clases cargados:", dashboardData.value.classes)
+    console.log('✅ Datos de clases cargados:', dashboardData.value.classes);
   } catch (error) {
-    console.error("❌ Error cargando datos de clases:", error)
+    console.error('❌ Error cargando datos de clases:', error);
   }
 }
 
@@ -342,53 +342,53 @@ async function loadClassesData() {
  * Generar datos de asistencia semanal para gráficos
  */
 function generateWeeklyAttendanceData(attendances: any[]) {
-  const weekData = []
-  const today = new Date()
+  const weekData = [];
+  const today = new Date();
   
   // Función auxiliar para validar fechas
   const isValidDate = (date: any): date is Date => {
-    return date instanceof Date && !isNaN(date.getTime())
-  }
+    return date instanceof Date && !isNaN(date.getTime());
+  };
   
   // Procesar cada día de la semana
   for (let i = 6; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(today.getDate() - i)
-    date.setHours(0, 0, 0, 0) // Normalizar la hora
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    date.setHours(0, 0, 0, 0); // Normalizar la hora
     
-    const dateString = date.toISOString().split('T')[0]
+    const dateString = date.toISOString().split('T')[0];
     
     try {
       const dayAttendances = attendances.filter(att => {
         try {
           // Intentar obtener la fecha de diferentes maneras
-          let dateValue = att.fecha || att.timestamp
+          let dateValue = att.fecha || att.timestamp;
           
           // Si es un timestamp de Firestore (tiene el método toDate)
           if (dateValue?.toDate) {
-            dateValue = dateValue.toDate()
+            dateValue = dateValue.toDate();
           }
           
-          const attDate = new Date(dateValue)
+          const attDate = new Date(dateValue);
           
           // Validar que la fecha sea válida
           if (!isValidDate(attDate)) {
-            console.warn('Fecha de asistencia inválida:', dateValue)
-            return false
+            console.warn('Fecha de asistencia inválida:', dateValue);
+            return false;
           }
           
           // Normalizar fechas para comparación
-          attDate.setHours(0, 0, 0, 0)
-          const compareDate = new Date(dateString)
-          compareDate.setHours(0, 0, 0, 0)
+          attDate.setHours(0, 0, 0, 0);
+          const compareDate = new Date(dateString);
+          compareDate.setHours(0, 0, 0, 0);
           
-          return attDate.getTime() === compareDate.getTime()
+          return attDate.getTime() === compareDate.getTime();
           
         } catch (error) {
-          console.warn('Error procesando fecha de asistencia:', error)
-          return false
+          console.warn('Error procesando fecha de asistencia:', error);
+          return false;
         }
-      })
+      });
       
       weekData.push({
         date: dateString,
@@ -396,11 +396,11 @@ function generateWeeklyAttendanceData(attendances: any[]) {
         attendances: dayAttendances.length,
         presents: dayAttendances.filter(att => att.estado === 'presente').length,
         absents: dayAttendances.filter(att => att.estado === 'ausente').length,
-        lates: dayAttendances.filter(att => att.estado === 'tarde').length
-      })
+        lates: dayAttendances.filter(att => att.estado === 'tarde').length,
+      });
       
     } catch (error) {
-      console.error(`Error procesando día ${dateString}:`, error)
+      console.error(`Error procesando día ${dateString}:`, error);
       // Asegurarse de que siempre haya un dato para el día, aunque sea cero
       weekData.push({
         date: dateString,
@@ -408,12 +408,12 @@ function generateWeeklyAttendanceData(attendances: any[]) {
         attendances: 0,
         presents: 0,
         absents: 0,
-        lates: 0
-      })
+        lates: 0,
+      });
     }
   }
   
-  return weekData
+  return weekData;
 }
 
 /**
@@ -422,26 +422,26 @@ function generateWeeklyAttendanceData(attendances: any[]) {
 async function loadSystemHealth() {
   try {
     // Verificar conexión a Firebase
-    const { getApp } = await import("firebase/app")
-    const { connectFirestoreEmulator, getFirestore } = await import("firebase/firestore")
+    const { getApp } = await import('firebase/app');
+    const { connectFirestoreEmulator, getFirestore } = await import('firebase/firestore');
     
-    const app = getApp()
-    const db = getFirestore()
+    const app = getApp();
+    const db = getFirestore();
     
     dashboardData.value.systemHealth = {
       status: 'healthy',
       uptime: Math.floor(Math.random() * 100), // Simulado
-      issues: []
-    }
+      issues: [],
+    };
     
-    console.log("✅ Estado del sistema verificado")
+    console.log('✅ Estado del sistema verificado');
   } catch (error) {
-    console.error("❌ Error verificando estado del sistema:", error)
+    console.error('❌ Error verificando estado del sistema:', error);
     dashboardData.value.systemHealth = {
       status: 'warning',
       uptime: 0,
-      issues: ['Problemas de conectividad con Firebase']
-    }
+      issues: ['Problemas de conectividad con Firebase'],
+    };
   }
 }
 
@@ -450,33 +450,33 @@ async function loadSystemHealth() {
  */
 async function loadNotifications() {
   try {
-    const { collection, getDocs, query, orderBy, limit, where } = await import("firebase/firestore")
-    const { db } = await import("@/firebase")
+    const { collection, getDocs, query, orderBy, limit, where } = await import('firebase/firestore');
+    const { db } = await import('@/firebase');
     
     // Intentar cargar notificaciones del sistema
-    const notificationsRef = collection(db, "NOTIFICACIONES")
-    const notificationsSnapshot = await getDocs(query(notificationsRef, limit(10)))
+    const notificationsRef = collection(db, 'NOTIFICACIONES');
+    const notificationsSnapshot = await getDocs(query(notificationsRef, limit(10)));
     
     const notifications = notificationsSnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
-    }))
+      ...doc.data(),
+    }));
     
     dashboardData.value.notifications = {
       pending: notifications.filter(n => !n.leida).length,
       unread: notifications.filter(n => !n.leida && !n.vista).length,
-      recent: notifications.slice(0, 5)
-    }
+      recent: notifications.slice(0, 5),
+    };
     
-    console.log("✅ Notificaciones cargadas:", dashboardData.value.notifications)
+    console.log('✅ Notificaciones cargadas:', dashboardData.value.notifications);
   } catch (error) {
-    console.error("❌ Error cargando notificaciones:", error)
+    console.error('❌ Error cargando notificaciones:', error);
     // Datos por defecto
     dashboardData.value.notifications = {
       pending: 0,
       unread: 0,
-      recent: []
-    }
+      recent: [],
+    };
   }
 }
 
@@ -484,8 +484,8 @@ async function loadNotifications() {
  * Cargar todos los datos del dashboard
  */
 async function loadDashboardData() {
-  console.log("🔄 Cargando datos del dashboard...")
-  isLoading.value = true
+  console.log('🔄 Cargando datos del dashboard...');
+  isLoading.value = true;
   
   try {
     await Promise.all([
@@ -494,14 +494,14 @@ async function loadDashboardData() {
       loadTeachersData(),
       loadClassesData(),
       loadSystemHealth(),
-      loadNotifications()
-    ])
+      loadNotifications(),
+    ]);
     
-    console.log("✅ Todos los datos del dashboard cargados")
+    console.log('✅ Todos los datos del dashboard cargados');
   } catch (error) {
-    console.error("❌ Error cargando datos del dashboard:", error)
+    console.error('❌ Error cargando datos del dashboard:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
@@ -511,25 +511,25 @@ const dashboardStats = computed(() => {
     totalUsers: dashboardData.value.students.total + dashboardData.value.teachers.total,
     activeUsers: dashboardData.value.students.active + dashboardData.value.teachers.active,
     systemStatus: dashboardData.value.systemHealth.status,
-    hasNotifications: dashboardData.value.notifications.pending > 0
-  }
-})
+    hasNotifications: dashboardData.value.notifications.pending > 0,
+  };
+});
 
 // ==================== PROVIDE DATA ====================
 // Proporcionar datos a componentes hijos
-provide('dashboardData', dashboardData)
-provide('isLoading', isLoading)
-provide('dashboardStats', dashboardStats)
+provide('dashboardData', dashboardData);
+provide('isLoading', isLoading);
+provide('dashboardStats', dashboardStats);
 
 // ==================== LIFECYCLE ====================
 onMounted(() => {
-  loadDashboardData()
+  loadDashboardData();
   
   // Recargar datos cada 5 minutos
   setInterval(() => {
-    loadDashboardData()
-  }, 5 * 60 * 1000)
-})
+    loadDashboardData();
+  }, 5 * 60 * 1000);
+});
 </script>
 
 <style scoped>

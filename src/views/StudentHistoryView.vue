@@ -1,141 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import {where, orderBy, limit} from "firebase/firestore"
-import {useFirestoreCollection} from "../composables/useFirestoreCollection"
-import {usePaginatedFirestore} from "../composables/usePaginatedFirestore"
-import BaseList from "../components/ui/BaseList.vue"
-import BaseCard from "../components/ui/BaseCard.vue"
-import BaseModal from "../components/ui/BaseModal.vue"
-import GroupSelector from "../components/GroupSelector.vue"
-
-// Interfaces para tipado
-interface Student {
-  id: string
-  firstName: string
-  lastName: string
-  groupId: string
-  email?: string
-  phoneNumber?: string
-}
-
-interface Attendance {
-  id: string
-  studentId: string
-  date: Date | any // Timestamp de Firestore
-  status: "present" | "absent" | "late" | "justified"
-  justification?: string
-  createdAt: Date | any
-}
-
-// Estado local para filtros
-const selectedGroupId = ref<string | null>(null)
-const selectedStudent = ref<Student | null>(null)
-const showStudentModal = ref(false)
-const showAttendanceModal = ref(false)
-const selectedAttendance = ref<Attendance | null>(null)
-const dateFilter = ref<{start: Date | null; end: Date | null}>({
-  start: null,
-  end: null,
-})
-
-// Consultar lista de estudiantes con consulta reactiva
-const studentConstraints = computed(() => {
-  const constraints = []
-
-  if (selectedGroupId.value) {
-    constraints.push(where("groupId", "==", selectedGroupId.value))
-  }
-
-  constraints.push(orderBy("lastName"))
-  constraints.push(orderBy("firstName"))
-
-  return constraints
-})
-
-const {
-  items: students,
-  loading: loadingStudents,
-  error: studentError,
-} = useFirestoreCollection<Student>("students", studentConstraints)
-
-// Consulta de historial de asistencia con paginación (datos históricos)
-const {
-  items: attendanceHistory,
-  loading: loadingAttendance,
-  error: attendanceError,
-  hasMore,
-  loadNextPage,
-  updateFilters,
-} = usePaginatedFirestore<Attendance>("attendance", {
-  pageSize: 20,
-  orderByField: "date",
-  orderDirection: "desc",
-  filters: [],
-})
-
-// Actualizar filtros cuando cambian
-watch(
-  [selectedStudent, dateFilter],
-  () => {
-    const newFilters = []
-
-    if (selectedStudent.value) {
-      newFilters.push(where("studentId", "==", selectedStudent.value.id))
-    }
-
-    if (dateFilter.value.start) {
-      newFilters.push(where("date", ">=", dateFilter.value.start))
-    }
-
-    if (dateFilter.value.end) {
-      newFilters.push(where("date", "<=", dateFilter.value.end))
-    }
-
-    updateFilters(newFilters)
-  },
-  {deep: true}
-)
-
-// Métodos
-const handleGroupChange = (groupId: string) => {
-  selectedGroupId.value = groupId
-}
-
-const openStudentDetails = (student: Student) => {
-  selectedStudent.value = student
-  showStudentModal.value = true
-}
-
-const openAttendanceDetails = (attendance: Attendance) => {
-  selectedAttendance.value = attendance
-  showAttendanceModal.value = true
-}
-
-const handleSearchByDates = () => {
-  // La actualización de los filtros ya está manejada por el watcher
-}
-
-const loadMoreAttendance = () => {
-  if (!loadingAttendance.value) {
-    loadNextPage()
-  }
-}
-
-// Formateo de fechas para mostrar
-const formatDate = (date: any): string => {
-  if (!date) return ""
-
-  if (date.toDate) {
-    // Timestamp de Firestore
-    return date.toDate().toLocaleDateString("es-ES")
-  } else if (date instanceof Date) {
-    return date.toLocaleDateString("es-ES")
-  }
-
-  return String(date)
-}
-</script>
-
 <template>
   <div class="student-history-view">
     <h1 class="text-xl font-bold mb-4">Historial de estudiantes</h1>
@@ -404,6 +266,144 @@ const formatDate = (date: any): string => {
     </BaseModal>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { where, orderBy, limit } from 'firebase/firestore';
+import { useFirestoreCollection } from '../composables/useFirestoreCollection';
+import { usePaginatedFirestore } from '../composables/usePaginatedFirestore';
+import BaseList from '../components/ui/BaseList.vue';
+import BaseCard from '../components/ui/BaseCard.vue';
+import BaseModal from '../components/ui/BaseModal.vue';
+import GroupSelector from '../components/GroupSelector.vue';
+
+// Interfaces para tipado
+interface Student {
+  id: string
+  firstName: string
+  lastName: string
+  groupId: string
+  email?: string
+  phoneNumber?: string
+}
+
+interface Attendance {
+  id: string
+  studentId: string
+  date: Date | any // Timestamp de Firestore
+  status: 'present' | 'absent' | 'late' | 'justified'
+  justification?: string
+  createdAt: Date | any
+}
+
+// Estado local para filtros
+const selectedGroupId = ref<string | null>(null);
+const selectedStudent = ref<Student | null>(null);
+const showStudentModal = ref(false);
+const showAttendanceModal = ref(false);
+const selectedAttendance = ref<Attendance | null>(null);
+const dateFilter = ref<{start: Date | null; end: Date | null}>({
+  start: null,
+  end: null,
+});
+
+// Consultar lista de estudiantes con consulta reactiva
+const studentConstraints = computed(() => {
+  const constraints = [];
+
+  if (selectedGroupId.value) {
+    constraints.push(where('groupId', '==', selectedGroupId.value));
+  }
+
+  constraints.push(orderBy('lastName'));
+  constraints.push(orderBy('firstName'));
+
+  return constraints;
+});
+
+const {
+  items: students,
+  loading: loadingStudents,
+  error: studentError,
+} = useFirestoreCollection<Student>('students', studentConstraints);
+
+// Consulta de historial de asistencia con paginación (datos históricos)
+const {
+  items: attendanceHistory,
+  loading: loadingAttendance,
+  error: attendanceError,
+  hasMore,
+  loadNextPage,
+  updateFilters,
+} = usePaginatedFirestore<Attendance>('attendance', {
+  pageSize: 20,
+  orderByField: 'date',
+  orderDirection: 'desc',
+  filters: [],
+});
+
+// Actualizar filtros cuando cambian
+watch(
+  [selectedStudent, dateFilter],
+  () => {
+    const newFilters = [];
+
+    if (selectedStudent.value) {
+      newFilters.push(where('studentId', '==', selectedStudent.value.id));
+    }
+
+    if (dateFilter.value.start) {
+      newFilters.push(where('date', '>=', dateFilter.value.start));
+    }
+
+    if (dateFilter.value.end) {
+      newFilters.push(where('date', '<=', dateFilter.value.end));
+    }
+
+    updateFilters(newFilters);
+  },
+  { deep: true },
+);
+
+// Métodos
+const handleGroupChange = (groupId: string) => {
+  selectedGroupId.value = groupId;
+};
+
+const openStudentDetails = (student: Student) => {
+  selectedStudent.value = student;
+  showStudentModal.value = true;
+};
+
+const openAttendanceDetails = (attendance: Attendance) => {
+  selectedAttendance.value = attendance;
+  showAttendanceModal.value = true;
+};
+
+const handleSearchByDates = () => {
+  // La actualización de los filtros ya está manejada por el watcher
+};
+
+const loadMoreAttendance = () => {
+  if (!loadingAttendance.value) {
+    loadNextPage();
+  }
+};
+
+// Formateo de fechas para mostrar
+const formatDate = (date: any): string => {
+  if (!date) return '';
+
+  if (date.toDate) {
+    // Timestamp de Firestore
+    return date.toDate().toLocaleDateString('es-ES');
+  } else if (date instanceof Date) {
+    return date.toLocaleDateString('es-ES');
+  }
+
+  return String(date);
+};
+</script>
 
 <style scoped>
 .student-history-view {

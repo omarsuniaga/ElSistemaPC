@@ -161,12 +161,12 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import {XMarkIcon, ExclamationTriangleIcon, AcademicCapIcon} from "@heroicons/vue/24/outline"
-import {useAuthStore} from "../../../stores/auth"
-import {getTeacherClasses, addStudentToClass} from "../../Classes/service/classes"
-import {useToast} from "../../../composables/useToast"
-import type {GeneralNotification} from "../services/generalNotifications"
+import { ref, computed, watch, onMounted } from 'vue';
+import { XMarkIcon, ExclamationTriangleIcon, AcademicCapIcon } from '@heroicons/vue/24/outline';
+import { useAuthStore } from '../../../stores/auth';
+import { getTeacherClasses, addStudentToClass } from '../../Classes/service/classes';
+import { useToast } from '../../../composables/useToast';
+import type { GeneralNotification } from '../services/generalNotifications';
 
 // Props
 interface Props {
@@ -175,110 +175,110 @@ interface Props {
   notification: GeneralNotification | null
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
   close: []
   assigned: [data: {classId: string; className: string; studentId: string}]
-}>()
+}>();
 
 // Composables
-const authStore = useAuthStore()
-const toast = useToast()
+const authStore = useAuthStore();
+const toast = useToast();
 
 // Estado
-const selectedClassId = ref("")
-const availableClasses = ref<any[]>([])
-const loadingClasses = ref(false)
-const classesError = ref<string | null>(null)
-const isAssigning = ref(false)
-const assignmentError = ref<string | null>(null)
+const selectedClassId = ref('');
+const availableClasses = ref<any[]>([]);
+const loadingClasses = ref(false);
+const classesError = ref<string | null>(null);
+const isAssigning = ref(false);
+const assignmentError = ref<string | null>(null);
 
 // Computed
 const selectedClass = computed(() =>
-  availableClasses.value.find((c) => c.id === selectedClassId.value)
-)
+  availableClasses.value.find((c) => c.id === selectedClassId.value),
+);
 
 // Métodos
 const loadTeacherClasses = async () => {
-  if (!authStore.user?.uid) return
+  if (!authStore.user?.uid) return;
 
-  loadingClasses.value = true
-  classesError.value = null
+  loadingClasses.value = true;
+  classesError.value = null;
 
   try {
-    console.log("Cargando clases del maestro:", authStore.user.uid)
-    const classes = await getTeacherClasses(authStore.user.uid)
-    availableClasses.value = classes || []
-    console.log("Clases cargadas:", classes.length)
+    console.log('Cargando clases del maestro:', authStore.user.uid);
+    const classes = await getTeacherClasses(authStore.user.uid);
+    availableClasses.value = classes || [];
+    console.log('Clases cargadas:', classes.length);
   } catch (error: any) {
-    classesError.value = error.message || "Error al cargar las clases"
-    console.error("Error loading teacher classes:", error)
+    classesError.value = error.message || 'Error al cargar las clases';
+    console.error('Error loading teacher classes:', error);
   } finally {
-    loadingClasses.value = false
+    loadingClasses.value = false;
   }
-}
+};
 
 const handleAssignStudent = async () => {
   if (!selectedClassId.value || !props.student?.id || !selectedClass.value) {
-    return
+    return;
   }
 
-  isAssigning.value = true
-  assignmentError.value = null
+  isAssigning.value = true;
+  assignmentError.value = null;
 
   try {
-    console.log("Asignando estudiante a clase:", {
+    console.log('Asignando estudiante a clase:', {
       studentId: props.student.id,
       classId: selectedClassId.value,
       className: selectedClass.value.name,
-    })
+    });
 
     // Verificar si el estudiante ya está en la clase
-    const currentStudents = selectedClass.value.studentIds || []
+    const currentStudents = selectedClass.value.studentIds || [];
     if (currentStudents.includes(props.student.id)) {
-      assignmentError.value = "El estudiante ya está inscrito en esta clase"
-      return
+      assignmentError.value = 'El estudiante ya está inscrito en esta clase';
+      return;
     }
 
     // Asignar estudiante a la clase
-    await addStudentToClass(selectedClassId.value, props.student.id)
+    await addStudentToClass(selectedClassId.value, props.student.id);
 
     // Emitir evento de éxito
-    emit("assigned", {
+    emit('assigned', {
       classId: selectedClassId.value,
       className: selectedClass.value.name,
       studentId: props.student.id,
-    })
+    });
   } catch (error: any) {
-    assignmentError.value = error.message || "Error al asignar estudiante a la clase"
-    console.error("Error assigning student to class:", error)
+    assignmentError.value = error.message || 'Error al asignar estudiante a la clase';
+    console.error('Error assigning student to class:', error);
   } finally {
-    isAssigning.value = false
+    isAssigning.value = false;
   }
-}
+};
 
 const resetForm = () => {
-  selectedClassId.value = ""
-  assignmentError.value = null
-}
+  selectedClassId.value = '';
+  assignmentError.value = null;
+};
 
 // Watchers
 watch(
   () => props.show,
   (newShow) => {
     if (newShow) {
-      resetForm()
-      loadTeacherClasses()
+      resetForm();
+      loadTeacherClasses();
     }
-  }
-)
+  },
+);
 
 // Lifecycle
 onMounted(() => {
   if (props.show) {
-    loadTeacherClasses()
+    loadTeacherClasses();
   }
-})
+});
 </script>

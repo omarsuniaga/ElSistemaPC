@@ -251,197 +251,197 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {usePermissions} from "../modulos/Auth/composables/usePermissions"
-import {ResourceType, PermissionAction} from "../modulos/Auth/types/permissions"
-import PermissionGuard from "../modulos/Auth/components/PermissionGuard.vue"
+import { ref, computed } from 'vue';
+import { usePermissions } from '../modulos/Auth/composables/usePermissions';
+import { ResourceType, PermissionAction } from '../modulos/Auth/types/permissions';
+import PermissionGuard from '../modulos/Auth/components/PermissionGuard.vue';
 
 // ========== COMPOSABLES ==========
-const {userRole, hasPermission, hasGlobalScope, canAccessModule} = usePermissions()
+const { userRole, hasPermission, hasGlobalScope, canAccessModule } = usePermissions();
 
 // ========== DATOS REACTIVOS ==========
-const newObservation = ref("")
-const isDevelopment = ref(import.meta.env.DEV)
+const newObservation = ref('');
+const isDevelopment = ref(import.meta.env.DEV);
 
 // Datos de ejemplo
 const students = ref([
   {
-    id: "1",
-    name: "Ana García",
-    instrument: "Violín",
-    status: "Presente",
-    classId: "violin-basico",
-    teacherId: "teacher1",
+    id: '1',
+    name: 'Ana García',
+    instrument: 'Violín',
+    status: 'Presente',
+    classId: 'violin-basico',
+    teacherId: 'teacher1',
   },
   {
-    id: "2",
-    name: "Carlos López",
-    instrument: "Piano",
-    status: "Ausente",
-    classId: "piano-intermedio",
-    teacherId: "teacher2",
+    id: '2',
+    name: 'Carlos López',
+    instrument: 'Piano',
+    status: 'Ausente',
+    classId: 'piano-intermedio',
+    teacherId: 'teacher2',
   },
   {
-    id: "3",
-    name: "María Rodriguez",
-    instrument: "Guitarra",
-    status: "Tardanza",
-    classId: "guitarra-avanzado",
-    teacherId: "teacher1",
+    id: '3',
+    name: 'María Rodriguez',
+    instrument: 'Guitarra',
+    status: 'Tardanza',
+    classId: 'guitarra-avanzado',
+    teacherId: 'teacher1',
   },
-])
+]);
 
 const observations = ref([
   {
-    id: "1",
-    text: "Excelente progreso en la técnica de arco",
-    teacherName: "Prof. García",
-    teacherId: "teacher1",
+    id: '1',
+    text: 'Excelente progreso en la técnica de arco',
+    teacherName: 'Prof. García',
+    teacherId: 'teacher1',
     createdAt: new Date(),
   },
   {
-    id: "2",
-    text: "Necesita practicar más las escalas",
-    teacherName: "Prof. Martínez",
-    teacherId: "teacher2",
+    id: '2',
+    text: 'Necesita practicar más las escalas',
+    teacherName: 'Prof. Martínez',
+    teacherId: 'teacher2',
     createdAt: new Date(Date.now() - 86400000), // Ayer
   },
-])
+]);
 
 // ========== COMPUTED PROPERTIES ==========
 const studentsToShow = computed(() => {
   // Si tiene alcance global (Director), muestra todos los estudiantes
   if (hasGlobalScope.value) {
-    return students.value
+    return students.value;
   }
 
   // Si es Maestro, solo muestra estudiantes de sus clases
   // En un caso real, esto vendría del contexto del usuario actual
-  const currentTeacherId = "teacher1" // Simulado
-  return students.value.filter((student) => student.teacherId === currentTeacherId)
-})
+  const currentTeacherId = 'teacher1'; // Simulado
+  return students.value.filter((student) => student.teacherId === currentTeacherId);
+});
 
 // Permisos específicos computados
 const canEditDailyAttendance = computed(() =>
-  hasPermission(ResourceType.DAILY_ATTENDANCE, PermissionAction.UPDATE)
-)
+  hasPermission(ResourceType.DAILY_ATTENDANCE, PermissionAction.UPDATE),
+);
 
 const canViewConfidentialInfo = computed(() =>
-  hasPermission(ResourceType.CONFIDENTIAL_INFO, PermissionAction.READ)
-)
+  hasPermission(ResourceType.CONFIDENTIAL_INFO, PermissionAction.READ),
+);
 
 const canGenerateReports = computed(() =>
-  hasPermission(ResourceType.ATTENDANCE_REPORTS, PermissionAction.GENERATE_REPORTS)
-)
+  hasPermission(ResourceType.ATTENDANCE_REPORTS, PermissionAction.GENERATE_REPORTS),
+);
 
 // ========== MÉTODOS ==========
 const canEditAttendance = (studentId: string): boolean => {
   // Lógica adicional para verificar si puede editar este estudiante específico
-  const student = students.value.find((s) => s.id === studentId)
-  if (!student) return false
+  const student = students.value.find((s) => s.id === studentId);
+  if (!student) return false;
 
   // Si tiene alcance global, puede editar cualquier estudiante
-  if (hasGlobalScope.value) return true
+  if (hasGlobalScope.value) return true;
 
   // Si es su estudiante, puede editarlo
-  const currentTeacherId = "teacher1" // En caso real vendría del store de auth
-  return student.teacherId === currentTeacherId
-}
+  const currentTeacherId = 'teacher1'; // En caso real vendría del store de auth
+  return student.teacherId === currentTeacherId;
+};
 
 const canEditObservation = (observation: any): boolean => {
   // Director puede editar cualquier observación
-  if (hasGlobalScope.value) return true
+  if (hasGlobalScope.value) return true;
 
   // Maestro solo puede editar sus propias observaciones
-  const currentTeacherId = "teacher1" // En caso real vendría del store de auth
-  return observation.teacherId === currentTeacherId
-}
+  const currentTeacherId = 'teacher1'; // En caso real vendría del store de auth
+  return observation.teacherId === currentTeacherId;
+};
 
 const markPresent = (studentId: string) => {
-  if (!canEditAttendance(studentId)) return
+  if (!canEditAttendance(studentId)) return;
 
-  const student = students.value.find((s) => s.id === studentId)
+  const student = students.value.find((s) => s.id === studentId);
   if (student) {
-    student.status = "Presente"
-    console.log(`✅ Marcado como presente: ${student.name}`)
+    student.status = 'Presente';
+    console.log(`✅ Marcado como presente: ${student.name}`);
   }
-}
+};
 
 const markAbsent = (studentId: string) => {
-  if (!canEditAttendance(studentId)) return
+  if (!canEditAttendance(studentId)) return;
 
-  const student = students.value.find((s) => s.id === studentId)
+  const student = students.value.find((s) => s.id === studentId);
   if (student) {
-    student.status = "Ausente"
-    console.log(`❌ Marcado como ausente: ${student.name}`)
+    student.status = 'Ausente';
+    console.log(`❌ Marcado como ausente: ${student.name}`);
   }
-}
+};
 
 const addObservation = () => {
-  if (!hasPermission(ResourceType.OBSERVATIONS, PermissionAction.CREATE)) return
-  if (!newObservation.value.trim()) return
+  if (!hasPermission(ResourceType.OBSERVATIONS, PermissionAction.CREATE)) return;
+  if (!newObservation.value.trim()) return;
 
   const observation = {
     id: Date.now().toString(),
     text: newObservation.value,
-    teacherName: "Prof. García", // En caso real vendría del store de auth
-    teacherId: "teacher1",
+    teacherName: 'Prof. García', // En caso real vendría del store de auth
+    teacherId: 'teacher1',
     createdAt: new Date(),
-  }
+  };
 
-  observations.value.unshift(observation)
-  newObservation.value = ""
-  console.log("📝 Observación agregada:", observation.text)
-}
+  observations.value.unshift(observation);
+  newObservation.value = '';
+  console.log('📝 Observación agregada:', observation.text);
+};
 
 const editObservation = (observationId: string) => {
-  const observation = observations.value.find((o) => o.id === observationId)
+  const observation = observations.value.find((o) => o.id === observationId);
   if (observation && canEditObservation(observation)) {
-    console.log("✏️ Editando observación:", observation.text)
+    console.log('✏️ Editando observación:', observation.text);
     // Aquí iría la lógica de edición
   }
-}
+};
 
 const generateReport = () => {
-  if (!canGenerateReports.value) return
-  console.log("📊 Generando reporte de asistencia...")
+  if (!canGenerateReports.value) return;
+  console.log('📊 Generando reporte de asistencia...');
   // Aquí iría la lógica de generación de reportes
-}
+};
 
 const viewConfidentialInfo = () => {
-  if (!canViewConfidentialInfo.value) return
-  console.log("🔒 Accediendo a información confidencial...")
+  if (!canViewConfidentialInfo.value) return;
+  console.log('🔒 Accediendo a información confidencial...');
   // Aquí iría la lógica para mostrar información confidencial
-}
+};
 
 const viewStudentConfidential = (studentId: string) => {
-  if (!canViewConfidentialInfo.value) return
-  const student = students.value.find((s) => s.id === studentId)
-  console.log("👤 Viendo info confidencial de:", student?.name)
+  if (!canViewConfidentialInfo.value) return;
+  const student = students.value.find((s) => s.id === studentId);
+  console.log('👤 Viendo info confidencial de:', student?.name);
   // Aquí iría la lógica para mostrar información confidencial del estudiante
-}
+};
 
 const getStatusClass = (status: string): string => {
   switch (status) {
-    case "Presente":
-      return "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200"
-    case "Ausente":
-      return "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200"
-    case "Tardanza":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200"
+  case 'Presente':
+    return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200';
+  case 'Ausente':
+    return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200';
+  case 'Tardanza':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-200';
   }
-}
+};
 
 const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
 </script>
 
 <style scoped>

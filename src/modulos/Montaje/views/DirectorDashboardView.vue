@@ -1,70 +1,8 @@
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useMontajeStore } from '../store/montaje'
-import { permissionsService } from '../service/permissionsService'
-import { MontajePermission } from '../types/permissions'
-import DirectorAggregatedHeatmap from '../components/DirectorAggregatedHeatmap.vue'
-
-const router = useRouter()
-const route = useRoute()
-const montajeStore = useMontajeStore()
-
-// Estado
-const isLoading = ref(true)
-const error = ref<string | null>(null)
-const hasPermission = ref(false)
-
-// Calcular ID de obra desde ruta
-const obraId = computed(() => route.params.id?.toString() || '')
-
-// Determinar si hay una obra seleccionada
-const hasSelectedWork = computed(() => !!montajeStore.obraActual)
-
-// Cargar datos iniciales
-async function loadInitialData() {
-  isLoading.value = true
-  error.value = null
-  
-  try {
-    // Verificar permisos RBAC para ver reportes agregados
-    const canViewAggregated = await permissionsService.hasPermission(
-      MontajePermission.VIEW_AGGREGATED_REPORTS
-    )
-    hasPermission.value = canViewAggregated
-    
-    if (!hasPermission.value) {
-      error.value = 'No tienes permisos para ver esta página. Esta función está reservada para directores y administradores.'
-      return
-    }
-    
-    // Cargar obra actual si no está cargada
-    if (obraId.value && !montajeStore.obraActual) {
-      await montajeStore.cargarObra(obraId.value)
-    }
-    
-  } catch (err) {
-    console.error('Error cargando datos del dashboard:', err)
-    error.value = 'Error al cargar información. Intenta nuevamente.'
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Volver a la lista de obras
-function goBack() {
-  router.push('/montaje/obras')
-}
-
-// Al montar el componente
-onMounted(loadInitialData)
-</script>
-
 <template>
   <div class="director-dashboard">
     <!-- Barra superior con navegación y título -->
     <div class="top-bar mb-4 flex items-center gap-4">
-      <button @click="goBack" class="btn btn-outline-secondary">
+      <button class="btn btn-outline-secondary" @click="goBack">
         <i class="bi bi-arrow-left"></i> Volver
       </button>
       
@@ -116,6 +54,68 @@ onMounted(loadInitialData)
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { useMontajeStore } from '../store/montaje';
+import { permissionsService } from '../service/permissionsService';
+import { MontajePermission } from '../types/permissions';
+import DirectorAggregatedHeatmap from '../components/DirectorAggregatedHeatmap.vue';
+
+const router = useRouter();
+const route = useRoute();
+const montajeStore = useMontajeStore();
+
+// Estado
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+const hasPermission = ref(false);
+
+// Calcular ID de obra desde ruta
+const obraId = computed(() => route.params.id?.toString() || '');
+
+// Determinar si hay una obra seleccionada
+const hasSelectedWork = computed(() => !!montajeStore.obraActual);
+
+// Cargar datos iniciales
+async function loadInitialData() {
+  isLoading.value = true;
+  error.value = null;
+  
+  try {
+    // Verificar permisos RBAC para ver reportes agregados
+    const canViewAggregated = await permissionsService.hasPermission(
+      MontajePermission.VIEW_AGGREGATED_REPORTS,
+    );
+    hasPermission.value = canViewAggregated;
+    
+    if (!hasPermission.value) {
+      error.value = 'No tienes permisos para ver esta página. Esta función está reservada para directores y administradores.';
+      return;
+    }
+    
+    // Cargar obra actual si no está cargada
+    if (obraId.value && !montajeStore.obraActual) {
+      await montajeStore.cargarObra(obraId.value);
+    }
+    
+  } catch (err) {
+    console.error('Error cargando datos del dashboard:', err);
+    error.value = 'Error al cargar información. Intenta nuevamente.';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Volver a la lista de obras
+function goBack() {
+  router.push('/montaje/obras');
+}
+
+// Al montar el componente
+onMounted(loadInitialData);
+</script>
 
 <style scoped>
 .director-dashboard {

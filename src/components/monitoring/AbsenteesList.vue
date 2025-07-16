@@ -208,9 +208,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
+import { computed } from 'vue';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 // Props
 interface Absentee {
@@ -234,7 +234,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
-})
+});
 
 // Emits
 const emit = defineEmits<{
@@ -242,54 +242,54 @@ const emit = defineEmits<{
   justify: [absentee: Absentee]
   followUp: [absentee: Absentee]
   notifyAll: [absentees: Absentee[]]
-}>()
+}>();
 
 // Computed
 const sortedAbsentees = computed(() => {
   return [...props.absentees].sort((a, b) => {
     // Priorizar por ausencias consecutivas
     if (a.consecutiveAbsences !== b.consecutiveAbsences) {
-      return b.consecutiveAbsences - a.consecutiveAbsences
+      return b.consecutiveAbsences - a.consecutiveAbsences;
     }
     // Luego por nombre
-    return a.studentName.localeCompare(b.studentName)
-  })
-})
+    return a.studentName.localeCompare(b.studentName);
+  });
+});
 
 // Methods
 const getInitials = (name: string): string => {
   return name
-    .split(" ")
+    .split(' ')
     .map((n) => n[0])
-    .join("")
+    .join('')
     .toUpperCase()
-    .slice(0, 2)
-}
+    .slice(0, 2);
+};
 
 const formatTime = (time: string): string => {
   try {
-    const [hours, minutes] = time.split(":")
-    const date = new Date()
-    date.setHours(parseInt(hours), parseInt(minutes), 0, 0)
-    return format(date, "HH:mm", {locale: es})
+    const [hours, minutes] = time.split(':');
+    const date = new Date();
+    date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    return format(date, 'HH:mm', { locale: es });
   } catch {
-    return time
+    return time;
   }
-}
+};
 
 const contactStudent = (absentee: Absentee): void => {
-  emit("contact", absentee)
-}
+  emit('contact', absentee);
+};
 
 const markAsJustified = (absentee: Absentee): void => {
-  emit("justify", absentee)
-}
+  emit('justify', absentee);
+};
 
 const scheduleFollowUp = (absentee: Absentee): void => {
-  emit("followUp", absentee)
-}
+  emit('followUp', absentee);
+};
 
 const notifyAll = (): void => {
-  emit("notifyAll", props.absentees)
-}
+  emit('notifyAll', props.absentees);
+};
 </script>

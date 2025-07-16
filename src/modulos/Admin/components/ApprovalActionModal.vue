@@ -73,8 +73,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
-import {CheckCircleIcon, XCircleIcon} from "@heroicons/vue/24/outline"
+import { ref } from 'vue';
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/vue/24/outline';
 
 interface PendingApproval {
   id: string
@@ -89,20 +89,20 @@ interface PendingApproval {
 
 interface Props {
   approval: PendingApproval | null
-  action: "approve" | "reject" | null
+  action: 'approve' | 'reject' | null
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 const emit = defineEmits<{
   confirm: [reason?: string]
   cancel: []
   close: []
-}>()
+}>();
 
-const rejectionReason = ref("")
+const rejectionReason = ref('');
 
 const handleConfirm = () => {
-  emit("confirm", rejectionReason.value || undefined)
-}
+  emit('confirm', rejectionReason.value || undefined);
+};
 </script>

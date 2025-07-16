@@ -286,265 +286,265 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import type {ClassData} from "../types/class"
+import { ref, computed } from 'vue';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import type { ClassData } from '../types/class';
 import {
   CalendarDaysIcon,
   ClockIcon,
   UserIcon,
   UsersIcon,
   ArrowDownTrayIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 const props = defineProps<{
   classes: ClassData[]
-}>()
+}>();
 
 defineEmits<{
-  (e: "class-selected", classItem: ClassData): void
-}>()
+  (e: 'class-selected', classItem: ClassData): void
+}>();
 
-const teachersStore = useTeachersStore()
+const teachersStore = useTeachersStore();
 
-const viewMode = ref<"week" | "list">("week")
+const viewMode = ref<'week' | 'list'>('week');
 
 const filters = ref({
-  teacherId: "",
-  instrument: "",
-  day: "",
-  timeRange: "",
-})
+  teacherId: '',
+  instrument: '',
+  day: '',
+  timeRange: '',
+});
 
 const weekDays = [
-  {label: "Lunes", value: "monday"},
-  {label: "Martes", value: "tuesday"},
-  {label: "Miércoles", value: "wednesday"},
-  {label: "Jueves", value: "thursday"},
-  {label: "Viernes", value: "friday"},
-  {label: "Sábado", value: "saturday"},
-  {label: "Domingo", value: "sunday"},
-]
+  { label: 'Lunes', value: 'monday' },
+  { label: 'Martes', value: 'tuesday' },
+  { label: 'Miércoles', value: 'wednesday' },
+  { label: 'Jueves', value: 'thursday' },
+  { label: 'Viernes', value: 'friday' },
+  { label: 'Sábado', value: 'saturday' },
+  { label: 'Domingo', value: 'sunday' },
+];
 
-const timeSlots = Array.from({length: 16}, (_, i) => i + 6) // 6:00 to 21:00
+const timeSlots = Array.from({ length: 16 }, (_, i) => i + 6); // 6:00 to 21:00
 
-const teachers = computed(() => teachersStore.teachers)
+const teachers = computed(() => teachersStore.teachers);
 
 const filteredClasses = computed(() => {
   return props.classes.filter((classItem) => {
     // Filter by teacher
     if (filters.value.teacherId && classItem.teacherId !== filters.value.teacherId) {
-      return false
+      return false;
     }
 
     // Filter by instrument
     if (filters.value.instrument && classItem.instrument !== filters.value.instrument) {
-      return false
+      return false;
     }
 
     // Filter by day
     if (filters.value.day && !hasScheduleForDay(classItem, filters.value.day)) {
-      return false
+      return false;
     }
 
     // Filter by time range
     if (filters.value.timeRange && !isInTimeRange(classItem, filters.value.timeRange)) {
-      return false
+      return false;
     }
 
-    return true
-  })
-})
+    return true;
+  });
+});
 
 function hasScheduleForDay(classItem: ClassData, day: string): boolean {
   if (Array.isArray(classItem.schedule?.slots)) {
-    return classItem.schedule.slots.some((slot) => slot.day === day)
+    return classItem.schedule.slots.some((slot) => slot.day === day);
   }
-  return (classItem.schedule as any)?.day === day
+  return (classItem.schedule as any)?.day === day;
 }
 
 function isInTimeRange(classItem: ClassData, timeRange: string): boolean {
-  let startTime: string | undefined
+  let startTime: string | undefined;
 
   if (Array.isArray(classItem.schedule?.slots)) {
-    startTime = classItem.schedule.slots[0]?.startTime
+    startTime = classItem.schedule.slots[0]?.startTime;
   } else {
-    startTime = (classItem.schedule as any)?.startTime
+    startTime = (classItem.schedule as any)?.startTime;
   }
 
-  if (!startTime) return false
+  if (!startTime) return false;
 
-  const hour = parseInt(startTime.split(":")[0])
+  const hour = parseInt(startTime.split(':')[0]);
   switch (timeRange) {
-    case "morning":
-      return hour >= 6 && hour < 12
-    case "afternoon":
-      return hour >= 12 && hour < 18
-    case "evening":
-      return hour >= 18 && hour < 22
-    default:
-      return true
+  case 'morning':
+    return hour >= 6 && hour < 12;
+  case 'afternoon':
+    return hour >= 12 && hour < 18;
+  case 'evening':
+    return hour >= 18 && hour < 22;
+  default:
+    return true;
   }
 }
 
 function getTeacherName(teacherId?: string): string {
-  if (!teacherId) return "Sin asignar"
-  const teacher = teachers.value.find((t) => t.id === teacherId)
-  return teacher ? teacher.name : "Maestro no encontrado"
+  if (!teacherId) return 'Sin asignar';
+  const teacher = teachers.value.find((t) => t.id === teacherId);
+  return teacher ? teacher.name : 'Maestro no encontrado';
 }
 
 function getClassCountForDay(day: string): number {
-  return filteredClasses.value.filter((c) => hasScheduleForDay(c, day)).length
+  return filteredClasses.value.filter((c) => hasScheduleForDay(c, day)).length;
 }
 
 function getClassesForDay(day: string): ClassData[] {
   return filteredClasses.value
     .filter((c) => hasScheduleForDay(c, day))
     .sort((a, b) => {
-      const timeA = getClassStartTime(a) || "00:00"
-      const timeB = getClassStartTime(b) || "00:00"
-      return timeA.localeCompare(timeB)
-    })
+      const timeA = getClassStartTime(a) || '00:00';
+      const timeB = getClassStartTime(b) || '00:00';
+      return timeA.localeCompare(timeB);
+    });
 }
 
 function getClassStartTime(classItem: ClassData): string | undefined {
   if (Array.isArray(classItem.schedule?.slots)) {
-    return classItem.schedule.slots[0]?.startTime
+    return classItem.schedule.slots[0]?.startTime;
   }
-  return (classItem.schedule as any)?.startTime
+  return (classItem.schedule as any)?.startTime;
 }
 
 function getClassesForTimeSlot(day: string, hour: number): ClassData[] {
   return filteredClasses.value.filter((classItem) => {
-    if (!hasScheduleForDay(classItem, day)) return false
+    if (!hasScheduleForDay(classItem, day)) return false;
 
-    const startTime = getClassStartTime(classItem)
-    if (!startTime) return false
+    const startTime = getClassStartTime(classItem);
+    if (!startTime) return false;
 
-    const classHour = parseInt(startTime.split(":")[0])
-    return classHour === hour
-  })
+    const classHour = parseInt(startTime.split(':')[0]);
+    return classHour === hour;
+  });
 }
 
 function formatHour(hour: number): string {
-  return `${hour.toString().padStart(2, "0")}:00`
+  return `${hour.toString().padStart(2, '0')}:00`;
 }
 
 function formatScheduleTime(schedule: any): string {
-  if (!schedule) return "Sin horario"
+  if (!schedule) return 'Sin horario';
 
   if (Array.isArray(schedule.slots) && schedule.slots.length > 0) {
-    const slot = schedule.slots[0]
-    return `${slot.startTime} - ${slot.endTime}`
+    const slot = schedule.slots[0];
+    return `${slot.startTime} - ${slot.endTime}`;
   }
 
   if (schedule.startTime && schedule.endTime) {
-    return `${schedule.startTime} - ${schedule.endTime}`
+    return `${schedule.startTime} - ${schedule.endTime}`;
   }
 
-  return "Sin horario"
+  return 'Sin horario';
 }
 
 function getClassColor(instrument?: string): string {
   if (!instrument)
-    return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600"
+    return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600';
 
   const colors: Record<string, string> = {
     piano:
-      "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700",
+      'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700',
     guitarra:
-      "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700",
+      'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-700',
     violin:
-      "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700",
+      'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-purple-200 dark:border-purple-700',
     flauta:
-      "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700",
+      'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-200 dark:border-yellow-700',
     bateria:
-      "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700",
+      'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-700',
     canto:
-      "bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 border-pink-200 dark:border-pink-700",
-  }
+      'bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 border-pink-200 dark:border-pink-700',
+  };
   return (
     colors[instrument] ||
-    "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600"
-  )
+    'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600'
+  );
 }
 
 function getInstrumentColor(instrument?: string): string {
-  if (!instrument) return "bg-gray-500"
+  if (!instrument) return 'bg-gray-500';
 
   const colors: Record<string, string> = {
-    piano: "bg-blue-500",
-    guitarra: "bg-green-500",
-    violin: "bg-purple-500",
-    flauta: "bg-yellow-500",
-    bateria: "bg-red-500",
-    canto: "bg-pink-500",
-  }
-  return colors[instrument] || "bg-gray-500"
+    piano: 'bg-blue-500',
+    guitarra: 'bg-green-500',
+    violin: 'bg-purple-500',
+    flauta: 'bg-yellow-500',
+    bateria: 'bg-red-500',
+    canto: 'bg-pink-500',
+  };
+  return colors[instrument] || 'bg-gray-500';
 }
 
 function getInstrumentBadgeColor(instrument?: string): string {
-  if (!instrument) return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+  if (!instrument) return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
 
   const colors: Record<string, string> = {
-    piano: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200",
-    guitarra: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
-    violin: "bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200",
-    flauta: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
-    bateria: "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200",
-    canto: "bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200",
-  }
-  return colors[instrument] || "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+    piano: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
+    guitarra: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+    violin: 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200',
+    flauta: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+    bateria: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
+    canto: 'bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200',
+  };
+  return colors[instrument] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
 }
 
 function exportSchedule() {
   // Implementar lógica de exportación
-  console.log("Exportando horarios...")
+  console.log('Exportando horarios...');
 
   // Crear CSV con los horarios
   const csvData = filteredClasses.value.map((classItem) => {
-    const startTime = getClassStartTime(classItem) || ""
-    const endTime = getClassEndTime(classItem) || ""
-    const day = getClassDay(classItem) || ""
+    const startTime = getClassStartTime(classItem) || '';
+    const endTime = getClassEndTime(classItem) || '';
+    const day = getClassDay(classItem) || '';
 
     return {
       Clase: classItem.name,
-      Instrumento: classItem.instrument || "",
+      Instrumento: classItem.instrument || '',
       Nivel: classItem.level,
       Maestro: getTeacherName(classItem.teacherId),
-      Día: weekDays.find((d) => d.value === day)?.label || "",
-      "Hora Inicio": startTime,
-      "Hora Fin": endTime,
+      Día: weekDays.find((d) => d.value === day)?.label || '',
+      'Hora Inicio': startTime,
+      'Hora Fin': endTime,
       Estudiantes: classItem.studentIds?.length || 0,
-    }
-  })
+    };
+  });
 
   const csvContent = [
-    Object.keys(csvData[0] || {}).join(","),
-    ...csvData.map((row) => Object.values(row).join(",")),
-  ].join("\n")
+    Object.keys(csvData[0] || {}).join(','),
+    ...csvData.map((row) => Object.values(row).join(',')),
+  ].join('\n');
 
-  const blob = new Blob([csvContent], {type: "text/csv"})
-  const url = window.URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = "horarios-clases.csv"
-  a.click()
-  window.URL.revokeObjectURL(url)
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'horarios-clases.csv';
+  a.click();
+  window.URL.revokeObjectURL(url);
 }
 
 function getClassEndTime(classItem: ClassData): string | undefined {
   if (Array.isArray(classItem.schedule?.slots)) {
-    return classItem.schedule.slots[0]?.endTime
+    return classItem.schedule.slots[0]?.endTime;
   }
-  return (classItem.schedule as any)?.endTime
+  return (classItem.schedule as any)?.endTime;
 }
 
 function getClassDay(classItem: ClassData): string | undefined {
   if (Array.isArray(classItem.schedule?.slots)) {
-    return classItem.schedule.slots[0]?.day
+    return classItem.schedule.slots[0]?.day;
   }
-  return (classItem.schedule as any)?.day
+  return (classItem.schedule as any)?.day;
 }
 </script>
 

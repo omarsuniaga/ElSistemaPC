@@ -131,19 +131,19 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, computed} from "vue"
-import {useAttendanceStore} from "@/stores/attendance"
-import {useAuthStore} from "@/stores/auth"
-import {format} from "date-fns"
+import { ref, onMounted, computed } from 'vue';
+import { useAttendanceStore } from '@/stores/attendance';
+import { useAuthStore } from '@/stores/auth';
+import { format } from 'date-fns';
 
-defineOptions({name: "WeeklyAttendanceChart"})
+defineOptions({ name: 'WeeklyAttendanceChart' });
 
-const loading = ref(true)
-const error = ref(false)
+const loading = ref(true);
+const error = ref(false);
 
 // Stores
-const attendanceStore = useAttendanceStore()
-const authStore = useAuthStore()
+const attendanceStore = useAttendanceStore();
+const authStore = useAuthStore();
 
 // Datos de la semana
 const weeklyData = ref({
@@ -152,13 +152,13 @@ const weeklyData = ref({
   tardes: 0,
   justificados: 0,
   totalClasses: 0,
-})
+});
 
 // KPIs computados para la semana
 const weeklyKPIs = computed(() => {
-  const {presentes, ausentes, tardes, justificados, totalClasses} = weeklyData.value
-  const totalStudents = presentes + ausentes + tardes + justificados
-  const attendanceRate = totalStudents > 0 ? Math.round((presentes / totalStudents) * 100) : 0
+  const { presentes, ausentes, tardes, justificados, totalClasses } = weeklyData.value;
+  const totalStudents = presentes + ausentes + tardes + justificados;
+  const attendanceRate = totalStudents > 0 ? Math.round((presentes / totalStudents) * 100) : 0;
 
   return {
     presentes,
@@ -168,77 +168,77 @@ const weeklyKPIs = computed(() => {
     totalStudents,
     totalClasses,
     attendanceRate,
-  }
-})
+  };
+});
 
 const fetchWeeklyAttendance = async () => {
-  loading.value = true
-  error.value = false
+  loading.value = true;
+  error.value = false;
   try {
-    console.log("[WeeklyAttendanceChart] Iniciando carga de métricas semanales...")
+    console.log('[WeeklyAttendanceChart] Iniciando carga de métricas semanales...');
 
-    const today = new Date()
-    const last7Days = Array.from({length: 7}, (_, i) => {
-      const d = new Date(today)
-      d.setDate(today.getDate() - i)
-      return d
-    }).reverse()
+    const today = new Date();
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      return d;
+    }).reverse();
 
     // Obtener rango de fechas para el store
-    const startDate = format(last7Days[0], "yyyy-MM-dd")
-    const endDate = format(last7Days[6], "yyyy-MM-dd")
+    const startDate = format(last7Days[0], 'yyyy-MM-dd');
+    const endDate = format(last7Days[6], 'yyyy-MM-dd');
 
-    console.log(`[WeeklyAttendanceChart] Obteniendo datos del ${startDate} al ${endDate}`)
+    console.log(`[WeeklyAttendanceChart] Obteniendo datos del ${startDate} al ${endDate}`);
 
     // Usar el store de asistencia para obtener documentos
-    const teacherId = authStore.user?.uid
+    const teacherId = authStore.user?.uid;
     if (!teacherId) {
-      throw new Error("Usuario no autenticado")
+      throw new Error('Usuario no autenticado');
     }
 
     // Obtener documentos de asistencia para el rango de fechas
-    await attendanceStore.fetchAttendanceDocumentsByTeacher(teacherId, startDate, endDate)
+    await attendanceStore.fetchAttendanceDocumentsByTeacher(teacherId, startDate, endDate);
 
     // Inicializar contadores
-    let totalPresentes = 0
-    let totalAusentes = 0
-    let totalTardes = 0
-    let totalJustificados = 0
-    const classesSet = new Set<string>()
+    let totalPresentes = 0;
+    let totalAusentes = 0;
+    let totalTardes = 0;
+    let totalJustificados = 0;
+    const classesSet = new Set<string>();
 
     // Procesar los documentos para extraer estadísticas
     attendanceStore.attendanceDocuments.forEach((doc) => {
-      const docDate = new Date(doc.fecha)
-      const isInRange = docDate >= last7Days[0] && docDate <= last7Days[6]
+      const docDate = new Date(doc.fecha);
+      const isInRange = docDate >= last7Days[0] && docDate <= last7Days[6];
 
       if (isInRange && doc.data) {
         // Agregar clase al set para contar clases únicas
-        classesSet.add(`${doc.fecha}_${doc.classId}`)
+        classesSet.add(`${doc.fecha}_${doc.classId}`);
 
         // Sumar presentes
-        totalPresentes += doc.data.presentes?.length || 0
+        totalPresentes += doc.data.presentes?.length || 0;
 
         // Obtener justificados
-        const justificados = doc.data.justificacion?.map((j) => j.studentId || j.id) || []
+        const justificados = doc.data.justificacion?.map((j) => j.studentId || j.id) || [];
 
         // Sumar ausentes (excluyendo los justificados)
-        const ausentes = doc.data.ausentes || []
+        const ausentes = doc.data.ausentes || [];
         const ausentesNoJustificados = ausentes.filter(
-          (studentId) => !justificados.includes(studentId)
-        )
-        totalAusentes += ausentesNoJustificados.length
+          (studentId) => !justificados.includes(studentId),
+        );
+        totalAusentes += ausentesNoJustificados.length;
 
         // Sumar tardanzas (excluyendo los justificados)
-        const tardanzas = doc.data.tarde || []
+        const tardanzas = doc.data.tarde || [];
         const tardanzasNoJustificadas = tardanzas.filter(
-          (studentId) => !justificados.includes(studentId)
-        )
-        totalTardes += tardanzasNoJustificadas.length
+          (studentId) => !justificados.includes(studentId),
+        );
+        totalTardes += tardanzasNoJustificadas.length;
 
         // Sumar justificados (de todas las categorías)
-        totalJustificados += justificados.length
+        totalJustificados += justificados.length;
       }
-    })
+    });
 
     // Actualizar datos
     weeklyData.value = {
@@ -247,18 +247,18 @@ const fetchWeeklyAttendance = async () => {
       tardes: totalTardes,
       justificados: totalJustificados,
       totalClasses: classesSet.size,
-    }
+    };
 
-    console.log("[WeeklyAttendanceChart] Métricas cargadas exitosamente:", weeklyData.value)
+    console.log('[WeeklyAttendanceChart] Métricas cargadas exitosamente:', weeklyData.value);
   } catch (e) {
-    console.error("[WeeklyAttendanceChart] Error al cargar métricas semanales:", e)
-    error.value = true
+    console.error('[WeeklyAttendanceChart] Error al cargar métricas semanales:', e);
+    error.value = true;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 onMounted(() => {
-  fetchWeeklyAttendance()
-})
+  fetchWeeklyAttendance();
+});
 </script>

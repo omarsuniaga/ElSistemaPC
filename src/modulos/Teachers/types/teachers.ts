@@ -2,9 +2,9 @@
 
 // Estado de empleo del maestro (se usa exclusivamente el enum)
 export enum TeacherStatus {
-  ACTIVE = "active",
-  ON_LEAVE = "on_leave",
-  INACTIVE = "inactive",
+  ACTIVE = 'active',
+  ON_LEAVE = 'on_leave',
+  INACTIVE = 'inactive',
 }
 
 // Interfaz base para registros con timestamps
@@ -53,7 +53,7 @@ export interface Qualification {
 
 // Interfaces para operaciones CRUD:
 // TeacherCreate no incluye el campo 'id' ya que se genera en la base.
-export type TeacherCreate = Omit<Teacher, "id">
+export type TeacherCreate = Omit<Teacher, 'id'>
 // TeacherUpdate utiliza los mismos campos de TeacherCreate, pero todos opcionales.
 export type TeacherUpdate = Partial<TeacherCreate>
 

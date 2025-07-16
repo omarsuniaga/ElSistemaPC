@@ -1,94 +1,94 @@
-import {ref} from "vue"
+import { ref } from 'vue';
 
 /**
  * Composable para manejar un diccionario inteligente de sugerencias de texto
  * basado en patrones de texto previo
  */
 export function useSmartDictionary() {
-  const phraseDictionary = ref<{[key: string]: string[]}>({})
-  const suggestionActive = ref(false)
-  const currentSuggestion = ref("")
-  const typingTimeout = ref<number | null>(null)
+  const phraseDictionary = ref<{[key: string]: string[]}>({});
+  const suggestionActive = ref(false);
+  const currentSuggestion = ref('');
+  const typingTimeout = ref<number | null>(null);
 
   /**
    * Analiza el texto para construir un diccionario de frases
    * @param text - Texto a analizar
    */ const analyzeText = (text: string | unknown) => {
     // Asegurar que text sea una cadena
-    const safeText = typeof text === "string" ? text : ""
-    const words = safeText.split(/\s+/)
+    const safeText = typeof text === 'string' ? text : '';
+    const words = safeText.split(/\s+/);
 
     // Construir diccionario basado en secuencias de 3 palabras
     for (let i = 0; i < words.length - 3; i++) {
       const trigram = words
         .slice(i, i + 3)
-        .join(" ")
-        .toLowerCase()
-      const nextWords = words.slice(i + 3).join(" ")
+        .join(' ')
+        .toLowerCase();
+      const nextWords = words.slice(i + 3).join(' ');
 
       if (trigram && nextWords) {
         if (!phraseDictionary.value[trigram]) {
-          phraseDictionary.value[trigram] = []
+          phraseDictionary.value[trigram] = [];
         }
         // Limitar la cantidad de sugerencias
         if (
           phraseDictionary.value[trigram].length < 5 &&
           !phraseDictionary.value[trigram].includes(nextWords)
         ) {
-          phraseDictionary.value[trigram].push(nextWords)
+          phraseDictionary.value[trigram].push(nextWords);
         }
       }
     }
 
     // Guardar el diccionario en localStorage
     try {
-      localStorage.setItem("observationsDictionary", JSON.stringify(phraseDictionary.value))
+      localStorage.setItem('observationsDictionary', JSON.stringify(phraseDictionary.value));
     } catch (e) {
-      console.error("Error guardando diccionario en localStorage", e)
+      console.error('Error guardando diccionario en localStorage', e);
     }
-  }
+  };
 
   /**
    * Carga el diccionario de frases guardado en localStorage
    */
   const loadSavedDictionary = () => {
     try {
-      const saved = localStorage.getItem("observationsDictionary")
+      const saved = localStorage.getItem('observationsDictionary');
       if (saved) {
-        phraseDictionary.value = JSON.parse(saved)
+        phraseDictionary.value = JSON.parse(saved);
       }
     } catch (e) {
-      console.error("Error cargando diccionario desde localStorage", e)
+      console.error('Error cargando diccionario desde localStorage', e);
     }
-  }
+  };
 
   /**
    * Busca una sugerencia basada en las últimas palabras escritas
    * @param text - Texto actual hasta el cursor
    */ const findSuggestion = (text: string | unknown) => {
     // Asegurar que text sea una cadena
-    const safeText = typeof text === "string" ? text : ""
+    const safeText = typeof text === 'string' ? text : '';
 
     // Obtener las últimas palabras hasta el cursor
-    const words = safeText.trim().split(/\s+/)
+    const words = safeText.trim().split(/\s+/);
 
     // Si tenemos al menos 3 palabras, buscar en el diccionario
     if (words.length >= 3) {
-      const lastThreeWords = words.slice(-3).join(" ").toLowerCase()
-      const suggestions = phraseDictionary.value[lastThreeWords]
+      const lastThreeWords = words.slice(-3).join(' ').toLowerCase();
+      const suggestions = phraseDictionary.value[lastThreeWords];
 
       if (suggestions && suggestions.length > 0) {
         // Usar la primera sugerencia encontrada
-        currentSuggestion.value = suggestions[0]
-        suggestionActive.value = true
-        return
+        currentSuggestion.value = suggestions[0];
+        suggestionActive.value = true;
+        return;
       }
     }
 
     // Si no hay sugerencias, limpiar
-    suggestionActive.value = false
-    currentSuggestion.value = ""
-  }
+    suggestionActive.value = false;
+    currentSuggestion.value = '';
+  };
   /**
    * Aplica la sugerencia actual al texto
    * @param textBeforeCursor - Texto antes del cursor
@@ -97,41 +97,41 @@ export function useSmartDictionary() {
    */
   const applySuggestion = (
     textBeforeCursor: string | unknown,
-    textAfterCursor: string | unknown
+    textAfterCursor: string | unknown,
   ) => {
     if (!suggestionActive.value || !currentSuggestion.value) {
-      return null
+      return null;
     }
 
     // Asegurar que los textos sean cadenas
-    const safeTextBefore = typeof textBeforeCursor === "string" ? textBeforeCursor : ""
-    const safeTextAfter = typeof textAfterCursor === "string" ? textAfterCursor : ""
-    const words = safeTextBefore.trim().split(/\s+/)
-    const preserveText = words.slice(0, Math.max(0, words.length - 3)).join(" ")
-    const suggestion = words.slice(-3).join(" ") + " " + currentSuggestion.value
+    const safeTextBefore = typeof textBeforeCursor === 'string' ? textBeforeCursor : '';
+    const safeTextAfter = typeof textAfterCursor === 'string' ? textAfterCursor : '';
+    const words = safeTextBefore.trim().split(/\s+/);
+    const preserveText = words.slice(0, Math.max(0, words.length - 3)).join(' ');
+    const suggestion = words.slice(-3).join(' ') + ' ' + currentSuggestion.value;
 
-    const newText = (preserveText ? preserveText + " " : "") + suggestion + safeTextAfter
+    const newText = (preserveText ? preserveText + ' ' : '') + suggestion + safeTextAfter;
 
     // Calcular la nueva posición del cursor
-    const newCursorPos = (preserveText ? preserveText.length + 1 : 0) + suggestion.length
+    const newCursorPos = (preserveText ? preserveText.length + 1 : 0) + suggestion.length;
 
     // Desactivar sugerencia
-    suggestionActive.value = false
-    currentSuggestion.value = ""
+    suggestionActive.value = false;
+    currentSuggestion.value = '';
 
     return {
       text: newText,
       cursorPos: newCursorPos,
-    }
-  }
+    };
+  };
 
   /**
    * Rechaza la sugerencia actual
    */
   const rejectSuggestion = () => {
-    suggestionActive.value = false
-    currentSuggestion.value = ""
-  }
+    suggestionActive.value = false;
+    currentSuggestion.value = '';
+  };
   /**
    * Configura un temporizador para buscar sugerencias después de escribir
    * @param text - El texto actual
@@ -139,16 +139,16 @@ export function useSmartDictionary() {
    */
   const setTypingTimeout = (text: string | unknown, delay = 500) => {
     if (typingTimeout.value) {
-      window.clearTimeout(typingTimeout.value)
+      window.clearTimeout(typingTimeout.value);
     }
 
     // Asegurar que text sea una cadena
-    const safeText = typeof text === "string" ? text : ""
+    const safeText = typeof text === 'string' ? text : '';
 
     typingTimeout.value = window.setTimeout(() => {
-      findSuggestion(safeText)
-    }, delay)
-  }
+      findSuggestion(safeText);
+    }, delay);
+  };
 
   return {
     suggestionActive,
@@ -159,5 +159,5 @@ export function useSmartDictionary() {
     applySuggestion,
     rejectSuggestion,
     setTypingTimeout,
-  }
+  };
 }

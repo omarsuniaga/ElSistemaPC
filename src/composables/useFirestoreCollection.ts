@@ -1,4 +1,4 @@
-import {ref, onUnmounted, Ref, watch} from "vue"
+import { ref, onUnmounted, Ref, watch } from 'vue';
 import {
   collection,
   query,
@@ -7,8 +7,8 @@ import {
   DocumentData,
   QuerySnapshot,
   FirestoreError,
-} from "firebase/firestore"
-import {db} from "../firebase"
+} from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface FirestoreCollectionResult<T> {
   items: Ref<T[]>
@@ -26,73 +26,73 @@ interface FirestoreCollectionResult<T> {
  */
 export function useFirestoreCollection<T = DocumentData>(
   collectionName: string,
-  queryConstraints: Ref<QueryConstraint[]> | QueryConstraint[] = []
+  queryConstraints: Ref<QueryConstraint[]> | QueryConstraint[] = [],
 ): FirestoreCollectionResult<T> {
-  const items = ref<T[]>([]) as Ref<T[]>
-  const loading = ref(true)
-  const error = ref<string | null>(null)
+  const items = ref<T[]>([]) as Ref<T[]>;
+  const loading = ref(true);
+  const error = ref<string | null>(null);
 
   // Función para procesar los documentos de una snapshot
   const processSnapshot = (snapshot: QuerySnapshot<DocumentData>) => {
     items.value = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as T[]
+    })) as T[];
 
-    loading.value = false
-  }
+    loading.value = false;
+  };
 
   // Función para manejar errores
   const handleError = (err: FirestoreError) => {
-    console.error(`Error en colección ${collectionName}:`, err)
-    error.value = err.message
-    loading.value = false
-  }
+    console.error(`Error en colección ${collectionName}:`, err);
+    error.value = err.message;
+    loading.value = false;
+  };
 
   // Crear referencia a la colección
-  const collectionRef = collection(db, collectionName)
+  const collectionRef = collection(db, collectionName);
 
   // Variable para almacenar la función de cancelación
-  let unsubscribe: (() => void) | null = null
+  let unsubscribe: (() => void) | null = null;
 
   // Función para iniciar la suscripción
   const startSubscription = (constraints: QueryConstraint[]) => {
     // Cancelar suscripción anterior si existe
     if (unsubscribe) {
-      unsubscribe()
+      unsubscribe();
     }
 
     // Crear consulta con las restricciones
-    const queryRef = query(collectionRef, ...constraints)
+    const queryRef = query(collectionRef, ...constraints);
 
     // Iniciar carga
-    loading.value = true
-    error.value = null
+    loading.value = true;
+    error.value = null;
 
     // Suscribirse a cambios en tiempo real
-    unsubscribe = onSnapshot(queryRef, processSnapshot, handleError)
-  }
+    unsubscribe = onSnapshot(queryRef, processSnapshot, handleError);
+  };
 
   // Si queryConstraints es reactivo, actualizamos la suscripción cuando cambia
-  if ("value" in queryConstraints) {
+  if ('value' in queryConstraints) {
     watch(
       queryConstraints,
       (newConstraints) => {
-        startSubscription(newConstraints)
+        startSubscription(newConstraints);
       },
-      {immediate: true}
-    )
+      { immediate: true },
+    );
   } else {
     // Si no es reactivo, iniciamos la suscripción directamente
-    startSubscription(queryConstraints)
+    startSubscription(queryConstraints);
   }
 
   // Cancelar suscripción al desmontar el componente
   onUnmounted(() => {
     if (unsubscribe) {
-      unsubscribe()
+      unsubscribe();
     }
-  })
+  });
 
   return {
     items,
@@ -100,9 +100,9 @@ export function useFirestoreCollection<T = DocumentData>(
     error,
     unsubscribe: () => {
       if (unsubscribe) {
-        unsubscribe()
-        unsubscribe = null
+        unsubscribe();
+        unsubscribe = null;
       }
     },
-  }
+  };
 }

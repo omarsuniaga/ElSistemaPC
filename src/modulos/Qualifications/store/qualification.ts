@@ -1,31 +1,31 @@
-import {defineStore} from "pinia"
-import {ref, computed} from "vue"
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
 import {
   deleteQualificationFromFirebase,
   addQualificationToFirebase,
   updateQualificationInFirebase,
   fetchQualificationsByClass,
-} from "../../../services/firestore/qualification"
+} from '../../../services/firestore/qualification';
 import type {
   QualificationCard,
   QualificationIndicator,
   QualificationData,
-} from "../../../types/qualification"
+} from '../../../types/qualification';
 
-export const useQualificationStore = defineStore("qualification", () => {
+export const useQualificationStore = defineStore('qualification', () => {
   // Estado: variables reactivas para almacenar las calificaciones, estado de carga, errores y la clase seleccionada
-  const qualifications = ref<QualificationCard[]>([])
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
-  const selectedClassId = ref<string>("")
+  const qualifications = ref<QualificationCard[]>([]);
+  const isLoading = ref(false);
+  const error = ref<string | null>(null);
+  const selectedClassId = ref<string>('');
 
   // Getters: funciones computadas para filtrar o buscar calificaciones según criterios
   const getQualificationsByClass = computed(() => {
     return (classId: string) => {
       // Devuelve las calificaciones filtradas por el ID de la clase
-      return qualifications.value.filter((q: QualificationCard) => q.classId === classId)
-    }
-  })
+      return qualifications.value.filter((q: QualificationCard) => q.classId === classId);
+    };
+  });
 
   const getQualificationById = computed(() => {
     return (id: string) => {
@@ -33,9 +33,9 @@ export const useQualificationStore = defineStore("qualification", () => {
       return (
         qualifications.value.find((q: QualificationCard) => q.id === id) ||
         (null as QualificationCard | null)
-      )
-    }
-  })
+      );
+    };
+  });
 
   /**
    * Función helper para formatear una calificación, asegurando que tenga todos los campos requeridos.
@@ -46,17 +46,17 @@ export const useQualificationStore = defineStore("qualification", () => {
    */
   function formatQualification(q: any): QualificationCard {
     return {
-      id: q.id || "",
-      classId: q.classId || "",
-      contentTitle: q.contentTitle || "",
-      contentSubtitle: q.contentSubtitle || "",
+      id: q.id || '',
+      classId: q.classId || '',
+      contentTitle: q.contentTitle || '',
+      contentSubtitle: q.contentSubtitle || '',
       date: q.date || new Date().toISOString(),
       group: q.group || [],
       indicators: q.indicators || [],
       locked: q.locked ?? false,
       hideProgress: q.hideProgress ?? false,
-      comments: q.comments ?? "",
-    }
+      comments: q.comments ?? '',
+    };
   }
 
   /**
@@ -69,15 +69,15 @@ export const useQualificationStore = defineStore("qualification", () => {
    */
   async function executeAction<T>(action: () => Promise<T>, errorMessage: string): Promise<T> {
     try {
-      isLoading.value = true
-      error.value = null
-      return await action()
+      isLoading.value = true;
+      error.value = null;
+      return await action();
     } catch (err) {
-      console.error(errorMessage, err)
-      error.value = errorMessage
-      throw err
+      console.error(errorMessage, err);
+      error.value = errorMessage;
+      throw err;
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
   }
 
@@ -89,14 +89,14 @@ export const useQualificationStore = defineStore("qualification", () => {
    * @returns Las calificaciones obtenidas.
    */
   async function fetchQualifications(classId: string) {
-    selectedClassId.value = classId
+    selectedClassId.value = classId;
     return await executeAction(async () => {
       // Se utiliza la función importada para obtener las calificaciones desde Firebase
-      const fetchedQualifications = await fetchQualificationsByClass(classId)
+      const fetchedQualifications = await fetchQualificationsByClass(classId);
       // Se mapean las calificaciones usando la función helper para asegurar todos los campos
-      qualifications.value = fetchedQualifications.map((q) => formatQualification(q))
-      return qualifications.value
-    }, "Error al obtener las calificaciones")
+      qualifications.value = fetchedQualifications.map((q) => formatQualification(q));
+      return qualifications.value;
+    }, 'Error al obtener las calificaciones');
   }
 
   /**
@@ -108,18 +108,18 @@ export const useQualificationStore = defineStore("qualification", () => {
     // TODO: Agregar validaciones adicionales de los datos, si es necesario
     return await executeAction(async () => {
       // Guarda la calificación en Firebase y obtiene el ID generado
-      const result = await addQualificationToFirebase(qualificationData)
-      const id = typeof result === "string" ? result : result.id
+      const result = await addQualificationToFirebase(qualificationData);
+      const id = typeof result === 'string' ? result : result.id;
 
       // Construye el objeto de calificación utilizando la función helper para aplicar valores por defecto
       const newQualification: QualificationCard = formatQualification({
         ...qualificationData,
         id,
         classId: qualificationData.classId || selectedClassId.value,
-      })
-      qualifications.value.push(newQualification)
-      return id
-    }, "Error al guardar la calificación")
+      });
+      qualifications.value.push(newQualification);
+      return id;
+    }, 'Error al guardar la calificación');
   }
 
   /**
@@ -137,21 +137,21 @@ export const useQualificationStore = defineStore("qualification", () => {
         ...qualificationData,
         id,
         classId: qualificationData.classId || selectedClassId.value,
-      })
+      });
 
       // Actualiza la calificación en Firebase
-      await updateQualificationInFirebase(updateData)
+      await updateQualificationInFirebase(updateData);
 
       // Actualiza la calificación en el estado local
-      const index: number = qualifications.value.findIndex((q: QualificationCard) => q.id === id)
+      const index: number = qualifications.value.findIndex((q: QualificationCard) => q.id === id);
       if (index !== -1) {
         qualifications.value[index] = {
           ...qualifications.value[index],
           ...updateData,
-        }
+        };
       }
-      return true
-    }, "Error al actualizar la calificación")
+      return true;
+    }, 'Error al actualizar la calificación');
   }
 
   /**
@@ -161,11 +161,11 @@ export const useQualificationStore = defineStore("qualification", () => {
    */
   async function deleteQualification(id: string) {
     return await executeAction(async () => {
-      await deleteQualificationFromFirebase(id)
+      await deleteQualificationFromFirebase(id);
       // Remueve la calificación del estado local
-      qualifications.value = qualifications.value.filter((q: QualificationCard) => q.id !== id)
-      return true
-    }, "Error al eliminar la calificación")
+      qualifications.value = qualifications.value.filter((q: QualificationCard) => q.id !== id);
+      return true;
+    }, 'Error al eliminar la calificación');
   }
 
   /**
@@ -175,7 +175,7 @@ export const useQualificationStore = defineStore("qualification", () => {
    * @returns Resultado de la actualización.
    */
   async function toggleQualificationLock(id: string, locked: boolean) {
-    return updateQualification(id, {locked})
+    return updateQualification(id, { locked });
   }
 
   /**
@@ -185,7 +185,7 @@ export const useQualificationStore = defineStore("qualification", () => {
    * @returns Resultado de la actualización.
    */
   async function toggleProgressVisibility(id: string, hideProgress: boolean) {
-    return updateQualification(id, {hideProgress})
+    return updateQualification(id, { hideProgress });
   }
 
   /**
@@ -195,7 +195,7 @@ export const useQualificationStore = defineStore("qualification", () => {
    * @returns Resultado de la actualización.
    */
   async function updateQualificationIndicators(id: string, indicators: QualificationIndicator[]) {
-    return updateQualification(id, {indicators})
+    return updateQualification(id, { indicators });
   }
 
   /**
@@ -205,17 +205,17 @@ export const useQualificationStore = defineStore("qualification", () => {
    * @returns Resultado de la actualización.
    */
   async function updateQualificationComments(id: string, comments: string) {
-    return updateQualification(id, {comments})
+    return updateQualification(id, { comments });
   }
 
   /**
    * Reinicia el estado de las calificaciones y las variables de control.
    */
   function reset() {
-    qualifications.value = []
-    isLoading.value = false
-    error.value = null
-    selectedClassId.value = ""
+    qualifications.value = [];
+    isLoading.value = false;
+    error.value = null;
+    selectedClassId.value = '';
   }
 
   // Se retornan el estado, los getters y las acciones para ser utilizados en los componentes
@@ -240,5 +240,5 @@ export const useQualificationStore = defineStore("qualification", () => {
     updateQualificationIndicators,
     updateQualificationComments,
     reset,
-  }
-})
+  };
+});

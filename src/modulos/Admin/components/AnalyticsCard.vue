@@ -47,8 +47,8 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import * as HeroIcons from "@heroicons/vue/24/outline"
+import { computed } from 'vue';
+import * as HeroIcons from '@heroicons/vue/24/outline';
 
 interface Props {
   title: string
@@ -59,9 +59,9 @@ interface Props {
   data: number[]
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const iconComponent = computed(() => {
-  return (HeroIcons as any)[props.icon] || HeroIcons.ChartBarIcon
-})
+  return (HeroIcons as any)[props.icon] || HeroIcons.ChartBarIcon;
+});
 </script>

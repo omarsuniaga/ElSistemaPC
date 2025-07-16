@@ -160,10 +160,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue"
-import WhatsAppNotificacionesModal from "@/components/WhatsAppNotificacionesModal.vue"
-import { useWhatsAppNotificacionesModal } from "@/composables/useWhatsAppNotificacionesModal"
-import { getMessageStatistics } from "@/services/attendanceNotifications"
+import { ref, onMounted } from 'vue';
+import WhatsAppNotificacionesModal from '@/components/WhatsAppNotificacionesModal.vue';
+import { useWhatsAppNotificacionesModal } from '@/composables/useWhatsAppNotificacionesModal';
+import { getMessageStatistics } from '@/services/attendanceNotifications';
 
 // Composable para el modal
 const {
@@ -171,7 +171,7 @@ const {
   openModal,
   closeModal,
   handleMessagesSent: baseHandleMessagesSent,
-} = useWhatsAppInasistenciasModal()
+} = useWhatsAppInasistenciasModal();
 
 // State
 const stats = ref({
@@ -179,48 +179,48 @@ const stats = ref({
   level2: 0,
   level3: 0,
   level4: 0,
-})
+});
 
-const recentMessages = ref<any[]>([])
+const recentMessages = ref<any[]>([]);
 
 // Methods
 const loadStats = async () => {
   try {
     // Cargar estadísticas de la semana actual
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setDate(endDate.getDate() - 7)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 7);
 
     const messageStats = await getMessageStatistics(
-      startDate.toISOString().split("T")[0],
-      endDate.toISOString().split("T")[0]
-    )
+      startDate.toISOString().split('T')[0],
+      endDate.toISOString().split('T')[0],
+    );
 
     // Procesar estadísticas por nivel
     messageStats.forEach((stat) => {
-      if (stat.type.includes("Nivel 1")) stats.value.level1 = stat.count
-      if (stat.type.includes("Nivel 2")) stats.value.level2 = stat.count
-      if (stat.type.includes("Nivel 3")) stats.value.level3 = stat.count
-      if (stat.type.includes("Nivel 4")) stats.value.level4 = stat.count
-    })
+      if (stat.type.includes('Nivel 1')) stats.value.level1 = stat.count;
+      if (stat.type.includes('Nivel 2')) stats.value.level2 = stat.count;
+      if (stat.type.includes('Nivel 3')) stats.value.level3 = stat.count;
+      if (stat.type.includes('Nivel 4')) stats.value.level4 = stat.count;
+    });
   } catch (error) {
-    console.error("Error loading stats:", error)
+    console.error('Error loading stats:', error);
   }
-}
+};
 
 const formatDate = (date: Date | string) => {
-  const d = new Date(date)
-  return d.toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
+  const d = new Date(date);
+  return d.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
 
 const handleMessagesSent = (result: {success: number; failed: number; messages: any[]}) => {
   // Llamar al handler base del composable
-  baseHandleMessagesSent(result)
+  baseHandleMessagesSent(result);
 
   // Agregar mensajes al historial local
   recentMessages.value.unshift(
@@ -228,23 +228,23 @@ const handleMessagesSent = (result: {success: number; failed: number; messages: 
       ...msg,
       success: true,
       id: `${msg.studentId}_${Date.now()}`,
-    }))
-  )
+    })),
+  );
 
   // Recargar estadísticas
-  loadStats()
+  loadStats();
 
   // Mostrar notificación de éxito
   if (result.success > 0) {
     // Aquí puedes agregar tu sistema de notificaciones preferido
-    console.log(`✅ ${result.success} mensajes enviados exitosamente`)
+    console.log(`✅ ${result.success} mensajes enviados exitosamente`);
   }
-}
+};
 
 // Lifecycle
 onMounted(() => {
-  loadStats()
-})
+  loadStats();
+});
 </script>
 
 <style scoped>

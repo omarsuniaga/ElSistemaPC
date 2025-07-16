@@ -136,9 +136,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref, onMounted} from "vue"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-import StudentAvatar from "./StudentAvatar.vue"
+import { computed, ref, onMounted } from 'vue';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import StudentAvatar from './StudentAvatar.vue';
 
 interface Props {
   student: any
@@ -147,143 +147,143 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   attendance: 0,
-})
+});
 
 defineEmits<{
   open: []
   profile: []
   edit: []
   delete: []
-}>()
+}>();
 
-const attendanceStore = useAttendanceStore()
-const lastMonthAttendance = ref<number>(0)
-const loadingAttendance = ref<boolean>(true)
+const attendanceStore = useAttendanceStore();
+const lastMonthAttendance = ref<number>(0);
+const loadingAttendance = ref<boolean>(true);
 
 // Cache estático para evitar múltiples llamadas por el mismo estudiante
-const attendanceCache = new Map<string, {value: number; timestamp: number}>()
-const CACHE_DURATION = 2 * 60 * 1000 // 2 minutos - reducido para testing
+const attendanceCache = new Map<string, {value: number; timestamp: number}>();
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutos - reducido para testing
 
 // Calcular el porcentaje de asistencia desde el primer registro
 const calculateStudentAttendance = async () => {
   try {
-    loadingAttendance.value = true
+    loadingAttendance.value = true;
 
     // Verificar cache primero
-    const cacheKey = props.student.id
-    const cached = attendanceCache.get(cacheKey)
-    const now = Date.now()
+    const cacheKey = props.student.id;
+    const cached = attendanceCache.get(cacheKey);
+    const now = Date.now();
 
     if (cached && now - cached.timestamp < CACHE_DURATION) {
-      lastMonthAttendance.value = cached.value
-      loadingAttendance.value = false
-      return
+      lastMonthAttendance.value = cached.value;
+      loadingAttendance.value = false;
+      return;
     }
 
     console.log(
-      `[StudentCard] Calculando asistencia para estudiante: ${props.student.id} - ${props.student.nombre} ${props.student.apellido}`
-    )
+      `[StudentCard] Calculando asistencia para estudiante: ${props.student.id} - ${props.student.nombre} ${props.student.apellido}`,
+    );
 
     // Obtener registros desde hace 1 año (o desde el inicio del año académico)
-    const today = new Date()
-    const oneYearAgo = new Date(today)
-    oneYearAgo.setFullYear(today.getFullYear() - 1)
+    const today = new Date();
+    const oneYearAgo = new Date(today);
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
 
-    const startDate = oneYearAgo.toISOString().split("T")[0]
-    const endDate = today.toISOString().split("T")[0]
+    const startDate = oneYearAgo.toISOString().split('T')[0];
+    const endDate = today.toISOString().split('T')[0];
 
-    console.log(`[StudentCard] Buscando registros desde ${startDate} hasta ${endDate}`)
+    console.log(`[StudentCard] Buscando registros desde ${startDate} hasta ${endDate}`);
 
     // Obtener registros de asistencia del estudiante en el rango amplio
     const attendanceRecords = await attendanceStore.getStudentAttendanceByDateRange(
       props.student.id,
       startDate,
-      endDate
-    )
+      endDate,
+    );
 
     console.log(
       `[StudentCard] Registros encontrados para ${props.student.nombre}:`,
-      attendanceRecords
-    )
+      attendanceRecords,
+    );
 
     if (!attendanceRecords || attendanceRecords.length === 0) {
-      console.log(`[StudentCard] No se encontraron registros para estudiante: ${props.student.id}`)
-      lastMonthAttendance.value = 0
+      console.log(`[StudentCard] No se encontraron registros para estudiante: ${props.student.id}`);
+      lastMonthAttendance.value = 0;
       // Guardar en cache
-      attendanceCache.set(cacheKey, {value: 0, timestamp: now})
-      return
+      attendanceCache.set(cacheKey, { value: 0, timestamp: now });
+      return;
     }
 
     // Calcular porcentaje de asistencia
     const presentCount = attendanceRecords.filter(
-      (record) => record.status === "Presente" || record.status === "Justificado"
-    ).length
+      (record) => record.status === 'Presente' || record.status === 'Justificado',
+    ).length;
 
-    const totalCount = attendanceRecords.length
-    const percentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
+    const totalCount = attendanceRecords.length;
+    const percentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
 
     console.log(
-      `[StudentCard] Estudiante ${props.student.id}: ${presentCount}/${totalCount} = ${percentage}%`
-    )
+      `[StudentCard] Estudiante ${props.student.id}: ${presentCount}/${totalCount} = ${percentage}%`,
+    );
 
-    lastMonthAttendance.value = percentage
+    lastMonthAttendance.value = percentage;
 
     // Guardar en cache
-    attendanceCache.set(cacheKey, {value: percentage, timestamp: now})
+    attendanceCache.set(cacheKey, { value: percentage, timestamp: now });
   } catch (error) {
-    console.error("Error calculating attendance for student:", props.student.id, error)
-    lastMonthAttendance.value = 0
+    console.error('Error calculating attendance for student:', props.student.id, error);
+    lastMonthAttendance.value = 0;
   } finally {
-    loadingAttendance.value = false
+    loadingAttendance.value = false;
   }
-}
+};
 
 // Computed para el porcentaje de asistencia a mostrar (prioriza datos calculados)
 const displayAttendance = computed(() => {
   // Si tenemos datos calculados, usarlos
   if (lastMonthAttendance.value > 0) {
-    return lastMonthAttendance.value
+    return lastMonthAttendance.value;
   }
 
   // Si no hay datos calculados pero hay datos de props, usarlos
   if (props.attendance > 0) {
-    return props.attendance
+    return props.attendance;
   }
 
   // Si no hay datos, mostrar 0
-  return 0
-})
+  return 0;
+});
 
 // Computed para el tooltip informativo
 const attendanceTooltip = computed(() => {
   if (loadingAttendance.value) {
-    return "Calculando asistencia..."
+    return 'Calculando asistencia...';
   }
 
-  const now = new Date()
-  const oneYearAgo = new Date(now)
-  oneYearAgo.setFullYear(now.getFullYear() - 1)
+  const now = new Date();
+  const oneYearAgo = new Date(now);
+  oneYearAgo.setFullYear(now.getFullYear() - 1);
 
   const formatDate = (date: Date) =>
-    date.toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
+    date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
 
-  return `${displayAttendance.value}% asistencia histórica (desde ${formatDate(oneYearAgo)})`
-})
+  return `${displayAttendance.value}% asistencia histórica (desde ${formatDate(oneYearAgo)})`;
+});
 
 const attendanceColor = computed(() => {
-  const attendance = displayAttendance.value
-  if (attendance >= 90) return "text-green-600"
-  if (attendance >= 75) return "text-yellow-600"
-  return "text-red-600"
-})
+  const attendance = displayAttendance.value;
+  if (attendance >= 90) return 'text-green-600';
+  if (attendance >= 75) return 'text-yellow-600';
+  return 'text-red-600';
+});
 
 onMounted(() => {
-  calculateStudentAttendance()
-})
+  calculateStudentAttendance();
+});
 </script>
 
 <style scoped>

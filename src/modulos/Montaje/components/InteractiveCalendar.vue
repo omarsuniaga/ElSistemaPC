@@ -12,14 +12,14 @@
           <option value="day">Día</option>
         </select>
         <button
-          @click="goToToday"
           class="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          @click="goToToday"
         >
           Hoy
         </button>
         <button
-          @click="showCreateEvent = true"
           class="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+          @click="showCreateEvent = true"
         >
           ➕ Nuevo Evento
         </button>
@@ -30,8 +30,8 @@
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-3">
         <button
-          @click="navigateCalendar(-1)"
           class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          @click="navigateCalendar(-1)"
         >
           ←
         </button>
@@ -39,8 +39,8 @@
           {{ formatCalendarTitle() }}
         </h3>
         <button
-          @click="navigateCalendar(1)"
           class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          @click="navigateCalendar(1)"
         >
           →
         </button>
@@ -50,27 +50,27 @@
       <div class="flex items-center gap-2">
         <div class="flex items-center gap-1 text-sm">
           <input
+            id="filter-general"
             v-model="filters.general"
             type="checkbox"
-            id="filter-general"
             class="rounded"
           >
           <label for="filter-general" class="text-gray-700">General</label>
         </div>
         <div class="flex items-center gap-1 text-sm">
           <input
+            id="filter-sectional"
             v-model="filters.sectional"
             type="checkbox"
-            id="filter-sectional"
             class="rounded"
           >
           <label for="filter-sectional" class="text-gray-700">Seccional</label>
         </div>
         <div class="flex items-center gap-1 text-sm">
           <input
+            id="filter-performance"
             v-model="filters.performance"
             type="checkbox"
-            id="filter-performance"
             class="rounded"
           >
           <label for="filter-performance" class="text-gray-700">Presentación</label>
@@ -93,25 +93,25 @@
       <div
         v-for="day in calendarDays"
         :key="day.date"
-        @click="selectDay(day)"
         :class="[
           'min-h-[120px] p-2 border border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors',
           day.isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400',
           day.isToday ? 'bg-blue-100 border-blue-300' : '',
           day.isSelected ? 'bg-blue-200 border-blue-400' : ''
         ]"
+        @click="selectDay(day)"
       >
         <div class="font-medium text-sm mb-1">{{ day.dayNumber }}</div>
         <div class="space-y-1">
           <div
             v-for="event in getEventsForDay(day.date)"
             :key="event.id"
-            @click.stop="selectEvent(event)"
             :class="[
               'text-xs p-1 rounded truncate cursor-pointer',
               getEventColor(event.type)
             ]"
             :title="event.title"
+            @click.stop="selectEvent(event)"
           >
             {{ event.title }}
           </div>
@@ -147,12 +147,12 @@
             <div
               v-for="event in getEventsForDayAndHour(day.date, hour)"
               :key="event.id"
-              @click="selectEvent(event)"
               :class="[
                 'absolute inset-1 text-xs p-1 rounded cursor-pointer',
                 getEventColor(event.type)
               ]"
               :title="event.title"
+              @click="selectEvent(event)"
             >
               {{ event.title }}
             </div>
@@ -176,11 +176,11 @@
             <div
               v-for="event in getEventsForDayAndHour(selectedDate, hour)"
               :key="event.id"
-              @click="selectEvent(event)"
               :class="[
                 'p-3 rounded-lg cursor-pointer mb-2',
                 getEventColor(event.type)
               ]"
+              @click="selectEvent(event)"
             >
               <div class="font-medium">{{ event.title }}</div>
               <div class="text-sm opacity-75">{{ event.startTime }} - {{ event.endTime }}</div>
@@ -232,20 +232,20 @@
         
         <div class="flex gap-3 mt-6">
           <button
-            @click="editEvent(selectedEvent)"
             class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            @click="editEvent(selectedEvent)"
           >
             ✏️ Editar
           </button>
           <button
-            @click="deleteEvent(selectedEvent)"
             class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            @click="deleteEvent(selectedEvent)"
           >
             🗑️ Eliminar
           </button>
           <button
-            @click="selectedEvent = null"
             class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            @click="selectedEvent = null"
           >
             Cerrar
           </button>
@@ -263,10 +263,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, getHours, parseISO } from 'date-fns'
-import { es } from 'date-fns/locale'
-import ScheduleSessionModal from './ScheduleSessionModal.vue'
+import { ref, computed, onMounted } from 'vue';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, getHours, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+import ScheduleSessionModal from './ScheduleSessionModal.vue';
 
 interface CalendarEvent {
   id: string
@@ -289,18 +289,18 @@ interface CalendarDay {
   isSelected: boolean
 }
 
-const currentView = ref<'month' | 'week' | 'day'>('month')
-const selectedDate = ref(new Date().toISOString().split('T')[0])
-const selectedEvent = ref<CalendarEvent | null>(null)
-const showCreateEvent = ref(false)
+const currentView = ref<'month' | 'week' | 'day'>('month');
+const selectedDate = ref(new Date().toISOString().split('T')[0]);
+const selectedEvent = ref<CalendarEvent | null>(null);
+const showCreateEvent = ref(false);
 
 const filters = ref({
   general: true,
   sectional: true,
   performance: true,
   individual: true,
-  meeting: true
-})
+  meeting: true,
+});
 
 // Sample events data
 const events = ref<CalendarEvent[]>([
@@ -312,7 +312,7 @@ const events = ref<CalendarEvent[]>([
     startTime: '19:00',
     endTime: '21:30',
     location: 'Sala Principal',
-    description: 'Ensayo completo de la Sinfonía No. 40 de Mozart'
+    description: 'Ensayo completo de la Sinfonía No. 40 de Mozart',
   },
   {
     id: '2',
@@ -321,7 +321,7 @@ const events = ref<CalendarEvent[]>([
     date: '2024-01-17',
     startTime: '18:00',
     endTime: '20:00',
-    location: 'Sala 2'
+    location: 'Sala 2',
   },
   {
     id: '3',
@@ -330,79 +330,79 @@ const events = ref<CalendarEvent[]>([
     date: '2024-01-20',
     startTime: '20:00',
     endTime: '22:00',
-    location: 'Teatro Municipal'
-  }
-])
+    location: 'Teatro Municipal',
+  },
+]);
 
-const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-const timeSlots = Array.from({ length: 14 }, (_, i) => i + 8) // 8 AM to 9 PM
+const dayHeaders = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const timeSlots = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
 
-const currentDate = computed(() => new Date(selectedDate.value))
+const currentDate = computed(() => new Date(selectedDate.value));
 
 const calendarDays = computed(() => {
-  const start = startOfWeek(startOfMonth(currentDate.value))
-  const end = endOfWeek(endOfMonth(currentDate.value))
+  const start = startOfWeek(startOfMonth(currentDate.value));
+  const end = endOfWeek(endOfMonth(currentDate.value));
   
   return eachDayOfInterval({ start, end }).map(date => ({
     date: format(date, 'yyyy-MM-dd'),
     dayNumber: parseInt(format(date, 'd')),
     isCurrentMonth: isSameMonth(date, currentDate.value),
     isToday: isToday(date),
-    isSelected: format(date, 'yyyy-MM-dd') === selectedDate.value
-  }))
-})
+    isSelected: format(date, 'yyyy-MM-dd') === selectedDate.value,
+  }));
+});
 
 const weekDays = computed(() => {
-  const start = startOfWeek(currentDate.value)
+  const start = startOfWeek(currentDate.value);
   return Array.from({ length: 7 }, (_, i) => {
-    const date = addDays(start, i)
+    const date = addDays(start, i);
     return {
       date: format(date, 'yyyy-MM-dd'),
       dayName: format(date, 'EEE', { locale: es }),
-      dayNumber: parseInt(format(date, 'd'))
-    }
-  })
-})
+      dayNumber: parseInt(format(date, 'd')),
+    };
+  });
+});
 
 const filteredEvents = computed(() => {
-  return events.value.filter(event => filters.value[event.type])
-})
+  return events.value.filter(event => filters.value[event.type]);
+});
 
 const formatCalendarTitle = () => {
   if (currentView.value === 'month') {
-    return format(currentDate.value, 'MMMM yyyy', { locale: es })
+    return format(currentDate.value, 'MMMM yyyy', { locale: es });
   } else if (currentView.value === 'week') {
-    const start = startOfWeek(currentDate.value)
-    const end = endOfWeek(currentDate.value)
-    return `${format(start, 'd MMM', { locale: es })} - ${format(end, 'd MMM yyyy', { locale: es })}`
+    const start = startOfWeek(currentDate.value);
+    const end = endOfWeek(currentDate.value);
+    return `${format(start, 'd MMM', { locale: es })} - ${format(end, 'd MMM yyyy', { locale: es })}`;
   } else {
-    return format(currentDate.value, 'EEEE, d MMMM yyyy', { locale: es })
+    return format(currentDate.value, 'EEEE, d MMMM yyyy', { locale: es });
   }
-}
+};
 
 const formatDayTitle = (dateString: string) => {
-  return format(new Date(dateString), 'EEEE, d MMMM yyyy', { locale: es })
-}
+  return format(new Date(dateString), 'EEEE, d MMMM yyyy', { locale: es });
+};
 
 const formatEventDate = (dateString: string) => {
-  return format(new Date(dateString), 'd MMMM yyyy', { locale: es })
-}
+  return format(new Date(dateString), 'd MMMM yyyy', { locale: es });
+};
 
 const formatHour = (hour: number) => {
-  return `${hour.toString().padStart(2, '0')}:00`
-}
+  return `${hour.toString().padStart(2, '0')}:00`;
+};
 
 const getEventsForDay = (dateString: string) => {
-  return filteredEvents.value.filter(event => event.date === dateString)
-}
+  return filteredEvents.value.filter(event => event.date === dateString);
+};
 
 const getEventsForDayAndHour = (dateString: string, hour: number) => {
   return filteredEvents.value.filter(event => {
-    if (event.date !== dateString) return false
-    const eventHour = parseInt(event.startTime.split(':')[0])
-    return eventHour === hour
-  })
-}
+    if (event.date !== dateString) return false;
+    const eventHour = parseInt(event.startTime.split(':')[0]);
+    return eventHour === hour;
+  });
+};
 
 const getEventColor = (type: string) => {
   const colors = {
@@ -410,10 +410,10 @@ const getEventColor = (type: string) => {
     sectional: 'bg-green-100 text-green-800 border-green-200',
     individual: 'bg-purple-100 text-purple-800 border-purple-200',
     performance: 'bg-red-100 text-red-800 border-red-200',
-    meeting: 'bg-yellow-100 text-yellow-800 border-yellow-200'
-  }
-  return colors[type] || 'bg-gray-100 text-gray-800 border-gray-200'
-}
+    meeting: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  };
+  return colors[type] || 'bg-gray-100 text-gray-800 border-gray-200';
+};
 
 const getEventTypeLabel = (type: string) => {
   const labels = {
@@ -421,50 +421,50 @@ const getEventTypeLabel = (type: string) => {
     sectional: 'Ensayo Seccional',
     individual: 'Ensayo Individual',
     performance: 'Presentación',
-    meeting: 'Reunión'
-  }
-  return labels[type] || type
-}
+    meeting: 'Reunión',
+  };
+  return labels[type] || type;
+};
 
 const navigateCalendar = (direction: number) => {
-  const currentDateObj = new Date(selectedDate.value)
+  const currentDateObj = new Date(selectedDate.value);
   
   if (currentView.value === 'month') {
-    const newDate = direction > 0 ? addMonths(currentDateObj, 1) : subMonths(currentDateObj, 1)
-    selectedDate.value = format(newDate, 'yyyy-MM-dd')
+    const newDate = direction > 0 ? addMonths(currentDateObj, 1) : subMonths(currentDateObj, 1);
+    selectedDate.value = format(newDate, 'yyyy-MM-dd');
   } else if (currentView.value === 'week') {
-    const newDate = direction > 0 ? addWeeks(currentDateObj, 1) : subWeeks(currentDateObj, 1)
-    selectedDate.value = format(newDate, 'yyyy-MM-dd')
+    const newDate = direction > 0 ? addWeeks(currentDateObj, 1) : subWeeks(currentDateObj, 1);
+    selectedDate.value = format(newDate, 'yyyy-MM-dd');
   } else {
-    const newDate = direction > 0 ? addDays(currentDateObj, 1) : subDays(currentDateObj, 1)
-    selectedDate.value = format(newDate, 'yyyy-MM-dd')
+    const newDate = direction > 0 ? addDays(currentDateObj, 1) : subDays(currentDateObj, 1);
+    selectedDate.value = format(newDate, 'yyyy-MM-dd');
   }
-}
+};
 
 const goToToday = () => {
-  selectedDate.value = format(new Date(), 'yyyy-MM-dd')
-}
+  selectedDate.value = format(new Date(), 'yyyy-MM-dd');
+};
 
 const selectDay = (day: CalendarDay) => {
-  selectedDate.value = day.date
-}
+  selectedDate.value = day.date;
+};
 
 const selectEvent = (event: CalendarEvent) => {
-  selectedEvent.value = event
-}
+  selectedEvent.value = event;
+};
 
 const editEvent = (event: CalendarEvent) => {
   // Implement edit functionality
-  console.log('Edit event:', event)
-  selectedEvent.value = null
-}
+  console.log('Edit event:', event);
+  selectedEvent.value = null;
+};
 
 const deleteEvent = (event: CalendarEvent) => {
   if (confirm('¿Estás seguro de que quieres eliminar este evento?')) {
-    events.value = events.value.filter(e => e.id !== event.id)
-    selectedEvent.value = null
+    events.value = events.value.filter(e => e.id !== event.id);
+    selectedEvent.value = null;
   }
-}
+};
 
 const onEventCreated = (sessionData: any) => {
   const newEvent: CalendarEvent = {
@@ -477,24 +477,24 @@ const onEventCreated = (sessionData: any) => {
     location: sessionData.location,
     description: sessionData.objectives,
     attendees: sessionData.attendees || [],
-    workIds: sessionData.workIds
-  }
+    workIds: sessionData.workIds,
+  };
   
-  events.value.push(newEvent)
-  showCreateEvent.value = false
-}
+  events.value.push(newEvent);
+  showCreateEvent.value = false;
+};
 
 const calculateEndTime = (startTime: string, duration: number) => {
-  const [hours, minutes] = startTime.split(':').map(Number)
-  const startMinutes = hours * 60 + minutes
-  const endMinutes = startMinutes + duration
-  const endHours = Math.floor(endMinutes / 60)
-  const endMins = endMinutes % 60
+  const [hours, minutes] = startTime.split(':').map(Number);
+  const startMinutes = hours * 60 + minutes;
+  const endMinutes = startMinutes + duration;
+  const endHours = Math.floor(endMinutes / 60);
+  const endMins = endMinutes % 60;
   
-  return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`
-}
+  return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+};
 
 onMounted(() => {
   // Load events from storage or API
-})
+});
 </script>

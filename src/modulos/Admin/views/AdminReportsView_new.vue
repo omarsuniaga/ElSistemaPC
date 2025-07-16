@@ -563,7 +563,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted, watch} from "vue"
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -578,7 +578,7 @@ import {
   ExclamationTriangleIcon,
   XMarkIcon,
   PaperAirplaneIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Interfaces
 interface TodayStats {
@@ -597,7 +597,7 @@ interface ClassData {
   name: string
   time: string
   teacher: string
-  status: "active" | "scheduled" | "completed"
+  status: 'active' | 'scheduled' | 'completed'
   presentStudents: number
   totalStudents: number
 }
@@ -610,7 +610,7 @@ interface CriticalStudent {
   assignedClasses: number
   absences: number
   attendanceRate: number
-  status: "critical" | "warning" | "good"
+  status: 'critical' | 'warning' | 'good'
   avatar?: string
   parentPhone?: string
 }
@@ -621,18 +621,18 @@ interface CommunicationTemplate {
   description: string
   icon: any
   iconColor: string
-  severity: "low" | "medium" | "high"
+  severity: 'low' | 'medium' | 'high'
   template: string
 }
 
 // State
-const loading = ref(false)
-const selectedDate = ref(new Date())
-const attendanceFilter = ref("critical")
-const showActionModal = ref(false)
-const selectedStudent = ref<CriticalStudent | null>(null)
-const selectedTemplate = ref<CommunicationTemplate | null>(null)
-const sending = ref(false)
+const loading = ref(false);
+const selectedDate = ref(new Date());
+const attendanceFilter = ref('critical');
+const showActionModal = ref(false);
+const selectedStudent = ref<CriticalStudent | null>(null);
+const selectedTemplate = ref<CommunicationTemplate | null>(null);
+const sending = ref(false);
 
 // Mock data - En producción esto vendría de una API/store
 const todayStats = ref<TodayStats>({
@@ -644,82 +644,82 @@ const todayStats = ref<TodayStats>({
   expectedStudents: 85,
   presentStudents: 78,
   attendanceRate: 92,
-})
+});
 
 const todayClasses = ref<ClassData[]>([
   {
-    id: "1",
-    name: "Violín Intermedio",
-    time: "09:00 - 10:00",
-    teacher: "María González",
-    status: "completed",
+    id: '1',
+    name: 'Violín Intermedio',
+    time: '09:00 - 10:00',
+    teacher: 'María González',
+    status: 'completed',
     presentStudents: 8,
     totalStudents: 10,
   },
   {
-    id: "2",
-    name: "Piano Principiante",
-    time: "10:30 - 11:30",
-    teacher: "Carlos López",
-    status: "active",
+    id: '2',
+    name: 'Piano Principiante',
+    time: '10:30 - 11:30',
+    teacher: 'Carlos López',
+    status: 'active',
     presentStudents: 12,
     totalStudents: 15,
   },
   {
-    id: "3",
-    name: "Guitarra Avanzado",
-    time: "14:00 - 15:00",
-    teacher: "Ana Martínez",
-    status: "scheduled",
+    id: '3',
+    name: 'Guitarra Avanzado',
+    time: '14:00 - 15:00',
+    teacher: 'Ana Martínez',
+    status: 'scheduled',
     presentStudents: 0,
     totalStudents: 8,
   },
-])
+]);
 
 const criticalStudents = ref<CriticalStudent[]>([
   {
-    id: "1",
-    fullName: "Juan Pérez García",
+    id: '1',
+    fullName: 'Juan Pérez García',
     age: 15,
-    instrument: "Violín",
+    instrument: 'Violín',
     assignedClasses: 20,
     absences: 8,
     attendanceRate: 60,
-    status: "critical",
-    parentPhone: "+58412345678",
+    status: 'critical',
+    parentPhone: '+58412345678',
   },
   {
-    id: "2",
-    fullName: "María Rodríguez",
+    id: '2',
+    fullName: 'María Rodríguez',
     age: 12,
-    instrument: "Piano",
+    instrument: 'Piano',
     assignedClasses: 18,
     absences: 6,
     attendanceRate: 67,
-    status: "warning",
-    parentPhone: "+58424567890",
+    status: 'warning',
+    parentPhone: '+58424567890',
   },
   {
-    id: "3",
-    fullName: "Carlos Mendoza",
+    id: '3',
+    fullName: 'Carlos Mendoza',
     age: 17,
-    instrument: "Guitarra",
+    instrument: 'Guitarra',
     assignedClasses: 22,
     absences: 12,
     attendanceRate: 45,
-    status: "critical",
-    parentPhone: "+58416789012",
+    status: 'critical',
+    parentPhone: '+58416789012',
   },
-])
+]);
 
 const communicationTemplates = ref<CommunicationTemplate[]>([
   {
-    id: "warning",
-    title: "Amonestación",
-    description: "Llamado de atención por ausencias",
+    id: 'warning',
+    title: 'Amonestación',
+    description: 'Llamado de atención por ausencias',
     icon: ExclamationTriangleIcon,
-    iconColor: "text-yellow-500",
-    severity: "low",
+    iconColor: 'text-yellow-500',
+    severity: 'low',
     template: `Estimado/a representante,
 
 Le informamos que el estudiante {{studentName}} ha acumulado {{absences}} ausencias de un total de {{totalClasses}} clases asignadas.
@@ -730,12 +730,12 @@ Atentamente,
 Academia de Música`,
   },
   {
-    id: "reflection",
-    title: "Llamado a la Reflexión",
-    description: "Falta leve y reflexión",
+    id: 'reflection',
+    title: 'Llamado a la Reflexión',
+    description: 'Falta leve y reflexión',
     icon: ExclamationTriangleIcon,
-    iconColor: "text-orange-500",
-    severity: "medium",
+    iconColor: 'text-orange-500',
+    severity: 'medium',
     template: `Estimado/a representante,
 
 El estudiante {{studentName}} ha mostrado un patrón de ausencias que requiere atención inmediata.
@@ -748,12 +748,12 @@ Solicitamos una reunión para discutir estrategias de mejora.
 Academia de Música`,
   },
   {
-    id: "expulsion",
-    title: "Carta de Expulsión",
-    description: "Proceso de expulsión por ausencias",
+    id: 'expulsion',
+    title: 'Carta de Expulsión',
+    description: 'Proceso de expulsión por ausencias',
     icon: XMarkIcon,
-    iconColor: "text-red-500",
-    severity: "high",
+    iconColor: 'text-red-500',
+    severity: 'high',
     template: `Estimado/a representante,
 
 Lamentamos informarle que debido al alto número de ausencias ({{absences}}/{{totalClasses}}) del estudiante {{studentName}}, se ha iniciado el proceso de expulsión de la academia.
@@ -763,12 +763,12 @@ Tiene 48 horas para presentar su descargo.
 Dirección Académica`,
   },
   {
-    id: "instrument",
-    title: "Entrega de Instrumento",
-    description: "Solicitud de devolución de instrumento",
+    id: 'instrument',
+    title: 'Entrega de Instrumento',
+    description: 'Solicitud de devolución de instrumento',
     icon: AcademicCapIcon,
-    iconColor: "text-blue-500",
-    severity: "medium",
+    iconColor: 'text-blue-500',
+    severity: 'medium',
     template: `Estimado/a representante,
 
 Debido a las ausencias reiteradas del estudiante {{studentName}}, solicitamos la devolución del instrumento {{instrument}} prestado por la academia.
@@ -778,12 +778,12 @@ Favor coordinar la entrega en horario administrativo.
 Departamento de Inventario`,
   },
   {
-    id: "citation",
-    title: "Citación al Representante",
-    description: "Citación formal para reunión",
+    id: 'citation',
+    title: 'Citación al Representante',
+    description: 'Citación formal para reunión',
     icon: DocumentArrowDownIcon,
-    iconColor: "text-purple-500",
-    severity: "medium",
+    iconColor: 'text-purple-500',
+    severity: 'medium',
     template: `Estimado/a representante,
 
 Se le cita formalmente para una reunión el día {{date}} a las {{time}} para tratar el tema de las ausencias del estudiante {{studentName}}.
@@ -793,212 +793,212 @@ Instrumento: {{instrument}}
 
 Dirección Académica`,
   },
-])
+]);
 
 // Computed
 const currentDate = computed(() => {
-  return new Date().toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-})
+  return new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+});
 
 const selectedDateFormatted = computed(() => {
-  return selectedDate.value.toLocaleDateString("es-ES", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  })
-})
+  return selectedDate.value.toLocaleDateString('es-ES', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+});
 
 const isToday = computed(() => {
-  const today = new Date()
-  return selectedDate.value.toDateString() === today.toDateString()
-})
+  const today = new Date();
+  return selectedDate.value.toDateString() === today.toDateString();
+});
 
 const topInstruments = computed(() => [
-  {name: "Piano", count: 5},
-  {name: "Violín", count: 3},
-  {name: "Guitarra", count: 2},
-  {name: "Flauta", count: 2},
-])
+  { name: 'Piano', count: 5 },
+  { name: 'Violín', count: 3 },
+  { name: 'Guitarra', count: 2 },
+  { name: 'Flauta', count: 2 },
+]);
 
 const filteredCriticalStudents = computed(() => {
-  let filtered = [...criticalStudents.value]
+  let filtered = [...criticalStudents.value];
 
   switch (attendanceFilter.value) {
-    case "critical":
-      filtered = filtered.filter((s) => s.status === "critical")
-      break
-    case "good":
-      filtered = filtered.filter((s) => s.attendanceRate >= 80)
-      break
-    case "instrument":
-      filtered = filtered.sort((a, b) => a.instrument.localeCompare(b.instrument))
-      break
-    case "age":
-      filtered = filtered.sort((a, b) => a.age - b.age)
-      break
-    case "alphabetical":
-      filtered = filtered.sort((a, b) => a.fullName.localeCompare(b.fullName))
-      break
-    case "classes":
-      filtered = filtered.sort((a, b) => b.assignedClasses - a.assignedClasses)
-      break
+  case 'critical':
+    filtered = filtered.filter((s) => s.status === 'critical');
+    break;
+  case 'good':
+    filtered = filtered.filter((s) => s.attendanceRate >= 80);
+    break;
+  case 'instrument':
+    filtered = filtered.sort((a, b) => a.instrument.localeCompare(b.instrument));
+    break;
+  case 'age':
+    filtered = filtered.sort((a, b) => a.age - b.age);
+    break;
+  case 'alphabetical':
+    filtered = filtered.sort((a, b) => a.fullName.localeCompare(b.fullName));
+    break;
+  case 'classes':
+    filtered = filtered.sort((a, b) => b.assignedClasses - a.assignedClasses);
+    break;
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 // Methods
 const navigateDate = (direction: number) => {
-  const newDate = new Date(selectedDate.value)
-  newDate.setDate(newDate.getDate() + direction)
-  selectedDate.value = newDate
-  refreshDashboard()
-}
+  const newDate = new Date(selectedDate.value);
+  newDate.setDate(newDate.getDate() + direction);
+  selectedDate.value = newDate;
+  refreshDashboard();
+};
 
 const refreshDashboard = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     // Simular carga de datos
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Aquí iría la lógica real para cargar datos del API
-    console.log("Refreshing dashboard for date:", selectedDate.value)
+    console.log('Refreshing dashboard for date:', selectedDate.value);
   } catch (error) {
-    console.error("Error refreshing dashboard:", error)
+    console.error('Error refreshing dashboard:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const generateWeeklyReport = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     // Lógica para generar el reporte semanal
-    console.log("Generating weekly report...")
+    console.log('Generating weekly report...');
 
     // Simular generación de PDF
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Aquí iría la lógica real para generar y descargar el PDF
-    alert("Reporte semanal generado exitosamente")
+    alert('Reporte semanal generado exitosamente');
   } catch (error) {
-    console.error("Error generating weekly report:", error)
+    console.error('Error generating weekly report:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const filterStudents = () => {
   // La lógica de filtrado está en el computed filteredCriticalStudents
-  console.log("Filtering students by:", attendanceFilter.value)
-}
+  console.log('Filtering students by:', attendanceFilter.value);
+};
 
 const exportCriticalStudents = () => {
   // Lógica para exportar la lista de estudiantes críticos
-  console.log("Exporting critical students...")
-}
+  console.log('Exporting critical students...');
+};
 
 const openActionModal = (student: CriticalStudent) => {
-  selectedStudent.value = student
-  selectedTemplate.value = null
-  showActionModal.value = true
-}
+  selectedStudent.value = student;
+  selectedTemplate.value = null;
+  showActionModal.value = true;
+};
 
 const closeActionModal = () => {
-  showActionModal.value = false
-  selectedStudent.value = null
-  selectedTemplate.value = null
-}
+  showActionModal.value = false;
+  selectedStudent.value = null;
+  selectedTemplate.value = null;
+};
 
 const selectTemplate = (template: CommunicationTemplate) => {
-  selectedTemplate.value = template
-}
+  selectedTemplate.value = template;
+};
 
 const generateMessage = (template: CommunicationTemplate, student: CriticalStudent | null) => {
-  if (!student) return ""
+  if (!student) return '';
 
-  let message = template.template
-  message = message.replace("{{studentName}}", student.fullName)
-  message = message.replace("{{absences}}", student.absences.toString())
-  message = message.replace("{{totalClasses}}", student.assignedClasses.toString())
-  message = message.replace("{{instrument}}", student.instrument)
-  message = message.replace("{{date}}", new Date().toLocaleDateString("es-ES"))
-  message = message.replace("{{time}}", "2:00 PM")
+  let message = template.template;
+  message = message.replace('{{studentName}}', student.fullName);
+  message = message.replace('{{absences}}', student.absences.toString());
+  message = message.replace('{{totalClasses}}', student.assignedClasses.toString());
+  message = message.replace('{{instrument}}', student.instrument);
+  message = message.replace('{{date}}', new Date().toLocaleDateString('es-ES'));
+  message = message.replace('{{time}}', '2:00 PM');
 
-  return message
-}
+  return message;
+};
 
 const sendMessage = async () => {
-  if (!selectedTemplate.value || !selectedStudent.value) return
+  if (!selectedTemplate.value || !selectedStudent.value) return;
 
-  sending.value = true
+  sending.value = true;
   try {
-    const message = generateMessage(selectedTemplate.value, selectedStudent.value)
-    const phone = selectedStudent.value.parentPhone
+    const message = generateMessage(selectedTemplate.value, selectedStudent.value);
+    const phone = selectedStudent.value.parentPhone;
 
     // Lógica para enviar por WhatsApp
-    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
-    window.open(whatsappUrl, "_blank")
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
 
     // Simular envío
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    alert("Mensaje enviado exitosamente")
-    closeActionModal()
+    alert('Mensaje enviado exitosamente');
+    closeActionModal();
   } catch (error) {
-    console.error("Error sending message:", error)
-    alert("Error al enviar el mensaje")
+    console.error('Error sending message:', error);
+    alert('Error al enviar el mensaje');
   } finally {
-    sending.value = false
+    sending.value = false;
   }
-}
+};
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case "critical":
-      return "Crítico"
-    case "warning":
-      return "Alerta"
-    case "good":
-      return "Bueno"
-    default:
-      return "Desconocido"
+  case 'critical':
+    return 'Crítico';
+  case 'warning':
+    return 'Alerta';
+  case 'good':
+    return 'Bueno';
+  default:
+    return 'Desconocido';
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  await refreshDashboard()
-})
+  await refreshDashboard();
+});
 
 // Watchers
 watch(selectedDate, () => {
-  refreshDashboard()
-})
+  refreshDashboard();
+});
 
 // Auto-refresh every 5 minutes
-let refreshInterval: number
+let refreshInterval: number;
 onMounted(() => {
   refreshInterval = setInterval(
     () => {
       if (isToday.value) {
-        refreshDashboard()
+        refreshDashboard();
       }
     },
-    5 * 60 * 1000
-  ) // 5 minutes
-})
+    5 * 60 * 1000,
+  ); // 5 minutes
+});
 
 onUnmounted(() => {
   if (refreshInterval) {
-    clearInterval(refreshInterval)
+    clearInterval(refreshInterval);
   }
-})
+});
 </script>
 
 <style scoped>

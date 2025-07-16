@@ -1,305 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRepertoireStore} from "../stores/repertoire"
-import {useStudentsStore} from "../modulos/Students/store/students"
-import type {Repertoire, MusicalWork, Measure} from "../types/repertoire"
-import {INSTRUMENT_SECTIONS} from "../types/repertoire"
-import {
-  PlusCircleIcon,
-  MusicalNoteIcon,
-  TagIcon,
-  ClockIcon,
-  ChartBarIcon,
-  BellIcon,
-  ShareIcon,
-  InformationCircleIcon,
-  PencilSquareIcon,
-  TrashIcon,
-} from "@heroicons/vue/24/outline"
-import RepertoireForm from "../components/RepertoireForm.vue"
-import WorkForm from "../components/WorkForm.vue"
-import ConfirmModal from "../components/ConfirmModal.vue"
-import WorkProgress from "../components/WorkProgress.vue"
-
-const repertoireStore = useRepertoireStore()
-const studentsStore = useStudentsStore()
-
-// Refs reactivos
-const uiState = ref({
-  selectedRepertoire: null as number | null,
-  selectedWork: null as number | null,
-  showHeatmap: true,
-  showLegend: false,
-  searchQuery: "",
-  selectedCategory: "",
-  selectedTag: "",
-  showRepertoireForm: false,
-  showWorkForm: false,
-  showDeleteModal: false,
-  itemToDelete: null as {type: "repertoire" | "work"; id: number} | null,
-  editingItem: null as {type: "repertoire" | "work"; data: any} | null,
-  viewMode: "general" as "general" | "student" | "section",
-  selectedStudent: null as string | null,
-  selectedSection: null as "strings" | "woodwinds" | "brass" | "percussion" | "other" | null,
-})
-
-const isLoading = ref(true)
-const error = ref("")
-const selectedMeasures = ref<number[]>([])
-const isMultiSelectMode = ref(false)
-
-// Status definitions
-const measureStatuses = [
-  {name: "No leído", color: "bg-red-500", description: "Compás no estudiado aún"},
-  {
-    name: "Leído con Dificultad",
-    color: "bg-orange-500",
-    description: "Compás estudiado pero con dificultades significativas",
-  },
-  {
-    name: "Leído Parcialmente",
-    color: "bg-yellow-500",
-    description: "Compás estudiado con algunas dificultades menores",
-  },
-  {name: "Fluido", color: "bg-blue-500", description: "Compás estudiado y ejecutado con fluidez"},
-  {
-    name: "Dominado",
-    color: "bg-green-500",
-    description: "Compás completamente dominado y memorizado",
-  },
-]
-
-const sections = INSTRUMENT_SECTIONS
-
-const filteredRepertoires = computed(() => {
-  let result = [...repertoireStore.repertoires]
-
-  if (uiState.value.searchQuery) {
-    const query = uiState.value.searchQuery.toLowerCase()
-    result = result.filter(
-      (r) =>
-        r.name.toLowerCase().includes(query) ||
-        r.description.toLowerCase().includes(query) ||
-        r.works.some(
-          (w) => w.title.toLowerCase().includes(query) || w.composer.toLowerCase().includes(query)
-        )
-    )
-  }
-
-  if (uiState.value.selectedCategory) {
-    result = result.filter((r) => r.category === uiState.value.selectedCategory)
-  }
-
-  if (uiState.value.selectedTag) {
-    result = result.filter((r) => r.tags.includes(uiState.value.selectedTag))
-  }
-
-  return result
-})
-
-// Computed properties for views
-const worksBySection = computed(() => {
-  if (!uiState.value.selectedSection) return []
-  return filteredRepertoires.value.flatMap((r) =>
-    r.works.filter((w) => w.instruments.some((i) => i.section === uiState.value.selectedSection))
-  )
-})
-
-const worksByStudent = computed(() => {
-  if (!uiState.value.selectedStudent) return []
-  return filteredRepertoires.value.flatMap((r) =>
-    r.works.filter((w) =>
-      w.instruments.some((i) => i.studentProgress?.[uiState.value.selectedStudent!] !== undefined)
-    )
-  )
-})
-
-const students = computed(() => studentsStore.students)
-
-// Methods
-const getStatusColor = (progress: number) => {
-  if (progress <= 20) return measureStatuses[0].color
-  if (progress <= 40) return measureStatuses[1].color
-  if (progress <= 60) return measureStatuses[2].color
-  if (progress <= 80) return measureStatuses[3].color
-  return measureStatuses[4].color
-}
-
-const getStatusName = (progress: number) => {
-  if (progress <= 20) return measureStatuses[0].name
-  if (progress <= 40) return measureStatuses[1].name
-  if (progress <= 60) return measureStatuses[2].name
-  if (progress <= 80) return measureStatuses[3].name
-  return measureStatuses[4].name
-}
-
-const handleMeasureClick = async (
-  repertoireId: number,
-  workId: number,
-  instrumentId: number,
-  measure: Measure
-) => {
-  if (isMultiSelectMode.value) {
-    // Toggle measure selection
-    const index = selectedMeasures.value.indexOf(measure.id)
-    if (index === -1) {
-      selectedMeasures.value.push(measure.id)
-    } else {
-      selectedMeasures.value.splice(index, 1)
-    }
-    return
-  }
-
-  // Calculate next status
-  let newProgress = Math.floor(measure.progress / 20) * 20 + 20
-  if (newProgress > 100) newProgress = 0
-
-  try {
-    await repertoireStore.updateMeasureProgress(
-      repertoireId,
-      workId,
-      instrumentId,
-      measure.id,
-      newProgress
-    )
-  } catch (err) {
-    error.value = "Error al actualizar el estado del compás"
-    console.error("Error updating measure:", err)
-  }
-}
-
-const updateSelectedMeasures = async (
-  repertoireId: number,
-  workId: number,
-  instrumentId: number,
-  newProgress: number
-) => {
-  try {
-    for (const measureId of selectedMeasures.value) {
-      await repertoireStore.updateMeasureProgress(
-        repertoireId,
-        workId,
-        instrumentId,
-        measureId,
-        newProgress
-      )
-    }
-    selectedMeasures.value = []
-  } catch (err) {
-    error.value = "Error al actualizar los compases seleccionados"
-    console.error("Error updating measures:", err)
-  }
-}
-
-const toggleMultiSelect = () => {
-  isMultiSelectMode.value = !isMultiSelectMode.value
-  if (!isMultiSelectMode.value) {
-    selectedMeasures.value = []
-  }
-}
-
-const handleShare = (repertoire: Repertoire) => {
-  // Implement sharing functionality
-}
-
-const handleNewRepertoire = () => {
-  uiState.value.editingItem = null
-  uiState.value.showRepertoireForm = true
-}
-
-const handleEditRepertoire = (repertoire: Repertoire) => {
-  uiState.value.editingItem = {type: "repertoire", data: repertoire}
-  uiState.value.showRepertoireForm = true
-}
-
-const handleDeleteRepertoire = (id: number) => {
-  uiState.value.itemToDelete = {type: "repertoire", id}
-  uiState.value.showDeleteModal = true
-}
-
-const handleNewWork = (repertoireId: number) => {
-  uiState.value.editingItem = {type: "work", data: {repertoireId}}
-  uiState.value.showWorkForm = true
-}
-
-const handleEditWork = (repertoireId: number, work: MusicalWork) => {
-  uiState.value.editingItem = {type: "work", data: {...work, repertoireId}}
-  uiState.value.showWorkForm = true
-}
-
-const handleDeleteWork = (repertoireId: number, workId: number) => {
-  uiState.value.itemToDelete = {type: "work", id: workId}
-  uiState.value.showDeleteModal = true
-}
-
-const handleRepertoireSubmit = async (data: Partial<Repertoire>) => {
-  try {
-    if (uiState.value.editingItem?.type === "repertoire") {
-      await repertoireStore.updateRepertoire(uiState.value.editingItem.data.id, data)
-    } else {
-      await repertoireStore.createRepertoire(data)
-    }
-    uiState.value.showRepertoireForm = false
-  } catch (err) {
-    error.value = "Error al guardar el repertorio"
-    console.error("Error saving repertoire:", err)
-  }
-}
-
-const handleWorkSubmit = async (data: Partial<MusicalWork>) => {
-  try {
-    if (uiState.value.editingItem?.type === "work") {
-      const {repertoireId} = uiState.value.editingItem.data
-      await repertoireStore.updateWork(repertoireId, uiState.value.editingItem.data.id, data)
-    } else if (uiState.value.editingItem?.data.repertoireId) {
-      await repertoireStore.addWork(uiState.value.editingItem.data.repertoireId, data)
-    }
-    uiState.value.showWorkForm = false
-  } catch (err) {
-    error.value = "Error al guardar la obra"
-    console.error("Error saving work:", err)
-  }
-}
-
-const handleConfirmDelete = async () => {
-  if (!uiState.value.itemToDelete) return
-
-  try {
-    if (uiState.value.itemToDelete.type === "repertoire") {
-      await repertoireStore.deleteRepertoire(uiState.value.itemToDelete.id)
-    } else {
-      const repertoire = repertoireStore.repertoires.find((r) =>
-        r.works.some((w) => w.id === uiState.value.itemToDelete?.id)
-      )
-      if (repertoire) {
-        await repertoireStore.deleteWork(repertoire.id, uiState.value.itemToDelete.id)
-      }
-    }
-  } catch (err) {
-    error.value = `Error al eliminar ${uiState.value.itemToDelete.type === "repertoire" ? "el repertorio" : "la obra"}`
-    console.error("Error deleting item:", err)
-  } finally {
-    uiState.value.showDeleteModal = false
-    uiState.value.itemToDelete = null
-  }
-}
-
-const exportProgress = (format: "pdf" | "excel") => {
-  // Implement export functionality
-}
-
-onMounted(async () => {
-  try {
-    await repertoireStore.fetchRepertoires()
-  } catch (err) {
-    error.value = "Error al cargar los repertorios"
-    console.error("Error loading repertoires:", err)
-  } finally {
-    isLoading.value = false
-  }
-})
-</script>
-
 <template>
   <div class="py-6">
     <div class="flex justify-between items-center mb-6">
@@ -530,6 +228,308 @@ onMounted(async () => {
     />
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRepertoireStore } from '../stores/repertoire';
+import { useStudentsStore } from '../modulos/Students/store/students';
+import type { Repertoire, MusicalWork, Measure } from '../types/repertoire';
+import { INSTRUMENT_SECTIONS } from '../types/repertoire';
+import {
+  PlusCircleIcon,
+  MusicalNoteIcon,
+  TagIcon,
+  ClockIcon,
+  ChartBarIcon,
+  BellIcon,
+  ShareIcon,
+  InformationCircleIcon,
+  PencilSquareIcon,
+  TrashIcon,
+} from '@heroicons/vue/24/outline';
+import RepertoireForm from '../components/RepertoireForm.vue';
+import WorkForm from '../components/WorkForm.vue';
+import ConfirmModal from '../components/ConfirmModal.vue';
+import WorkProgress from '../components/WorkProgress.vue';
+
+const repertoireStore = useRepertoireStore();
+const studentsStore = useStudentsStore();
+
+// Refs reactivos
+const uiState = ref({
+  selectedRepertoire: null as number | null,
+  selectedWork: null as number | null,
+  showHeatmap: true,
+  showLegend: false,
+  searchQuery: '',
+  selectedCategory: '',
+  selectedTag: '',
+  showRepertoireForm: false,
+  showWorkForm: false,
+  showDeleteModal: false,
+  itemToDelete: null as {type: 'repertoire' | 'work'; id: number} | null,
+  editingItem: null as {type: 'repertoire' | 'work'; data: any} | null,
+  viewMode: 'general' as 'general' | 'student' | 'section',
+  selectedStudent: null as string | null,
+  selectedSection: null as 'strings' | 'woodwinds' | 'brass' | 'percussion' | 'other' | null,
+});
+
+const isLoading = ref(true);
+const error = ref('');
+const selectedMeasures = ref<number[]>([]);
+const isMultiSelectMode = ref(false);
+
+// Status definitions
+const measureStatuses = [
+  { name: 'No leído', color: 'bg-red-500', description: 'Compás no estudiado aún' },
+  {
+    name: 'Leído con Dificultad',
+    color: 'bg-orange-500',
+    description: 'Compás estudiado pero con dificultades significativas',
+  },
+  {
+    name: 'Leído Parcialmente',
+    color: 'bg-yellow-500',
+    description: 'Compás estudiado con algunas dificultades menores',
+  },
+  { name: 'Fluido', color: 'bg-blue-500', description: 'Compás estudiado y ejecutado con fluidez' },
+  {
+    name: 'Dominado',
+    color: 'bg-green-500',
+    description: 'Compás completamente dominado y memorizado',
+  },
+];
+
+const sections = INSTRUMENT_SECTIONS;
+
+const filteredRepertoires = computed(() => {
+  let result = [...repertoireStore.repertoires];
+
+  if (uiState.value.searchQuery) {
+    const query = uiState.value.searchQuery.toLowerCase();
+    result = result.filter(
+      (r) =>
+        r.name.toLowerCase().includes(query) ||
+        r.description.toLowerCase().includes(query) ||
+        r.works.some(
+          (w) => w.title.toLowerCase().includes(query) || w.composer.toLowerCase().includes(query),
+        ),
+    );
+  }
+
+  if (uiState.value.selectedCategory) {
+    result = result.filter((r) => r.category === uiState.value.selectedCategory);
+  }
+
+  if (uiState.value.selectedTag) {
+    result = result.filter((r) => r.tags.includes(uiState.value.selectedTag));
+  }
+
+  return result;
+});
+
+// Computed properties for views
+const worksBySection = computed(() => {
+  if (!uiState.value.selectedSection) return [];
+  return filteredRepertoires.value.flatMap((r) =>
+    r.works.filter((w) => w.instruments.some((i) => i.section === uiState.value.selectedSection)),
+  );
+});
+
+const worksByStudent = computed(() => {
+  if (!uiState.value.selectedStudent) return [];
+  return filteredRepertoires.value.flatMap((r) =>
+    r.works.filter((w) =>
+      w.instruments.some((i) => i.studentProgress?.[uiState.value.selectedStudent!] !== undefined),
+    ),
+  );
+});
+
+const students = computed(() => studentsStore.students);
+
+// Methods
+const getStatusColor = (progress: number) => {
+  if (progress <= 20) return measureStatuses[0].color;
+  if (progress <= 40) return measureStatuses[1].color;
+  if (progress <= 60) return measureStatuses[2].color;
+  if (progress <= 80) return measureStatuses[3].color;
+  return measureStatuses[4].color;
+};
+
+const getStatusName = (progress: number) => {
+  if (progress <= 20) return measureStatuses[0].name;
+  if (progress <= 40) return measureStatuses[1].name;
+  if (progress <= 60) return measureStatuses[2].name;
+  if (progress <= 80) return measureStatuses[3].name;
+  return measureStatuses[4].name;
+};
+
+const handleMeasureClick = async (
+  repertoireId: number,
+  workId: number,
+  instrumentId: number,
+  measure: Measure,
+) => {
+  if (isMultiSelectMode.value) {
+    // Toggle measure selection
+    const index = selectedMeasures.value.indexOf(measure.id);
+    if (index === -1) {
+      selectedMeasures.value.push(measure.id);
+    } else {
+      selectedMeasures.value.splice(index, 1);
+    }
+    return;
+  }
+
+  // Calculate next status
+  let newProgress = Math.floor(measure.progress / 20) * 20 + 20;
+  if (newProgress > 100) newProgress = 0;
+
+  try {
+    await repertoireStore.updateMeasureProgress(
+      repertoireId,
+      workId,
+      instrumentId,
+      measure.id,
+      newProgress,
+    );
+  } catch (err) {
+    error.value = 'Error al actualizar el estado del compás';
+    console.error('Error updating measure:', err);
+  }
+};
+
+const updateSelectedMeasures = async (
+  repertoireId: number,
+  workId: number,
+  instrumentId: number,
+  newProgress: number,
+) => {
+  try {
+    for (const measureId of selectedMeasures.value) {
+      await repertoireStore.updateMeasureProgress(
+        repertoireId,
+        workId,
+        instrumentId,
+        measureId,
+        newProgress,
+      );
+    }
+    selectedMeasures.value = [];
+  } catch (err) {
+    error.value = 'Error al actualizar los compases seleccionados';
+    console.error('Error updating measures:', err);
+  }
+};
+
+const toggleMultiSelect = () => {
+  isMultiSelectMode.value = !isMultiSelectMode.value;
+  if (!isMultiSelectMode.value) {
+    selectedMeasures.value = [];
+  }
+};
+
+const handleShare = (repertoire: Repertoire) => {
+  // Implement sharing functionality
+};
+
+const handleNewRepertoire = () => {
+  uiState.value.editingItem = null;
+  uiState.value.showRepertoireForm = true;
+};
+
+const handleEditRepertoire = (repertoire: Repertoire) => {
+  uiState.value.editingItem = { type: 'repertoire', data: repertoire };
+  uiState.value.showRepertoireForm = true;
+};
+
+const handleDeleteRepertoire = (id: number) => {
+  uiState.value.itemToDelete = { type: 'repertoire', id };
+  uiState.value.showDeleteModal = true;
+};
+
+const handleNewWork = (repertoireId: number) => {
+  uiState.value.editingItem = { type: 'work', data: { repertoireId } };
+  uiState.value.showWorkForm = true;
+};
+
+const handleEditWork = (repertoireId: number, work: MusicalWork) => {
+  uiState.value.editingItem = { type: 'work', data: { ...work, repertoireId } };
+  uiState.value.showWorkForm = true;
+};
+
+const handleDeleteWork = (repertoireId: number, workId: number) => {
+  uiState.value.itemToDelete = { type: 'work', id: workId };
+  uiState.value.showDeleteModal = true;
+};
+
+const handleRepertoireSubmit = async (data: Partial<Repertoire>) => {
+  try {
+    if (uiState.value.editingItem?.type === 'repertoire') {
+      await repertoireStore.updateRepertoire(uiState.value.editingItem.data.id, data);
+    } else {
+      await repertoireStore.createRepertoire(data);
+    }
+    uiState.value.showRepertoireForm = false;
+  } catch (err) {
+    error.value = 'Error al guardar el repertorio';
+    console.error('Error saving repertoire:', err);
+  }
+};
+
+const handleWorkSubmit = async (data: Partial<MusicalWork>) => {
+  try {
+    if (uiState.value.editingItem?.type === 'work') {
+      const { repertoireId } = uiState.value.editingItem.data;
+      await repertoireStore.updateWork(repertoireId, uiState.value.editingItem.data.id, data);
+    } else if (uiState.value.editingItem?.data.repertoireId) {
+      await repertoireStore.addWork(uiState.value.editingItem.data.repertoireId, data);
+    }
+    uiState.value.showWorkForm = false;
+  } catch (err) {
+    error.value = 'Error al guardar la obra';
+    console.error('Error saving work:', err);
+  }
+};
+
+const handleConfirmDelete = async () => {
+  if (!uiState.value.itemToDelete) return;
+
+  try {
+    if (uiState.value.itemToDelete.type === 'repertoire') {
+      await repertoireStore.deleteRepertoire(uiState.value.itemToDelete.id);
+    } else {
+      const repertoire = repertoireStore.repertoires.find((r) =>
+        r.works.some((w) => w.id === uiState.value.itemToDelete?.id),
+      );
+      if (repertoire) {
+        await repertoireStore.deleteWork(repertoire.id, uiState.value.itemToDelete.id);
+      }
+    }
+  } catch (err) {
+    error.value = `Error al eliminar ${uiState.value.itemToDelete.type === 'repertoire' ? 'el repertorio' : 'la obra'}`;
+    console.error('Error deleting item:', err);
+  } finally {
+    uiState.value.showDeleteModal = false;
+    uiState.value.itemToDelete = null;
+  }
+};
+
+const exportProgress = (format: 'pdf' | 'excel') => {
+  // Implement export functionality
+};
+
+onMounted(async () => {
+  try {
+    await repertoireStore.fetchRepertoires();
+  } catch (err) {
+    error.value = 'Error al cargar los repertorios';
+    console.error('Error loading repertoires:', err);
+  } finally {
+    isLoading.value = false;
+  }
+});
+</script>
 
 <style scoped>
 .heatmap-tooltip {

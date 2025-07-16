@@ -1,4 +1,4 @@
-import {db} from "../../firebase"
+import { db } from '../../firebase';
 import {
   collection,
   doc,
@@ -9,49 +9,49 @@ import {
   deleteDoc,
   query,
   where,
-} from "firebase/firestore"
+} from 'firebase/firestore';
 import type {
   ScheduleAssignment,
   ScheduleResponse,
   ScheduleCreationRequest,
   ScheduleUpdateRequest,
-} from "../../types/schedule"
+} from '../../types/schedule';
 
-const COLLECTION_NAME = "HORARIOS"
+const COLLECTION_NAME = 'HORARIOS';
 
 export async function getAllSchedules(): Promise<ScheduleResponse> {
   try {
-    const querySnapshot = await getDocs(collection(db, COLLECTION_NAME))
+    const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
     const schedules = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as ScheduleAssignment[]
+    })) as ScheduleAssignment[];
 
     return {
       success: true,
       data: schedules,
-    }
+    };
   } catch (error: any) {
-    console.error("Error getting schedules:", error)
+    console.error('Error getting schedules:', error);
     return {
       success: false,
       data: null,
       error: error.message,
-    }
+    };
   }
 }
 
 export async function getScheduleById(id: string): Promise<ScheduleResponse> {
   try {
-    const docRef = doc(db, COLLECTION_NAME, id)
-    const docSnap = await getDoc(docRef)
+    const docRef = doc(db, COLLECTION_NAME, id);
+    const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
       return {
         success: false,
         data: null,
-        error: "Schedule not found",
-      }
+        error: 'Schedule not found',
+      };
     }
 
     return {
@@ -62,14 +62,14 @@ export async function getScheduleById(id: string): Promise<ScheduleResponse> {
           ...docSnap.data(),
         },
       ] as ScheduleAssignment[],
-    }
+    };
   } catch (error: any) {
-    console.error("Error getting schedule:", error)
+    console.error('Error getting schedule:', error);
     return {
       success: false,
       data: null,
       error: error.message,
-    }
+    };
   }
 }
 
@@ -77,55 +77,55 @@ export async function getSchedulesByTeacher(teacherId: string): Promise<Schedule
   try {
     const q = query(
       collection(db, COLLECTION_NAME),
-      where("scheduleDay.teacherId", "==", teacherId)
-    )
-    const querySnapshot = await getDocs(q)
+      where('scheduleDay.teacherId', '==', teacherId),
+    );
+    const querySnapshot = await getDocs(q);
     const schedules = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as ScheduleAssignment[]
+    })) as ScheduleAssignment[];
 
     return {
       success: true,
       data: schedules,
-    }
+    };
   } catch (error: any) {
-    console.error("Error getting teacher schedules:", error)
+    console.error('Error getting teacher schedules:', error);
     return {
       success: false,
       data: null,
       error: error.message,
-    }
+    };
   }
 }
 
 export async function getSchedulesByClass(classId: string): Promise<ScheduleResponse> {
   try {
-    const q = query(collection(db, COLLECTION_NAME), where("scheduleDay.classId", "==", classId))
-    const querySnapshot = await getDocs(q)
+    const q = query(collection(db, COLLECTION_NAME), where('scheduleDay.classId', '==', classId));
+    const querySnapshot = await getDocs(q);
     const schedules = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as ScheduleAssignment[]
+    })) as ScheduleAssignment[];
 
     return {
       success: true,
       data: schedules,
-    }
+    };
   } catch (error: any) {
-    console.error("Error getting class schedules:", error)
+    console.error('Error getting class schedules:', error);
     return {
       success: false,
       data: null,
       error: error.message,
-    }
+    };
   }
 }
 
 export async function createSchedule(data: ScheduleCreationRequest): Promise<ScheduleResponse> {
   try {
-    const newScheduleRef = doc(collection(db, COLLECTION_NAME))
-    const timestamp = new Date()
+    const newScheduleRef = doc(collection(db, COLLECTION_NAME));
+    const timestamp = new Date();
 
     const scheduleData: ScheduleAssignment = {
       id: newScheduleRef.id,
@@ -145,40 +145,40 @@ export async function createSchedule(data: ScheduleCreationRequest): Promise<Sch
       room: {} as any, // Se completará con datos reales
       createdAt: timestamp,
       updatedAt: timestamp,
-      status: "active",
-    }
+      status: 'active',
+    };
 
-    await setDoc(newScheduleRef, scheduleData)
+    await setDoc(newScheduleRef, scheduleData);
 
     return {
       success: true,
       data: [scheduleData],
-    }
+    };
   } catch (error: any) {
-    console.error("Error creating schedule:", error)
+    console.error('Error creating schedule:', error);
     return {
       success: false,
       data: null,
       error: error.message,
-    }
+    };
   }
 }
 
 export async function updateSchedule(request: ScheduleUpdateRequest): Promise<ScheduleResponse> {
   try {
-    const {scheduleId, updates} = request
-    const docRef = doc(db, COLLECTION_NAME, scheduleId)
+    const { scheduleId, updates } = request;
+    const docRef = doc(db, COLLECTION_NAME, scheduleId);
 
     // Añadir timestamp de actualización
     const updatedData = {
       ...updates,
       updatedAt: new Date(),
-    }
+    };
 
-    await updateDoc(docRef, updatedData)
+    await updateDoc(docRef, updatedData);
 
     // Obtener el documento actualizado
-    const updatedDoc = await getDoc(docRef)
+    const updatedDoc = await getDoc(docRef);
 
     return {
       success: true,
@@ -188,127 +188,127 @@ export async function updateSchedule(request: ScheduleUpdateRequest): Promise<Sc
           ...updatedDoc.data(),
         },
       ] as ScheduleAssignment[],
-    }
+    };
   } catch (error: any) {
-    console.error("Error updating schedule:", error)
+    console.error('Error updating schedule:', error);
     return {
       success: false,
       data: null,
       error: error.message,
-    }
+    };
   }
 }
 
 export async function deleteSchedule(id: string): Promise<ScheduleResponse> {
   try {
-    await deleteDoc(doc(db, COLLECTION_NAME, id))
+    await deleteDoc(doc(db, COLLECTION_NAME, id));
     return {
       success: true,
       data: null,
-    }
+    };
   } catch (error: any) {
-    console.error("Error deleting schedule:", error)
+    console.error('Error deleting schedule:', error);
     return {
       success: false,
       data: null,
       error: error.message,
-    }
+    };
   }
 }
 
 export async function getScheduleConflicts(schedule: ScheduleCreationRequest) {
-  const conflicts = []
+  const conflicts = [];
 
   // Verificar conflictos de profesor
-  const teacherSchedules = await getSchedulesByTeacher(schedule.teacherId)
+  const teacherSchedules = await getSchedulesByTeacher(schedule.teacherId);
   if (teacherSchedules.data) {
     const conflictingTeacherSchedules = teacherSchedules.data.filter(
       (s) =>
         s.scheduleDay.dayOfWeek === schedule.dayOfWeek &&
-        doTimePeriodsOverlap(s.scheduleDay.timeSlot, schedule.timeSlot)
-    )
+        doTimePeriodsOverlap(s.scheduleDay.timeSlot, schedule.timeSlot),
+    );
     if (conflictingTeacherSchedules.length > 0) {
       conflicts.push({
-        type: "teacher",
-        description: "El profesor ya tiene una clase asignada en este horario",
-      })
+        type: 'teacher',
+        description: 'El profesor ya tiene una clase asignada en este horario',
+      });
     }
   }
 
   // Verificar conflictos de salón
-  const roomSchedules = await getRoomSchedules(schedule.roomId)
+  const roomSchedules = await getRoomSchedules(schedule.roomId);
   if (roomSchedules.data) {
     const conflictingRoomSchedules = roomSchedules.data.filter(
       (s) =>
         s.scheduleDay.dayOfWeek === schedule.dayOfWeek &&
-        doTimePeriodsOverlap(s.scheduleDay.timeSlot, schedule.timeSlot)
-    )
+        doTimePeriodsOverlap(s.scheduleDay.timeSlot, schedule.timeSlot),
+    );
     if (conflictingRoomSchedules.length > 0) {
       conflicts.push({
-        type: "room",
-        description: "El salón ya está ocupado en este horario",
-      })
+        type: 'room',
+        description: 'El salón ya está ocupado en este horario',
+      });
     }
   }
 
   // Verificar conflictos de estudiantes
   for (const studentId of schedule.studentIds) {
-    const studentSchedules = await getStudentSchedules(studentId)
+    const studentSchedules = await getStudentSchedules(studentId);
     if (studentSchedules.data) {
       const conflictingStudentSchedules = studentSchedules.data.filter(
         (s) =>
           s.scheduleDay.dayOfWeek === schedule.dayOfWeek &&
-          doTimePeriodsOverlap(s.scheduleDay.timeSlot, schedule.timeSlot)
-      )
+          doTimePeriodsOverlap(s.scheduleDay.timeSlot, schedule.timeSlot),
+      );
       if (conflictingStudentSchedules.length > 0) {
         conflicts.push({
-          type: "student",
+          type: 'student',
           description: `El estudiante ${studentId} ya tiene una clase asignada en este horario`,
-        })
-        break // Solo reportamos un conflicto de estudiante
+        });
+        break; // Solo reportamos un conflicto de estudiante
       }
     }
   }
 
-  return conflicts
+  return conflicts;
 }
 
 // Funciones auxiliares
 function doTimePeriodsOverlap(period1: TimeSlot, period2: TimeSlot): boolean {
-  const start1 = convertTimeToMinutes(period1.startTime)
-  const end1 = convertTimeToMinutes(period1.endTime)
-  const start2 = convertTimeToMinutes(period2.startTime)
-  const end2 = convertTimeToMinutes(period2.endTime)
+  const start1 = convertTimeToMinutes(period1.startTime);
+  const end1 = convertTimeToMinutes(period1.endTime);
+  const start2 = convertTimeToMinutes(period2.startTime);
+  const end2 = convertTimeToMinutes(period2.endTime);
 
-  return start1 < end2 && start2 < end1
+  return start1 < end2 && start2 < end1;
 }
 
 function convertTimeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(":").map(Number)
-  return hours * 60 + minutes
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
 }
 
 // Funciones adicionales para consultas específicas
 async function getRoomSchedules(roomId: string): Promise<ScheduleResponse> {
   try {
-    const q = query(collection(db, COLLECTION_NAME), where("scheduleDay.roomId", "==", roomId))
-    const querySnapshot = await getDocs(q)
+    const q = query(collection(db, COLLECTION_NAME), where('scheduleDay.roomId', '==', roomId));
+    const querySnapshot = await getDocs(q);
     const schedules = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as ScheduleAssignment[]
+    })) as ScheduleAssignment[];
 
     return {
       success: true,
       data: schedules,
-    }
+    };
   } catch (error: any) {
-    console.error("Error getting room schedules:", error)
+    console.error('Error getting room schedules:', error);
     return {
       success: false,
       data: null,
       error: error.message,
-    }
+    };
   }
 }
 
@@ -316,24 +316,24 @@ async function getStudentSchedules(studentId: string): Promise<ScheduleResponse>
   try {
     const q = query(
       collection(db, COLLECTION_NAME),
-      where("scheduleDay.studentIds", "array-contains", studentId)
-    )
-    const querySnapshot = await getDocs(q)
+      where('scheduleDay.studentIds', 'array-contains', studentId),
+    );
+    const querySnapshot = await getDocs(q);
     const schedules = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    })) as ScheduleAssignment[]
+    })) as ScheduleAssignment[];
 
     return {
       success: true,
       data: schedules,
-    }
+    };
   } catch (error: any) {
-    console.error("Error getting student schedules:", error)
+    console.error('Error getting student schedules:', error);
     return {
       success: false,
       data: null,
       error: error.message,
-    }
+    };
   }
 }

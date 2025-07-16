@@ -126,87 +126,87 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue"
-import type {RiskStudent} from "@/analytics/composables/useAdvancedAnalytics"
+import { ref } from 'vue';
+import type { RiskStudent } from '@/analytics/composables/useAdvancedAnalytics';
 
 interface Props {
   students: RiskStudent[]
   loading?: boolean
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
-const activeStudent = ref<string | null>(null)
-const showAll = ref(false)
+const activeStudent = ref<string | null>(null);
+const showAll = ref(false);
 
 function getRiskColor(riskScore: number): string {
-  if (riskScore >= 0.7) return "bg-red-500"
-  if (riskScore >= 0.4) return "bg-yellow-500"
-  return "bg-green-500"
+  if (riskScore >= 0.7) return 'bg-red-500';
+  if (riskScore >= 0.4) return 'bg-yellow-500';
+  return 'bg-green-500';
 }
 
 function getPredictionColor(prediction: string): string {
   const colorMap = {
-    likely_absent: "bg-red-100 text-red-800",
-    uncertain: "bg-yellow-100 text-yellow-800",
-    likely_present: "bg-green-100 text-green-800",
-  }
-  return colorMap[prediction as keyof typeof colorMap] || "bg-gray-100 text-gray-800"
+    likely_absent: 'bg-red-100 text-red-800',
+    uncertain: 'bg-yellow-100 text-yellow-800',
+    likely_present: 'bg-green-100 text-green-800',
+  };
+  return colorMap[prediction as keyof typeof colorMap] || 'bg-gray-100 text-gray-800';
 }
 
 function getPredictionText(prediction: string): string {
   const textMap = {
-    likely_absent: "Probablemente ausente",
-    uncertain: "Incierto",
-    likely_present: "Probablemente presente",
-  }
-  return textMap[prediction as keyof typeof textMap] || "Desconocido"
+    likely_absent: 'Probablemente ausente',
+    uncertain: 'Incierto',
+    likely_present: 'Probablemente presente',
+  };
+  return textMap[prediction as keyof typeof textMap] || 'Desconocido';
 }
 
 function formatDate(dateString: string): string {
-  if (dateString === "Nunca") return dateString
+  if (dateString === 'Nunca') return dateString;
 
   try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("es-ES", {
-      day: "numeric",
-      month: "short",
-    })
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short',
+    });
   } catch {
-    return dateString
+    return dateString;
   }
 }
 
 function toggleActions(studentId: string) {
-  activeStudent.value = activeStudent.value === studentId ? null : studentId
+  activeStudent.value = activeStudent.value === studentId ? null : studentId;
 }
 
 function executeAction(student: RiskStudent, action: string) {
-  console.log(`Ejecutando acción "${action}" para estudiante:`, student.studentName)
+  console.log(`Ejecutando acción "${action}" para estudiante:`, student.studentName);
 
   // Aquí implementarías las acciones específicas
   switch (action) {
-    case "Contactar al estudiante":
-      // Abrir modal de contacto o WhatsApp
-      break
-    case "Reunión con padres":
-      // Programar reunión
-      break
-    case "Plan de recuperación":
-      // Crear plan personalizado
-      break
+  case 'Contactar al estudiante':
+    // Abrir modal de contacto o WhatsApp
+    break;
+  case 'Reunión con padres':
+    // Programar reunión
+    break;
+  case 'Plan de recuperación':
+    // Crear plan personalizado
+    break;
   }
 
-  activeStudent.value = null
+  activeStudent.value = null;
 }
 
 function contactAllRiskStudents() {
-  console.log("Contactando a todos los estudiantes en riesgo...")
+  console.log('Contactando a todos los estudiantes en riesgo...');
   // Implementar contacto masivo
 }
 
 function generateRiskReport() {
-  console.log("Generando reporte de estudiantes en riesgo...")
+  console.log('Generando reporte de estudiantes en riesgo...');
   // Implementar generación de reporte
 }
 </script>

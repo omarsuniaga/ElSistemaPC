@@ -1,51 +1,3 @@
-<script setup lang="ts">
-import {computed} from "vue"
-import KpiCard from "./KpiCard.vue"
-
-const props = defineProps({
-  regularClasses: {
-    type: Number,
-    required: true,
-  },
-  expectedClasses: {
-    type: Number,
-    required: true,
-  },
-  classCompletionRate: {
-    type: Number,
-    required: true,
-  },
-  classroomsInUse: {
-    type: Number,
-    required: true,
-  },
-  expectedClassrooms: {
-    type: Number,
-    required: true,
-  },
-})
-
-const classroomsUsagePercentage = computed(() => {
-  if (!props.expectedClassrooms) return 0
-  return Math.round((props.classroomsInUse / props.expectedClassrooms) * 100)
-})
-
-// Determine color based on completion rate
-const completionColor = computed(() => {
-  if (props.classCompletionRate >= 90) return "green"
-  if (props.classCompletionRate >= 70) return "blue"
-  if (props.classCompletionRate >= 50) return "yellow"
-  return "red"
-})
-
-// Determine color for classroom usage
-const classroomColor = computed(() => {
-  if (classroomsUsagePercentage.value >= 90) return "red" // Too many rooms in use
-  if (classroomsUsagePercentage.value >= 70) return "yellow"
-  return "green" // Good utilization
-})
-</script>
-
 <template>
   <KpiCard
     title="Clases regulares"
@@ -103,3 +55,51 @@ const classroomColor = computed(() => {
     </div>
   </KpiCard>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import KpiCard from './KpiCard.vue';
+
+const props = defineProps({
+  regularClasses: {
+    type: Number,
+    required: true,
+  },
+  expectedClasses: {
+    type: Number,
+    required: true,
+  },
+  classCompletionRate: {
+    type: Number,
+    required: true,
+  },
+  classroomsInUse: {
+    type: Number,
+    required: true,
+  },
+  expectedClassrooms: {
+    type: Number,
+    required: true,
+  },
+});
+
+const classroomsUsagePercentage = computed(() => {
+  if (!props.expectedClassrooms) return 0;
+  return Math.round((props.classroomsInUse / props.expectedClassrooms) * 100);
+});
+
+// Determine color based on completion rate
+const completionColor = computed(() => {
+  if (props.classCompletionRate >= 90) return 'green';
+  if (props.classCompletionRate >= 70) return 'blue';
+  if (props.classCompletionRate >= 50) return 'yellow';
+  return 'red';
+});
+
+// Determine color for classroom usage
+const classroomColor = computed(() => {
+  if (classroomsUsagePercentage.value >= 90) return 'red'; // Too many rooms in use
+  if (classroomsUsagePercentage.value >= 70) return 'yellow';
+  return 'green'; // Good utilization
+});
+</script>

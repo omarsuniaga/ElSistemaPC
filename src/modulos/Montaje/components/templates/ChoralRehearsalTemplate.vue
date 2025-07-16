@@ -374,28 +374,28 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 const rehearsalTypes = [
   { 
     id: 'full_choir', 
     name: 'Coro Completo', 
     icon: '👥', 
-    description: 'Ensayo con todas las voces' 
+    description: 'Ensayo con todas las voces', 
   },
   { 
     id: 'sectional', 
     name: 'Seccional', 
     icon: '🎵', 
-    description: 'Ensayo por cuerdas vocales' 
+    description: 'Ensayo por cuerdas vocales', 
   },
   { 
     id: 'technique', 
     name: 'Técnica Vocal', 
     icon: '🎤', 
-    description: 'Enfoque en técnica' 
-  }
-]
+    description: 'Enfoque en técnica', 
+  },
+];
 
 const voices = [
   { id: 'soprano', name: 'Soprano', range: 'Do4-La5', count: 12 },
@@ -403,23 +403,23 @@ const voices = [
   { id: 'alto', name: 'Alto', range: 'Fa3-Re5', count: 10 },
   { id: 'tenor', name: 'Tenor', range: 'Do3-La4', count: 8 },
   { id: 'baritone', name: 'Barítono', range: 'La2-Fa4', count: 6 },
-  { id: 'bass', name: 'Bajo', range: 'Mi2-Do4', count: 6 }
-]
+  { id: 'bass', name: 'Bajo', range: 'Mi2-Do4', count: 6 },
+];
 
-const selectedType = ref(null)
-const selectedVoices = ref([])
+const selectedType = ref(null);
+const selectedVoices = ref([]);
 
 const selectType = (typeId) => {
-  selectedType.value = typeId
-  selectedVoices.value = []
-}
+  selectedType.value = typeId;
+  selectedVoices.value = [];
+};
 
 const toggleVoice = (voiceId) => {
-  const index = selectedVoices.value.indexOf(voiceId)
+  const index = selectedVoices.value.indexOf(voiceId);
   if (index === -1) {
-    selectedVoices.value.push(voiceId)
+    selectedVoices.value.push(voiceId);
   } else {
-    selectedVoices.value.splice(index, 1)
+    selectedVoices.value.splice(index, 1);
   }
-}
+};
 </script>

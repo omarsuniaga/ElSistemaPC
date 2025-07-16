@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentación Profesional - Módulo de Asistencia</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h1 { font-size: 2.5em; }
+        h2 { font-size: 2em; margin-top: 40px; }
+        h3 { font-size: 1.5em; margin-top: 30px; }
+        code {
+            background-color: #e8e8e8;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+        }
+        .code-block {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        .code-block code {
+            background: none;
+            padding: 0;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .flowchart {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .flowchart .step {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            position: relative;
+            margin: 0 40px;
+        }
+        .flowchart .arrow {
+            display: inline-block;
+            position: relative;
+            top: 5px;
+            font-size: 2em;
+            color: #3498db;
+        }
+        .file-structure ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        .file-structure li {
+            position: relative;
+            padding-left: 25px;
+            margin-bottom: 5px;
+        }
+        .file-structure li::before {
+            content: '📄'; /* o '📁' */
+            position: absolute;
+            left: 0;
+        }
+        .file-structure .folder::before {
+            content: '📁';
+        }
+        .critical {
+            color: #c0392b;
+            font-weight: bold;
+        }
+        .solution {
+            color: #27ae60;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>📄 Documentación Profesional: Módulo de Asistencia</h1>
+        <p><strong>Versión:</strong> 2.0 (Post-Refactorización)</p>
+        <p><strong>Fecha:</strong> 08 de julio de 2025</p>
+        <p><strong>Arquitecto:</strong> Gemini AI</p>
+    </div>
+
+    <h2>1. Resumen Ejecutivo</h2>
+    <div class="card">
+        <p>
+            Este documento detalla la arquitectura y el funcionamiento del módulo <code>attendance</code> tras una refactorización integral. El objetivo ha sido transformar un sistema frágil y monolítico en un <strong>módulo robusto, eficiente y mantenible</strong>, alineado con los más altos estándares de la Arquitectura Limpia y las buenas prácticas de desarrollo.
+        </p>
+        <p>
+            El módulo de asistencia es el corazón funcional de la aplicación, permitiendo a los maestros registrar y observar la participación de los alumnos, generando así los datos primarios para el análisis de métricas de la academia.
+        </p>
+    </div>
+
+    <h2>2. Análisis del Estado Anterior y Crítica</h2>
+    <div class="card">
+        <h3>2.1. Problemas Identificados</h3>
+        <ul>
+            <li><strong class="critical">Componentes Monolíticos:</strong> <code>AttendanceList.vue</code> superaba las 2000 líneas, mezclando responsabilidades y violando el Principio de Responsabilidad Única.</li>
+            <li><strong class="critical">Violación de Arquitectura:</strong> Stores como <code>classes</code>, <code>students</code> y <code>schedules</code> accedían directamente a la base de datos, omitiendo la capa de servicios.</li>
+            <li><strong class="critical">Flujo de Datos Caótico:</strong> Múltiples fuentes de verdad (estado local en componentes, stores) generaban inconsistencias y dificultaban la depuración.</li>
+            <li><strong class="critical">Código Muerto y Redundancia:</strong> Existencia de numerosos archivos de refactorizaciones previas fallidas que contaminaban el codebase.</li>
+        </ul>
+        <h3>2.2. Conclusión del Diagnóstico</h3>
+        <p>El estado anterior era <strong class="critical">insostenible</strong>. La complejidad accidental había superado a la complejidad esencial, haciendo que el módulo fuera un cuello de botella para el desarrollo futuro de la aplicación.</p>
+    </div>
+
+    <h2>3. Nueva Arquitectura (Versión 2.0)</h2>
+    <div class="card">
+        <h3>3.1. Principios Aplicados</h3>
+        <ul>
+            <li><strong>Arquitectura Limpia:</strong> Separación estricta de responsabilidades en capas.</li>
+            <li><strong>Flujo de Datos Unidireccional:</strong> Un flujo claro y predecible que facilita el razonamiento sobre el estado.</li>
+            <li><strong>Componentes "Tontos" (Presentacionales):</strong> Las vistas solo se encargan de pintar la UI y delegar la lógica.</li>
+            <li><strong>Lógica Centralizada:</strong> Un composable de Vue actúa como el cerebro del módulo, orquestando toda la lógica de negocio.</li>
+        </ul>
+
+        <h3>3.2. Diagrama de Flujo de Datos</h3>
+        <div class="flowchart">
+            <span class="step">Firebase</span>
+            <span class="arrow">→</span>
+            <span class="step">Services</span>
+            <span class="arrow">→</span>
+            <span class="step">Stores</span>
+            <span class="arrow">→</span>
+            <span class="step">Composable (useAttendance)</span>
+            <span class="arrow">→</span>
+            <span class="step">Componentes (Vistas)</span>
+        </div>
+
+        <h3>3.3. Estructura de Archivos Propuesta</h3>
+        <div class="file-structure">
+            <ul>
+                <li class="folder">src
+                    <ul>
+                        <li class="folder">modulos
+                            <ul>
+                                <li class="folder">Attendance
+                                    <ul>
+                                        <li class="folder">components <em>(Componentes pequeños y reutilizables)</em></li>
+                                        <li class="folder">composables
+                                            <ul>
+                                                <li><strong><code>useAttendance.ts</code> <span class="solution">(Nuevo - Cerebro del Módulo)</span></strong></li>
+                                            </ul>
+                                        </li>
+                                        <li class="folder">services
+                                            <ul>
+                                                <li><code>attendanceService.ts</code></li>
+                                            </ul>
+                                        </li>
+                                        <li class="folder">stores
+                                            <ul>
+                                                <li><code>attendanceStore.ts</code></li>
+                                            </ul>
+                                        </li>
+                                        <li class="folder">views
+                                            <ul>
+                                                <li><strong><code>ProfessionalCalendarView.vue</code> <span class="solution">(Refactorizado)</span></strong></li>
+                                                <li><strong><code>AttendanceListView.vue</code> <span class="solution">(Refactorizado)</span></strong></li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="folder">services <em>(Capa de servicios global)</em>
+                            <ul>
+                                <li><strong><code>classesService.ts</code> <span class="solution">(Nuevo)</span></strong></li>
+                                <li><strong><code>studentsService.ts</code> <span class="solution">(Nuevo)</span></strong></li>
+                                <li><strong><code>schedulesService.ts</code> <span class="solution">(Nuevo)</span></strong></li>
+                            </ul>
+                        </li>
+                        <li class="folder">stores <em>(Stores globales)</em>
+                            <ul>
+                                <li><strong><code>classesStore.ts</code> <span class="solution">(Refactorizado)</span></strong></li>
+                                <li><strong><code>studentsStore.ts</code> <span class="solution">(Refactorizado)</span></strong></li>
+                                <li><strong><code>schedulesStore.ts</code> <span class="solution">(Refactorizado)</span></strong></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <h2>4. Descripción de Componentes Clave</h2>
+    <div class="card">
+        <h3>4.1. Services (Capa de Datos)</h3>
+        <p><strong>Responsabilidad:</strong> Único punto de contacto con Firebase. Abstrae las operaciones CRUD.</p>
+        <p><strong>Ejemplo:</strong> <code>classesService.ts</code></p>
+        <div class="code-block"><pre><code>// services/classesService.ts
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "../firebase";
+
+const CLASSES_COLLECTION = "CLASES";
+
+export const fetchClassesFromDB = async () => {
+    const querySnapshot = await getDocs(collection(db, CLASSES_COLLECTION));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+// ...otras funciones CRUD
+</code></pre></div>
+
+        <h3>4.2. Stores (Capa de Estado)</h3>
+        <p><strong>Responsabilidad:</strong> Gestionar el estado global de un dominio (ej. `classes`). Llama a los servicios para obtener/modificar datos y los almacena en memoria.</p>
+        <p><strong>Ejemplo:</strong> <code>classesStore.ts</code></p>
+        <div class="code-block"><pre><code>// stores/classesStore.ts
+import { defineStore } from "pinia";
+import { fetchClassesFromDB } from "../services/classesService";
+
+export const useClassesStore = defineStore("classes", {
+    state: () => ({ classes: [], loading: false }),
+    actions: {
+        async fetchClasses() {
+            this.loading = true;
+            this.classes = await fetchClassesFromDB();
+            this.loading = false;
+        }
+    }
+});
+</code></pre></div>
+
+        <h3>4.3. Composable (Capa de Lógica de Negocio)</h3>
+        <p><strong>Responsabilidad:</strong> Orquestar la lógica del módulo. Consume datos de los stores, los procesa y expone un API reactiva y simplificada para las vistas.</p>
+        <p><strong>Ejemplo:</strong> <code>useAttendance.ts</code></p>
+        <div class="code-block"><pre><code>// composables/useAttendance.ts
+import { ref, computed } from "vue";
+import { useClassesStore } from "../stores/classes";
+import { useAttendanceStore } from "../stores/attendance";
+
+export function useAttendance() {
+    const classesStore = useClassesStore();
+    const attendanceStore = useAttendanceStore();
+
+    const calendarDays = computed(() => {
+        // Lógica compleja para generar los días del calendario
+        // combinando datos de clases y asistencia...
+    });
+
+    function selectDate(date) {
+        // Lógica para manejar la selección de una fecha...
+    }
+
+    return { calendarDays, selectDate };
+}
+</code></pre></div>
+
+        <h3>4.4. Vistas (Capa de Presentación)</h3>
+        <p><strong>Responsabilidad:</strong> Renderizar la UI y delegar todas las acciones del usuario al composable.</p>
+        <p><strong>Ejemplo:</strong> <code>ProfessionalCalendarView.vue</code></p>
+        <div class="code-block"><pre><code>&lt;script setup&gt;
+import { useAttendance } from '../composables/useAttendance';
+
+const { calendarDays, selectDate } = useAttendance();
+&lt;/script&gt;
+
+&lt;template&gt;
+    &lt;div v-for="day in calendarDays" @click="selectDate(day.date)"&gt;
+        {{ day.dayNumber }}
+    &lt;/div&gt;
+&lt;/template&gt;
+</code></pre></div>
+    </div>
+
+    <h2>5. Inputs y Outputs del Módulo</h2>
+    <div class="card">
+        <h3>Inputs</h3>
+        <ul>
+            <li><strong>ID de Usuario (Maestro):</strong> Para filtrar clases y validar permisos. Proviene de <code>authStore</code>.</li>
+            <li><strong>Parámetros de Ruta:</strong> <code>date</code> y <code>classId</code> para la vista de lista de asistencia.</li>
+            <li><strong>Interacciones del Usuario:</strong> Clics en fechas, botones, etc.</li>
+        </ul>
+        <h3>Outputs</h3>
+        <ul>
+            <li><strong>Renderizado de UI:</strong> Calendario y listas de asistencia actualizadas.</li>
+            <li><strong>Escrituras a Firestore:</strong> Creación y actualización de documentos de asistencia y observaciones a través de la capa de servicios.</li>
+            <li><strong>Navegación:</strong> Redirección a diferentes vistas del módulo.</li>
+        </ul>
+    </div>
+
+</body>
+</html>

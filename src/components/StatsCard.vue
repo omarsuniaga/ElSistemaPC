@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 // Change the import to get the Component type correctly
-import type {FunctionalComponent, SVGAttributes} from "vue"
+import type { FunctionalComponent, SVGAttributes } from 'vue';
 
 defineProps<{
   icon: FunctionalComponent<SVGAttributes>
@@ -25,5 +25,5 @@ defineProps<{
   value: number
   bgColorClass?: string
   iconColorClass?: string
-}>()
+}>();
 </script>

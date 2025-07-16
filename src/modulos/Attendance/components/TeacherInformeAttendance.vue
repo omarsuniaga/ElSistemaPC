@@ -517,8 +517,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter, useRoute} from "vue-router"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -534,22 +534,22 @@ import {
   ListBulletIcon,
   AcademicCapIcon,
   SparklesIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Stores
-import {useTeachersStore} from "../../Teachers/store/teachers";
-import {useClassesStore} from "../../Classes/store/classes";
-import {useStudentsStore} from "../../Students/store/students";
-import {useAttendanceStore} from "../store/attendance";
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useStudentsStore } from '../../Students/store/students';
+import { useAttendanceStore } from '../store/attendance';
 
 // Firebase
-import {db} from "../../../firebase";
-import {collection, doc, setDoc} from "firebase/firestore"
+import { db } from '../../../firebase';
+import { collection, doc, setDoc } from 'firebase/firestore';
 
 // Types
 interface AttendanceRecord {
   date: string
-  status: "presente" | "ausente" | "tarde" | "justificado"
+  status: 'presente' | 'ausente' | 'tarde' | 'justificado'
   justification?: string
 }
 
@@ -563,73 +563,73 @@ interface ClassObservation {
 }
 
 // Router
-const router = useRouter()
-const route = useRoute()
+const router = useRouter();
+const route = useRoute();
 
 // Stores
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
 
 // Props
 const props = defineProps({
   teacherId: {
     type: String,
-    default: "",
+    default: '',
   },
-})
+});
 
 // Estado
-const loading = ref(false)
-const generating = ref(false)
-const error = ref("")
-const viewMode = ref<"cards" | "list">("cards")
-const expandedClasses = ref(new Set<string>())
-const expandedStudents = ref(new Set<string>())
-const showObservations = ref(false)
-const loadingObservations = ref(false)
-const classObservations = ref<ClassObservation[]>([])
-const selectedClassId = ref("")
-const selectedClassName = ref("")
+const loading = ref(false);
+const generating = ref(false);
+const error = ref('');
+const viewMode = ref<'cards' | 'list'>('cards');
+const expandedClasses = ref(new Set<string>());
+const expandedStudents = ref(new Set<string>());
+const showObservations = ref(false);
+const loadingObservations = ref(false);
+const classObservations = ref<ClassObservation[]>([]);
+const selectedClassId = ref('');
+const selectedClassName = ref('');
 
 // Cache de asistencias por estudiante
-const studentAttendances = ref<Record<string, AttendanceRecord[]>>({})
-const attendancePercentages = ref<Record<string, number>>({})
+const studentAttendances = ref<Record<string, AttendanceRecord[]>>({});
+const attendancePercentages = ref<Record<string, number>>({});
 
 // Fechas
-const dateFrom = ref("")
-const dateTo = ref("")
+const dateFrom = ref('');
+const dateTo = ref('');
 
 // Computed
-const teacherId = computed(() => props.teacherId || (route.query.teacherId as string))
+const teacherId = computed(() => props.teacherId || (route.query.teacherId as string));
 
 const teacherName = computed(() => {
-  if (!teacherId.value) return "Maestro"
-  const teacher = teachersStore.getTeacherById(teacherId.value)
-  return teacher?.name || "Maestro"
-})
+  if (!teacherId.value) return 'Maestro';
+  const teacher = teachersStore.getTeacherById(teacherId.value);
+  return teacher?.name || 'Maestro';
+});
 
 const teacherClasses = computed(() => {
-  if (!teacherId.value) return []
-  return classesStore.classes.filter((c) => c.teacherId === teacherId.value)
-})
+  if (!teacherId.value) return [];
+  return classesStore.classes.filter((c) => c.teacherId === teacherId.value);
+});
 
 const totalStudents = computed(() => {
-  const studentIds = new Set<string>()
+  const studentIds = new Set<string>();
   teacherClasses.value.forEach((cls) => {
     if (cls.studentIds) {
-      cls.studentIds.forEach((id) => studentIds.add(id))
+      cls.studentIds.forEach((id) => studentIds.add(id));
     }
-  })
-  return studentIds.size
-})
+  });
+  return studentIds.size;
+});
 
 // Estadísticas generales (ahora como refs reactivos)
-const totalPresentes = ref(0)
-const totalAusentes = ref(0)
-const totalTardes = ref(0)
-const totalJustificados = ref(0)
+const totalPresentes = ref(0);
+const totalAusentes = ref(0);
+const totalTardes = ref(0);
+const totalJustificados = ref(0);
 
 async function updateStatistics() {
   try {
@@ -637,120 +637,120 @@ async function updateStatistics() {
     let presentes = 0,
       ausentes = 0,
       tardes = 0,
-      justificados = 0
+      justificados = 0;
 
     for (const classId of expandedClasses.value) {
-      const classData = classesStore.getClassById(classId)
-      if (!classData?.studentIds) continue
+      const classData = classesStore.getClassById(classId);
+      if (!classData?.studentIds) continue;
 
       for (const studentId of classData.studentIds) {
-        const attendances = getStudentAttendancesSync(classId, studentId)
-        presentes += attendances.filter((a) => a.status === "presente").length
-        ausentes += attendances.filter((a) => a.status === "ausente").length
-        tardes += attendances.filter((a) => a.status === "tarde").length
-        justificados += attendances.filter((a) => a.status === "justificado").length
+        const attendances = getStudentAttendancesSync(classId, studentId);
+        presentes += attendances.filter((a) => a.status === 'presente').length;
+        ausentes += attendances.filter((a) => a.status === 'ausente').length;
+        tardes += attendances.filter((a) => a.status === 'tarde').length;
+        justificados += attendances.filter((a) => a.status === 'justificado').length;
       }
     }
 
-    totalPresentes.value = presentes
-    totalAusentes.value = ausentes
-    totalTardes.value = tardes
-    totalJustificados.value = justificados
+    totalPresentes.value = presentes;
+    totalAusentes.value = ausentes;
+    totalTardes.value = tardes;
+    totalJustificados.value = justificados;
   } catch (error) {
-    console.error("Error actualizando estadísticas:", error)
+    console.error('Error actualizando estadísticas:', error);
   }
 }
 
 // Métodos
 function goBack() {
-  router.back()
+  router.back();
 }
 
 function setDefaultDateRange() {
-  const today = new Date()
-  const lastMonth = new Date()
-  lastMonth.setMonth(lastMonth.getMonth() - 1)
+  const today = new Date();
+  const lastMonth = new Date();
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
 
-  dateFrom.value = lastMonth.toISOString().split("T")[0]
-  dateTo.value = today.toISOString().split("T")[0]
+  dateFrom.value = lastMonth.toISOString().split('T')[0];
+  dateTo.value = today.toISOString().split('T')[0];
 }
 
 // Función para generar datos de muestra
 async function generateSampleData() {
-  if (generating.value) return
+  if (generating.value) return;
 
-  generating.value = true
-  console.log("🎭 Generando datos de asistencia de muestra...")
+  generating.value = true;
+  console.log('🎭 Generando datos de asistencia de muestra...');
 
   try {
     // Obtener las clases del maestro actual
-    const teacherClassIds = teacherClasses.value.map((c) => c.id)
+    const teacherClassIds = teacherClasses.value.map((c) => c.id);
 
     if (teacherClassIds.length === 0) {
-      throw new Error("No hay clases asignadas a este maestro")
+      throw new Error('No hay clases asignadas a este maestro');
     }
 
-    console.log(`📚 Generando datos para ${teacherClassIds.length} clases:`, teacherClassIds)
+    console.log(`📚 Generando datos para ${teacherClassIds.length} clases:`, teacherClassIds);
 
     // Estudiantes de muestra (algunos reales + algunos ficticios)
     const sampleStudents = [
-      "XCMzMoaZAKQpMfUyFgz",
-      "1663248027973",
-      "Edelyn_Abreu_001",
-      "Helen_Sofia_002",
-      "Estudiante_003",
-      "Estudiante_004",
-      "Estudiante_005",
-      "Estudiante_006",
-      "Estudiante_007",
-      "Estudiante_008",
-      "Estudiante_009",
-      "Estudiante_010",
-    ]
+      'XCMzMoaZAKQpMfUyFgz',
+      '1663248027973',
+      'Edelyn_Abreu_001',
+      'Helen_Sofia_002',
+      'Estudiante_003',
+      'Estudiante_004',
+      'Estudiante_005',
+      'Estudiante_006',
+      'Estudiante_007',
+      'Estudiante_008',
+      'Estudiante_009',
+      'Estudiante_010',
+    ];
 
     // Generar fechas de los últimos 25 días
-    const dates = []
-    const today = new Date()
+    const dates = [];
+    const today = new Date();
     for (let i = 0; i < 25; i++) {
-      const date = new Date(today)
-      date.setDate(date.getDate() - i)
-      dates.push(date.toISOString().split("T")[0])
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      dates.push(date.toISOString().split('T')[0]);
     }
 
-    let documentsCreated = 0
+    let documentsCreated = 0;
 
     for (const fecha of dates) {
       for (const classId of teacherClassIds) {
         // 70% de probabilidad de que haya clase ese día
         if (Math.random() < 0.7) {
           // Seleccionar entre 4-9 estudiantes para esta clase
-          const numStudents = Math.floor(Math.random() * 6) + 4
-          const classStudents = sampleStudents.slice(0, numStudents)
+          const numStudents = Math.floor(Math.random() * 6) + 4;
+          const classStudents = sampleStudents.slice(0, numStudents);
 
-          const presentes: string[] = []
-          const ausentes: string[] = []
-          const tarde: string[] = []
-          const justificacion: any[] = []
+          const presentes: string[] = [];
+          const ausentes: string[] = [];
+          const tarde: string[] = [];
+          const justificacion: any[] = [];
 
           classStudents.forEach((studentId) => {
-            const rand = Math.random()
+            const rand = Math.random();
 
             if (rand < 0.75) {
               // 75% presente
-              presentes.push(studentId)
+              presentes.push(studentId);
             } else if (rand < 0.92) {
               // 17% ausente
-              ausentes.push(studentId)
+              ausentes.push(studentId);
 
               // 40% de los ausentes tienen justificación
               if (Math.random() < 0.4) {
                 const reasons = [
-                  "Cita médica programada",
-                  "Emergencia familiar",
-                  "Enfermedad leve",
-                  "Compromiso académico",
-                  "Viaje familiar",
-                ]
+                  'Cita médica programada',
+                  'Emergencia familiar',
+                  'Enfermedad leve',
+                  'Compromiso académico',
+                  'Viaje familiar',
+                ];
 
                 justificacion.push({
                   id: studentId,
@@ -759,18 +759,18 @@ async function generateSampleData() {
                   fecha,
                   reason: reasons[Math.floor(Math.random() * reasons.length)],
                   documentUrl: null,
-                  approvalStatus: "pending",
+                  approvalStatus: 'pending',
                   createdAt: new Date(),
                   timeLimit: new Date(Date.now() + 48 * 60 * 60 * 1000),
-                })
+                });
               }
             } else {
               // 8% tardanza
-              tarde.push(studentId)
+              tarde.push(studentId);
             }
-          })
+          });
 
-          const docId = `${fecha}_${classId}`
+          const docId = `${fecha}_${classId}`;
           const attendanceDocument = {
             fecha,
             date: fecha, // Para compatibilidad
@@ -787,160 +787,160 @@ async function generateSampleData() {
               observación:
                 Math.random() < 0.25
                   ? `Observación del ${fecha}: Clase desarrollada satisfactoriamente`
-                  : "",
+                  : '',
               observations: [],
             },
-          }
+          };
 
           try {
-            await setDoc(doc(db, "ASISTENCIAS", docId), attendanceDocument)
-            documentsCreated++
+            await setDoc(doc(db, 'ASISTENCIAS', docId), attendanceDocument);
+            documentsCreated++;
 
             console.log(
-              `✅ ${docId}: ${presentes.length}P, ${ausentes.length}A, ${tarde.length}T, ${justificacion.length}J`
-            )
+              `✅ ${docId}: ${presentes.length}P, ${ausentes.length}A, ${tarde.length}T, ${justificacion.length}J`,
+            );
           } catch (error) {
-            console.error(`❌ Error creando ${docId}:`, error)
+            console.error(`❌ Error creando ${docId}:`, error);
           }
 
           // Pausa pequeña
-          await new Promise((resolve) => setTimeout(resolve, 100))
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
     }
 
-    console.log(`🎉 ¡Completado! Se crearon ${documentsCreated} documentos de asistencia.`)
+    console.log(`🎉 ¡Completado! Se crearon ${documentsCreated} documentos de asistencia.`);
 
     // Recargar los datos
     if (dateFrom.value && dateTo.value) {
-      await loadAttendanceData()
+      await loadAttendanceData();
     }
   } catch (err: any) {
-    console.error("❌ Error generando datos de muestra:", err)
-    error.value = "Error al generar datos de muestra: " + (err?.message || "Error desconocido")
+    console.error('❌ Error generando datos de muestra:', err);
+    error.value = 'Error al generar datos de muestra: ' + (err?.message || 'Error desconocido');
   } finally {
-    generating.value = false
+    generating.value = false;
   }
 }
 
 function toggleClassExpansion(classId: string) {
   if (expandedClasses.value.has(classId)) {
-    expandedClasses.value.delete(classId)
+    expandedClasses.value.delete(classId);
   } else {
-    expandedClasses.value.add(classId)
+    expandedClasses.value.add(classId);
     // Las asistencias ya están cargadas en memoria, no necesitamos cargar nada más
-    console.log(`📂 Expandiendo clase ${classId} - datos ya disponibles en cache`)
+    console.log(`📂 Expandiendo clase ${classId} - datos ya disponibles en cache`);
   }
 }
 
 function toggleStudentExpansion(classId: string, studentId: string) {
-  const key = `${classId}-${studentId}`
+  const key = `${classId}-${studentId}`;
   if (expandedStudents.value.has(key)) {
-    expandedStudents.value.delete(key)
+    expandedStudents.value.delete(key);
   } else {
-    expandedStudents.value.add(key)
+    expandedStudents.value.add(key);
   }
 }
 
 function getClassSchedule(classData: any): string {
-  if (!classData.schedule?.slots) return "Horario no definido"
+  if (!classData.schedule?.slots) return 'Horario no definido';
 
-  const slots = classData.schedule.slots
-  if (slots.length === 0) return "Sin horario"
+  const slots = classData.schedule.slots;
+  if (slots.length === 0) return 'Sin horario';
 
-  const firstSlot = slots[0]
-  const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
-  const dayName = days[firstSlot.day] || `Día ${firstSlot.day}`
+  const firstSlot = slots[0];
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const dayName = days[firstSlot.day] || `Día ${firstSlot.day}`;
 
-  return `${dayName} ${firstSlot.startTime} - ${firstSlot.endTime}`
+  return `${dayName} ${firstSlot.startTime} - ${firstSlot.endTime}`;
 }
 
 function getClassStudentsCount(classData: any): number {
-  return classData.studentIds?.length || 0
+  return classData.studentIds?.length || 0;
 }
 
 function getClassStudents(classData: any) {
   if (!classData.studentIds) {
-    console.log(`⚠️ Clase ${classData.name} no tiene studentIds`)
-    return []
+    console.log(`⚠️ Clase ${classData.name} no tiene studentIds`);
+    return [];
   }
 
-  const students = studentsStore.students.filter((s) => classData.studentIds.includes(s.id))
+  const students = studentsStore.students.filter((s) => classData.studentIds.includes(s.id));
   console.log(
-    `👥 Clase ${classData.name}: ${students.length}/${classData.studentIds.length} estudiantes encontrados`
-  )
+    `👥 Clase ${classData.name}: ${students.length}/${classData.studentIds.length} estudiantes encontrados`,
+  );
 
   if (students.length !== classData.studentIds.length) {
-    const foundIds = students.map((s) => s.id)
-    const missingIds = classData.studentIds.filter((id: string) => !foundIds.includes(id))
-    console.log(`❓ IDs faltantes:`, missingIds)
+    const foundIds = students.map((s) => s.id);
+    const missingIds = classData.studentIds.filter((id: string) => !foundIds.includes(id));
+    console.log('❓ IDs faltantes:', missingIds);
   }
 
-  return students
+  return students;
 }
 
 // Funciones síncronas para el template (obtienen datos del cache)
 function getStudentAttendancesSync(classId: string, studentId: string): AttendanceRecord[] {
-  const key = `${classId}-${studentId}`
-  return studentAttendances.value[key] || []
+  const key = `${classId}-${studentId}`;
+  return studentAttendances.value[key] || [];
 }
 
 function getStudentAttendancePercentageSync(classId: string, studentId: string): number {
-  const key = `${classId}-${studentId}`
-  return attendancePercentages.value[key] || 0
+  const key = `${classId}-${studentId}`;
+  return attendancePercentages.value[key] || 0;
 }
 
 function getStudentAttendanceCountSync(classId: string, studentId: string, status: string): number {
-  const attendances = getStudentAttendancesSync(classId, studentId)
-  return attendances.filter((a) => a.status === status).length
+  const attendances = getStudentAttendancesSync(classId, studentId);
+  return attendances.filter((a) => a.status === status).length;
 }
 
 function getAttendancePercentageSync(classData: any): number {
-  const students = getClassStudents(classData)
-  if (students.length === 0) return 0
+  const students = getClassStudents(classData);
+  if (students.length === 0) return 0;
 
-  let totalPresentes = 0
-  let totalSessions = 0
+  let totalPresentes = 0;
+  let totalSessions = 0;
 
   students.forEach((student) => {
-    const attendances = getStudentAttendancesSync(classData.id, student.id)
-    totalSessions += attendances.length
+    const attendances = getStudentAttendancesSync(classData.id, student.id);
+    totalSessions += attendances.length;
     totalPresentes += attendances.filter(
-      (a) => a.status === "presente" || a.status === "justificado"
-    ).length
-  })
+      (a) => a.status === 'presente' || a.status === 'justificado',
+    ).length;
+  });
 
-  return totalSessions > 0 ? Math.round((totalPresentes / totalSessions) * 100) : 0
+  return totalSessions > 0 ? Math.round((totalPresentes / totalSessions) * 100) : 0;
 }
 // Función para procesar todos los datos de asistencia de una vez
 async function processAllAttendanceData(attendanceRecords: any[], teacherClassesData: any[]) {
-  console.log("🔄 === PROCESANDO TODOS LOS DATOS DE ASISTENCIA ===")
+  console.log('🔄 === PROCESANDO TODOS LOS DATOS DE ASISTENCIA ===');
   console.log(
-    `📊 Procesando ${attendanceRecords.length} registros para ${teacherClassesData.length} clases`
-  )
+    `📊 Procesando ${attendanceRecords.length} registros para ${teacherClassesData.length} clases`,
+  );
 
   // Limpiar cache existente
-  studentAttendances.value = {}
-  attendancePercentages.value = {}
+  studentAttendances.value = {};
+  attendancePercentages.value = {};
 
   // Agrupar registros por clase y estudiante
-  const attendanceByClass: Record<string, Record<string, any[]>> = {}
+  const attendanceByClass: Record<string, Record<string, any[]>> = {};
 
   // Inicializar estructura para todas las clases
   teacherClassesData.forEach((classData) => {
-    attendanceByClass[classData.id] = {}
+    attendanceByClass[classData.id] = {};
 
     // Inicializar para todos los estudiantes de cada clase
     if (classData.studentIds && classData.studentIds.length > 0) {
       classData.studentIds.forEach((studentId: string) => {
-        attendanceByClass[classData.id][studentId] = []
-      })
+        attendanceByClass[classData.id][studentId] = [];
+      });
     }
-  })
+  });
 
   // Procesar todos los registros
   attendanceRecords.forEach((record) => {
-    const {classId, studentId} = record
+    const { classId, studentId } = record;
 
     if (attendanceByClass[classId] && attendanceByClass[classId][studentId] !== undefined) {
       // Mapear al formato local del componente
@@ -948,291 +948,291 @@ async function processAllAttendanceData(attendanceRecords: any[], teacherClasses
         date: record.fecha, // usar 'fecha' del store
         status: mapFirebaseStatusToLocal(record.status),
         justification:
-          typeof record.justification === "object" && record.justification?.reason
+          typeof record.justification === 'object' && record.justification?.reason
             ? record.justification.reason
-            : typeof record.justification === "string"
+            : typeof record.justification === 'string'
               ? record.justification
               : undefined,
-      }
+      };
 
-      attendanceByClass[classId][studentId].push(mappedRecord)
+      attendanceByClass[classId][studentId].push(mappedRecord);
     }
-  })
+  });
 
   // Calcular porcentajes y asignar al cache del componente
-  let totalStudentsProcessed = 0
-  let totalRecordsProcessed = 0
+  let totalStudentsProcessed = 0;
+  let totalRecordsProcessed = 0;
 
   Object.keys(attendanceByClass).forEach((classId) => {
     Object.keys(attendanceByClass[classId]).forEach((studentId) => {
-      const key = `${classId}-${studentId}`
-      const studentRecords = attendanceByClass[classId][studentId]
+      const key = `${classId}-${studentId}`;
+      const studentRecords = attendanceByClass[classId][studentId];
 
-      studentAttendances.value[key] = studentRecords
+      studentAttendances.value[key] = studentRecords;
 
       if (studentRecords.length > 0) {
         const presentes = studentRecords.filter(
-          (r) => r.status === "presente" || r.status === "justificado"
-        ).length
-        attendancePercentages.value[key] = Math.round((presentes / studentRecords.length) * 100)
-        totalRecordsProcessed += studentRecords.length
+          (r) => r.status === 'presente' || r.status === 'justificado',
+        ).length;
+        attendancePercentages.value[key] = Math.round((presentes / studentRecords.length) * 100);
+        totalRecordsProcessed += studentRecords.length;
       } else {
-        attendancePercentages.value[key] = 0
+        attendancePercentages.value[key] = 0;
       }
 
-      totalStudentsProcessed++
-    })
-  })
+      totalStudentsProcessed++;
+    });
+  });
 
-  console.log(`✅ Procesamiento completado:`)
-  console.log(`   👥 ${totalStudentsProcessed} estudiantes procesados`)
-  console.log(`   📝 ${totalRecordsProcessed} registros de asistencia organizados`)
-  console.log(`   💾 Datos disponibles en cache para acceso instantáneo`)
+  console.log('✅ Procesamiento completado:');
+  console.log(`   👥 ${totalStudentsProcessed} estudiantes procesados`);
+  console.log(`   📝 ${totalRecordsProcessed} registros de asistencia organizados`);
+  console.log('   💾 Datos disponibles en cache para acceso instantáneo');
 }
 
 // Función para cargar todas las asistencias de estudiantes SOLO cuando se expanda una clase (OBSOLETA - mantenida para compatibilidad)
 async function loadStudentAttendancesForClass(classId: string) {
-  console.log(`ℹ️ loadStudentAttendancesForClass(${classId}) - FUNCIÓN OBSOLETA`)
-  console.log(` Los datos ya están cargados en memoria. No es necesario cargar individualmente.`)
+  console.log(`ℹ️ loadStudentAttendancesForClass(${classId}) - FUNCIÓN OBSOLETA`);
+  console.log(' Los datos ya están cargados en memoria. No es necesario cargar individualmente.');
 
   // Esta función ya no es necesaria porque todos los datos se cargan al inicio
   // Los datos ya están disponibles en studentAttendances.value y attendancePercentages.value
-  return
+  return;
 }
 
 // Funciones auxiliares para mapear estados
 function mapFirebaseStatusToLocal(
-  status: string
-): "presente" | "ausente" | "tarde" | "justificado" {
+  status: string,
+): 'presente' | 'ausente' | 'tarde' | 'justificado' {
   switch (status.toLowerCase()) {
-    case "presente":
-      return "presente"
-    case "ausente":
-      return "ausente"
-    case "tarde":
-    case "tardanza":
-      return "tarde"
-    case "justificado":
-      return "justificado"
-    default:
-      return "ausente"
+  case 'presente':
+    return 'presente';
+  case 'ausente':
+    return 'ausente';
+  case 'tarde':
+  case 'tardanza':
+    return 'tarde';
+  case 'justificado':
+    return 'justificado';
+  default:
+    return 'ausente';
   }
 }
 
 function getStatusClass(status: string): string {
   switch (status) {
-    case "presente":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-    case "ausente":
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-    case "tarde":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-    case "justificado":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+  case 'presente':
+    return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+  case 'ausente':
+    return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+  case 'tarde':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+  case 'justificado':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
   }
 }
 
 function getStatusText(status: string): string {
   switch (status) {
-    case "presente":
-      return "Presente"
-    case "ausente":
-      return "Ausente"
-    case "tarde":
-      return "Tarde"
-    case "justificado":
-      return "Justificado"
-    default:
-      return status
+  case 'presente':
+    return 'Presente';
+  case 'ausente':
+    return 'Ausente';
+  case 'tarde':
+    return 'Tarde';
+  case 'justificado':
+    return 'Justificado';
+  default:
+    return status;
   }
 }
 
 function formatDate(dateString: string): string {
   try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("es-ES", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    })
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   } catch {
-    return dateString
+    return dateString;
   }
 }
 
 async function showObservationsModal(classId: string, studentId?: string) {
-  selectedClassId.value = classId
-  const classData = classesStore.getClassById(classId)
-  selectedClassName.value = classData?.name || "Clase"
+  selectedClassId.value = classId;
+  const classData = classesStore.getClassById(classId);
+  selectedClassName.value = classData?.name || 'Clase';
 
-  showObservations.value = true
-  loadingObservations.value = true
+  showObservations.value = true;
+  loadingObservations.value = true;
 
   try {
     // Obtener observaciones de la clase
-    const observations = await attendanceStore.fetchObservationsForClass(classId)
+    const observations = await attendanceStore.fetchObservationsForClass(classId);
 
     // Filtrar por rango de fechas si est definido
-    let filteredObservations = observations
+    let filteredObservations = observations;
     if (dateFrom.value && dateTo.value) {
       filteredObservations = observations.filter((obs) => {
-        const obsDate = obs.date || obs.fecha
-        return obsDate && obsDate >= dateFrom.value && obsDate <= dateTo.value
-      })
+        const obsDate = obs.date || obs.fecha;
+        return obsDate && obsDate >= dateFrom.value && obsDate <= dateTo.value;
+      });
     }
 
-    classObservations.value = filteredObservations
+    classObservations.value = filteredObservations;
   } catch (err) {
-    console.error("Error cargando observaciones:", err)
-    classObservations.value = []
+    console.error('Error cargando observaciones:', err);
+    classObservations.value = [];
   } finally {
-    loadingObservations.value = false
+    loadingObservations.value = false;
   }
 }
 
 function closeObservationsModal() {
-  showObservations.value = false
-  classObservations.value = []
+  showObservations.value = false;
+  classObservations.value = [];
 }
 
 function getObservationText(observation: ClassObservation): string {
-  if (observation.text) return observation.text
-  if (observation.content?.text) return observation.content.text
-  if (typeof observation.content === "string") return observation.content
-  return "Sin contenido"
+  if (observation.text) return observation.text;
+  if (observation.content?.text) return observation.content.text;
+  if (typeof observation.content === 'string') return observation.content;
+  return 'Sin contenido';
 }
 
 function getObservationTypeClass(type: string): string {
   switch (type) {
-    case "general":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-    case "comportamiento":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-    case "academico":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-    case "asistencia":
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+  case 'general':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+  case 'comportamiento':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+  case 'academico':
+    return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+  case 'asistencia':
+    return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
   }
 }
 
 function getObservationTypeText(type: string): string {
   switch (type) {
-    case "general":
-      return "General"
-    case "comportamiento":
-      return "Comportamiento"
-    case "academico":
-      return "Académico"
-    case "asistencia":
-      return "Asistencia"
-    default:
-      return type
+  case 'general':
+    return 'General';
+  case 'comportamiento':
+    return 'Comportamiento';
+  case 'academico':
+    return 'Académico';
+  case 'asistencia':
+    return 'Asistencia';
+  default:
+    return type;
   }
 }
 
 async function loadAttendanceData() {
   if (!teacherId.value) {
-    error.value = "No se ha especificado un maestro"
-    return
+    error.value = 'No se ha especificado un maestro';
+    return;
   }
 
-  loading.value = true
-  error.value = ""
+  loading.value = true;
+  error.value = '';
 
   try {
     // Cargar datos necesarios
-    console.log("🔄 Cargando datos básicos...")
+    console.log('🔄 Cargando datos básicos...');
     await Promise.all([
       teachersStore.fetchTeachers(),
       classesStore.fetchClasses(),
       studentsStore.fetchStudents(),
-    ])
+    ]);
 
     // Debug: Verificar datos cargados
-    console.log("📊 Datos cargados:")
-    console.log("- Teachers:", teachersStore.teachers.length)
-    console.log("- Classes:", classesStore.classes.length)
-    console.log("- Students:", studentsStore.students.length)
-    console.log("- Teacher ID:", teacherId.value)
+    console.log('📊 Datos cargados:');
+    console.log('- Teachers:', teachersStore.teachers.length);
+    console.log('- Classes:', classesStore.classes.length);
+    console.log('- Students:', studentsStore.students.length);
+    console.log('- Teacher ID:', teacherId.value);
 
     // Verificar clases del maestro
-    const teacherClassesData = classesStore.classes.filter((c) => c.teacherId === teacherId.value)
-    console.log("- Teacher Classes:", teacherClassesData.length)
+    const teacherClassesData = classesStore.classes.filter((c) => c.teacherId === teacherId.value);
+    console.log('- Teacher Classes:', teacherClassesData.length);
     teacherClassesData.forEach((cls) => {
-      console.log(`  📚 Clase: ${cls.name}, Estudiantes: ${cls.studentIds?.length || 0}`)
+      console.log(`  📚 Clase: ${cls.name}, Estudiantes: ${cls.studentIds?.length || 0}`);
       if (cls.studentIds) {
-        console.log(`    👥 Student IDs:`, cls.studentIds)
+        console.log('    👥 Student IDs:', cls.studentIds);
       }
-    })
+    });
 
     // Verificar estudiantes disponibles
     if (teacherClassesData.length > 0) {
-      const allStudentIds = new Set<string>()
+      const allStudentIds = new Set<string>();
       teacherClassesData.forEach((cls) => {
         if (cls.studentIds) {
-          cls.studentIds.forEach((id) => allStudentIds.add(id))
+          cls.studentIds.forEach((id) => allStudentIds.add(id));
         }
-      })
-      console.log("📝 Estudiantes únicos encontrados:", allStudentIds.size)
+      });
+      console.log('📝 Estudiantes únicos encontrados:', allStudentIds.size);
 
       // Verificar si los estudiantes existen en el store
       const studentsFound = Array.from(allStudentIds).map((id) => {
-        const student = studentsStore.students.find((s) => s.id === id)
-        return student ? `${student.nombre} ${student.apellido}` : `ID: ${id} (NO ENCONTRADO)`
-      })
-      console.log("👤 Estudiantes:", studentsFound)
+        const student = studentsStore.students.find((s) => s.id === id);
+        return student ? `${student.nombre} ${student.apellido}` : `ID: ${id} (NO ENCONTRADO)`;
+      });
+      console.log('👤 Estudiantes:', studentsFound);
     }
 
     // Cargar datos de asistencia si hay rango de fechas
     if (dateFrom.value && dateTo.value) {
-      console.log("📅 Cargando TODAS las asistencias para el período...", {
+      console.log('📅 Cargando TODAS las asistencias para el período...', {
         dateFrom: dateFrom.value,
         dateTo: dateTo.value,
-      })
+      });
 
       // Obtener todas las clases del maestro
-      const teacherClassIds = teacherClassesData.map((cls) => cls.id)
-      console.log("🏫 Cargando asistencias para clases:", teacherClassIds)
+      const teacherClassIds = teacherClassesData.map((cls) => cls.id);
+      console.log('🏫 Cargando asistencias para clases:', teacherClassIds);
 
       if (teacherClassIds.length > 0) {
         // Cargar todas las asistencias de una vez usando la función optimizada
         const allAttendanceRecords = await attendanceStore.fetchAttendanceByDateRangeAndClasses(
           dateFrom.value,
           dateTo.value,
-          teacherClassIds
-        )
+          teacherClassIds,
+        );
 
-        console.log(`📊 Total de registros de asistencia obtenidos: ${allAttendanceRecords.length}`)
+        console.log(`📊 Total de registros de asistencia obtenidos: ${allAttendanceRecords.length}`);
 
         // Procesar y organizar todos los datos por clase y estudiante
-        await processAllAttendanceData(allAttendanceRecords, teacherClassesData)
+        await processAllAttendanceData(allAttendanceRecords, teacherClassesData);
 
         // Actualizar estadísticas globales
-        await updateStatistics()
+        await updateStatistics();
       }
     }
 
-    console.log("✅ Datos cargados correctamente")
+    console.log('✅ Datos cargados correctamente');
   } catch (err) {
-    console.error("❌ Error cargando datos:", err)
-    error.value = "Error al cargar los datos. Por favor, intenta de nuevo."
+    console.error('❌ Error cargando datos:', err);
+    error.value = 'Error al cargar los datos. Por favor, intenta de nuevo.';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 // Inicialización
 onMounted(async () => {
   // Establecer rango de fechas por defecto
-  setDefaultDateRange()
+  setDefaultDateRange();
 
   // Cargar datos iniciales
-  await loadAttendanceData()
-})
+  await loadAttendanceData();
+});
 </script>
 
 <style scoped>

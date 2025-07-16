@@ -289,14 +289,14 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 
 interface Student {
   id: string
   name: string
   email: string
   instrument: string
-  status: "active" | "inactive" | "suspended"
+  status: 'active' | 'inactive' | 'suspended'
   classesPerMonth: number
   maxClasses: number
   lastAccess: Date
@@ -309,141 +309,141 @@ const emit = defineEmits<{
   editStudent: [student: Student]
   deleteStudent: [student: Student]
   refreshData: []
-}>()
+}>();
 
 // State
-const showFilters = ref(false)
-const showCreateModal = ref(false)
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
+const showFilters = ref(false);
+const showCreateModal = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
 
-const students = ref<Student[]>([])
+const students = ref<Student[]>([]);
 const filters = ref({
-  status: "",
-  instrument: "",
-  search: "",
-})
+  status: '',
+  instrument: '',
+  search: '',
+});
 
 // Computed
 const filteredStudents = computed(() => {
-  let filtered = students.value
+  let filtered = students.value;
 
   if (filters.value.status) {
-    filtered = filtered.filter((s) => s.status === filters.value.status)
+    filtered = filtered.filter((s) => s.status === filters.value.status);
   }
 
   if (filters.value.instrument) {
-    filtered = filtered.filter((s) => s.instrument === filters.value.instrument)
+    filtered = filtered.filter((s) => s.instrument === filters.value.instrument);
   }
 
   if (filters.value.search) {
-    const search = filters.value.search.toLowerCase()
+    const search = filters.value.search.toLowerCase();
     filtered = filtered.filter(
-      (s) => s.name.toLowerCase().includes(search) || s.email.toLowerCase().includes(search)
-    )
+      (s) => s.name.toLowerCase().includes(search) || s.email.toLowerCase().includes(search),
+    );
   }
 
   return filtered.slice(
     (currentPage.value - 1) * itemsPerPage.value,
-    currentPage.value * itemsPerPage.value
-  )
-})
+    currentPage.value * itemsPerPage.value,
+  );
+});
 
-const totalStudents = computed(() => students.value.length)
-const totalPages = computed(() => Math.ceil(totalStudents.value / itemsPerPage.value))
+const totalStudents = computed(() => students.value.length);
+const totalPages = computed(() => Math.ceil(totalStudents.value / itemsPerPage.value));
 
 const stats = computed(() => ({
   total: students.value.length,
-  active: students.value.filter((s) => s.status === "active").length,
-  inactive: students.value.filter((s) => s.status === "inactive").length,
+  active: students.value.filter((s) => s.status === 'active').length,
+  inactive: students.value.filter((s) => s.status === 'inactive').length,
   atRisk: students.value.filter((s) => s.classesPerMonth < s.maxClasses * 0.5).length,
-}))
+}));
 
 // Methods
 const getStatusClass = (status: string) => {
   const classes = {
-    active: "bg-green-100 text-green-800",
-    inactive: "bg-gray-100 text-gray-800",
-    suspended: "bg-red-100 text-red-800",
-  }
-  return classes[status as keyof typeof classes] || classes.inactive
-}
+    active: 'bg-green-100 text-green-800',
+    inactive: 'bg-gray-100 text-gray-800',
+    suspended: 'bg-red-100 text-red-800',
+  };
+  return classes[status as keyof typeof classes] || classes.inactive;
+};
 
 const getStatusLabel = (status: string) => {
   const labels = {
-    active: "Activo",
-    inactive: "Inactivo",
-    suspended: "Suspendido",
-  }
-  return labels[status as keyof typeof labels] || "Desconocido"
-}
+    active: 'Activo',
+    inactive: 'Inactivo',
+    suspended: 'Suspendido',
+  };
+  return labels[status as keyof typeof labels] || 'Desconocido';
+};
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+};
 
 const viewStudent = (student: Student) => {
-  emit("viewStudent", student)
-}
+  emit('viewStudent', student);
+};
 
 const editStudent = (student: Student) => {
-  emit("editStudent", student)
-}
+  emit('editStudent', student);
+};
 
 const deleteStudent = (student: Student) => {
-  emit("deleteStudent", student)
-}
+  emit('deleteStudent', student);
+};
 
 const refreshData = () => {
-  emit("refreshData")
-  loadStudents()
-}
+  emit('refreshData');
+  loadStudents();
+};
 
 const loadStudents = () => {
   // Simular datos de estudiantes
   students.value = [
     {
-      id: "1",
-      name: "Ana García",
-      email: "ana.garcia@email.com",
-      instrument: "Piano",
-      status: "active",
+      id: '1',
+      name: 'Ana García',
+      email: 'ana.garcia@email.com',
+      instrument: 'Piano',
+      status: 'active',
       classesPerMonth: 8,
       maxClasses: 12,
       lastAccess: new Date(Date.now() - 86400000),
-      avatar: "/avatars/ana.jpg",
+      avatar: '/avatars/ana.jpg',
     },
     {
-      id: "2",
-      name: "Carlos López",
-      email: "carlos.lopez@email.com",
-      instrument: "Guitarra",
-      status: "active",
+      id: '2',
+      name: 'Carlos López',
+      email: 'carlos.lopez@email.com',
+      instrument: 'Guitarra',
+      status: 'active',
       classesPerMonth: 6,
       maxClasses: 8,
       lastAccess: new Date(Date.now() - 172800000),
-      avatar: "/avatars/carlos.jpg",
+      avatar: '/avatars/carlos.jpg',
     },
     {
-      id: "3",
-      name: "María Rodríguez",
-      email: "maria.rodriguez@email.com",
-      instrument: "Violín",
-      status: "inactive",
+      id: '3',
+      name: 'María Rodríguez',
+      email: 'maria.rodriguez@email.com',
+      instrument: 'Violín',
+      status: 'inactive',
       classesPerMonth: 2,
       maxClasses: 10,
       lastAccess: new Date(Date.now() - 604800000),
-      avatar: "/avatars/maria.jpg",
+      avatar: '/avatars/maria.jpg',
     },
-  ]
-}
+  ];
+};
 
 // Lifecycle
 onMounted(() => {
-  loadStudents()
-})
+  loadStudents();
+});
 </script>

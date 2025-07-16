@@ -26,11 +26,11 @@
 </template>
 
 <script setup lang="ts">
-import ClassDetailView from "../../../modulos/Classes/view/ClassDetailView.vue"
+import ClassDetailView from '../../../modulos/Classes/view/ClassDetailView.vue';
 
 const props = defineProps({
-  id: {type: String, required: true},
-})
+  id: { type: String, required: true },
+});
 
-const classId = props.id
+const classId = props.id;
 </script>

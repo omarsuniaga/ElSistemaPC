@@ -254,7 +254,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
+import { ref, computed, watch } from 'vue';
 
 interface SelectedItem {
   id: string
@@ -276,116 +276,116 @@ interface ExportField {
 
 const props = defineProps<{
   isOpen: boolean
-  actionType: "delete" | "export" | "assign" | "notify" | "archive"
+  actionType: 'delete' | 'export' | 'assign' | 'notify' | 'archive'
   selectedItems: SelectedItem[]
   teachers?: Teacher[]
-}>()
+}>();
 
 const emit = defineEmits<{
   close: []
   execute: [actionType: string, data: any]
-}>()
+}>();
 
 // State
-const confirmDelete = ref(false)
-const exportFormat = ref("csv")
-const selectedExportFields = ref<string[]>(["name", "email"])
-const assignTo = ref("")
-const assignmentDate = ref("")
-const assignmentNotes = ref("")
-const notificationType = ref("email")
-const notificationSubject = ref("")
-const notificationMessage = ref("")
+const confirmDelete = ref(false);
+const exportFormat = ref('csv');
+const selectedExportFields = ref<string[]>(['name', 'email']);
+const assignTo = ref('');
+const assignmentDate = ref('');
+const assignmentNotes = ref('');
+const notificationType = ref('email');
+const notificationSubject = ref('');
+const notificationMessage = ref('');
 
 const exportFields: ExportField[] = [
-  {id: "name", label: "Nombre"},
-  {id: "email", label: "Email"},
-  {id: "phone", label: "Teléfono"},
-  {id: "status", label: "Estado"},
-  {id: "created_at", label: "Fecha de registro"},
-  {id: "last_access", label: "Último acceso"},
-]
+  { id: 'name', label: 'Nombre' },
+  { id: 'email', label: 'Email' },
+  { id: 'phone', label: 'Teléfono' },
+  { id: 'status', label: 'Estado' },
+  { id: 'created_at', label: 'Fecha de registro' },
+  { id: 'last_access', label: 'Último acceso' },
+];
 
 // Computed
 const canExecute = computed(() => {
   switch (props.actionType) {
-    case "delete":
-      return confirmDelete.value
-    case "export":
-      return selectedExportFields.value.length > 0
-    case "assign":
-      return assignTo.value && assignmentDate.value
-    case "notify":
-      return notificationSubject.value && notificationMessage.value
-    default:
-      return true
+  case 'delete':
+    return confirmDelete.value;
+  case 'export':
+    return selectedExportFields.value.length > 0;
+  case 'assign':
+    return assignTo.value && assignmentDate.value;
+  case 'notify':
+    return notificationSubject.value && notificationMessage.value;
+  default:
+    return true;
   }
-})
+});
 
 // Methods
 const closeModal = () => {
-  resetForm()
-  emit("close")
-}
+  resetForm();
+  emit('close');
+};
 
 const executeAction = () => {
-  if (!canExecute.value) return
+  if (!canExecute.value) return;
 
   const data = {
     items: props.selectedItems,
     ...getActionData(),
-  }
+  };
 
-  emit("execute", props.actionType, data)
-  closeModal()
-}
+  emit('execute', props.actionType, data);
+  closeModal();
+};
 
 const getActionData = () => {
   switch (props.actionType) {
-    case "export":
-      return {
-        format: exportFormat.value,
-        fields: selectedExportFields.value,
-      }
-    case "assign":
-      return {
-        teacherId: assignTo.value,
-        startDate: assignmentDate.value,
-        notes: assignmentNotes.value,
-      }
-    case "notify":
-      return {
-        type: notificationType.value,
-        subject: notificationSubject.value,
-        message: notificationMessage.value,
-      }
-    default:
-      return {}
+  case 'export':
+    return {
+      format: exportFormat.value,
+      fields: selectedExportFields.value,
+    };
+  case 'assign':
+    return {
+      teacherId: assignTo.value,
+      startDate: assignmentDate.value,
+      notes: assignmentNotes.value,
+    };
+  case 'notify':
+    return {
+      type: notificationType.value,
+      subject: notificationSubject.value,
+      message: notificationMessage.value,
+    };
+  default:
+    return {};
   }
-}
+};
 
 const resetForm = () => {
-  confirmDelete.value = false
-  exportFormat.value = "csv"
-  selectedExportFields.value = ["name", "email"]
-  assignTo.value = ""
-  assignmentDate.value = ""
-  assignmentNotes.value = ""
-  notificationType.value = "email"
-  notificationSubject.value = ""
-  notificationMessage.value = ""
-}
+  confirmDelete.value = false;
+  exportFormat.value = 'csv';
+  selectedExportFields.value = ['name', 'email'];
+  assignTo.value = '';
+  assignmentDate.value = '';
+  assignmentNotes.value = '';
+  notificationType.value = 'email';
+  notificationSubject.value = '';
+  notificationMessage.value = '';
+};
 
 const getActionTitle = (type: string) => {
   const titles = {
-    delete: "Eliminar elementos",
-    export: "Exportar datos",
-    assign: "Asignar estudiantes",
-    notify: "Enviar notificación",
-    archive: "Archivar elementos",
-  }
-  return titles[type as keyof typeof titles] || "Acción masiva"
-}
+    delete: 'Eliminar elementos',
+    export: 'Exportar datos',
+    assign: 'Asignar estudiantes',
+    notify: 'Enviar notificación',
+    archive: 'Archivar elementos',
+  };
+  return titles[type as keyof typeof titles] || 'Acción masiva';
+};
 
 const getActionIcon = (type: string) => {
   const icons = {
@@ -399,50 +399,50 @@ const getActionIcon = (type: string) => {
       '<path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/>',
     archive:
       '<path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z"/><path fill-rule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clip-rule="evenodd"/>',
-  }
-  return icons[type as keyof typeof icons] || ""
-}
+  };
+  return icons[type as keyof typeof icons] || '';
+};
 
 const getActionTypeClass = (type: string) => {
   const classes = {
-    delete: "bg-red-500",
-    export: "bg-blue-500",
-    assign: "bg-green-500",
-    notify: "bg-purple-500",
-    archive: "bg-yellow-500",
-  }
-  return classes[type as keyof typeof classes] || "bg-gray-500"
-}
+    delete: 'bg-red-500',
+    export: 'bg-blue-500',
+    assign: 'bg-green-500',
+    notify: 'bg-purple-500',
+    archive: 'bg-yellow-500',
+  };
+  return classes[type as keyof typeof classes] || 'bg-gray-500';
+};
 
 const getActionButtonClass = (type: string) => {
   const classes = {
-    delete: "bg-red-600",
-    export: "bg-blue-600",
-    assign: "bg-green-600",
-    notify: "bg-purple-600",
-    archive: "bg-yellow-600",
-  }
-  return classes[type as keyof typeof classes] || "bg-gray-600"
-}
+    delete: 'bg-red-600',
+    export: 'bg-blue-600',
+    assign: 'bg-green-600',
+    notify: 'bg-purple-600',
+    archive: 'bg-yellow-600',
+  };
+  return classes[type as keyof typeof classes] || 'bg-gray-600';
+};
 
 const getActionButtonText = (type: string) => {
   const texts = {
-    delete: "Eliminar",
-    export: "Exportar",
-    assign: "Asignar",
-    notify: "Enviar",
-    archive: "Archivar",
-  }
-  return texts[type as keyof typeof texts] || "Ejecutar"
-}
+    delete: 'Eliminar',
+    export: 'Exportar',
+    assign: 'Asignar',
+    notify: 'Enviar',
+    archive: 'Archivar',
+  };
+  return texts[type as keyof typeof texts] || 'Ejecutar';
+};
 
 // Watch for modal changes to reset form
 watch(
   () => props.isOpen,
   (newValue) => {
     if (newValue) {
-      resetForm()
+      resetForm();
     }
-  }
-)
+  },
+);
 </script>

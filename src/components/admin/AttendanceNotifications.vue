@@ -207,16 +207,16 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, ref, onMounted, onUnmounted} from "vue"
-import {useRouter} from "vue-router"
-import Icon from "../common/Icon.vue"
+import { defineComponent, ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import Icon from '../common/Icon.vue';
 import attendanceNotificationSystem, {
   getNotificationStats,
-} from "../../services/attendanceNotificationTrigger"
+} from '../../services/attendanceNotificationTrigger';
 
 interface AttendanceNotification {
   id?: string
-  type: "new_attendance_report"
+  type: 'new_attendance_report'
   title: string
   message: string
   date: string
@@ -231,7 +231,7 @@ interface AttendanceNotification {
   justificados: number
   timestamp: Date
   read: boolean
-  urgency: "low" | "medium" | "high"
+  urgency: 'low' | 'medium' | 'high'
 }
 
 interface NotificationStats {
@@ -242,185 +242,185 @@ interface NotificationStats {
 }
 
 export default defineComponent({
-  name: "AttendanceNotifications",
+  name: 'AttendanceNotifications',
   components: {
     Icon,
   },
   setup() {
-    const router = useRouter()
-    const notifications = ref<AttendanceNotification[]>([])
-    const stats = ref<NotificationStats>({total: 0, high: 0, medium: 0, low: 0})
-    const loading = ref(false)
-    const selectedNotification = ref<AttendanceNotification | null>(null)
-    let unsubscribeWatcher: (() => void) | null = null
+    const router = useRouter();
+    const notifications = ref<AttendanceNotification[]>([]);
+    const stats = ref<NotificationStats>({ total: 0, high: 0, medium: 0, low: 0 });
+    const loading = ref(false);
+    const selectedNotification = ref<AttendanceNotification | null>(null);
+    let unsubscribeWatcher: (() => void) | null = null;
 
     /**
      * Carga las notificaciones no leídas
      */
     const loadNotifications = async () => {
       try {
-        loading.value = true
+        loading.value = true;
         const [notificationsData, statsData] = await Promise.all([
           attendanceNotificationSystem.getUnreadNotifications(),
           getNotificationStats(),
-        ])
+        ]);
 
-        notifications.value = notificationsData
-        stats.value = statsData
+        notifications.value = notificationsData;
+        stats.value = statsData;
       } catch (error) {
-        console.error("Error cargando notificaciones:", error)
+        console.error('Error cargando notificaciones:', error);
       } finally {
-        loading.value = false
+        loading.value = false;
       }
-    }
+    };
 
     /**
      * Actualiza las notificaciones
      */
     const refreshNotifications = async () => {
-      await loadNotifications()
-    }
+      await loadNotifications();
+    };
 
     /**
      * Marca una notificación como leída
      */
     const markAsRead = async (notificationId: string) => {
       try {
-        await attendanceNotificationSystem.markAsRead(notificationId)
+        await attendanceNotificationSystem.markAsRead(notificationId);
 
         // Actualizar localmente
-        notifications.value = notifications.value.filter((n) => n.id !== notificationId)
+        notifications.value = notifications.value.filter((n) => n.id !== notificationId);
 
         // Recalcular estadísticas
-        const newStats = await getNotificationStats()
-        stats.value = newStats
+        const newStats = await getNotificationStats();
+        stats.value = newStats;
 
         // Cerrar modal si está abierto
         if (selectedNotification.value?.id === notificationId) {
-          selectedNotification.value = null
+          selectedNotification.value = null;
         }
       } catch (error) {
-        console.error("Error marcando notificación como leída:", error)
+        console.error('Error marcando notificación como leída:', error);
       }
-    }
+    };
 
     /**
      * Marca todas las notificaciones como leídas
      */
     const markAllAsRead = async () => {
       try {
-        loading.value = true
+        loading.value = true;
 
         // Marcar todas como leídas
         const markPromises = notifications.value.map((n) =>
-          n.id ? attendanceNotificationSystem.markAsRead(n.id) : Promise.resolve()
-        )
+          n.id ? attendanceNotificationSystem.markAsRead(n.id) : Promise.resolve(),
+        );
 
-        await Promise.all(markPromises)
+        await Promise.all(markPromises);
 
         // Limpiar estado local
-        notifications.value = []
-        stats.value = {total: 0, high: 0, medium: 0, low: 0}
-        selectedNotification.value = null
+        notifications.value = [];
+        stats.value = { total: 0, high: 0, medium: 0, low: 0 };
+        selectedNotification.value = null;
       } catch (error) {
-        console.error("Error marcando todas las notificaciones como leídas:", error)
+        console.error('Error marcando todas las notificaciones como leídas:', error);
       } finally {
-        loading.value = false
+        loading.value = false;
       }
-    }
+    };
 
     /**
      * Abre los detalles de una notificación
      */
     const openNotificationDetails = (notification: AttendanceNotification) => {
-      selectedNotification.value = notification
-    }
+      selectedNotification.value = notification;
+    };
 
     /**
      * Cierra el modal de detalles
      */
     const closeDetails = () => {
-      selectedNotification.value = null
-    }
+      selectedNotification.value = null;
+    };
 
     /**
      * Abre el reporte diario completo
      */
     const openDailyReport = (date: string) => {
-      router.push(`/admin/asistencia-diaria?fecha=${date}`)
-    }
+      router.push(`/admin/asistencia-diaria?fecha=${date}`);
+    };
 
     /**
      * Envía notificaciones por WhatsApp
      */
     const sendWhatsAppNotifications = async (notification: AttendanceNotification) => {
       // Aquí se integrará con el sistema de WhatsApp
-      console.log("Enviando notificaciones WhatsApp para:", notification)
-      alert(`Enviando notificaciones WhatsApp para ${notification.className}`)
-    }
+      console.log('Enviando notificaciones WhatsApp para:', notification);
+      alert(`Enviando notificaciones WhatsApp para ${notification.className}`);
+    };
 
     /**
      * Obtiene el icono según la urgencia
      */
     const getUrgencyIcon = (urgency: string): string => {
       switch (urgency) {
-        case "high":
-          return "alert-triangle"
-        case "medium":
-          return "info"
-        case "low":
-          return "check-circle"
-        default:
-          return "bell"
+      case 'high':
+        return 'alert-triangle';
+      case 'medium':
+        return 'info';
+      case 'low':
+        return 'check-circle';
+      default:
+        return 'bell';
       }
-    }
+    };
 
     /**
      * Formatea la fecha
      */
     const formatDate = (dateString: string): string => {
-      const date = new Date(dateString)
-      return date.toLocaleDateString("es-ES", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    }
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    };
 
     /**
      * Formatea la hora
      */
     const formatTime = (timestamp: Date): string => {
-      return timestamp.toLocaleString("es-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
-        day: "2-digit",
-        month: "2-digit",
-      })
-    }
+      return timestamp.toLocaleString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+      });
+    };
 
     // Ciclo de vida
     onMounted(async () => {
-      await loadNotifications()
+      await loadNotifications();
 
       // Iniciar observador de nuevas notificaciones
-      unsubscribeWatcher = attendanceNotificationSystem.watchForNewAttendance()
+      unsubscribeWatcher = attendanceNotificationSystem.watchForNewAttendance();
 
       // Actualizar cada 30 segundos
-      const intervalId = setInterval(loadNotifications, 30000)
+      const intervalId = setInterval(loadNotifications, 30000);
 
       // Cleanup interval on unmount
       onUnmounted(() => {
-        clearInterval(intervalId)
-      })
-    })
+        clearInterval(intervalId);
+      });
+    });
 
     onUnmounted(() => {
       if (unsubscribeWatcher) {
-        unsubscribeWatcher()
+        unsubscribeWatcher();
       }
-    })
+    });
 
     return {
       notifications,
@@ -438,9 +438,9 @@ export default defineComponent({
       getUrgencyIcon,
       formatDate,
       formatTime,
-    }
+    };
   },
-})
+});
 </script>
 
 <style scoped>

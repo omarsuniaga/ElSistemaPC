@@ -5,6 +5,6 @@ export interface Conversation {
   from: string
   message: string
   timestamp: Date
-  direction: "incoming" | "outgoing"
+  direction: 'incoming' | 'outgoing'
   processed: boolean
 }

@@ -1,75 +1,3 @@
-<script setup lang="ts">
-import {ref, watch} from "vue"
-
-interface Props {
-  modelValue: boolean
-  title?: string
-  size?: "sm" | "md" | "lg" | "xl"
-  persistent?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  modelValue: false,
-  title: "",
-  size: "md",
-  persistent: false,
-})
-
-const emit = defineEmits<{
-  (e: "update:modelValue", value: boolean): void
-  (e: "close"): void
-}>()
-
-const showModal = ref(props.modelValue)
-
-watch(
-  () => props.modelValue,
-  (newVal) => {
-    showModal.value = newVal
-    if (newVal) {
-      document.body.classList.add("overflow-hidden")
-    } else {
-      document.body.classList.remove("overflow-hidden")
-    }
-  }
-)
-
-watch(
-  () => showModal.value,
-  (newVal) => {
-    emit("update:modelValue", newVal)
-    if (!newVal) {
-      emit("close")
-    }
-  }
-)
-
-const closeModal = () => {
-  if (!props.persistent) {
-    showModal.value = false
-  }
-}
-
-// Cerrar modal con escape
-const handleKeydown = (e: KeyboardEvent) => {
-  if (e.key === "Escape" && !props.persistent) {
-    showModal.value = false
-  }
-}
-
-// Agregar/remover event listener
-watch(
-  () => showModal.value,
-  (newVal) => {
-    if (newVal) {
-      document.addEventListener("keydown", handleKeydown)
-    } else {
-      document.removeEventListener("keydown", handleKeydown)
-    }
-  }
-)
-</script>
-
 <template>
   <Teleport to="body">
     <Transition name="modal">
@@ -102,6 +30,78 @@ watch(
     </Transition>
   </Teleport>
 </template>
+
+<script setup lang="ts">
+import { ref, watch } from 'vue';
+
+interface Props {
+  modelValue: boolean
+  title?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  persistent?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  modelValue: false,
+  title: '',
+  size: 'md',
+  persistent: false,
+});
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'close'): void
+}>();
+
+const showModal = ref(props.modelValue);
+
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    showModal.value = newVal;
+    if (newVal) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+  },
+);
+
+watch(
+  () => showModal.value,
+  (newVal) => {
+    emit('update:modelValue', newVal);
+    if (!newVal) {
+      emit('close');
+    }
+  },
+);
+
+const closeModal = () => {
+  if (!props.persistent) {
+    showModal.value = false;
+  }
+};
+
+// Cerrar modal con escape
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && !props.persistent) {
+    showModal.value = false;
+  }
+};
+
+// Agregar/remover event listener
+watch(
+  () => showModal.value,
+  (newVal) => {
+    if (newVal) {
+      document.addEventListener('keydown', handleKeydown);
+    } else {
+      document.removeEventListener('keydown', handleKeydown);
+    }
+  },
+);
+</script>
 
 <style scoped>
 .modal-overlay {

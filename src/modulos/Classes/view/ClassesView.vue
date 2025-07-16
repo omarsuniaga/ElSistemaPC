@@ -1,382 +1,3 @@
-<script setup lang="ts">
-import {ref, onMounted, computed} from "vue"
-import {useClassesStore} from "../store/classes"
-import {useTeachersStore} from "../../../modulos/Teachers/store/teachers"
-import {useStudentsStore} from "../../../modulos/Students/store/students"
-import ClassDetail from "../components/ClassDetail.vue"
-import ClassCard from "../components/ClassCard.vue"
-import ClassForm from "../components/ClassForm.vue"
-import ClassStudentManager from "../components/ClassStudentManager.vue"
-import UpcomingClassesList from "../components/UpcomingClassesList.vue"
-import {PlusIcon, ViewColumnsIcon, Bars4Icon as ViewListIcon} from "@heroicons/vue/24/outline"
-import {useToast} from "../components/ui/toast/use-toast"
-import {
-  Dialog,
-  DialogPanel,
-  DialogOverlay,
-  DialogTitle,
-  TransitionRoot,
-  TransitionChild,
-} from "@headlessui/vue"
-
-// Stores
-const classesStore = useClassesStore()
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
-
-// Toast
-const {toast} = useToast()
-
-// Estados
-const loading = ref(true)
-const selectedClassId = ref("")
-const showDetail = ref(false)
-const showForm = ref(false)
-const isEditing = ref(false)
-const showStudentManager = ref(false)
-const viewType = ref("grid") // 'grid' o 'list'
-const isMobile = ref(window.innerWidth < 768)
-
-// Computed
-const selectedClass = computed(() => {
-  if (!selectedClassId.value) return null
-  return classesStore.getClassById(selectedClassId.value)
-})
-
-// Función helper para limpiar el objeto y eliminar propiedades vacías
-function cleanData(obj: any): any {
-  const cleaned: any = {}
-  Object.keys(obj).forEach((key) => {
-    const value = obj[key]
-    if (value === null || value === undefined) return
-    if (typeof value === "string" && value.trim() === "") return
-    if (Array.isArray(value) && value.length === 0) return
-    if (typeof value === "object" && !Array.isArray(value)) {
-      const cleanedValue = cleanData(value)
-      if (Object.keys(cleanedValue).length > 0) {
-        cleaned[key] = cleanedValue
-      }
-      return
-    }
-    cleaned[key] = value
-  })
-  return cleaned
-}
-
-// Manejo del guardado de clase
-const handleSaveClass = async (classData: any) => {
-  try {
-    // Validación mínima
-    if (!classData.name || !classData.level) {
-      toast({
-        title: "Error",
-        description: "El nombre y nivel son obligatorios",
-        variant: "destructive",
-      })
-      return
-    }
-
-    // Preparar datos y limpiar propiedades vacías
-    const preparedData = cleanData({
-      name: classData.name.trim(),
-      description: classData.description?.trim(),
-      level: classData.level,
-      teacherId: classData.teacherId,
-      classroom: classData.classroom?.trim(),
-      instrument: classData.instrument?.trim(),
-      schedule: {
-        slots: (classData.schedule?.slots || []).map((slot: any) =>
-          cleanData({
-            day: slot.day,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-          })
-        ),
-      },
-      studentIds: classData.studentIds,
-    })
-
-    if (isEditing.value) {
-      // Actualizar clase existente
-      await classesStore.updateClass({
-        ...preparedData,
-        id: selectedClassId.value,
-      })
-      toast({
-        title: "Clase Actualizada",
-        description: `La clase "${preparedData.name}" ha sido actualizada exitosamente.`,
-      })
-    } else {
-      // Crear nueva clase
-      const newClass = await classesStore.addClass(preparedData)
-      toast({
-        title: "Clase Creada",
-        description: `La clase "${preparedData.name}" ha sido creada exitosamente.`,
-      })
-      selectedClassId.value = newClass.id
-    }
-    showForm.value = false
-  } catch (error) {
-    console.error("Error al guardar la clase:", error)
-    toast({
-      title: "Error",
-      description: "No se pudo guardar la clase. Intente nuevamente.",
-      variant: "destructive",
-    })
-  }
-}
-
-// Métodos para manejar la visualización
-const toggleViewType = () => {
-  viewType.value = viewType.value === "grid" ? "list" : "grid"
-}
-
-interface HandleViewClassFn {
-  (classId: string): void
-}
-
-const handleViewClass: HandleViewClassFn = (classId: string): void => {
-  selectedClassId.value = classId
-  showDetail.value = true
-}
-
-const handleCloseDetail = () => {
-  showDetail.value = false
-}
-
-const handleAddClass = () => {
-  isEditing.value = false
-  selectedClassId.value = ""
-  showForm.value = true
-}
-
-interface HandleEditClassFn {
-  (classId: string): void
-}
-
-const handleEditClass: HandleEditClassFn = (classId: string): void => {
-  selectedClassId.value = classId
-  isEditing.value = true
-  showForm.value = true
-  showDetail.value = false
-}
-
-interface ToastOptions {
-  title: string
-  description: string
-  variant?: string
-}
-
-interface ScheduleSlot {
-  day: string
-  startTime: string
-  endTime: string
-}
-
-interface ClassSchedule {
-  slots: ScheduleSlot[]
-}
-
-interface ClassData {
-  id?: string
-  name: string
-  description?: string
-  level: string
-  teacherId: string
-  classroom?: string
-  instrument?: string
-  schedule: ClassSchedule
-  studentIds: string[]
-}
-
-interface Teacher {
-  id: string
-  name: string
-}
-
-interface Student {
-  id: string
-  name: string
-}
-
-interface HandleDeleteClassFn {
-  (classId: string): Promise<void>
-}
-
-const handleDeleteClass: HandleDeleteClassFn = async (classId: string): Promise<void> => {
-  if (!confirm("¿Está seguro de eliminar esta clase?")) return
-
-  try {
-    await classesStore.removeClass(classId)
-    toast({
-      title: "Clase Eliminada",
-      description: "La clase ha sido eliminada exitosamente.",
-    } as ToastOptions)
-    if (selectedClassId.value === classId) {
-      selectedClassId.value = ""
-      showDetail.value = false
-    }
-  } catch (error: unknown) {
-    console.error("Error al eliminar la clase:", error)
-    toast({
-      title: "Error",
-      description: "No se pudo eliminar la clase. Intente nuevamente.",
-      variant: "destructive",
-    } as ToastOptions)
-  }
-}
-
-// Métodos para la gestión de estudiantes
-type ClassId = string
-
-interface StudentChangePayload {
-  classId: ClassId
-  studentIds: string[]
-}
-
-interface TopStudent {
-  id: string
-  name: string
-}
-
-interface UpcomingClass {
-  id: string
-  title: string
-  date: Date
-  time: string
-  teacher: string
-  students: number
-  room: string
-}
-
-interface HandleManageStudentsFn {
-  (classId: ClassId): void
-}
-
-const handleManageStudents: HandleManageStudentsFn = (classId: string) => {
-  selectedClassId.value = classId
-  showStudentManager.value = true
-  showDetail.value = false
-}
-
-const handleStudentChange = async (classId, studentIds) => {
-  try {
-    const classData = classesStore.getClassById(classId)
-    if (!classData) {
-      throw new Error("Clase no encontrada")
-    }
-
-    await classesStore.updateClass({
-      ...classData,
-      id: classId,
-      studentIds,
-      updatedAt: new Date(),
-    })
-
-    toast({
-      title: "Estudiantes Actualizados",
-      description: "La lista de estudiantes ha sido actualizada exitosamente.",
-    })
-
-    showStudentManager.value = false
-  } catch (error) {
-    console.error("Error al actualizar estudiantes:", error)
-    toast({
-      title: "Error",
-      description: "No se pudieron actualizar los estudiantes. Intente nuevamente.",
-      variant: "destructive",
-    })
-  }
-}
-
-// Helper para obtener los estudiantes destacados de una clase (para mostrar en las tarjetas)
-const getTopStudents = (classItem) => {
-  if (!classItem.studentIds || classItem.studentIds.length === 0) {
-    return []
-  }
-
-  // Obtenemos hasta 3 estudiantes para mostrar en la vista previa
-  return classItem.studentIds
-    .slice(0, 3)
-    .map((id) => studentsStore.students.find((s) => s.id === id))
-    .filter(Boolean)
-}
-
-// Helper para obtener las próximas clases (para la sección de upcoming classes)
-const upcomingClasses = computed(() => {
-  if (!classesStore.classes?.length) return []
-
-  // Filtramos clases con horarios y los ordenamos según el día de la semana
-  const today = new Date()
-  const dayMap = {
-    Lunes: 1,
-    Martes: 2,
-    Miércoles: 3,
-    Jueves: 4,
-    Viernes: 5,
-    Sábado: 6,
-    Domingo: 0,
-  }
-
-  const classesWithSchedule = classesStore.classes
-    .filter((c) => c.schedule && c.schedule.slots && c.schedule.slots.length > 0)
-    .map((c) => {
-      // Usamos el primer slot para determinar el día y hora
-      const slot = c.schedule?.slots[0]
-      const dayValue =
-        slot?.day && slot.day in dayMap ? dayMap[slot.day as keyof typeof dayMap] : undefined
-
-      // Calcular próxima fecha para este día
-      const nextDate = new Date()
-      const currentDay = nextDate.getDay()
-      const daysUntilNext = dayValue !== undefined ? (dayValue + 7 - currentDay) % 7 : 0
-      const calculatedNextDate: Date = new Date()
-      calculatedNextDate.setDate(nextDate.getDate() + daysUntilNext)
-
-      // Adaptar los datos al formato esperado por UpcomingClassesList
-      return {
-        id: c.id,
-        title: c.name,
-        date: nextDate,
-        time: `${slot?.startTime || "--:--"} - ${slot?.endTime || "--:--"}`,
-        teacher: teachersStore.teachers.find((t) => t.id === c.teacherId)?.name || "Sin asignar",
-        students: c.studentIds?.length || 0,
-        room: c.classroom || "Sin asignar",
-      }
-    })
-
-  // Ordenamos por fecha (los más cercanos primero) y tomamos solo 3
-  return classesWithSchedule.sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 3)
-})
-
-// Otros métodos (handleViewClass, handleEditClass, etc.) se mantienen según tu lógica original
-
-onMounted(async () => {
-  loading.value = true
-  try {
-    console.log("🔍 Cargando clases...")
-    // Cargar clases explícitamente
-    const classes = await classesStore.fetchClasses()
-    console.log(`✅ Se cargaron ${classes.length} clases:`, classes)
-
-    // Cargar datos adicionales
-    await Promise.all([
-      teachersStore.fetchTeachers && teachersStore.fetchTeachers(),
-      studentsStore.fetchStudents && studentsStore.fetchStudents(),
-    ])
-  } catch (error) {
-    console.error("❌ Error cargando datos:", error)
-    toast({
-      title: "Error de Carga",
-      description: "No se pudieron cargar las clases. Intente recargar la página.",
-      variant: "destructive",
-    })
-  } finally {
-    loading.value = false
-  }
-})
-</script>
-
 <template>
   <div class="flex flex-col h-full">
     <!-- Header -->
@@ -595,3 +216,382 @@ onMounted(async () => {
     </TransitionRoot>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue';
+import { useClassesStore } from '../store/classes';
+import { useTeachersStore } from '../../../modulos/Teachers/store/teachers';
+import { useStudentsStore } from '../../../modulos/Students/store/students';
+import ClassDetail from '../components/ClassDetail.vue';
+import ClassCard from '../components/ClassCard.vue';
+import ClassForm from '../components/ClassForm.vue';
+import ClassStudentManager from '../components/ClassStudentManager.vue';
+import UpcomingClassesList from '../components/UpcomingClassesList.vue';
+import { PlusIcon, ViewColumnsIcon, Bars4Icon as ViewListIcon } from '@heroicons/vue/24/outline';
+import { useToast } from '../components/ui/toast/use-toast';
+import {
+  Dialog,
+  DialogPanel,
+  DialogOverlay,
+  DialogTitle,
+  TransitionRoot,
+  TransitionChild,
+} from '@headlessui/vue';
+
+// Stores
+const classesStore = useClassesStore();
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
+
+// Toast
+const { toast } = useToast();
+
+// Estados
+const loading = ref(true);
+const selectedClassId = ref('');
+const showDetail = ref(false);
+const showForm = ref(false);
+const isEditing = ref(false);
+const showStudentManager = ref(false);
+const viewType = ref('grid'); // 'grid' o 'list'
+const isMobile = ref(window.innerWidth < 768);
+
+// Computed
+const selectedClass = computed(() => {
+  if (!selectedClassId.value) return null;
+  return classesStore.getClassById(selectedClassId.value);
+});
+
+// Función helper para limpiar el objeto y eliminar propiedades vacías
+function cleanData(obj: any): any {
+  const cleaned: any = {};
+  Object.keys(obj).forEach((key) => {
+    const value = obj[key];
+    if (value === null || value === undefined) return;
+    if (typeof value === 'string' && value.trim() === '') return;
+    if (Array.isArray(value) && value.length === 0) return;
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      const cleanedValue = cleanData(value);
+      if (Object.keys(cleanedValue).length > 0) {
+        cleaned[key] = cleanedValue;
+      }
+      return;
+    }
+    cleaned[key] = value;
+  });
+  return cleaned;
+}
+
+// Manejo del guardado de clase
+const handleSaveClass = async (classData: any) => {
+  try {
+    // Validación mínima
+    if (!classData.name || !classData.level) {
+      toast({
+        title: 'Error',
+        description: 'El nombre y nivel son obligatorios',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Preparar datos y limpiar propiedades vacías
+    const preparedData = cleanData({
+      name: classData.name.trim(),
+      description: classData.description?.trim(),
+      level: classData.level,
+      teacherId: classData.teacherId,
+      classroom: classData.classroom?.trim(),
+      instrument: classData.instrument?.trim(),
+      schedule: {
+        slots: (classData.schedule?.slots || []).map((slot: any) =>
+          cleanData({
+            day: slot.day,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+          }),
+        ),
+      },
+      studentIds: classData.studentIds,
+    });
+
+    if (isEditing.value) {
+      // Actualizar clase existente
+      await classesStore.updateClass({
+        ...preparedData,
+        id: selectedClassId.value,
+      });
+      toast({
+        title: 'Clase Actualizada',
+        description: `La clase "${preparedData.name}" ha sido actualizada exitosamente.`,
+      });
+    } else {
+      // Crear nueva clase
+      const newClass = await classesStore.addClass(preparedData);
+      toast({
+        title: 'Clase Creada',
+        description: `La clase "${preparedData.name}" ha sido creada exitosamente.`,
+      });
+      selectedClassId.value = newClass.id;
+    }
+    showForm.value = false;
+  } catch (error) {
+    console.error('Error al guardar la clase:', error);
+    toast({
+      title: 'Error',
+      description: 'No se pudo guardar la clase. Intente nuevamente.',
+      variant: 'destructive',
+    });
+  }
+};
+
+// Métodos para manejar la visualización
+const toggleViewType = () => {
+  viewType.value = viewType.value === 'grid' ? 'list' : 'grid';
+};
+
+interface HandleViewClassFn {
+  (classId: string): void
+}
+
+const handleViewClass: HandleViewClassFn = (classId: string): void => {
+  selectedClassId.value = classId;
+  showDetail.value = true;
+};
+
+const handleCloseDetail = () => {
+  showDetail.value = false;
+};
+
+const handleAddClass = () => {
+  isEditing.value = false;
+  selectedClassId.value = '';
+  showForm.value = true;
+};
+
+interface HandleEditClassFn {
+  (classId: string): void
+}
+
+const handleEditClass: HandleEditClassFn = (classId: string): void => {
+  selectedClassId.value = classId;
+  isEditing.value = true;
+  showForm.value = true;
+  showDetail.value = false;
+};
+
+interface ToastOptions {
+  title: string
+  description: string
+  variant?: string
+}
+
+interface ScheduleSlot {
+  day: string
+  startTime: string
+  endTime: string
+}
+
+interface ClassSchedule {
+  slots: ScheduleSlot[]
+}
+
+interface ClassData {
+  id?: string
+  name: string
+  description?: string
+  level: string
+  teacherId: string
+  classroom?: string
+  instrument?: string
+  schedule: ClassSchedule
+  studentIds: string[]
+}
+
+interface Teacher {
+  id: string
+  name: string
+}
+
+interface Student {
+  id: string
+  name: string
+}
+
+interface HandleDeleteClassFn {
+  (classId: string): Promise<void>
+}
+
+const handleDeleteClass: HandleDeleteClassFn = async (classId: string): Promise<void> => {
+  if (!confirm('¿Está seguro de eliminar esta clase?')) return;
+
+  try {
+    await classesStore.removeClass(classId);
+    toast({
+      title: 'Clase Eliminada',
+      description: 'La clase ha sido eliminada exitosamente.',
+    } as ToastOptions);
+    if (selectedClassId.value === classId) {
+      selectedClassId.value = '';
+      showDetail.value = false;
+    }
+  } catch (error: unknown) {
+    console.error('Error al eliminar la clase:', error);
+    toast({
+      title: 'Error',
+      description: 'No se pudo eliminar la clase. Intente nuevamente.',
+      variant: 'destructive',
+    } as ToastOptions);
+  }
+};
+
+// Métodos para la gestión de estudiantes
+type ClassId = string
+
+interface StudentChangePayload {
+  classId: ClassId
+  studentIds: string[]
+}
+
+interface TopStudent {
+  id: string
+  name: string
+}
+
+interface UpcomingClass {
+  id: string
+  title: string
+  date: Date
+  time: string
+  teacher: string
+  students: number
+  room: string
+}
+
+interface HandleManageStudentsFn {
+  (classId: ClassId): void
+}
+
+const handleManageStudents: HandleManageStudentsFn = (classId: string) => {
+  selectedClassId.value = classId;
+  showStudentManager.value = true;
+  showDetail.value = false;
+};
+
+const handleStudentChange = async (classId, studentIds) => {
+  try {
+    const classData = classesStore.getClassById(classId);
+    if (!classData) {
+      throw new Error('Clase no encontrada');
+    }
+
+    await classesStore.updateClass({
+      ...classData,
+      id: classId,
+      studentIds,
+      updatedAt: new Date(),
+    });
+
+    toast({
+      title: 'Estudiantes Actualizados',
+      description: 'La lista de estudiantes ha sido actualizada exitosamente.',
+    });
+
+    showStudentManager.value = false;
+  } catch (error) {
+    console.error('Error al actualizar estudiantes:', error);
+    toast({
+      title: 'Error',
+      description: 'No se pudieron actualizar los estudiantes. Intente nuevamente.',
+      variant: 'destructive',
+    });
+  }
+};
+
+// Helper para obtener los estudiantes destacados de una clase (para mostrar en las tarjetas)
+const getTopStudents = (classItem) => {
+  if (!classItem.studentIds || classItem.studentIds.length === 0) {
+    return [];
+  }
+
+  // Obtenemos hasta 3 estudiantes para mostrar en la vista previa
+  return classItem.studentIds
+    .slice(0, 3)
+    .map((id) => studentsStore.students.find((s) => s.id === id))
+    .filter(Boolean);
+};
+
+// Helper para obtener las próximas clases (para la sección de upcoming classes)
+const upcomingClasses = computed(() => {
+  if (!classesStore.classes?.length) return [];
+
+  // Filtramos clases con horarios y los ordenamos según el día de la semana
+  const today = new Date();
+  const dayMap = {
+    Lunes: 1,
+    Martes: 2,
+    Miércoles: 3,
+    Jueves: 4,
+    Viernes: 5,
+    Sábado: 6,
+    Domingo: 0,
+  };
+
+  const classesWithSchedule = classesStore.classes
+    .filter((c) => c.schedule && c.schedule.slots && c.schedule.slots.length > 0)
+    .map((c) => {
+      // Usamos el primer slot para determinar el día y hora
+      const slot = c.schedule?.slots[0];
+      const dayValue =
+        slot?.day && slot.day in dayMap ? dayMap[slot.day as keyof typeof dayMap] : undefined;
+
+      // Calcular próxima fecha para este día
+      const nextDate = new Date();
+      const currentDay = nextDate.getDay();
+      const daysUntilNext = dayValue !== undefined ? (dayValue + 7 - currentDay) % 7 : 0;
+      const calculatedNextDate: Date = new Date();
+      calculatedNextDate.setDate(nextDate.getDate() + daysUntilNext);
+
+      // Adaptar los datos al formato esperado por UpcomingClassesList
+      return {
+        id: c.id,
+        title: c.name,
+        date: nextDate,
+        time: `${slot?.startTime || '--:--'} - ${slot?.endTime || '--:--'}`,
+        teacher: teachersStore.teachers.find((t) => t.id === c.teacherId)?.name || 'Sin asignar',
+        students: c.studentIds?.length || 0,
+        room: c.classroom || 'Sin asignar',
+      };
+    });
+
+  // Ordenamos por fecha (los más cercanos primero) y tomamos solo 3
+  return classesWithSchedule.sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 3);
+});
+
+// Otros métodos (handleViewClass, handleEditClass, etc.) se mantienen según tu lógica original
+
+onMounted(async () => {
+  loading.value = true;
+  try {
+    console.log('🔍 Cargando clases...');
+    // Cargar clases explícitamente
+    const classes = await classesStore.fetchClasses();
+    console.log(`✅ Se cargaron ${classes.length} clases:`, classes);
+
+    // Cargar datos adicionales
+    await Promise.all([
+      teachersStore.fetchTeachers && teachersStore.fetchTeachers(),
+      studentsStore.fetchStudents && studentsStore.fetchStudents(),
+    ]);
+  } catch (error) {
+    console.error('❌ Error cargando datos:', error);
+    toast({
+      title: 'Error de Carga',
+      description: 'No se pudieron cargar las clases. Intente recargar la página.',
+      variant: 'destructive',
+    });
+  } finally {
+    loading.value = false;
+  }
+});
+</script>

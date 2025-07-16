@@ -511,8 +511,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter, useRoute} from "vue-router"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -527,18 +527,18 @@ import {
   Squares2X2Icon,
   ListBulletIcon,
   AcademicCapIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Stores
-import {useTeachersStore} from "@/modulos/Teachers/store/teachers"
-import {useClassesStore} from "@/modulos/Classes/store/classes"
-import {useStudentsStore} from "@/modulos/Students/store/students"
-import {useAttendanceStore} from "@/modulos/Attendance/store/attendance"
+import { useTeachersStore } from '@/modulos/Teachers/store/teachers';
+import { useClassesStore } from '@/modulos/Classes/store/classes';
+import { useStudentsStore } from '@/modulos/Students/store/students';
+import { useAttendanceStore } from '@/modulos/Attendance/store/attendance';
 
 // Types
 interface AttendanceRecord {
   date: string
-  status: "presente" | "ausente" | "tarde" | "justificado"
+  status: 'presente' | 'ausente' | 'tarde' | 'justificado'
   justification?: string
 }
 
@@ -552,322 +552,322 @@ interface ClassObservation {
 }
 
 // Router
-const router = useRouter()
-const route = useRoute()
+const router = useRouter();
+const route = useRoute();
 
 // Stores
-const teachersStore = useTeachersStore()
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-const attendanceStore = useAttendanceStore()
+const teachersStore = useTeachersStore();
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+const attendanceStore = useAttendanceStore();
 
 // Props
 const props = defineProps({
   teacherId: {
     type: String,
-    default: "",
+    default: '',
   },
-})
+});
 
 // Estado
-const loading = ref(false)
-const error = ref("")
-const viewMode = ref<"cards" | "list">("cards")
-const expandedClasses = ref(new Set<string>())
-const expandedStudents = ref(new Set<string>())
-const showObservations = ref(false)
-const loadingObservations = ref(false)
-const classObservations = ref<ClassObservation[]>([])
-const selectedClassId = ref("")
-const selectedClassName = ref("")
+const loading = ref(false);
+const error = ref('');
+const viewMode = ref<'cards' | 'list'>('cards');
+const expandedClasses = ref(new Set<string>());
+const expandedStudents = ref(new Set<string>());
+const showObservations = ref(false);
+const loadingObservations = ref(false);
+const classObservations = ref<ClassObservation[]>([]);
+const selectedClassId = ref('');
+const selectedClassName = ref('');
 
 // Fechas
-const dateFrom = ref("")
-const dateTo = ref("")
+const dateFrom = ref('');
+const dateTo = ref('');
 
 // Computed
-const teacherId = computed(() => props.teacherId || (route.query.teacherId as string))
+const teacherId = computed(() => props.teacherId || (route.query.teacherId as string));
 
 const teacherName = computed(() => {
-  if (!teacherId.value) return "Maestro"
-  const teacher = teachersStore.getTeacherById(teacherId.value)
-  return teacher?.name || "Maestro"
-})
+  if (!teacherId.value) return 'Maestro';
+  const teacher = teachersStore.getTeacherById(teacherId.value);
+  return teacher?.name || 'Maestro';
+});
 
 const teacherClasses = computed(() => {
-  if (!teacherId.value) return []
-  return classesStore.classes.filter((c) => c.teacherId === teacherId.value)
-})
+  if (!teacherId.value) return [];
+  return classesStore.classes.filter((c) => c.teacherId === teacherId.value);
+});
 
 const totalStudents = computed(() => {
-  const studentIds = new Set<string>()
+  const studentIds = new Set<string>();
   teacherClasses.value.forEach((cls) => {
     if (cls.studentIds) {
-      cls.studentIds.forEach((id) => studentIds.add(id))
+      cls.studentIds.forEach((id) => studentIds.add(id));
     }
-  })
-  return studentIds.size
-})
+  });
+  return studentIds.size;
+});
 
 // Estadísticas generales
 const totalPresentes = computed(() => {
-  return getTotalAttendanceCount("presente")
-})
+  return getTotalAttendanceCount('presente');
+});
 
 const totalAusentes = computed(() => {
-  return getTotalAttendanceCount("ausente")
-})
+  return getTotalAttendanceCount('ausente');
+});
 
 const totalTardes = computed(() => {
-  return getTotalAttendanceCount("tarde")
-})
+  return getTotalAttendanceCount('tarde');
+});
 
 const totalJustificados = computed(() => {
-  return getTotalAttendanceCount("justificado")
-})
+  return getTotalAttendanceCount('justificado');
+});
 
 // Métodos
 function goBack() {
-  router.back()
+  router.back();
 }
 
 function setDefaultDateRange() {
-  const today = new Date()
-  const lastMonth = new Date()
-  lastMonth.setMonth(lastMonth.getMonth() - 1)
+  const today = new Date();
+  const lastMonth = new Date();
+  lastMonth.setMonth(lastMonth.getMonth() - 1);
 
-  dateFrom.value = lastMonth.toISOString().split("T")[0]
-  dateTo.value = today.toISOString().split("T")[0]
+  dateFrom.value = lastMonth.toISOString().split('T')[0];
+  dateTo.value = today.toISOString().split('T')[0];
 }
 
 function toggleClassExpansion(classId: string) {
   if (expandedClasses.value.has(classId)) {
-    expandedClasses.value.delete(classId)
+    expandedClasses.value.delete(classId);
   } else {
-    expandedClasses.value.add(classId)
+    expandedClasses.value.add(classId);
   }
 }
 
 function toggleStudentExpansion(classId: string, studentId: string) {
-  const key = `${classId}-${studentId}`
+  const key = `${classId}-${studentId}`;
   if (expandedStudents.value.has(key)) {
-    expandedStudents.value.delete(key)
+    expandedStudents.value.delete(key);
   } else {
-    expandedStudents.value.add(key)
+    expandedStudents.value.add(key);
   }
 }
 
 function getClassSchedule(classData: any): string {
-  if (!classData.schedule?.slots) return "Horario no definido"
+  if (!classData.schedule?.slots) return 'Horario no definido';
 
-  const slots = classData.schedule.slots
-  if (slots.length === 0) return "Sin horario"
+  const slots = classData.schedule.slots;
+  if (slots.length === 0) return 'Sin horario';
 
-  const firstSlot = slots[0]
-  const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
-  const dayName = days[firstSlot.day] || `Día ${firstSlot.day}`
+  const firstSlot = slots[0];
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const dayName = days[firstSlot.day] || `Día ${firstSlot.day}`;
 
-  return `${dayName} ${firstSlot.startTime} - ${firstSlot.endTime}`
+  return `${dayName} ${firstSlot.startTime} - ${firstSlot.endTime}`;
 }
 
 function getClassStudentsCount(classData: any): number {
-  return classData.studentIds?.length || 0
+  return classData.studentIds?.length || 0;
 }
 
 function getClassStudents(classData: any) {
-  if (!classData.studentIds) return []
-  return studentsStore.students.filter((s) => classData.studentIds.includes(s.id))
+  if (!classData.studentIds) return [];
+  return studentsStore.students.filter((s) => classData.studentIds.includes(s.id));
 }
 
 function getAttendancePercentage(classData: any): number {
-  const students = getClassStudents(classData)
-  if (students.length === 0) return 0
+  const students = getClassStudents(classData);
+  if (students.length === 0) return 0;
 
-  let totalPresentes = 0
-  let totalSessions = 0
+  let totalPresentes = 0;
+  let totalSessions = 0;
 
   students.forEach((student) => {
-    const attendances = getStudentAttendances(classData.id, student.id)
-    totalSessions += attendances.length
-    totalPresentes += attendances.filter((a) => a.status === "presente").length
-  })
+    const attendances = getStudentAttendances(classData.id, student.id);
+    totalSessions += attendances.length;
+    totalPresentes += attendances.filter((a) => a.status === 'presente').length;
+  });
 
-  return totalSessions > 0 ? Math.round((totalPresentes / totalSessions) * 100) : 0
+  return totalSessions > 0 ? Math.round((totalPresentes / totalSessions) * 100) : 0;
 }
 
 function getStudentAttendancePercentage(classId: string, studentId: string): number {
-  const attendances = getStudentAttendances(classId, studentId)
-  if (attendances.length === 0) return 0
+  const attendances = getStudentAttendances(classId, studentId);
+  if (attendances.length === 0) return 0;
 
-  const presentes = attendances.filter((a) => a.status === "presente").length
-  return Math.round((presentes / attendances.length) * 100)
+  const presentes = attendances.filter((a) => a.status === 'presente').length;
+  return Math.round((presentes / attendances.length) * 100);
 }
 
 function getStudentAttendanceCount(classId: string, studentId: string, status: string): number {
-  const attendances = getStudentAttendances(classId, studentId)
-  return attendances.filter((a) => a.status === status).length
+  const attendances = getStudentAttendances(classId, studentId);
+  return attendances.filter((a) => a.status === status).length;
 }
 
 function getStudentAttendances(classId: string, studentId: string): AttendanceRecord[] {
   // Aquí deberías obtener las asistencias reales del store
   // Por ahora retornamos datos de ejemplo
-  const attendances: AttendanceRecord[] = []
+  const attendances: AttendanceRecord[] = [];
 
   // Simular datos de asistencia para el rango de fechas
   if (dateFrom.value && dateTo.value) {
-    const startDate = new Date(dateFrom.value)
-    const endDate = new Date(dateTo.value)
-    const currentDate = new Date(startDate)
+    const startDate = new Date(dateFrom.value);
+    const endDate = new Date(dateTo.value);
+    const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split("T")[0]
+      const dateStr = currentDate.toISOString().split('T')[0];
       attendances.push({
         date: dateStr,
-        status: Math.random() > 0.3 ? "presente" : "ausente",
-        justification: Math.random() > 0.8 ? "Justificación médica" : undefined,
-      })
-      currentDate.setDate(currentDate.getDate() + 1)
+        status: Math.random() > 0.3 ? 'presente' : 'ausente',
+        justification: Math.random() > 0.8 ? 'Justificación médica' : undefined,
+      });
+      currentDate.setDate(currentDate.getDate() + 1);
     }
   }
 
-  return attendances
+  return attendances;
 }
 
 function getTotalAttendanceCount(status: string): number {
-  let total = 0
+  let total = 0;
   teacherClasses.value.forEach((cls) => {
-    const students = getClassStudents(cls)
+    const students = getClassStudents(cls);
     students.forEach((student) => {
-      const attendances = getStudentAttendances(cls.id, student.id)
-      total += attendances.filter((a) => a.status === status).length
-    })
-  })
-  return total
+      const attendances = getStudentAttendances(cls.id, student.id);
+      total += attendances.filter((a) => a.status === status).length;
+    });
+  });
+  return total;
 }
 
 function getStatusClass(status: string): string {
   switch (status) {
-    case "presente":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-    case "ausente":
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-    case "tarde":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-    case "justificado":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+  case 'presente':
+    return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+  case 'ausente':
+    return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+  case 'tarde':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+  case 'justificado':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
   }
 }
 
 function getStatusText(status: string): string {
   switch (status) {
-    case "presente":
-      return "Presente"
-    case "ausente":
-      return "Ausente"
-    case "tarde":
-      return "Tarde"
-    case "justificado":
-      return "Justificado"
-    default:
-      return status
+  case 'presente':
+    return 'Presente';
+  case 'ausente':
+    return 'Ausente';
+  case 'tarde':
+    return 'Tarde';
+  case 'justificado':
+    return 'Justificado';
+  default:
+    return status;
   }
 }
 
 function formatDate(dateString: string): string {
   try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("es-ES", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    })
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   } catch {
-    return dateString
+    return dateString;
   }
 }
 
 async function showObservationsModal(classId: string, studentId?: string) {
-  selectedClassId.value = classId
-  const classData = classesStore.getClassById(classId)
-  selectedClassName.value = classData?.name || "Clase"
+  selectedClassId.value = classId;
+  const classData = classesStore.getClassById(classId);
+  selectedClassName.value = classData?.name || 'Clase';
 
-  showObservations.value = true
-  loadingObservations.value = true
+  showObservations.value = true;
+  loadingObservations.value = true;
 
   try {
     // Obtener observaciones de la clase
-    const observations = await attendanceStore.fetchObservationsForClass(classId)
+    const observations = await attendanceStore.fetchObservationsForClass(classId);
 
     // Filtrar por rango de fechas si está definido
-    let filteredObservations = observations
+    let filteredObservations = observations;
     if (dateFrom.value && dateTo.value) {
       filteredObservations = observations.filter((obs) => {
-        const obsDate = obs.date || obs.fecha
-        return obsDate >= dateFrom.value && obsDate <= dateTo.value
-      })
+        const obsDate = obs.date || obs.fecha;
+        return obsDate >= dateFrom.value && obsDate <= dateTo.value;
+      });
     }
 
-    classObservations.value = filteredObservations
+    classObservations.value = filteredObservations;
   } catch (err) {
-    console.error("Error cargando observaciones:", err)
-    classObservations.value = []
+    console.error('Error cargando observaciones:', err);
+    classObservations.value = [];
   } finally {
-    loadingObservations.value = false
+    loadingObservations.value = false;
   }
 }
 
 function closeObservationsModal() {
-  showObservations.value = false
-  classObservations.value = []
+  showObservations.value = false;
+  classObservations.value = [];
 }
 
 function getObservationText(observation: ClassObservation): string {
-  if (observation.text) return observation.text
-  if (observation.content?.text) return observation.content.text
-  if (typeof observation.content === "string") return observation.content
-  return "Sin contenido"
+  if (observation.text) return observation.text;
+  if (observation.content?.text) return observation.content.text;
+  if (typeof observation.content === 'string') return observation.content;
+  return 'Sin contenido';
 }
 
 function getObservationTypeClass(type: string): string {
   switch (type) {
-    case "general":
-      return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-    case "comportamiento":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-    case "academico":
-      return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-    case "asistencia":
-      return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-    default:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+  case 'general':
+    return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+  case 'comportamiento':
+    return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+  case 'academico':
+    return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+  case 'asistencia':
+    return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+  default:
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
   }
 }
 
 function getObservationTypeText(type: string): string {
   switch (type) {
-    case "general":
-      return "General"
-    case "comportamiento":
-      return "Comportamiento"
-    case "academico":
-      return "Académico"
-    case "asistencia":
-      return "Asistencia"
-    default:
-      return type
+  case 'general':
+    return 'General';
+  case 'comportamiento':
+    return 'Comportamiento';
+  case 'academico':
+    return 'Académico';
+  case 'asistencia':
+    return 'Asistencia';
+  default:
+    return type;
   }
 }
 
 async function loadAttendanceData() {
   if (!teacherId.value) {
-    error.value = "No se ha especificado un maestro"
-    return
+    error.value = 'No se ha especificado un maestro';
+    return;
   }
 
-  loading.value = true
-  error.value = ""
+  loading.value = true;
+  error.value = '';
 
   try {
     // Cargar datos necesarios
@@ -875,26 +875,26 @@ async function loadAttendanceData() {
       teachersStore.fetchTeachers(),
       classesStore.fetchClasses(),
       studentsStore.fetchStudents(),
-    ])
+    ]);
 
     // Aquí podrías cargar datos específicos de asistencia si es necesario
-    console.log("Datos cargados correctamente")
+    console.log('Datos cargados correctamente');
   } catch (err) {
-    console.error("Error cargando datos:", err)
-    error.value = "Error al cargar los datos. Por favor, intenta de nuevo."
+    console.error('Error cargando datos:', err);
+    error.value = 'Error al cargar los datos. Por favor, intenta de nuevo.';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 // Inicialización
 onMounted(async () => {
   // Establecer rango de fechas por defecto
-  setDefaultDateRange()
+  setDefaultDateRange();
 
   // Cargar datos iniciales
-  await loadAttendanceData()
-})
+  await loadAttendanceData();
+});
 </script>
 
 <style scoped>

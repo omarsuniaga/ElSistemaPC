@@ -1,5 +1,5 @@
 // src/components/downloadPDF.js
-import {generarPdfDesdeHtml} from "../utils/pdfService"
+import { generarPdfDesdeHtml } from '../utils/pdfService';
 
 /**
  * Genera un PDF a partir de un elemento HTML utilizando el servicio pdfService.
@@ -9,22 +9,22 @@ import {generarPdfDesdeHtml} from "../utils/pdfService"
  */
 export async function generatePDF(element, fileName, options = {}) {
   if (!element || !(element instanceof HTMLElement)) {
-    console.error("Error en generatePDF: El primer argumento debe ser un elemento HTML válido.")
-    throw new Error("Elemento HTML no válido proporcionado.")
+    console.error('Error en generatePDF: El primer argumento debe ser un elemento HTML válido.');
+    throw new Error('Elemento HTML no válido proporcionado.');
   }
-  if (typeof fileName !== "string" || fileName.trim() === "") {
+  if (typeof fileName !== 'string' || fileName.trim() === '') {
     console.error(
-      "Error en generatePDF: El segundo argumento debe ser un nombre de archivo válido."
-    )
-    throw new Error("Nombre de archivo no válido proporcionado.")
+      'Error en generatePDF: El segundo argumento debe ser un nombre de archivo válido.',
+    );
+    throw new Error('Nombre de archivo no válido proporcionado.');
   }
 
   // El ID del elemento es necesario para pdfService
   // Si el elemento no tiene ID, se le asigna uno temporalmente
-  let tempId = null
+  let tempId = null;
   if (!element.id) {
-    tempId = `pdf-export-${Date.now()}`
-    element.id = tempId
+    tempId = `pdf-export-${Date.now()}`;
+    element.id = tempId;
   }
 
   const pdfOptions = {
@@ -43,22 +43,22 @@ export async function generatePDF(element, fileName, options = {}) {
     jsPDF: options.jsPDF,
     pagebreak: options.pagebreak,
     ...options, // Permite pasar otras opciones compatibles con HtmlToPdfOptions
-  }
+  };
 
   try {
-    console.log(`Iniciando generación del PDF: ${fileName}`)
-    await generarPdfDesdeHtml(pdfOptions)
-    console.log(`PDF '${fileName}' generado exitosamente.`)
-    return true
+    console.log(`Iniciando generación del PDF: ${fileName}`);
+    await generarPdfDesdeHtml(pdfOptions);
+    console.log(`PDF '${fileName}' generado exitosamente.`);
+    return true;
   } catch (error) {
-    console.error(`Error al generar PDF '${fileName}':`, error)
+    console.error(`Error al generar PDF '${fileName}':`, error);
     // No relanzar el error aquí para mantener la firma original de la función si es necesario,
     // pero se podría considerar relanzar para un manejo de errores más consistente.
-    return false // Opcional: devolver false en caso de error
+    return false; // Opcional: devolver false en caso de error
   } finally {
     // Si se asignó un ID temporal, se elimina
     if (tempId && document.getElementById(tempId)) {
-      document.getElementById(tempId).removeAttribute("id")
+      document.getElementById(tempId).removeAttribute('id');
     }
   }
 }

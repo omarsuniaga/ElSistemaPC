@@ -1,321 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, watchEffect} from "vue"
-import {Line, Bar, Radar} from "vue-chartjs"
-import ChartContainer from "./ChartContainer.vue"
-import {format, addMonths, startOfMonth} from "date-fns"
-import {es} from "date-fns/locale"
-import {useAnalyticsStore} from "../store/analytics"
-import {useStudentsStore} from "../../Students/store/students"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useAttendanceStore} from "../../Attendance/store/attendance"
-
-// Stores
-const analyticsStore = useAnalyticsStore()
-const studentsStore = useStudentsStore()
-const teachersStore = useTeachersStore()
-const attendanceStore = useAttendanceStore()
-
-// Component state
-const isLoading = ref(true)
-const error = ref("")
-const selectedTimeframe = ref("3months") // 3months, 6months, 1year
-const selectedMetric = ref("attendance") // attendance, performance
-const selectedEntityType = ref("all") // all, teacher, class, student
-const selectedEntityId = ref("")
-
-// Properties
-const props = defineProps({
-  filters: {
-    type: Object,
-    default: () => ({
-      teacherId: "",
-      classId: "",
-      startDate: "",
-      endDate: "",
-    }),
-  },
-})
-
-// Emit events
-const emit = defineEmits(["insight-generated", "prediction-changed"])
-
-// Predictive models data
-const predictiveData = ref({
-  attendancePrediction: [],
-  performancePrediction: [],
-  dropoutRiskStudents: [],
-  improvementOpportunities: [],
-  teacherComparison: [],
-  classComparison: [],
-  seasonalPatterns: [],
-})
-
-// Computed properties for charts
-const attendanceTrendChart = computed(() => {
-  // Historical + predicted data
-  const labels = generateFutureMonths(6) // Next 6 months
-
-  return {
-    labels,
-    datasets: [
-      {
-        label: "Asistencia Histórica",
-        data: [89, 87, 92, 90, 88, 91].concat(Array(6).fill(null)), // Historical data
-        borderColor: "rgba(75, 85, 99, 0.8)",
-        backgroundColor: "rgba(75, 85, 99, 0.2)",
-        borderWidth: 2,
-        pointRadius: 3,
-      },
-      {
-        label: "Predicción de Asistencia",
-        data: Array(6).fill(null).concat(predictiveData.value.attendancePrediction),
-        borderColor: "rgba(79, 70, 229, 0.8)",
-        backgroundColor: "rgba(79, 70, 229, 0.2)",
-        borderWidth: 2,
-        borderDash: [5, 5],
-        pointRadius: 3,
-      },
-    ],
-  }
-})
-
-const performanceTrendChart = computed(() => {
-  const labels = generateFutureMonths(6) // Next 6 months
-
-  return {
-    labels,
-    datasets: [
-      {
-        label: "Rendimiento Histórico",
-        data: [75, 76, 78, 77, 79, 80].concat(Array(6).fill(null)), // Historical data
-        borderColor: "rgba(75, 85, 99, 0.8)",
-        backgroundColor: "rgba(75, 85, 99, 0.2)",
-        borderWidth: 2,
-        pointRadius: 3,
-      },
-      {
-        label: "Predicción de Rendimiento",
-        data: Array(6).fill(null).concat(predictiveData.value.performancePrediction),
-        borderColor: "rgba(16, 185, 129, 0.8)",
-        backgroundColor: "rgba(16, 185, 129, 0.2)",
-        borderWidth: 2,
-        borderDash: [5, 5],
-        pointRadius: 3,
-      },
-    ],
-  }
-})
-
-const teacherComparisonChart = computed(() => {
-  return {
-    labels: ["Asistencia", "Rendimiento", "Participación", "Mejora", "Retención"],
-    datasets: predictiveData.value.teacherComparison.map((teacher, index) => ({
-      label: teacher.name,
-      data: teacher.metrics,
-      backgroundColor: getColorByIndex(index, 0.2),
-      borderColor: getColorByIndex(index, 1),
-      borderWidth: 1,
-    })),
-  }
-})
-
-const seasonalPatternsChart = computed(() => {
-  return {
-    labels: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
-    datasets: [
-      {
-        label: "Asistencia por mes",
-        data: predictiveData.value.seasonalPatterns,
-        backgroundColor: "rgba(99, 102, 241, 0.5)",
-        borderColor: "rgb(99, 102, 241)",
-        borderWidth: 1,
-      },
-    ],
-  }
-})
-
-// Chart options
-const lineChartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    tooltip: {
-      mode: "index",
-      intersect: false,
-    },
-    legend: {
-      position: "top",
-    },
-  },
-  scales: {
-    y: {
-      beginAtZero: false,
-      min: 40,
-      max: 100,
-      ticks: {
-        callback(value) {
-          return value + "%"
-        },
-      },
-    },
-  },
-})
-
-const radarChartOptions = ref({
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    r: {
-      min: 0,
-      max: 100,
-      ticks: {
-        stepSize: 20,
-      },
-    },
-  },
-  elements: {
-    line: {
-      borderWidth: 2,
-    },
-  },
-})
-
-// Helper functions
-function getColorByIndex(index, alpha) {
-  const colors = [
-    `rgba(79, 70, 229, ${alpha})`, // Indigo
-    `rgba(16, 185, 129, ${alpha})`, // Emerald
-    `rgba(245, 158, 11, ${alpha})`, // Amber
-    `rgba(239, 68, 68, ${alpha})`, // Red
-    `rgba(37, 99, 235, ${alpha})`, // Blue
-  ]
-  return colors[index % colors.length]
-}
-
-function generateFutureMonths(count) {
-  const months = []
-  const currentDate = new Date()
-
-  // Add past months
-  for (let i = 5; i >= 0; i--) {
-    const pastMonth = addMonths(currentDate, -i)
-    months.push(format(pastMonth, "MMM yyyy", {locale: es}))
-  }
-
-  // Add future months
-  for (let i = 1; i <= count; i++) {
-    const futureMonth = addMonths(currentDate, i)
-    months.push(format(futureMonth, "MMM yyyy", {locale: es}))
-  }
-
-  return months
-}
-
-// Actions
-const generatePredictions = async () => {
-  isLoading.value = true
-  error.value = ""
-
-  try {
-    // In a real application, this would call a backend ML service
-    // For now, we'll simulate predictions with plausible data
-
-    // Simulate attendance prediction (slightly increasing trend)
-    predictiveData.value.attendancePrediction = [91, 92, 93, 92, 94, 95]
-
-    // Simulate performance prediction (steady improvement)
-    predictiveData.value.performancePrediction = [81, 82, 83, 84, 84, 85]
-
-    // Students at risk of dropping out
-    predictiveData.value.dropoutRiskStudents = [
-      {
-        id: "1",
-        name: "Luis Ramírez",
-        instrument: "Violín",
-        riskScore: 78,
-        factors: ["Asistencia baja", "Rendimiento decreciente"],
-      },
-      {
-        id: "2",
-        name: "Ana Flores",
-        instrument: "Piano",
-        riskScore: 65,
-        factors: ["Falta de práctica", "Ausencias frecuentes"],
-      },
-      {
-        id: "3",
-        name: "Miguel Torres",
-        instrument: "Flauta",
-        riskScore: 82,
-        factors: ["Conflicto de horarios", "Dificultad con técnica"],
-      },
-    ]
-
-    // Opportunities for improvement
-    predictiveData.value.improvementOpportunities = [
-      {
-        area: "Asistencia en clases de cuerdas",
-        impact: "Alto",
-        suggestion: "Ajustar horarios a tarde-noche",
-      },
-      {
-        area: "Rendimiento en teoría musical",
-        impact: "Medio",
-        suggestion: "Introducir material interactivo",
-      },
-      {
-        area: "Participación en ensamble",
-        impact: "Alto",
-        suggestion: "Programar presentaciones mensuales",
-      },
-    ]
-
-    // Teacher comparison data
-    predictiveData.value.teacherComparison = [
-      {name: "Marta Jiménez", metrics: [95, 87, 90, 75, 92]},
-      {name: "Carlos Fuentes", metrics: [88, 92, 85, 90, 87]},
-      {name: "Laura González", metrics: [92, 85, 93, 82, 90]},
-    ]
-
-    // Seasonal patterns
-    predictiveData.value.seasonalPatterns = [85, 87, 89, 90, 92, 88, 75, 82, 88, 91, 89, 83]
-
-    // Emit insight event
-    emit("insight-generated", {
-      keyInsight: "Se proyecta un aumento del 4% en asistencia para los próximos 6 meses",
-      recommendations: [
-        "Implementar recordatorios automáticos 24h antes de cada clase",
-        "Enfoque especial en estudiantes de viento-madera que muestran tendencia a la baja",
-        "Considerar ajustar horarios de clases de teoría para mejorar asistencia",
-      ],
-    })
-  } catch (err) {
-    console.error("Error generating predictions:", err)
-    error.value = "Error al generar predicciones"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const exportPredictions = () => {
-  // In a real application, this would generate CSV/PDF report
-  alert("La exportación del informe predictivo estará disponible en la próxima versión.")
-}
-
-// Lifecycle hooks
-onMounted(async () => {
-  await generatePredictions()
-})
-
-// Watch for filter changes
-watchEffect(() => {
-  if (props.filters) {
-    // Re-generate predictions when filters change
-    generatePredictions()
-  }
-})
-</script>
-
 <template>
   <div class="predictive-analysis p-4 space-y-6">
     <div class="flex justify-between items-center mb-6">
@@ -629,3 +311,321 @@ watchEffect(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watchEffect } from 'vue';
+import { Line, Bar, Radar } from 'vue-chartjs';
+import ChartContainer from './ChartContainer.vue';
+import { format, addMonths, startOfMonth } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { useAnalyticsStore } from '../store/analytics';
+import { useStudentsStore } from '../../Students/store/students';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+
+// Stores
+const analyticsStore = useAnalyticsStore();
+const studentsStore = useStudentsStore();
+const teachersStore = useTeachersStore();
+const attendanceStore = useAttendanceStore();
+
+// Component state
+const isLoading = ref(true);
+const error = ref('');
+const selectedTimeframe = ref('3months'); // 3months, 6months, 1year
+const selectedMetric = ref('attendance'); // attendance, performance
+const selectedEntityType = ref('all'); // all, teacher, class, student
+const selectedEntityId = ref('');
+
+// Properties
+const props = defineProps({
+  filters: {
+    type: Object,
+    default: () => ({
+      teacherId: '',
+      classId: '',
+      startDate: '',
+      endDate: '',
+    }),
+  },
+});
+
+// Emit events
+const emit = defineEmits(['insight-generated', 'prediction-changed']);
+
+// Predictive models data
+const predictiveData = ref({
+  attendancePrediction: [],
+  performancePrediction: [],
+  dropoutRiskStudents: [],
+  improvementOpportunities: [],
+  teacherComparison: [],
+  classComparison: [],
+  seasonalPatterns: [],
+});
+
+// Computed properties for charts
+const attendanceTrendChart = computed(() => {
+  // Historical + predicted data
+  const labels = generateFutureMonths(6); // Next 6 months
+
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Asistencia Histórica',
+        data: [89, 87, 92, 90, 88, 91].concat(Array(6).fill(null)), // Historical data
+        borderColor: 'rgba(75, 85, 99, 0.8)',
+        backgroundColor: 'rgba(75, 85, 99, 0.2)',
+        borderWidth: 2,
+        pointRadius: 3,
+      },
+      {
+        label: 'Predicción de Asistencia',
+        data: Array(6).fill(null).concat(predictiveData.value.attendancePrediction),
+        borderColor: 'rgba(79, 70, 229, 0.8)',
+        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        pointRadius: 3,
+      },
+    ],
+  };
+});
+
+const performanceTrendChart = computed(() => {
+  const labels = generateFutureMonths(6); // Next 6 months
+
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Rendimiento Histórico',
+        data: [75, 76, 78, 77, 79, 80].concat(Array(6).fill(null)), // Historical data
+        borderColor: 'rgba(75, 85, 99, 0.8)',
+        backgroundColor: 'rgba(75, 85, 99, 0.2)',
+        borderWidth: 2,
+        pointRadius: 3,
+      },
+      {
+        label: 'Predicción de Rendimiento',
+        data: Array(6).fill(null).concat(predictiveData.value.performancePrediction),
+        borderColor: 'rgba(16, 185, 129, 0.8)',
+        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        pointRadius: 3,
+      },
+    ],
+  };
+});
+
+const teacherComparisonChart = computed(() => {
+  return {
+    labels: ['Asistencia', 'Rendimiento', 'Participación', 'Mejora', 'Retención'],
+    datasets: predictiveData.value.teacherComparison.map((teacher, index) => ({
+      label: teacher.name,
+      data: teacher.metrics,
+      backgroundColor: getColorByIndex(index, 0.2),
+      borderColor: getColorByIndex(index, 1),
+      borderWidth: 1,
+    })),
+  };
+});
+
+const seasonalPatternsChart = computed(() => {
+  return {
+    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+    datasets: [
+      {
+        label: 'Asistencia por mes',
+        data: predictiveData.value.seasonalPatterns,
+        backgroundColor: 'rgba(99, 102, 241, 0.5)',
+        borderColor: 'rgb(99, 102, 241)',
+        borderWidth: 1,
+      },
+    ],
+  };
+});
+
+// Chart options
+const lineChartOptions = ref({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+    },
+    legend: {
+      position: 'top',
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: false,
+      min: 40,
+      max: 100,
+      ticks: {
+        callback(value) {
+          return value + '%';
+        },
+      },
+    },
+  },
+});
+
+const radarChartOptions = ref({
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    r: {
+      min: 0,
+      max: 100,
+      ticks: {
+        stepSize: 20,
+      },
+    },
+  },
+  elements: {
+    line: {
+      borderWidth: 2,
+    },
+  },
+});
+
+// Helper functions
+function getColorByIndex(index, alpha) {
+  const colors = [
+    `rgba(79, 70, 229, ${alpha})`, // Indigo
+    `rgba(16, 185, 129, ${alpha})`, // Emerald
+    `rgba(245, 158, 11, ${alpha})`, // Amber
+    `rgba(239, 68, 68, ${alpha})`, // Red
+    `rgba(37, 99, 235, ${alpha})`, // Blue
+  ];
+  return colors[index % colors.length];
+}
+
+function generateFutureMonths(count) {
+  const months = [];
+  const currentDate = new Date();
+
+  // Add past months
+  for (let i = 5; i >= 0; i--) {
+    const pastMonth = addMonths(currentDate, -i);
+    months.push(format(pastMonth, 'MMM yyyy', { locale: es }));
+  }
+
+  // Add future months
+  for (let i = 1; i <= count; i++) {
+    const futureMonth = addMonths(currentDate, i);
+    months.push(format(futureMonth, 'MMM yyyy', { locale: es }));
+  }
+
+  return months;
+}
+
+// Actions
+const generatePredictions = async () => {
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    // In a real application, this would call a backend ML service
+    // For now, we'll simulate predictions with plausible data
+
+    // Simulate attendance prediction (slightly increasing trend)
+    predictiveData.value.attendancePrediction = [91, 92, 93, 92, 94, 95];
+
+    // Simulate performance prediction (steady improvement)
+    predictiveData.value.performancePrediction = [81, 82, 83, 84, 84, 85];
+
+    // Students at risk of dropping out
+    predictiveData.value.dropoutRiskStudents = [
+      {
+        id: '1',
+        name: 'Luis Ramírez',
+        instrument: 'Violín',
+        riskScore: 78,
+        factors: ['Asistencia baja', 'Rendimiento decreciente'],
+      },
+      {
+        id: '2',
+        name: 'Ana Flores',
+        instrument: 'Piano',
+        riskScore: 65,
+        factors: ['Falta de práctica', 'Ausencias frecuentes'],
+      },
+      {
+        id: '3',
+        name: 'Miguel Torres',
+        instrument: 'Flauta',
+        riskScore: 82,
+        factors: ['Conflicto de horarios', 'Dificultad con técnica'],
+      },
+    ];
+
+    // Opportunities for improvement
+    predictiveData.value.improvementOpportunities = [
+      {
+        area: 'Asistencia en clases de cuerdas',
+        impact: 'Alto',
+        suggestion: 'Ajustar horarios a tarde-noche',
+      },
+      {
+        area: 'Rendimiento en teoría musical',
+        impact: 'Medio',
+        suggestion: 'Introducir material interactivo',
+      },
+      {
+        area: 'Participación en ensamble',
+        impact: 'Alto',
+        suggestion: 'Programar presentaciones mensuales',
+      },
+    ];
+
+    // Teacher comparison data
+    predictiveData.value.teacherComparison = [
+      { name: 'Marta Jiménez', metrics: [95, 87, 90, 75, 92] },
+      { name: 'Carlos Fuentes', metrics: [88, 92, 85, 90, 87] },
+      { name: 'Laura González', metrics: [92, 85, 93, 82, 90] },
+    ];
+
+    // Seasonal patterns
+    predictiveData.value.seasonalPatterns = [85, 87, 89, 90, 92, 88, 75, 82, 88, 91, 89, 83];
+
+    // Emit insight event
+    emit('insight-generated', {
+      keyInsight: 'Se proyecta un aumento del 4% en asistencia para los próximos 6 meses',
+      recommendations: [
+        'Implementar recordatorios automáticos 24h antes de cada clase',
+        'Enfoque especial en estudiantes de viento-madera que muestran tendencia a la baja',
+        'Considerar ajustar horarios de clases de teoría para mejorar asistencia',
+      ],
+    });
+  } catch (err) {
+    console.error('Error generating predictions:', err);
+    error.value = 'Error al generar predicciones';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const exportPredictions = () => {
+  // In a real application, this would generate CSV/PDF report
+  alert('La exportación del informe predictivo estará disponible en la próxima versión.');
+};
+
+// Lifecycle hooks
+onMounted(async () => {
+  await generatePredictions();
+});
+
+// Watch for filter changes
+watchEffect(() => {
+  if (props.filters) {
+    // Re-generate predictions when filters change
+    generatePredictions();
+  }
+});
+</script>

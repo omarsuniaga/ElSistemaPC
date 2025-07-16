@@ -395,7 +395,7 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
+import { ref, computed, onMounted } from 'vue';
 import {
   CogIcon,
   UsersIcon,
@@ -415,35 +415,35 @@ import {
   DocumentTextIcon,
   ClockIcon,
   StarIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
-import {useAdminStudentsStore} from "../store/adminStudents"
-import {advancedStudentsService} from "../services/advancedStudentsService"
-import {advancedTeachersService} from "../services/advancedTeachersService"
-import type {StudentMetrics, DropoutRisk} from "../services/advancedStudentsService"
+import { useAdminStudentsStore } from '../store/adminStudents';
+import { advancedStudentsService } from '../services/advancedStudentsService';
+import { advancedTeachersService } from '../services/advancedTeachersService';
+import type { StudentMetrics, DropoutRisk } from '../services/advancedStudentsService';
 
 // Components
-import Modal from "../../../components/shared/Modal.vue"
-import AdvancedStudentsManagementNew from "../components/AdvancedStudentsManagementNew.vue"
-import MetricCard from "../components/MetricCard.vue"
-import ActionButton from "../components/ActionButton.vue"
-import TabContainer from "../components/TabContainer.vue"
-import StudentsList from "../components/StudentsList.vue"
-import QuickActionsCard from "../components/QuickActionsCard.vue"
+import Modal from '../../../components/shared/Modal.vue';
+import AdvancedStudentsManagementNew from '../components/AdvancedStudentsManagementNew.vue';
+import MetricCard from '../components/MetricCard.vue';
+import ActionButton from '../components/ActionButton.vue';
+import TabContainer from '../components/TabContainer.vue';
+import StudentsList from '../components/StudentsList.vue';
+import QuickActionsCard from '../components/QuickActionsCard.vue';
 
 // Store
-const studentsStore = useAdminStudentsStore()
+const studentsStore = useAdminStudentsStore();
 
 // State
-const activeTab = ref("students")
-const showAdvancedStudentsModal = ref(false)
-const showAlertsModal = ref(false)
+const activeTab = ref('students');
+const showAdvancedStudentsModal = ref(false);
+const showAlertsModal = ref(false);
 
 const systemMetrics = ref({
   activeStudents: 0,
   monthlyRevenue: 0,
   attendanceRate: 0,
-})
+});
 
 const studentMetrics = ref<StudentMetrics>({
   totalStudents: 0,
@@ -454,135 +454,135 @@ const studentMetrics = ref<StudentMetrics>({
   riskStudents: 0,
   topPerformers: 0,
   revenueImpact: 0,
-})
+});
 
 const teacherMetrics = ref({
   total: 0,
   active: 0,
-  rating: "0.0",
-})
+  rating: '0.0',
+});
 
-const criticalAlerts = ref<any[]>([])
+const criticalAlerts = ref<any[]>([]);
 
 // Computed
 const currentDate = computed(() => {
-  return new Date().toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-})
+  return new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+});
 
 const managementTabs = computed(() => [
   {
-    id: "students",
-    name: "Estudiantes",
+    id: 'students',
+    name: 'Estudiantes',
     icon: UsersIcon,
     count: studentMetrics.value.totalStudents,
   },
   {
-    id: "teachers",
-    name: "Maestros",
+    id: 'teachers',
+    name: 'Maestros',
     icon: AcademicCapIcon,
     count: 0,
   },
   {
-    id: "classes",
-    name: "Clases",
+    id: 'classes',
+    name: 'Clases',
     icon: BookOpenIcon,
     count: 0,
   },
   {
-    id: "analytics",
-    name: "Análisis",
+    id: 'analytics',
+    name: 'Análisis',
     icon: ChartBarIcon,
   },
   {
-    id: "system",
-    name: "Sistema",
+    id: 'system',
+    name: 'Sistema',
     icon: Cog6ToothIcon,
   },
-])
+]);
 
 const recentStudents = computed(() => {
   return studentsStore.students
     .slice()
     .sort((a, b) => {
       // Handle Firestore Timestamp or Date objects
-      const aDate = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt || 0)
-      const bDate = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt || 0)
-      return bDate.getTime() - aDate.getTime()
+      const aDate = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt || 0);
+      const bDate = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt || 0);
+      return bDate.getTime() - aDate.getTime();
     })
-    .slice(0, 5)
-})
+    .slice(0, 5);
+});
 
 // Quick Actions Data
 const importExportActions = computed(() => [
   {
-    id: "import-students",
-    label: "Importar Estudiantes",
+    id: 'import-students',
+    label: 'Importar Estudiantes',
     icon: DocumentArrowUpIcon,
-    color: "green" as const,
+    color: 'green' as const,
   },
   {
-    id: "export-data",
-    label: "Exportar Datos",
+    id: 'export-data',
+    label: 'Exportar Datos',
     icon: DocumentArrowDownIcon,
-    color: "blue" as const,
+    color: 'blue' as const,
   },
-])
+]);
 
 const communicationActions = computed(() => [
   {
-    id: "mass-email",
-    label: "Envío Masivo Email",
+    id: 'mass-email',
+    label: 'Envío Masivo Email',
     icon: EnvelopeIcon,
-    color: "purple" as const,
+    color: 'purple' as const,
   },
   {
-    id: "mass-whatsapp",
-    label: "WhatsApp Masivo",
+    id: 'mass-whatsapp',
+    label: 'WhatsApp Masivo',
     icon: ChatBubbleLeftRightIcon,
-    color: "green" as const,
+    color: 'green' as const,
   },
-])
+]);
 
 const reportsActions = computed(() => [
   {
-    id: "attendance-report",
-    label: "Reporte de Asistencia",
+    id: 'attendance-report',
+    label: 'Reporte de Asistencia',
     icon: DocumentTextIcon,
-    color: "indigo" as const,
+    color: 'indigo' as const,
   },
   {
-    id: "financial-analysis",
-    label: "Análisis Financiero",
+    id: 'financial-analysis',
+    label: 'Análisis Financiero',
     icon: ChartBarIcon,
-    color: "yellow" as const,
+    color: 'yellow' as const,
   },
-])
+]);
 
 // Methods
 const loadData = async () => {
   try {
     // Load students
-    await studentsStore.loadStudents()
+    await studentsStore.loadStudents();
 
     // Load student metrics
-    const metrics = await advancedStudentsService.getStudentMetrics()
-    studentMetrics.value = metrics
+    const metrics = await advancedStudentsService.getStudentMetrics();
+    studentMetrics.value = metrics;
 
     // Load teacher metrics
     try {
-      const teacherMetricsData = await advancedTeachersService.getTeacherMetrics()
+      const teacherMetricsData = await advancedTeachersService.getTeacherMetrics();
       teacherMetrics.value = {
         total: teacherMetricsData.totalTeachers,
         active: teacherMetricsData.activeTeachers,
         rating: teacherMetricsData.averageRating.toFixed(1),
-      }
+      };
     } catch (error) {
-      console.error("Error loading teacher metrics:", error)
+      console.error('Error loading teacher metrics:', error);
       // Keep default values if teacher metrics fail
     }
 
@@ -591,66 +591,66 @@ const loadData = async () => {
       activeStudents: metrics.activeStudents,
       monthlyRevenue: metrics.revenueImpact,
       attendanceRate: Math.round(metrics.averageAttendance),
-    }
+    };
 
     // Load critical alerts (mock data)
     criticalAlerts.value = [
       {
         id: 1,
-        title: "Estudiantes en riesgo de deserción",
+        title: 'Estudiantes en riesgo de deserción',
         message: `${metrics.riskStudents} estudiantes requieren atención inmediata`,
         createdAt: new Date(),
-        type: "warning",
+        type: 'warning',
       },
-    ]
+    ];
   } catch (error) {
-    console.error("Error loading dashboard data:", error)
+    console.error('Error loading dashboard data:', error);
   }
-}
+};
 
 const formatDate = (date: any) => {
   // Handle Firestore Timestamp or Date objects
-  const d = date instanceof Date ? date : new Date(date || 0)
-  return d.toLocaleDateString("es-ES")
-}
+  const d = date instanceof Date ? date : new Date(date || 0);
+  return d.toLocaleDateString('es-ES');
+};
 
 const handleQuickAction = (actionId: string) => {
-  console.log("Quick action clicked:", actionId)
+  console.log('Quick action clicked:', actionId);
 
   switch (actionId) {
-    case "import-students":
-      // TODO: Implement student import functionality
-      console.log("Opening student import dialog...")
-      break
-    case "export-data":
-      // TODO: Implement data export functionality
-      console.log("Starting data export...")
-      break
-    case "mass-email":
-      // TODO: Implement mass email functionality
-      console.log("Opening mass email dialog...")
-      break
-    case "mass-whatsapp":
-      // TODO: Implement mass WhatsApp functionality
-      console.log("Opening mass WhatsApp dialog...")
-      break
-    case "attendance-report":
-      // TODO: Implement attendance report functionality
-      console.log("Generating attendance report...")
-      break
-    case "financial-analysis":
-      // TODO: Implement financial analysis functionality
-      console.log("Opening financial analysis...")
-      break
-    default:
-      console.log("Unknown action:", actionId)
+  case 'import-students':
+    // TODO: Implement student import functionality
+    console.log('Opening student import dialog...');
+    break;
+  case 'export-data':
+    // TODO: Implement data export functionality
+    console.log('Starting data export...');
+    break;
+  case 'mass-email':
+    // TODO: Implement mass email functionality
+    console.log('Opening mass email dialog...');
+    break;
+  case 'mass-whatsapp':
+    // TODO: Implement mass WhatsApp functionality
+    console.log('Opening mass WhatsApp dialog...');
+    break;
+  case 'attendance-report':
+    // TODO: Implement attendance report functionality
+    console.log('Generating attendance report...');
+    break;
+  case 'financial-analysis':
+    // TODO: Implement financial analysis functionality
+    console.log('Opening financial analysis...');
+    break;
+  default:
+    console.log('Unknown action:', actionId);
   }
-}
+};
 
 // Initialize
 onMounted(() => {
-  loadData()
-})
+  loadData();
+});
 </script>
 
 <style scoped>

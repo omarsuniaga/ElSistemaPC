@@ -31,8 +31,8 @@
             <!-- Close Button -->
             <button
               class="rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              @click="handleClose"
               aria-label="Cerrar modal"
+              @click="handleClose"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -112,10 +112,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { CalendarService } from '../services/CalendarService'
-import ClassCard from './ClassCard.vue'
-import type { DayClassItem } from '../types/calendar.types'
+import { computed } from 'vue';
+import { CalendarService } from '../services/CalendarService';
+import ClassCard from './ClassCard.vue';
+import type { DayClassItem } from '../types/calendar.types';
 
 // Props
 interface Props {
@@ -126,8 +126,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  loading: false
-})
+  loading: false,
+});
 
 // Emits
 const emit = defineEmits<{
@@ -137,46 +137,46 @@ const emit = defineEmits<{
   'edit-class': [classId: string]
   'refresh': []
   'take-all-attendance': []
-}>()
+}>();
 
 // Computed
 const formattedDate = computed(() => {
-  if (!props.date) return ''
-  return CalendarService.formatDate(props.date, 'EEEE, d \'de\' MMMM \'de\' yyyy')
-})
+  if (!props.date) return '';
+  return CalendarService.formatDate(props.date, 'EEEE, d \'de\' MMMM \'de\' yyyy');
+});
 
 const stats = computed(() => {
-  const total = props.classes.length
-  const withAttendance = props.classes.filter(cls => cls.hasAttendanceRecord).length
-  const pending = total - withAttendance
+  const total = props.classes.length;
+  const withAttendance = props.classes.filter(cls => cls.hasAttendanceRecord).length;
+  const pending = total - withAttendance;
 
-  return { total, withAttendance, pending }
-})
+  return { total, withAttendance, pending };
+});
 
 // Methods
 const handleClose = () => {
-  emit('close')
-}
+  emit('close');
+};
 
 const handleTakeAttendance = (classId: string) => {
-  emit('take-attendance', classId)
-}
+  emit('take-attendance', classId);
+};
 
 const handleViewAttendance = (classId: string) => {
-  emit('view-attendance', classId)
-}
+  emit('view-attendance', classId);
+};
 
 const handleEditClass = (classId: string) => {
-  emit('edit-class', classId)
-}
+  emit('edit-class', classId);
+};
 
 const handleRefresh = () => {
-  emit('refresh')
-}
+  emit('refresh');
+};
 
 const handleTakeAllAttendance = () => {
-  emit('take-all-attendance')
-}
+  emit('take-all-attendance');
+};
 </script>
 
 <style scoped>

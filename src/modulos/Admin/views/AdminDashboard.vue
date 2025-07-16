@@ -248,22 +248,22 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted, onUnmounted} from "vue"
-import {useRouter} from "vue-router"
-import {BoltIcon} from "@heroicons/vue/24/outline"
-import {useAdminDashboard} from "../composables/useAdminDashboard"
-import QuickActionCard from "../components/QuickActionCard.vue"
-import DashboardSection from "../components/DashboardSection.vue"
-import ManagementCard from "../components/ManagementCard.vue"
-import ReportCard from "../components/ReportCard.vue"
-import RecentActivityList from "../components/RecentActivityList.vue"
-import SystemStatusWidget from "../components/SystemStatusWidget.vue"
-import PendingApprovalsList from "../components/PendingApprovalsList.vue"
-import CreateClassModal from "../components/CreateClassModal.vue"
-import AssignTeacherModal from "../components/AssignTeacherModal.vue"
-import AttendanceNotifications from "../../components/admin/AttendanceNotifications.vue"
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { BoltIcon } from '@heroicons/vue/24/outline';
+import { useAdminDashboard } from '../composables/useAdminDashboard';
+import QuickActionCard from '../components/QuickActionCard.vue';
+import DashboardSection from '../components/DashboardSection.vue';
+import ManagementCard from '../components/ManagementCard.vue';
+import ReportCard from '../components/ReportCard.vue';
+import RecentActivityList from '../components/RecentActivityList.vue';
+import SystemStatusWidget from '../components/SystemStatusWidget.vue';
+import PendingApprovalsList from '../components/PendingApprovalsList.vue';
+import CreateClassModal from '../components/CreateClassModal.vue';
+import AssignTeacherModal from '../components/AssignTeacherModal.vue';
+import AttendanceNotifications from '../../components/admin/AttendanceNotifications.vue';
 
-const router = useRouter()
+const router = useRouter();
 const {
   // State
   isLoading,
@@ -291,90 +291,90 @@ const {
   stopAutoRefresh,
   getQuickActions,
   getManagementCards,
-} = useAdminDashboard()
+} = useAdminDashboard();
 
 // Modal states
-const showCreateClassModal = ref(false)
-const showAssignTeacherModal = ref(false)
+const showCreateClassModal = ref(false);
+const showAssignTeacherModal = ref(false);
 
 // Methods
 const navigateTo = async (route: string) => {
   try {
-    await router.push(route)
+    await router.push(route);
   } catch (error) {
-    console.error("Navigation error:", error)
+    console.error('Navigation error:', error);
   }
-}
+};
 
 const openCreateClassModal = () => {
   if (canCreateClass.value) {
-    showCreateClassModal.value = true
+    showCreateClassModal.value = true;
   }
-}
+};
 
 const openAssignTeacherModal = () => {
   if (canAssignTeacher.value) {
-    showAssignTeacherModal.value = true
+    showAssignTeacherModal.value = true;
   }
-}
+};
 
 const handleClassCreated = async (classData: any) => {
-  showCreateClassModal.value = false
-  console.log("Clase creada:", classData)
-  await refreshDashboardStats()
-}
+  showCreateClassModal.value = false;
+  console.log('Clase creada:', classData);
+  await refreshDashboardStats();
+};
 
 const handleTeacherAssigned = async (assignmentData: any) => {
-  showAssignTeacherModal.value = false
-  console.log("Maestro asignado:", assignmentData)
-  await refreshDashboardStats()
-}
+  showAssignTeacherModal.value = false;
+  console.log('Maestro asignado:', assignmentData);
+  await refreshDashboardStats();
+};
 
 const handleApprovalAction = async (
   approval: any,
-  action: "approve" | "reject",
-  reason?: string
+  action: 'approve' | 'reject',
+  reason?: string,
 ) => {
-  await handleApproval(approval, action, reason)
-}
+  await handleApproval(approval, action, reason);
+};
 
 const handleSystemStatusRefresh = async () => {
-  await refreshSystemStatus()
-}
+  await refreshSystemStatus();
+};
 
 const handleManagementCardAction = (action: any) => {
-  console.log("Management card action:", action)
-}
+  console.log('Management card action:', action);
+};
 
 const handleReportCardAction = (action: string) => {
-  console.log("Report card action:", action)
-}
+  console.log('Report card action:', action);
+};
 
 const handleActivityClick = (activity: any) => {
-  console.log("Activity clicked:", activity)
-}
+  console.log('Activity clicked:', activity);
+};
 
 const handleActivityLoadMore = () => {
-  console.log("Load more activities")
-}
+  console.log('Load more activities');
+};
 
 const handleApprovalsLoadMore = () => {
-  console.log("Load more approvals")
-}
+  console.log('Load more approvals');
+};
 
 const handleSystemStatusViewDetails = () => {
-  console.log("View system status details")
-}
+  console.log('View system status details');
+};
 
 // Lifecycle
 onMounted(async () => {
-  await loadDashboardData()
-  startAutoRefresh(5) // Auto-refresh every 5 minutes
-})
+  await loadDashboardData();
+  startAutoRefresh(5); // Auto-refresh every 5 minutes
+});
 
 onUnmounted(() => {
-  stopAutoRefresh()
-})
+  stopAutoRefresh();
+});
 </script>
 
 <style scoped>

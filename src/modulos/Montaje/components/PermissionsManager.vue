@@ -33,8 +33,8 @@
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-bold text-gray-900">Miembros y Permisos</h2>
         <button
-          @click="showInviteModal = true"
           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          @click="showInviteModal = true"
         >
           ➕ Invitar Miembro
         </button>
@@ -84,8 +84,8 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <select
                   :value="member.role"
-                  @change="updateMemberRole(member.id, $event.target.value)"
                   class="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  @change="updateMemberRole(member.id, $event.target.value)"
                 >
                   <option 
                     v-for="role in systemRoles" 
@@ -109,8 +109,8 @@
               </td>
               <td class="px-6 py-4">
                 <button
-                  @click="openPermissionsModal(member)"
                   class="text-sm text-blue-600 hover:text-blue-800"
+                  @click="openPermissionsModal(member)"
                 >
                   {{ getSpecialPermissionsCount(member) }} especiales
                 </button>
@@ -130,14 +130,14 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div class="flex gap-2">
                   <button
-                    @click="editMember(member)"
                     class="text-blue-600 hover:text-blue-900"
+                    @click="editMember(member)"
                   >
                     ✏️
                   </button>
                   <button
-                    @click="removeMember(member.id)"
                     class="text-red-600 hover:text-red-900"
+                    @click="removeMember(member.id)"
                   >
                     🗑️
                   </button>
@@ -261,15 +261,15 @@
         
         <div class="flex gap-3 mt-6">
           <button
-            @click="sendInvite"
             :disabled="!inviteForm.email || sending"
             class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 transition-colors"
+            @click="sendInvite"
           >
             {{ sending ? 'Enviando...' : 'Enviar Invitación' }}
           </button>
           <button
-            @click="showInviteModal = false"
             class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            @click="showInviteModal = false"
           >
             Cancelar
           </button>
@@ -310,14 +310,14 @@
         
         <div class="flex gap-3 mt-6">
           <button
-            @click="savePermissions"
             class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            @click="savePermissions"
           >
             Guardar Permisos
           </button>
           <button
-            @click="showPermissionsModal = false"
             class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            @click="showPermissionsModal = false"
           >
             Cancelar
           </button>
@@ -328,7 +328,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed } from 'vue';
 
 interface SystemRole {
   id: string
@@ -354,18 +354,18 @@ interface PermissionResource {
   actions: string[]
 }
 
-const showInviteModal = ref(false)
-const showPermissionsModal = ref(false)
-const selectedMember = ref<ProjectMember | null>(null)
-const sending = ref(false)
+const showInviteModal = ref(false);
+const showPermissionsModal = ref(false);
+const selectedMember = ref<ProjectMember | null>(null);
+const sending = ref(false);
 
 const inviteForm = reactive({
   email: '',
   role: 'musician',
-  message: ''
-})
+  message: '',
+});
 
-const memberPermissions = reactive<Record<string, Record<string, boolean>>>({})
+const memberPermissions = reactive<Record<string, Record<string, boolean>>>({});
 
 const systemRoles: SystemRole[] = [
   {
@@ -373,7 +373,7 @@ const systemRoles: SystemRole[] = [
     name: 'Administrador',
     description: 'Acceso completo al sistema',
     icon: '👑',
-    permissions: ['*:*']
+    permissions: ['*:*'],
   },
   {
     id: 'director',
@@ -385,8 +385,8 @@ const systemRoles: SystemRole[] = [
       'evaluations:create', 'evaluations:read', 'evaluations:update', 'evaluations:delete',
       'reports:create', 'reports:read', 'reports:export',
       'members:read', 'members:update',
-      'sessions:create', 'sessions:read', 'sessions:update', 'sessions:delete'
-    ]
+      'sessions:create', 'sessions:read', 'sessions:update', 'sessions:delete',
+    ],
   },
   {
     id: 'assistant',
@@ -398,8 +398,8 @@ const systemRoles: SystemRole[] = [
       'evaluations:create', 'evaluations:read', 'evaluations:update',
       'reports:read',
       'members:read',
-      'sessions:read', 'sessions:update'
-    ]
+      'sessions:read', 'sessions:update',
+    ],
   },
   {
     id: 'section_leader',
@@ -410,8 +410,8 @@ const systemRoles: SystemRole[] = [
       'works:read',
       'evaluations:create', 'evaluations:read',
       'reports:read',
-      'sessions:read'
-    ]
+      'sessions:read',
+    ],
   },
   {
     id: 'musician',
@@ -421,43 +421,43 @@ const systemRoles: SystemRole[] = [
     permissions: [
       'works:read',
       'evaluations:read',
-      'sessions:read'
-    ]
-  }
-]
+      'sessions:read',
+    ],
+  },
+];
 
 const permissionResources: PermissionResource[] = [
   {
     id: 'works',
     name: 'Obras Musicales',
-    actions: ['create', 'read', 'update', 'delete']
+    actions: ['create', 'read', 'update', 'delete'],
   },
   {
     id: 'evaluations',
     name: 'Evaluaciones',
-    actions: ['create', 'read', 'update', 'delete']
+    actions: ['create', 'read', 'update', 'delete'],
   },
   {
     id: 'reports',
     name: 'Reportes',
-    actions: ['create', 'read', 'export']
+    actions: ['create', 'read', 'export'],
   },
   {
     id: 'members',
     name: 'Miembros',
-    actions: ['read', 'update', 'invite', 'remove']
+    actions: ['read', 'update', 'invite', 'remove'],
   },
   {
     id: 'sessions',
     name: 'Ensayos',
-    actions: ['create', 'read', 'update', 'delete']
+    actions: ['create', 'read', 'update', 'delete'],
   },
   {
     id: 'settings',
     name: 'Configuración',
-    actions: ['read', 'update']
-  }
-]
+    actions: ['read', 'update'],
+  },
+];
 
 const projectMembers = ref<ProjectMember[]>([
   {
@@ -467,7 +467,7 @@ const projectMembers = ref<ProjectMember[]>([
     role: 'director',
     instruments: [],
     status: 'active',
-    specialPermissions: {}
+    specialPermissions: {},
   },
   {
     id: '2',
@@ -476,7 +476,7 @@ const projectMembers = ref<ProjectMember[]>([
     role: 'section_leader',
     instruments: ['Violín I'],
     status: 'active',
-    specialPermissions: {}
+    specialPermissions: {},
   },
   {
     id: '3',
@@ -485,85 +485,85 @@ const projectMembers = ref<ProjectMember[]>([
     role: 'musician',
     instruments: ['Violonchelo'],
     status: 'pending',
-    specialPermissions: {}
-  }
-])
+    specialPermissions: {},
+  },
+]);
 
 const hasPermission = (roleId: string, resourceId: string, action: string): boolean => {
-  const role = systemRoles.find(r => r.id === roleId)
-  if (!role) return false
+  const role = systemRoles.find(r => r.id === roleId);
+  if (!role) return false;
   
   return role.permissions.includes('*:*') || 
          role.permissions.includes(`${resourceId}:*`) ||
-         role.permissions.includes(`${resourceId}:${action}`)
-}
+         role.permissions.includes(`${resourceId}:${action}`);
+};
 
 const getSpecialPermissionsCount = (member: ProjectMember): number => {
-  return Object.values(member.specialPermissions).flat().length
-}
+  return Object.values(member.specialPermissions).flat().length;
+};
 
 const getStatusLabel = (status: string): string => {
   const labels = {
     active: 'Activo',
     pending: 'Pendiente',
-    inactive: 'Inactivo'
-  }
-  return labels[status] || status
-}
+    inactive: 'Inactivo',
+  };
+  return labels[status] || status;
+};
 
 const updateMemberRole = async (memberId: string, newRole: string) => {
-  const member = projectMembers.value.find(m => m.id === memberId)
+  const member = projectMembers.value.find(m => m.id === memberId);
   if (member) {
-    member.role = newRole
+    member.role = newRole;
     // Save to backend
-    console.log('Updated member role:', { memberId, newRole })
+    console.log('Updated member role:', { memberId, newRole });
   }
-}
+};
 
 const openPermissionsModal = (member: ProjectMember) => {
-  selectedMember.value = member
+  selectedMember.value = member;
   
   // Initialize permissions object
   permissionResources.forEach(resource => {
-    memberPermissions[resource.id] = {}
+    memberPermissions[resource.id] = {};
     resource.actions.forEach(action => {
       memberPermissions[resource.id][action] = 
-        member.specialPermissions[resource.id]?.includes(action) || false
-    })
-  })
+        member.specialPermissions[resource.id]?.includes(action) || false;
+    });
+  });
   
-  showPermissionsModal.value = true
-}
+  showPermissionsModal.value = true;
+};
 
 const savePermissions = async () => {
-  if (!selectedMember.value) return
+  if (!selectedMember.value) return;
   
-  const newPermissions: Record<string, string[]> = {}
+  const newPermissions: Record<string, string[]> = {};
   
   Object.entries(memberPermissions).forEach(([resourceId, actions]) => {
     const allowedActions = Object.entries(actions)
       .filter(([_, allowed]) => allowed)
-      .map(([action, _]) => action)
+      .map(([action, _]) => action);
     
     if (allowedActions.length > 0) {
-      newPermissions[resourceId] = allowedActions
+      newPermissions[resourceId] = allowedActions;
     }
-  })
+  });
   
-  selectedMember.value.specialPermissions = newPermissions
+  selectedMember.value.specialPermissions = newPermissions;
   
   // Save to backend
-  console.log('Saved permissions:', { memberId: selectedMember.value.id, permissions: newPermissions })
+  console.log('Saved permissions:', { memberId: selectedMember.value.id, permissions: newPermissions });
   
-  showPermissionsModal.value = false
-}
+  showPermissionsModal.value = false;
+};
 
 const sendInvite = async () => {
-  sending.value = true
+  sending.value = true;
   
   try {
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     const newMember: ProjectMember = {
       id: `member_${Date.now()}`,
@@ -572,37 +572,37 @@ const sendInvite = async () => {
       role: inviteForm.role,
       instruments: [],
       status: 'pending',
-      specialPermissions: {}
-    }
+      specialPermissions: {},
+    };
     
-    projectMembers.value.push(newMember)
+    projectMembers.value.push(newMember);
     
     // Reset form
     Object.assign(inviteForm, {
       email: '',
       role: 'musician',
-      message: ''
-    })
+      message: '',
+    });
     
-    showInviteModal.value = false
-    alert('Invitación enviada exitosamente')
+    showInviteModal.value = false;
+    alert('Invitación enviada exitosamente');
   } catch (error) {
-    console.error('Error sending invite:', error)
-    alert('Error al enviar la invitación')
+    console.error('Error sending invite:', error);
+    alert('Error al enviar la invitación');
   } finally {
-    sending.value = false
+    sending.value = false;
   }
-}
+};
 
 const editMember = (member: ProjectMember) => {
-  console.log('Edit member:', member)
+  console.log('Edit member:', member);
   // Implement edit functionality
-}
+};
 
 const removeMember = async (memberId: string) => {
   if (confirm('¿Estás seguro de que quieres eliminar este miembro?')) {
-    projectMembers.value = projectMembers.value.filter(m => m.id !== memberId)
-    console.log('Removed member:', memberId)
+    projectMembers.value = projectMembers.value.filter(m => m.id !== memberId);
+    console.log('Removed member:', memberId);
   }
-}
+};
 </script>

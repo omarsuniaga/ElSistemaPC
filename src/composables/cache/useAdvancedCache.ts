@@ -3,8 +3,8 @@
  * Fase 2 - Iniciativa 3: Advanced Caching
  */
 
-import {ref, computed, watch} from "vue"
-import {defineStore} from "pinia"
+import { ref, computed, watch } from 'vue';
+import { defineStore } from 'pinia';
 
 // ==================== TIPOS ====================
 
@@ -24,16 +24,16 @@ interface CacheConfig {
   compression: {
     enabled: boolean
     threshold: number // bytes
-    algorithm: "gzip" | "deflate"
+    algorithm: 'gzip' | 'deflate'
   }
 }
 
 interface CacheStrategy {
   enabled: boolean
-  method: "memory" | "localStorage" | "indexedDB" | "serviceWorker"
+  method: 'memory' | 'localStorage' | 'indexedDB' | 'serviceWorker'
   ttl: number // time to live in milliseconds
   maxSize: number // max number of entries
-  priority: "low" | "normal" | "high"
+  priority: 'low' | 'normal' | 'high'
 }
 
 interface CacheEntry {
@@ -74,31 +74,31 @@ const DEFAULT_CACHE_CONFIG: CacheConfig = {
   strategies: {
     api: {
       enabled: true,
-      method: "indexedDB",
+      method: 'indexedDB',
       ttl: 5 * 60 * 1000, // 5 minutos
       maxSize: 1000,
-      priority: "high",
+      priority: 'high',
     },
     assets: {
       enabled: true,
-      method: "serviceWorker",
+      method: 'serviceWorker',
       ttl: 24 * 60 * 60 * 1000, // 24 horas
       maxSize: 500,
-      priority: "normal",
+      priority: 'normal',
     },
     pages: {
       enabled: true,
-      method: "memory",
+      method: 'memory',
       ttl: 10 * 60 * 1000, // 10 minutos
       maxSize: 50,
-      priority: "normal",
+      priority: 'normal',
     },
     data: {
       enabled: true,
-      method: "localStorage",
+      method: 'localStorage',
       ttl: 30 * 60 * 1000, // 30 minutos
       maxSize: 200,
-      priority: "high",
+      priority: 'high',
     },
   },
   storage: {
@@ -109,16 +109,16 @@ const DEFAULT_CACHE_CONFIG: CacheConfig = {
   compression: {
     enabled: true,
     threshold: 1024, // 1KB
-    algorithm: "gzip",
+    algorithm: 'gzip',
   },
-}
+};
 
 // ==================== STORE DE CACHÉ ====================
 
-export const useCacheStore = defineStore("cache", () => {
+export const useCacheStore = defineStore('cache', () => {
   // Estado
-  const config = ref<CacheConfig>(DEFAULT_CACHE_CONFIG)
-  const memoryCache = ref<Map<string, CacheEntry>>(new Map())
+  const config = ref<CacheConfig>(DEFAULT_CACHE_CONFIG);
+  const memoryCache = ref<Map<string, CacheEntry>>(new Map());
   const metrics = ref<CacheMetrics>({
     hits: 0,
     misses: 0,
@@ -127,24 +127,24 @@ export const useCacheStore = defineStore("cache", () => {
     evictions: 0,
     compressions: 0,
     decompressions: 0,
-  })
-  const isInitialized = ref(false)
-  const cleanupTimer = ref<number | null>(null)
+  });
+  const isInitialized = ref(false);
+  const cleanupTimer = ref<number | null>(null);
 
   // IndexedDB reference
-  let dbCache: IDBDatabase | null = null
+  let dbCache: IDBDatabase | null = null;
 
   // Computed
   const stats = computed<CacheStats>(() => {
-    const totalEntries = memoryCache.value.size
+    const totalEntries = memoryCache.value.size;
     const totalSize = Array.from(memoryCache.value.values()).reduce(
       (sum, entry) => sum + entry.size,
-      0
-    )
+      0,
+    );
 
-    const totalOperations = metrics.value.hits + metrics.value.misses
-    const hitRate = totalOperations > 0 ? (metrics.value.hits / totalOperations) * 100 : 0
-    const missRate = 100 - hitRate
+    const totalOperations = metrics.value.hits + metrics.value.misses;
+    const hitRate = totalOperations > 0 ? (metrics.value.hits / totalOperations) * 100 : 0;
+    const missRate = 100 - hitRate;
 
     return {
       totalEntries,
@@ -159,150 +159,150 @@ export const useCacheStore = defineStore("cache", () => {
               (metrics.value.compressions + metrics.value.decompressions)) *
             100
           : 0,
-    }
-  })
+    };
+  });
 
   const cacheHealth = computed(() => {
-    const health = stats.value
-    if (health.hitRate >= 80) return "excellent"
-    if (health.hitRate >= 60) return "good"
-    if (health.hitRate >= 40) return "needs-improvement"
-    return "poor"
-  })
+    const health = stats.value;
+    if (health.hitRate >= 80) return 'excellent';
+    if (health.hitRate >= 60) return 'good';
+    if (health.hitRate >= 40) return 'needs-improvement';
+    return 'poor';
+  });
 
   // ==================== INICIALIZACIÓN ====================
 
   async function initializeCache() {
-    if (isInitialized.value) return
+    if (isInitialized.value) return;
 
-    console.log("🚀 Inicializando sistema de caché avanzado...")
+    console.log('🚀 Inicializando sistema de caché avanzado...');
 
     try {
       // Inicializar IndexedDB
-      await initializeIndexedDB()
+      await initializeIndexedDB();
 
       // Configurar limpieza automática
-      setupAutomaticCleanup()
+      setupAutomaticCleanup();
 
       // Cargar caché existente
-      await loadExistingCache()
+      await loadExistingCache();
 
       // Configurar listeners
-      setupCacheListeners()
+      setupCacheListeners();
 
-      isInitialized.value = true
-      console.log("✅ Sistema de caché inicializado")
+      isInitialized.value = true;
+      console.log('✅ Sistema de caché inicializado');
     } catch (error) {
-      console.error("❌ Error inicializando caché:", error)
-      throw error
+      console.error('❌ Error inicializando caché:', error);
+      throw error;
     }
   }
 
   async function initializeIndexedDB() {
     return new Promise<void>((resolve, reject) => {
-      const request = indexedDB.open("MusicAcademyCache", 1)
+      const request = indexedDB.open('MusicAcademyCache', 1);
 
-      request.onerror = () => reject(request.error)
+      request.onerror = () => reject(request.error);
       request.onsuccess = () => {
-        dbCache = request.result
-        resolve()
-      }
+        dbCache = request.result;
+        resolve();
+      };
 
       request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result
+        const db = (event.target as IDBOpenDBRequest).result;
 
         // Crear object store para caché
-        if (!db.objectStoreNames.contains("cache")) {
-          const store = db.createObjectStore("cache", {keyPath: "key"})
-          store.createIndex("timestamp", "timestamp")
-          store.createIndex("strategy", "strategy")
+        if (!db.objectStoreNames.contains('cache')) {
+          const store = db.createObjectStore('cache', { keyPath: 'key' });
+          store.createIndex('timestamp', 'timestamp');
+          store.createIndex('strategy', 'strategy');
         }
-      }
-    })
+      };
+    });
   }
 
   function setupAutomaticCleanup() {
     if (cleanupTimer.value) {
-      clearInterval(cleanupTimer.value)
+      clearInterval(cleanupTimer.value);
     }
 
     cleanupTimer.value = window.setInterval(() => {
-      cleanupExpiredEntries()
-    }, config.value.storage.cleanupInterval)
+      cleanupExpiredEntries();
+    }, config.value.storage.cleanupInterval);
   }
 
   async function loadExistingCache() {
     // Cargar desde localStorage
-    loadFromLocalStorage()
+    loadFromLocalStorage();
 
     // Cargar desde IndexedDB
-    await loadFromIndexedDB()
+    await loadFromIndexedDB();
   }
 
   function setupCacheListeners() {
     // Listener para storage events
-    window.addEventListener("storage", handleStorageChange)
+    window.addEventListener('storage', handleStorageChange);
 
     // Listener para beforeunload
-    window.addEventListener("beforeunload", handleBeforeUnload)
+    window.addEventListener('beforeunload', handleBeforeUnload);
   }
 
   // ==================== OPERACIONES PRINCIPALES ====================
 
   async function get<T = any>(
     key: string,
-    strategy?: keyof typeof config.value.strategies
+    strategy?: keyof typeof config.value.strategies,
   ): Promise<T | null> {
     try {
-      const strategyConfig = strategy ? config.value.strategies[strategy] : detectStrategy(key)
-      if (!strategyConfig.enabled) return null
+      const strategyConfig = strategy ? config.value.strategies[strategy] : detectStrategy(key);
+      if (!strategyConfig.enabled) return null;
 
-      let entry: CacheEntry | null = null
+      let entry: CacheEntry | null = null;
 
       // Buscar en memoria primero
-      entry = memoryCache.value.get(key) || null
+      entry = memoryCache.value.get(key) || null;
 
       // Si no está en memoria, buscar en storage persistente
       if (!entry) {
-        if (strategyConfig.method === "localStorage") {
-          entry = getFromLocalStorage(key)
-        } else if (strategyConfig.method === "indexedDB") {
-          entry = await getFromIndexedDB(key)
+        if (strategyConfig.method === 'localStorage') {
+          entry = getFromLocalStorage(key);
+        } else if (strategyConfig.method === 'indexedDB') {
+          entry = await getFromIndexedDB(key);
         }
       }
 
       if (!entry) {
-        metrics.value.misses++
-        return null
+        metrics.value.misses++;
+        return null;
       }
 
       // Verificar TTL
       if (Date.now() - entry.timestamp > entry.ttl) {
-        await del(key)
-        metrics.value.misses++
-        return null
+        await del(key);
+        metrics.value.misses++;
+        return null;
       }
 
       // Actualizar hits y mover a memoria si no está
-      entry.hits++
-      metrics.value.hits++
+      entry.hits++;
+      metrics.value.hits++;
 
       if (!memoryCache.value.has(key)) {
-        memoryCache.value.set(key, entry)
+        memoryCache.value.set(key, entry);
       }
 
       // Descomprimir si es necesario
-      let data = entry.data
+      let data = entry.data;
       if (entry.compressed) {
-        data = await decompress(data)
-        metrics.value.decompressions++
+        data = await decompress(data);
+        metrics.value.decompressions++;
       }
 
-      return data
+      return data;
     } catch (error) {
-      console.error("Error obteniendo del caché:", error)
-      metrics.value.misses++
-      return null
+      console.error('Error obteniendo del caché:', error);
+      metrics.value.misses++;
+      return null;
     }
   }
 
@@ -312,27 +312,27 @@ export const useCacheStore = defineStore("cache", () => {
     options?: {
       strategy?: keyof typeof config.value.strategies
       ttl?: number
-      priority?: "low" | "normal" | "high"
-    }
+      priority?: 'low' | 'normal' | 'high'
+    },
   ): Promise<boolean> {
     try {
-      const strategy = options?.strategy || detectStrategyFromKey(key)
-      const strategyConfig = config.value.strategies[strategy]
+      const strategy = options?.strategy || detectStrategyFromKey(key);
+      const strategyConfig = config.value.strategies[strategy];
 
-      if (!strategyConfig.enabled) return false
+      if (!strategyConfig.enabled) return false;
 
       // Serializar datos
-      const serialized = JSON.stringify(data)
-      const size = new Blob([serialized]).size
+      const serialized = JSON.stringify(data);
+      const size = new Blob([serialized]).size;
 
       // Comprimir si es necesario
-      let finalData = serialized
-      let compressed = false
+      let finalData = serialized;
+      let compressed = false;
 
       if (config.value.compression.enabled && size > config.value.compression.threshold) {
-        finalData = await compress(serialized)
-        compressed = true
-        metrics.value.compressions++
+        finalData = await compress(serialized);
+        compressed = true;
+        metrics.value.compressions++;
       }
 
       const entry: CacheEntry = {
@@ -344,48 +344,48 @@ export const useCacheStore = defineStore("cache", () => {
         hits: 0,
         compressed,
         strategy,
-      }
+      };
 
       // Guardar en memoria
-      memoryCache.value.set(key, entry)
+      memoryCache.value.set(key, entry);
 
       // Guardar en storage persistente
-      if (strategyConfig.method === "localStorage") {
-        saveToLocalStorage(entry)
-      } else if (strategyConfig.method === "indexedDB") {
-        await saveToIndexedDB(entry)
+      if (strategyConfig.method === 'localStorage') {
+        saveToLocalStorage(entry);
+      } else if (strategyConfig.method === 'indexedDB') {
+        await saveToIndexedDB(entry);
       }
 
       // Verificar límites y hacer cleanup si es necesario
-      await enforceStorageLimits(strategy)
+      await enforceStorageLimits(strategy);
 
-      metrics.value.sets++
-      return true
+      metrics.value.sets++;
+      return true;
     } catch (error) {
-      console.error("Error guardando en caché:", error)
-      return false
+      console.error('Error guardando en caché:', error);
+      return false;
     }
   }
 
   async function del(key: string): Promise<boolean> {
     try {
       // Eliminar de memoria
-      const deleted = memoryCache.value.delete(key)
+      const deleted = memoryCache.value.delete(key);
 
       // Eliminar de localStorage
-      deleteFromLocalStorage(key)
+      deleteFromLocalStorage(key);
 
       // Eliminar de IndexedDB
-      await deleteFromIndexedDB(key)
+      await deleteFromIndexedDB(key);
 
       if (deleted) {
-        metrics.value.deletes++
+        metrics.value.deletes++;
       }
 
-      return deleted
+      return deleted;
     } catch (error) {
-      console.error("Error eliminando del caché:", error)
-      return false
+      console.error('Error eliminando del caché:', error);
+      return false;
     }
   }
 
@@ -395,19 +395,19 @@ export const useCacheStore = defineStore("cache", () => {
         // Limpiar estrategia específica
         const keysToDelete = Array.from(memoryCache.value.entries())
           .filter(([, entry]) => entry.strategy === strategy)
-          .map(([key]) => key)
+          .map(([key]) => key);
 
         for (const key of keysToDelete) {
-          await del(key)
+          await del(key);
         }
       } else {
         // Limpiar todo
-        memoryCache.value.clear()
-        clearLocalStorage()
-        await clearIndexedDB()
+        memoryCache.value.clear();
+        clearLocalStorage();
+        await clearIndexedDB();
       }
     } catch (error) {
-      console.error("Error limpiando caché:", error)
+      console.error('Error limpiando caché:', error);
     }
   }
 
@@ -415,286 +415,286 @@ export const useCacheStore = defineStore("cache", () => {
 
   function getFromLocalStorage(key: string): CacheEntry | null {
     try {
-      const item = localStorage.getItem(`cache_${key}`)
-      return item ? JSON.parse(item) : null
+      const item = localStorage.getItem(`cache_${key}`);
+      return item ? JSON.parse(item) : null;
     } catch {
-      return null
+      return null;
     }
   }
 
   function saveToLocalStorage(entry: CacheEntry): void {
     try {
-      localStorage.setItem(`cache_${entry.key}`, JSON.stringify(entry))
+      localStorage.setItem(`cache_${entry.key}`, JSON.stringify(entry));
     } catch (error) {
-      console.warn("Error guardando en localStorage:", error)
+      console.warn('Error guardando en localStorage:', error);
     }
   }
 
   function deleteFromLocalStorage(key: string): void {
     try {
-      localStorage.removeItem(`cache_${key}`)
+      localStorage.removeItem(`cache_${key}`);
     } catch (error) {
-      console.warn("Error eliminando de localStorage:", error)
+      console.warn('Error eliminando de localStorage:', error);
     }
   }
 
   function clearLocalStorage(): void {
     try {
-      const keys = Object.keys(localStorage).filter((key) => key.startsWith("cache_"))
-      keys.forEach((key) => localStorage.removeItem(key))
+      const keys = Object.keys(localStorage).filter((key) => key.startsWith('cache_'));
+      keys.forEach((key) => localStorage.removeItem(key));
     } catch (error) {
-      console.warn("Error limpiando localStorage:", error)
+      console.warn('Error limpiando localStorage:', error);
     }
   }
 
   function loadFromLocalStorage(): void {
     try {
-      const keys = Object.keys(localStorage).filter((key) => key.startsWith("cache_"))
+      const keys = Object.keys(localStorage).filter((key) => key.startsWith('cache_'));
 
       keys.forEach((key) => {
         try {
-          const entry: CacheEntry = JSON.parse(localStorage.getItem(key) || "")
+          const entry: CacheEntry = JSON.parse(localStorage.getItem(key) || '');
           if (Date.now() - entry.timestamp <= entry.ttl) {
-            memoryCache.value.set(entry.key, entry)
+            memoryCache.value.set(entry.key, entry);
           } else {
-            localStorage.removeItem(key)
+            localStorage.removeItem(key);
           }
         } catch {
-          localStorage.removeItem(key)
+          localStorage.removeItem(key);
         }
-      })
+      });
     } catch (error) {
-      console.warn("Error cargando localStorage:", error)
+      console.warn('Error cargando localStorage:', error);
     }
   }
 
   async function getFromIndexedDB(key: string): Promise<CacheEntry | null> {
-    if (!dbCache) return null
+    if (!dbCache) return null;
 
     return new Promise((resolve) => {
-      const transaction = dbCache!.transaction(["cache"], "readonly")
-      const store = transaction.objectStore("cache")
-      const request = store.get(key)
+      const transaction = dbCache!.transaction(['cache'], 'readonly');
+      const store = transaction.objectStore('cache');
+      const request = store.get(key);
 
-      request.onsuccess = () => resolve(request.result || null)
-      request.onerror = () => resolve(null)
-    })
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => resolve(null);
+    });
   }
 
   async function saveToIndexedDB(entry: CacheEntry): Promise<void> {
-    if (!dbCache) return
+    if (!dbCache) return;
 
     return new Promise((resolve, reject) => {
-      const transaction = dbCache!.transaction(["cache"], "readwrite")
-      const store = transaction.objectStore("cache")
-      const request = store.put(entry)
+      const transaction = dbCache!.transaction(['cache'], 'readwrite');
+      const store = transaction.objectStore('cache');
+      const request = store.put(entry);
 
-      request.onsuccess = () => resolve()
-      request.onerror = () => reject(request.error)
-    })
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
   }
 
   async function deleteFromIndexedDB(key: string): Promise<void> {
-    if (!dbCache) return
+    if (!dbCache) return;
 
     return new Promise((resolve, reject) => {
-      const transaction = dbCache!.transaction(["cache"], "readwrite")
-      const store = transaction.objectStore("cache")
-      const request = store.delete(key)
+      const transaction = dbCache!.transaction(['cache'], 'readwrite');
+      const store = transaction.objectStore('cache');
+      const request = store.delete(key);
 
-      request.onsuccess = () => resolve()
-      request.onerror = () => reject(request.error)
-    })
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
   }
 
   async function loadFromIndexedDB(): Promise<void> {
-    if (!dbCache) return
+    if (!dbCache) return;
 
     return new Promise((resolve) => {
-      const transaction = dbCache!.transaction(["cache"], "readonly")
-      const store = transaction.objectStore("cache")
-      const request = store.getAll()
+      const transaction = dbCache!.transaction(['cache'], 'readonly');
+      const store = transaction.objectStore('cache');
+      const request = store.getAll();
 
       request.onsuccess = () => {
-        const entries: CacheEntry[] = request.result || []
+        const entries: CacheEntry[] = request.result || [];
 
         entries.forEach((entry) => {
           if (Date.now() - entry.timestamp <= entry.ttl) {
-            memoryCache.value.set(entry.key, entry)
+            memoryCache.value.set(entry.key, entry);
           }
-        })
+        });
 
-        resolve()
-      }
+        resolve();
+      };
 
-      request.onerror = () => resolve()
-    })
+      request.onerror = () => resolve();
+    });
   }
 
   async function clearIndexedDB(): Promise<void> {
-    if (!dbCache) return
+    if (!dbCache) return;
 
     return new Promise((resolve, reject) => {
-      const transaction = dbCache!.transaction(["cache"], "readwrite")
-      const store = transaction.objectStore("cache")
-      const request = store.clear()
+      const transaction = dbCache!.transaction(['cache'], 'readwrite');
+      const store = transaction.objectStore('cache');
+      const request = store.clear();
 
-      request.onsuccess = () => resolve()
-      request.onerror = () => reject(request.error)
-    })
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
   }
 
   // ==================== COMPRESIÓN ====================
 
   async function compress(data: string): Promise<string> {
-    if (!config.value.compression.enabled) return data
+    if (!config.value.compression.enabled) return data;
 
     try {
-      const encoder = new TextEncoder()
-      const decoder = new TextDecoder()
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
 
-      const stream = new CompressionStream(config.value.compression.algorithm)
-      const writer = stream.writable.getWriter()
-      const reader = stream.readable.getReader()
+      const stream = new CompressionStream(config.value.compression.algorithm);
+      const writer = stream.writable.getWriter();
+      const reader = stream.readable.getReader();
 
-      writer.write(encoder.encode(data))
-      writer.close()
+      writer.write(encoder.encode(data));
+      writer.close();
 
-      const chunks: Uint8Array[] = []
-      let done = false
+      const chunks: Uint8Array[] = [];
+      let done = false;
 
       while (!done) {
-        const {value, done: readerDone} = await reader.read()
-        done = readerDone
-        if (value) chunks.push(value)
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) chunks.push(value);
       }
 
-      const compressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0))
-      let offset = 0
+      const compressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+      let offset = 0;
 
       chunks.forEach((chunk) => {
-        compressed.set(chunk, offset)
-        offset += chunk.length
-      })
+        compressed.set(chunk, offset);
+        offset += chunk.length;
+      });
 
-      return btoa(String.fromCharCode(...compressed))
+      return btoa(String.fromCharCode(...compressed));
     } catch (error) {
-      console.warn("Error comprimiendo datos:", error)
-      return data
+      console.warn('Error comprimiendo datos:', error);
+      return data;
     }
   }
 
   async function decompress(compressedData: string): Promise<string> {
-    if (!config.value.compression.enabled) return compressedData
+    if (!config.value.compression.enabled) return compressedData;
 
     try {
-      const decoder = new TextDecoder()
+      const decoder = new TextDecoder();
 
-      const compressed = Uint8Array.from(atob(compressedData), (c) => c.charCodeAt(0))
+      const compressed = Uint8Array.from(atob(compressedData), (c) => c.charCodeAt(0));
 
-      const stream = new DecompressionStream(config.value.compression.algorithm)
-      const writer = stream.writable.getWriter()
-      const reader = stream.readable.getReader()
+      const stream = new DecompressionStream(config.value.compression.algorithm);
+      const writer = stream.writable.getWriter();
+      const reader = stream.readable.getReader();
 
-      writer.write(compressed)
-      writer.close()
+      writer.write(compressed);
+      writer.close();
 
-      const chunks: Uint8Array[] = []
-      let done = false
+      const chunks: Uint8Array[] = [];
+      let done = false;
 
       while (!done) {
-        const {value, done: readerDone} = await reader.read()
-        done = readerDone
-        if (value) chunks.push(value)
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) chunks.push(value);
       }
 
-      const decompressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0))
-      let offset = 0
+      const decompressed = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+      let offset = 0;
 
       chunks.forEach((chunk) => {
-        decompressed.set(chunk, offset)
-        offset += chunk.length
-      })
+        decompressed.set(chunk, offset);
+        offset += chunk.length;
+      });
 
-      return decoder.decode(decompressed)
+      return decoder.decode(decompressed);
     } catch (error) {
-      console.warn("Error descomprimiendo datos:", error)
-      return compressedData
+      console.warn('Error descomprimiendo datos:', error);
+      return compressedData;
     }
   }
 
   // ==================== UTILIDADES ====================
 
   function detectStrategy(key: string): CacheStrategy {
-    if (key.startsWith("api_")) return config.value.strategies.api
-    if (key.startsWith("asset_")) return config.value.strategies.assets
-    if (key.startsWith("page_")) return config.value.strategies.pages
-    return config.value.strategies.data
+    if (key.startsWith('api_')) return config.value.strategies.api;
+    if (key.startsWith('asset_')) return config.value.strategies.assets;
+    if (key.startsWith('page_')) return config.value.strategies.pages;
+    return config.value.strategies.data;
   }
 
   function detectStrategyFromKey(key: string): keyof typeof config.value.strategies {
-    if (key.startsWith("api_")) return "api"
-    if (key.startsWith("asset_")) return "assets"
-    if (key.startsWith("page_")) return "pages"
-    return "data"
+    if (key.startsWith('api_')) return 'api';
+    if (key.startsWith('asset_')) return 'assets';
+    if (key.startsWith('page_')) return 'pages';
+    return 'data';
   }
 
   async function enforceStorageLimits(
-    strategy: keyof typeof config.value.strategies
+    strategy: keyof typeof config.value.strategies,
   ): Promise<void> {
-    const strategyConfig = config.value.strategies[strategy]
+    const strategyConfig = config.value.strategies[strategy];
     const entries = Array.from(memoryCache.value.entries()).filter(
-      ([, entry]) => entry.strategy === strategy
-    )
+      ([, entry]) => entry.strategy === strategy,
+    );
 
     if (entries.length > strategyConfig.maxSize) {
       // Ordenar por hits y timestamp (LRU)
       entries.sort(([, a], [, b]) => {
-        if (a.hits !== b.hits) return a.hits - b.hits
-        return a.timestamp - b.timestamp
-      })
+        if (a.hits !== b.hits) return a.hits - b.hits;
+        return a.timestamp - b.timestamp;
+      });
 
       // Eliminar entradas más antiguas
-      const toDelete = entries.slice(0, entries.length - strategyConfig.maxSize)
+      const toDelete = entries.slice(0, entries.length - strategyConfig.maxSize);
       for (const [key] of toDelete) {
-        await del(key)
-        metrics.value.evictions++
+        await del(key);
+        metrics.value.evictions++;
       }
     }
   }
 
   async function cleanupExpiredEntries(): Promise<void> {
-    const now = Date.now()
-    const expiredKeys: string[] = []
+    const now = Date.now();
+    const expiredKeys: string[] = [];
 
     for (const [key, entry] of memoryCache.value.entries()) {
       if (now - entry.timestamp > entry.ttl) {
-        expiredKeys.push(key)
+        expiredKeys.push(key);
       }
     }
 
     for (const key of expiredKeys) {
-      await del(key)
+      await del(key);
     }
 
     if (expiredKeys.length > 0) {
-      console.log(`🧹 Limpieza automática: ${expiredKeys.length} entradas expiradas eliminadas`)
+      console.log(`🧹 Limpieza automática: ${expiredKeys.length} entradas expiradas eliminadas`);
     }
   }
 
   function handleStorageChange(event: StorageEvent): void {
-    if (event.key?.startsWith("cache_")) {
-      const cacheKey = event.key.replace("cache_", "")
+    if (event.key?.startsWith('cache_')) {
+      const cacheKey = event.key.replace('cache_', '');
 
       if (event.newValue) {
         try {
-          const entry: CacheEntry = JSON.parse(event.newValue)
-          memoryCache.value.set(cacheKey, entry)
+          const entry: CacheEntry = JSON.parse(event.newValue);
+          memoryCache.value.set(cacheKey, entry);
         } catch (error) {
-          console.warn("Error sincronizando storage change:", error)
+          console.warn('Error sincronizando storage change:', error);
         }
       } else {
-        memoryCache.value.delete(cacheKey)
+        memoryCache.value.delete(cacheKey);
       }
     }
   }
@@ -702,27 +702,27 @@ export const useCacheStore = defineStore("cache", () => {
   function handleBeforeUnload(): void {
     // Guardar métricas importantes antes de cerrar
     try {
-      localStorage.setItem("cache_metrics", JSON.stringify(metrics.value))
+      localStorage.setItem('cache_metrics', JSON.stringify(metrics.value));
     } catch (error) {
-      console.warn("Error guardando métricas:", error)
+      console.warn('Error guardando métricas:', error);
     }
   }
 
   // ==================== FUNCIONES AVANZADAS ====================
 
   async function preload(keys: string[]): Promise<void> {
-    const promises = keys.map((key) => get(key))
-    await Promise.allSettled(promises)
+    const promises = keys.map((key) => get(key));
+    await Promise.allSettled(promises);
   }
 
   async function warmup(dataLoader: () => Promise<Record<string, any>>): Promise<void> {
     try {
-      const data = await dataLoader()
-      const promises = Object.entries(data).map(([key, value]) => set(key, value))
-      await Promise.allSettled(promises)
-      console.log(`🔥 Cache warmed up with ${Object.keys(data).length} entries`)
+      const data = await dataLoader();
+      const promises = Object.entries(data).map(([key, value]) => set(key, value));
+      await Promise.allSettled(promises);
+      console.log(`🔥 Cache warmed up with ${Object.keys(data).length} entries`);
     } catch (error) {
-      console.warn("Error warming up cache:", error)
+      console.warn('Error warming up cache:', error);
     }
   }
 
@@ -730,37 +730,37 @@ export const useCacheStore = defineStore("cache", () => {
     return {
       ...metrics.value,
       ...stats.value,
-    }
+    };
   }
 
   function exportCache(): Record<string, any> {
-    const exported: Record<string, any> = {}
+    const exported: Record<string, any> = {};
 
     for (const [key, entry] of memoryCache.value.entries()) {
       try {
         exported[key] = entry.compressed
           ? JSON.parse(entry.data) // Nota: en export no descomprimimos
-          : JSON.parse(entry.data)
+          : JSON.parse(entry.data);
       } catch (error) {
-        console.warn(`Error exportando entrada ${key}:`, error)
+        console.warn(`Error exportando entrada ${key}:`, error);
       }
     }
 
-    return exported
+    return exported;
   }
 
   async function importCache(data: Record<string, any>): Promise<void> {
-    const promises = Object.entries(data).map(([key, value]) => set(key, value))
-    await Promise.allSettled(promises)
-    console.log(`📥 Cache imported with ${Object.keys(data).length} entries`)
+    const promises = Object.entries(data).map(([key, value]) => set(key, value));
+    await Promise.allSettled(promises);
+    console.log(`📥 Cache imported with ${Object.keys(data).length} entries`);
   }
 
   function updateConfig(newConfig: Partial<CacheConfig>): void {
-    config.value = {...config.value, ...newConfig}
+    config.value = { ...config.value, ...newConfig };
 
     // Re-configurar cleanup si cambió el intervalo
     if (newConfig.storage?.cleanupInterval) {
-      setupAutomaticCleanup()
+      setupAutomaticCleanup();
     }
   }
 
@@ -768,20 +768,20 @@ export const useCacheStore = defineStore("cache", () => {
 
   function destroy(): void {
     if (cleanupTimer.value) {
-      clearInterval(cleanupTimer.value)
-      cleanupTimer.value = null
+      clearInterval(cleanupTimer.value);
+      cleanupTimer.value = null;
     }
 
-    window.removeEventListener("storage", handleStorageChange)
-    window.removeEventListener("beforeunload", handleBeforeUnload)
+    window.removeEventListener('storage', handleStorageChange);
+    window.removeEventListener('beforeunload', handleBeforeUnload);
 
     if (dbCache) {
-      dbCache.close()
-      dbCache = null
+      dbCache.close();
+      dbCache = null;
     }
 
-    memoryCache.value.clear()
-    isInitialized.value = false
+    memoryCache.value.clear();
+    isInitialized.value = false;
   }
 
   // ==================== RETURN ====================
@@ -814,29 +814,29 @@ export const useCacheStore = defineStore("cache", () => {
 
     // Cleanup
     destroy,
-  }
-})
+  };
+});
 
 // ==================== COMPOSABLE ====================
 
 export function useCache() {
-  const store = useCacheStore()
+  const store = useCacheStore();
 
   return {
     ...store,
 
     // Métodos de conveniencia
     cacheApi: <T>(key: string, data: T, ttl?: number) =>
-      store.set(`api_${key}`, data, {strategy: "api", ttl}),
+      store.set(`api_${key}`, data, { strategy: 'api', ttl }),
 
-    getApi: <T>(key: string) => store.get<T>(`api_${key}`, "api"),
+    getApi: <T>(key: string) => store.get<T>(`api_${key}`, 'api'),
 
-    cachePage: <T>(key: string, data: T) => store.set(`page_${key}`, data, {strategy: "pages"}),
+    cachePage: <T>(key: string, data: T) => store.set(`page_${key}`, data, { strategy: 'pages' }),
 
-    getPage: <T>(key: string) => store.get<T>(`page_${key}`, "pages"),
+    getPage: <T>(key: string) => store.get<T>(`page_${key}`, 'pages'),
 
-    cacheAsset: <T>(key: string, data: T) => store.set(`asset_${key}`, data, {strategy: "assets"}),
+    cacheAsset: <T>(key: string, data: T) => store.set(`asset_${key}`, data, { strategy: 'assets' }),
 
-    getAsset: <T>(key: string) => store.get<T>(`asset_${key}`, "assets"),
-  }
+    getAsset: <T>(key: string) => store.get<T>(`asset_${key}`, 'assets'),
+  };
 }

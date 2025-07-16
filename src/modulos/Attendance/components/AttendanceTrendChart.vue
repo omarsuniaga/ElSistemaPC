@@ -5,12 +5,12 @@
 </template>
 
 <script lang="ts">
-import {defineComponent, ref, onMounted, watch, PropType} from "vue"
-import Chart from "chart.js/auto"
-import {ChartData} from "../types/chartTypes"
+import { defineComponent, ref, onMounted, watch, PropType } from 'vue';
+import Chart from 'chart.js/auto';
+import { ChartData } from '../types/chartTypes';
 
 export default defineComponent({
-  name: "AttendanceTrendChart",
+  name: 'AttendanceTrendChart',
   props: {
     data: {
       type: Object as PropType<ChartData>,
@@ -18,20 +18,20 @@ export default defineComponent({
     },
   },
   setup(props) {
-    const chartCanvas = ref<HTMLCanvasElement | null>(null)
-    let chart: Chart | null = null
+    const chartCanvas = ref<HTMLCanvasElement | null>(null);
+    let chart: Chart | null = null;
 
     const createChart = () => {
-      if (!chartCanvas.value) return
+      if (!chartCanvas.value) return;
 
-      const ctx = chartCanvas.value.getContext("2d")
-      if (!ctx) return
+      const ctx = chartCanvas.value.getContext('2d');
+      if (!ctx) return;
 
       // Destroy existing chart if it exists
-      if (chart) chart.destroy()
+      if (chart) chart.destroy();
 
       chart = new Chart(ctx, {
-        type: "line",
+        type: 'line',
         data: props.data,
         options: {
           responsive: true,
@@ -42,23 +42,23 @@ export default defineComponent({
               max: 100,
               ticks: {
                 callback(value) {
-                  return value + "%" // Añadir el símbolo de porcentaje a las etiquetas del eje Y
+                  return value + '%'; // Añadir el símbolo de porcentaje a las etiquetas del eje Y
                 },
               },
             },
           },
           plugins: {
-            legend: {position: "top"}, // Posición de la leyenda en la parte superior
+            legend: { position: 'top' }, // Posición de la leyenda en la parte superior
             tooltip: {
               callbacks: {
                 label(context) {
-                  return `${context.dataset.label}: ${context.parsed.y}%`
+                  return `${context.dataset.label}: ${context.parsed.y}%`;
                 },
               },
             },
           },
           interaction: {
-            mode: "index",
+            mode: 'index',
             intersect: false,
           },
           elements: {
@@ -71,26 +71,26 @@ export default defineComponent({
             },
           },
         },
-      })
-    }
+      });
+    };
 
     onMounted(() => {
-      createChart()
-    })
+      createChart();
+    });
 
     watch(
       () => props.data,
       () => {
-        createChart()
+        createChart();
       },
-      {deep: true}
-    )
+      { deep: true },
+    );
 
     return {
       chartCanvas,
-    }
+    };
   },
-})
+});
 </script>
 
 <style scoped>

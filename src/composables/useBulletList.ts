@@ -13,36 +13,36 @@ export function useBulletList() {
    */ const handleBulletInsertion = (
     event: KeyboardEvent,
     text: string | unknown,
-    cursorPos: number
+    cursorPos: number,
   ) => {
     // Solo procesamos si se presiona Enter
-    if (event.key !== "Enter") {
-      return {shouldInsert: false}
+    if (event.key !== 'Enter') {
+      return { shouldInsert: false };
     }
 
     // Asegurar que text sea una cadena
-    const safeText = typeof text === "string" ? text : ""
-    const textBeforeCursor = safeText.substring(0, cursorPos)
+    const safeText = typeof text === 'string' ? text : '';
+    const textBeforeCursor = safeText.substring(0, cursorPos);
     // Verificar si el último carácter antes del cursor es un punto o dos puntos
-    if (textBeforeCursor.endsWith(".") || textBeforeCursor.endsWith(":")) {
+    if (textBeforeCursor.endsWith('.') || textBeforeCursor.endsWith(':')) {
       // Insertar una nueva línea con viñeta
-      const bullet = "\n• "
-      const newText = safeText.substring(0, cursorPos) + bullet + safeText.substring(cursorPos)
+      const bullet = '\n• ';
+      const newText = safeText.substring(0, cursorPos) + bullet + safeText.substring(cursorPos);
 
       // Calcular la nueva posición del cursor después de la viñeta
-      const newPos = cursorPos + bullet.length
+      const newPos = cursorPos + bullet.length;
 
       return {
         shouldInsert: true,
         text: newText,
         newCursorPos: newPos,
-      }
+      };
     }
 
-    return {shouldInsert: false}
-  }
+    return { shouldInsert: false };
+  };
 
   return {
     handleBulletInsertion,
-  }
+  };
 }

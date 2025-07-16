@@ -1,39 +1,3 @@
-<script setup lang="ts">
-import {ref, computed} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import {useTeachersStore} from "../store/teachers"
-
-const route = useRoute()
-const router = useRouter()
-const teachersStore = useTeachersStore()
-
-const teacherId = route.params.id as string
-const teacher = computed(() => teachersStore.teachers.find((t) => t.id === teacherId))
-
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-
-const handleConfirm = async () => {
-  if (!teacher.value) return
-
-  isLoading.value = true
-  error.value = null
-
-  try {
-    await teachersStore.deleteTeacher(teacherId)
-    router.push("/teachers")
-  } catch (err: any) {
-    error.value = err.message
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleCancel = () => {
-  router.push(`/teachers/${teacherId}`)
-}
-</script>
-
 <template>
   <div class="py-6">
     <div class="mb-6">
@@ -100,6 +64,42 @@ const handleCancel = () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useTeachersStore } from '../store/teachers';
+
+const route = useRoute();
+const router = useRouter();
+const teachersStore = useTeachersStore();
+
+const teacherId = route.params.id as string;
+const teacher = computed(() => teachersStore.teachers.find((t) => t.id === teacherId));
+
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+
+const handleConfirm = async () => {
+  if (!teacher.value) return;
+
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    await teachersStore.deleteTeacher(teacherId);
+    router.push('/teachers');
+  } catch (err: any) {
+    error.value = err.message;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const handleCancel = () => {
+  router.push(`/teachers/${teacherId}`);
+};
+</script>
 
 <style scoped>
 .btn {

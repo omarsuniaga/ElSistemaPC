@@ -1,73 +1,3 @@
-<script lang="ts">
-import {defineComponent} from "vue"
-import {useAlertsStore} from "../../../stores/alerts"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-
-export default defineComponent({
-  name: "AttendanceAlerts",
-
-  setup() {
-    const alertsStore = useAlertsStore()
-
-    return {
-      isLoading: alertsStore.isLoading,
-      error: alertsStore.error,
-      fetchAlerts: alertsStore.fetchAlerts,
-      fetchRules: alertsStore.fetchRules,
-      updateAlertStatus: alertsStore.updateAlertStatus,
-      getActiveAlerts: alertsStore.getActiveAlerts,
-      getHighPriorityAlerts: alertsStore.getHighPriorityAlerts,
-    }
-  },
-
-  async created() {
-    await this.fetchAlerts()
-    await this.fetchRules()
-  },
-
-  methods: {
-    getAlertTypeLabel(type: string): string {
-      const labels = {
-        ConsecutiveAbsences: "Ausencias Consecutivas",
-        LowAttendance: "Baja Asistencia",
-        LatePattern: "Patrón de Retrasos",
-      }
-      return labels[type as keyof typeof labels] || type
-    },
-
-    getAlertClass(priority: string): string {
-      const classes = {
-        High: "alert-danger",
-        Medium: "alert-warning",
-        Low: "alert-info",
-      }
-      return classes[priority as keyof typeof classes] || "alert-secondary"
-    },
-
-    formatDate(date: string): string {
-      return format(new Date(date), "PPP", {locale: es})
-    },
-
-    async dismissAlert(alertId: string) {
-      try {
-        await this.updateAlertStatus(alertId, "Dismissed")
-      } catch (error) {
-        console.error("Error al descartar la alerta:", error)
-      }
-    },
-
-    async markAsSent(alertId: string) {
-      try {
-        await this.updateAlertStatus(alertId, "Sent")
-      } catch (error) {
-        console.error("Error al marcar la alerta como enviada:", error)
-      }
-    },
-  },
-})
-</script>
-
 <template>
   <div class="attendance-alerts">
     <div v-if="isLoading" class="loading">Cargando alertas...</div>
@@ -145,6 +75,76 @@ export default defineComponent({
     </div>
   </div>
 </template>
+
+<script lang="ts">
+import { defineComponent } from 'vue';
+import { useAlertsStore } from '../../../stores/alerts';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+export default defineComponent({
+  name: 'AttendanceAlerts',
+
+  setup() {
+    const alertsStore = useAlertsStore();
+
+    return {
+      isLoading: alertsStore.isLoading,
+      error: alertsStore.error,
+      fetchAlerts: alertsStore.fetchAlerts,
+      fetchRules: alertsStore.fetchRules,
+      updateAlertStatus: alertsStore.updateAlertStatus,
+      getActiveAlerts: alertsStore.getActiveAlerts,
+      getHighPriorityAlerts: alertsStore.getHighPriorityAlerts,
+    };
+  },
+
+  async created() {
+    await this.fetchAlerts();
+    await this.fetchRules();
+  },
+
+  methods: {
+    getAlertTypeLabel(type: string): string {
+      const labels = {
+        ConsecutiveAbsences: 'Ausencias Consecutivas',
+        LowAttendance: 'Baja Asistencia',
+        LatePattern: 'Patrón de Retrasos',
+      };
+      return labels[type as keyof typeof labels] || type;
+    },
+
+    getAlertClass(priority: string): string {
+      const classes = {
+        High: 'alert-danger',
+        Medium: 'alert-warning',
+        Low: 'alert-info',
+      };
+      return classes[priority as keyof typeof classes] || 'alert-secondary';
+    },
+
+    formatDate(date: string): string {
+      return format(new Date(date), 'PPP', { locale: es });
+    },
+
+    async dismissAlert(alertId: string) {
+      try {
+        await this.updateAlertStatus(alertId, 'Dismissed');
+      } catch (error) {
+        console.error('Error al descartar la alerta:', error);
+      }
+    },
+
+    async markAsSent(alertId: string) {
+      try {
+        await this.updateAlertStatus(alertId, 'Sent');
+      } catch (error) {
+        console.error('Error al marcar la alerta como enviada:', error);
+      }
+    },
+  },
+});
+</script>
 
 <style scoped>
 .attendance-alerts {

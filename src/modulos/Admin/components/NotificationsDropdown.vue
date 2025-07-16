@@ -127,107 +127,107 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onBeforeUnmount} from "vue"
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 
 interface Notification {
   id: string
-  type: "info" | "warning" | "error" | "success"
+  type: 'info' | 'warning' | 'error' | 'success'
   title: string
   message: string
   timestamp: Date
   read: boolean
 }
 
-const isOpen = ref(false)
-const notifications = ref<Notification[]>([])
+const isOpen = ref(false);
+const notifications = ref<Notification[]>([]);
 
-const notificationCount = computed(() => notifications.value.filter((n) => !n.read).length)
+const notificationCount = computed(() => notifications.value.filter((n) => !n.read).length);
 
 const toggle = () => {
-  isOpen.value = !isOpen.value
-}
+  isOpen.value = !isOpen.value;
+};
 
 const getNotificationTypeClass = (type: string) => {
   const classes = {
-    info: "bg-blue-500",
-    warning: "bg-yellow-500",
-    error: "bg-red-500",
-    success: "bg-green-500",
-  }
-  return classes[type as keyof typeof classes] || "bg-gray-500"
-}
+    info: 'bg-blue-500',
+    warning: 'bg-yellow-500',
+    error: 'bg-red-500',
+    success: 'bg-green-500',
+  };
+  return classes[type as keyof typeof classes] || 'bg-gray-500';
+};
 
 const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
-}
+  return new Intl.DateTimeFormat('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+};
 
 const markAsRead = (id: string) => {
-  const notification = notifications.value.find((n) => n.id === id)
+  const notification = notifications.value.find((n) => n.id === id);
   if (notification) {
-    notification.read = true
+    notification.read = true;
   }
-}
+};
 
 const dismissNotification = (id: string) => {
-  const index = notifications.value.findIndex((n) => n.id === id)
+  const index = notifications.value.findIndex((n) => n.id === id);
   if (index > -1) {
-    notifications.value.splice(index, 1)
+    notifications.value.splice(index, 1);
   }
-}
+};
 
 const markAllAsRead = () => {
   notifications.value.forEach((notification) => {
-    notification.read = true
-  })
-}
+    notification.read = true;
+  });
+};
 
-const addNotification = (notification: Omit<Notification, "id" | "timestamp">) => {
+const addNotification = (notification: Omit<Notification, 'id' | 'timestamp'>) => {
   notifications.value.unshift({
     ...notification,
     id: Date.now().toString(),
     timestamp: new Date(),
-  })
-}
+  });
+};
 
 // Simular algunas notificaciones de ejemplo
 onMounted(() => {
   // Ejemplo de notificaciones del sistema
   addNotification({
-    type: "info",
-    title: "Sistema actualizado",
-    message: "El sistema se ha actualizado correctamente",
+    type: 'info',
+    title: 'Sistema actualizado',
+    message: 'El sistema se ha actualizado correctamente',
     read: false,
-  })
+  });
 
   addNotification({
-    type: "warning",
-    title: "Mantenimiento programado",
-    message: "Mantenimiento del servidor programado para mañana",
+    type: 'warning',
+    title: 'Mantenimiento programado',
+    message: 'Mantenimiento del servidor programado para mañana',
     read: false,
-  })
-})
+  });
+});
 
 // Cerrar dropdown al hacer clic fuera
 const handleClickOutside = (event: Event) => {
-  const target = event.target as Element
-  const dropdown = target.closest(".relative")
+  const target = event.target as Element;
+  const dropdown = target.closest('.relative');
   if (!dropdown) {
-    isOpen.value = false
+    isOpen.value = false;
   }
-}
+};
 
 onMounted(() => {
-  document.addEventListener("click", handleClickOutside)
-})
+  document.addEventListener('click', handleClickOutside);
+});
 
 onBeforeUnmount(() => {
-  document.removeEventListener("click", handleClickOutside)
-})
+  document.removeEventListener('click', handleClickOutside);
+});
 
 // Exponer métodos para uso externo
 defineExpose({
@@ -235,5 +235,5 @@ defineExpose({
   markAsRead,
   dismissNotification,
   markAllAsRead,
-})
+});
 </script>

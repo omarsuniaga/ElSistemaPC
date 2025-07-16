@@ -1,139 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import {useClassesStore} from "../../../../modulos/Classes/store/classes"
-import {useStudentsStore} from "../../../../modulos/Students/store/students"
-import {useAuthStore} from "../../../../stores/auth"
-import {
-  CalendarIcon,
-  ClockIcon,
-  UserGroupIcon,
-  MapPinIcon,
-  MusicalNoteIcon,
-  AcademicCapIcon,
-  ArrowLeftIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from "@heroicons/vue/24/outline"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
-
-// Stores
-const classesStore = useClassesStore()
-const studentsStore = useStudentsStore()
-const authStore = useAuthStore()
-const route = useRoute()
-const router = useRouter()
-
-// Estado
-const isLoading = ref(true)
-const error = ref(null)
-const expandedStudentId = ref(null)
-
-// Obtener el ID de la clase de los parámetros de la ruta
-const classId = computed(() => route.params.id as string)
-
-// Obtener los datos de la clase
-// Modificar el computed para forzar recarga
-const classData = computed(() => {
-  return classesStore.classes.find((c) => c.id === classId.value)
-})
-
-// Verificar si la clase pertenece al maestro actual
-const isTeacherClass = computed(() => {
-  if (!classData.value || !authStore.user) return false
-  return classData.value.teacherId === authStore.user.uid
-})
-
-// Obtener los estudiantes de la clase
-const classStudents = computed(() => {
-  if (!classData.value || !classData.value.studentIds) return []
-
-  return studentsStore.students
-    .filter((student) => classData.value.studentIds.includes(student.id))
-    .map((student) => ({
-      ...student,
-      instruments: student.instrumento || [],
-    }))
-})
-
-// Formatear los días de la semana
-const formatDayOfWeek = (day) => {
-  if (typeof day === "number") {
-    const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]
-    return days[day]
-  }
-  return day
-}
-
-// Calcular la duración de la clase en horas y minutos
-const calculateDuration = (startTime, endTime) => {
-  if (!startTime || !endTime) return "No disponible"
-
-  const [startHour, startMinute] = startTime.split(":").map(Number)
-  const [endHour, endMinute] = endTime.split(":").map(Number)
-
-  let hours = endHour - startHour
-  let minutes = endMinute - startMinute
-
-  if (minutes < 0) {
-    hours -= 1
-    minutes += 60
-  }
-
-  if (hours === 0) {
-    return `${minutes} minutos`
-  } else if (minutes === 0) {
-    return `${hours} ${hours === 1 ? "hora" : "horas"}`
-  } else {
-    return `${hours} ${hours === 1 ? "hora" : "horas"} y ${minutes} minutos`
-  }
-}
-
-// Alternar la expansión de un estudiante
-const toggleStudentExpand = (studentId) => {
-  if (expandedStudentId.value === studentId) {
-    expandedStudentId.value = null
-  } else {
-    expandedStudentId.value = studentId
-  }
-}
-
-// Volver a la página anterior
-const goBack = () => {
-  router.push("/teacher")
-}
-
-// Cargar datos necesarios
-onMounted(async () => {
-  isLoading.value = true
-  try {
-    // Cargar clases si no están cargadas
-    if (classesStore.classes.length === 0) {
-      await classesStore.fetchClasses()
-    }
-
-    // Cargar estudiantes si no están cargados
-    if (studentsStore.students.length === 0) {
-      await studentsStore.fetchStudents()
-    }
-
-    // Verificar si la clase existe y pertenece al maestro
-    if (!classData.value) {
-      error.value = "La clase no existe o no tienes acceso a ella"
-    } else if (!isTeacherClass.value) {
-      error.value = "No tienes permiso para ver esta clase"
-      router.push("/teacher")
-    }
-  } catch (err) {
-    console.error("Error al cargar datos:", err)
-    error.value = "Error al cargar los datos de la clase"
-  } finally {
-    isLoading.value = false
-  }
-})
-</script>
-
 <template>
   <div class="container mx-auto px-4 py-6">
     <!-- Botón de regreso -->
@@ -332,6 +196,142 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useClassesStore } from '../../../../modulos/Classes/store/classes';
+import { useStudentsStore } from '../../../../modulos/Students/store/students';
+import { useAuthStore } from '../../../../stores/auth';
+import {
+  CalendarIcon,
+  ClockIcon,
+  UserGroupIcon,
+  MapPinIcon,
+  MusicalNoteIcon,
+  AcademicCapIcon,
+  ArrowLeftIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from '@heroicons/vue/24/outline';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+// Stores
+const classesStore = useClassesStore();
+const studentsStore = useStudentsStore();
+const authStore = useAuthStore();
+const route = useRoute();
+const router = useRouter();
+
+// Estado
+const isLoading = ref(true);
+const error = ref(null);
+const expandedStudentId = ref(null);
+
+// Obtener el ID de la clase de los parámetros de la ruta
+const classId = computed(() => route.params.id as string);
+
+// Obtener los datos de la clase
+// Modificar el computed para forzar recarga
+const classData = computed(() => {
+  return classesStore.classes.find((c) => c.id === classId.value);
+});
+
+// Verificar si la clase pertenece al maestro actual
+const isTeacherClass = computed(() => {
+  if (!classData.value || !authStore.user) return false;
+  return classData.value.teacherId === authStore.user.uid;
+});
+
+// Obtener los estudiantes de la clase
+const classStudents = computed(() => {
+  if (!classData.value || !classData.value.studentIds) return [];
+
+  return studentsStore.students
+    .filter((student) => classData.value.studentIds.includes(student.id))
+    .map((student) => ({
+      ...student,
+      instruments: student.instrumento || [],
+    }));
+});
+
+// Formatear los días de la semana
+const formatDayOfWeek = (day) => {
+  if (typeof day === 'number') {
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    return days[day];
+  }
+  return day;
+};
+
+// Calcular la duración de la clase en horas y minutos
+const calculateDuration = (startTime, endTime) => {
+  if (!startTime || !endTime) return 'No disponible';
+
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
+
+  let hours = endHour - startHour;
+  let minutes = endMinute - startMinute;
+
+  if (minutes < 0) {
+    hours -= 1;
+    minutes += 60;
+  }
+
+  if (hours === 0) {
+    return `${minutes} minutos`;
+  } else if (minutes === 0) {
+    return `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+  } else {
+    return `${hours} ${hours === 1 ? 'hora' : 'horas'} y ${minutes} minutos`;
+  }
+};
+
+// Alternar la expansión de un estudiante
+const toggleStudentExpand = (studentId) => {
+  if (expandedStudentId.value === studentId) {
+    expandedStudentId.value = null;
+  } else {
+    expandedStudentId.value = studentId;
+  }
+};
+
+// Volver a la página anterior
+const goBack = () => {
+  router.push('/teacher');
+};
+
+// Cargar datos necesarios
+onMounted(async () => {
+  isLoading.value = true;
+  try {
+    // Cargar clases si no están cargadas
+    if (classesStore.classes.length === 0) {
+      await classesStore.fetchClasses();
+    }
+
+    // Cargar estudiantes si no están cargados
+    if (studentsStore.students.length === 0) {
+      await studentsStore.fetchStudents();
+    }
+
+    // Verificar si la clase existe y pertenece al maestro
+    if (!classData.value) {
+      error.value = 'La clase no existe o no tienes acceso a ella';
+    } else if (!isTeacherClass.value) {
+      error.value = 'No tienes permiso para ver esta clase';
+      router.push('/teacher');
+    }
+  } catch (err) {
+    console.error('Error al cargar datos:', err);
+    error.value = 'Error al cargar los datos de la clase';
+  } finally {
+    isLoading.value = false;
+  }
+});
+</script>
 
 <style scoped>
 /* Transiciones para los elementos expandibles */

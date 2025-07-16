@@ -292,10 +292,10 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useAdminStudentsStore} from "../store/adminStudents"
-import {AdvancedStudentsService, type ImportResult} from "../services/advancedStudents"
-import type {Student} from "../../Students/types/student"
+import { ref, computed, onMounted } from 'vue';
+import { useAdminStudentsStore } from '../store/adminStudents';
+import { AdvancedStudentsService, type ImportResult } from '../services/advancedStudents';
+import type { Student } from '../../Students/types/student';
 import {
   ArrowPathIcon,
   DocumentArrowUpIcon,
@@ -305,30 +305,30 @@ import {
   ExclamationTriangleIcon,
   PencilIcon,
   EyeIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Components
-import BulkEmailModal from "./modals/BulkEmailModal.vue"
-import BulkWhatsAppModal from "./modals/BulkWhatsAppModal.vue"
-import ImportResultModal from "./modals/ImportResultModal.vue"
+import BulkEmailModal from './modals/BulkEmailModal.vue';
+import BulkWhatsAppModal from './modals/BulkWhatsAppModal.vue';
+import ImportResultModal from './modals/ImportResultModal.vue';
 
 // Store
-const studentsStore = useAdminStudentsStore()
+const studentsStore = useAdminStudentsStore();
 
 // Service
-const advancedService = new AdvancedStudentsService()
+const advancedService = new AdvancedStudentsService();
 
 // Reactive data
-const isLoading = ref(false)
-const loadingMessage = ref("")
-const selectedStudents = ref<string[]>([])
-const currentPage = ref(1)
-const itemsPerPage = ref(10)
+const isLoading = ref(false);
+const loadingMessage = ref('');
+const selectedStudents = ref<string[]>([]);
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
 
 // Modal states
-const showBulkEmailModal = ref(false)
-const showBulkWhatsAppModal = ref(false)
-const showImportResultModal = ref(false)
+const showBulkEmailModal = ref(false);
+const showBulkWhatsAppModal = ref(false);
+const showImportResultModal = ref(false);
 
 // Import result
 const importResult = ref<ImportResult>({
@@ -337,201 +337,201 @@ const importResult = ref<ImportResult>({
   failed: 0,
   errors: [],
   duplicates: 0,
-})
+});
 
 // File input ref
-const fileInput = ref<HTMLInputElement>()
+const fileInput = ref<HTMLInputElement>();
 
 // Computed
-const filteredStudents = computed(() => studentsStore.students)
+const filteredStudents = computed(() => studentsStore.students);
 
 const paginatedStudents = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredStudents.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredStudents.value.slice(start, end);
+});
 
-const totalPages = computed(() => Math.ceil(filteredStudents.value.length / itemsPerPage.value))
+const totalPages = computed(() => Math.ceil(filteredStudents.value.length / itemsPerPage.value));
 
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
 
 const endIndex = computed(() =>
-  Math.min(startIndex.value + itemsPerPage.value, filteredStudents.value.length)
-)
+  Math.min(startIndex.value + itemsPerPage.value, filteredStudents.value.length),
+);
 
 const allStudentsSelected = computed(
   () =>
     selectedStudents.value.length === paginatedStudents.value.length &&
-    paginatedStudents.value.length > 0
-)
+    paginatedStudents.value.length > 0,
+);
 
 const selectedStudentsList = computed(() =>
-  studentsStore.students.filter((s) => selectedStudents.value.includes(s.id))
-)
+  studentsStore.students.filter((s) => selectedStudents.value.includes(s.id)),
+);
 
 // Methods
 const refreshData = async () => {
-  isLoading.value = true
-  loadingMessage.value = "Actualizando datos..."
+  isLoading.value = true;
+  loadingMessage.value = 'Actualizando datos...';
   try {
-    await studentsStore.fetchStudents()
+    await studentsStore.fetchStudents();
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const triggerFileInput = () => {
-  fileInput.value?.click()
-}
+  fileInput.value?.click();
+};
 
 const handleFileUpload = async (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
 
-  isLoading.value = true
-  loadingMessage.value = "Importando estudiantes..."
+  isLoading.value = true;
+  loadingMessage.value = 'Importando estudiantes...';
 
   try {
-    const result = await advancedService.importStudents(file)
-    importResult.value = result
-    showImportResultModal.value = true
+    const result = await advancedService.importStudents(file);
+    importResult.value = result;
+    showImportResultModal.value = true;
 
     if (result.success) {
-      await refreshData()
+      await refreshData();
     }
   } catch (error) {
-    console.error("Error importing students:", error)
+    console.error('Error importing students:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
     if (fileInput.value) {
-      fileInput.value.value = ""
+      fileInput.value.value = '';
     }
   }
-}
+};
 
 const toggleStudent = (studentId: string) => {
-  const index = selectedStudents.value.indexOf(studentId)
+  const index = selectedStudents.value.indexOf(studentId);
   if (index > -1) {
-    selectedStudents.value.splice(index, 1)
+    selectedStudents.value.splice(index, 1);
   } else {
-    selectedStudents.value.push(studentId)
+    selectedStudents.value.push(studentId);
   }
-}
+};
 
 const toggleAllStudents = () => {
   if (allStudentsSelected.value) {
-    selectedStudents.value = []
+    selectedStudents.value = [];
   } else {
-    selectedStudents.value = paginatedStudents.value.map((s) => s.id)
+    selectedStudents.value = paginatedStudents.value.map((s) => s.id);
   }
-}
+};
 
 const openBulkEmailModal = () => {
   if (selectedStudents.value.length === 0) {
-    alert("Selecciona al menos un estudiante")
-    return
+    alert('Selecciona al menos un estudiante');
+    return;
   }
-  showBulkEmailModal.value = true
-}
+  showBulkEmailModal.value = true;
+};
 
 const openBulkWhatsAppModal = () => {
   if (selectedStudents.value.length === 0) {
-    alert("Selecciona al menos un estudiante")
-    return
+    alert('Selecciona al menos un estudiante');
+    return;
   }
-  showBulkWhatsAppModal.value = true
-}
+  showBulkWhatsAppModal.value = true;
+};
 
 const handleBulkEmail = async (message: any) => {
-  isLoading.value = true
-  loadingMessage.value = "Enviando emails..."
+  isLoading.value = true;
+  loadingMessage.value = 'Enviando emails...';
 
   try {
-    await advancedService.sendBulkEmail(selectedStudents.value, message)
-    showBulkEmailModal.value = false
-    selectedStudents.value = []
+    await advancedService.sendBulkEmail(selectedStudents.value, message);
+    showBulkEmailModal.value = false;
+    selectedStudents.value = [];
   } catch (error) {
-    console.error("Error sending bulk email:", error)
+    console.error('Error sending bulk email:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const handleBulkWhatsApp = async (message: string) => {
-  isLoading.value = true
-  loadingMessage.value = "Enviando mensajes de WhatsApp..."
+  isLoading.value = true;
+  loadingMessage.value = 'Enviando mensajes de WhatsApp...';
 
   try {
-    await advancedService.sendBulkWhatsApp(selectedStudents.value, message)
-    showBulkWhatsAppModal.value = false
-    selectedStudents.value = []
+    await advancedService.sendBulkWhatsApp(selectedStudents.value, message);
+    showBulkWhatsAppModal.value = false;
+    selectedStudents.value = [];
   } catch (error) {
-    console.error("Error sending bulk WhatsApp:", error)
+    console.error('Error sending bulk WhatsApp:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const generateProgressReport = async () => {
-  isLoading.value = true
-  loadingMessage.value = "Generando reporte de progreso..."
+  isLoading.value = true;
+  loadingMessage.value = 'Generando reporte de progreso...';
 
   try {
-    const report = await advancedService.generateProgressReport(selectedStudents.value)
-    console.log("Progress report generated:", report)
+    const report = await advancedService.generateProgressReport(selectedStudents.value);
+    console.log('Progress report generated:', report);
     // TODO: Show report modal or download
   } catch (error) {
-    console.error("Error generating progress report:", error)
+    console.error('Error generating progress report:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const performDropoutAnalysis = async () => {
-  isLoading.value = true
-  loadingMessage.value = "Realizando análisis de deserción..."
+  isLoading.value = true;
+  loadingMessage.value = 'Realizando análisis de deserción...';
 
   try {
-    const analysis = await advancedService.performDropoutAnalysis()
-    console.log("Dropout analysis completed:", analysis)
+    const analysis = await advancedService.performDropoutAnalysis();
+    console.log('Dropout analysis completed:', analysis);
     // TODO: Show analysis modal
   } catch (error) {
-    console.error("Error performing dropout analysis:", error)
+    console.error('Error performing dropout analysis:', error);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
-}
+};
 
 const editStudent = (student: Student) => {
-  console.log("Edit student:", student)
+  console.log('Edit student:', student);
   // TODO: Open edit modal
-}
+};
 
 const viewStudentDetails = (student: Student) => {
-  console.log("View student details:", student)
+  console.log('View student details:', student);
   // TODO: Open details modal
-}
+};
 
 const formatDate = (date: Date | string) => {
-  if (!date) return "N/A"
-  return new Date(date).toLocaleDateString("es-ES")
-}
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleDateString('es-ES');
+};
 
 // Pagination
 const previousPage = () => {
   if (currentPage.value > 1) {
-    currentPage.value--
+    currentPage.value--;
   }
-}
+};
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
-    currentPage.value++
+    currentPage.value++;
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  await refreshData()
-})
+  await refreshData();
+});
 </script>

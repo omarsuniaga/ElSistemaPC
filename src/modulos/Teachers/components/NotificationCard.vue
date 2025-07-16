@@ -159,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 import {
   CheckIcon,
   XMarkIcon,
@@ -170,93 +170,93 @@ import {
   MegaphoneIcon,
   InformationCircleIcon,
   CogIcon,
-} from "@heroicons/vue/24/outline"
-import type {GeneralNotification} from "../services/generalNotifications"
+} from '@heroicons/vue/24/outline';
+import type { GeneralNotification } from '../services/generalNotifications';
 
 // Props
 interface Props {
   notification: GeneralNotification
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 defineEmits<{
-  "mark-as-read": [notificationId: string]
+  'mark-as-read': [notificationId: string]
   dismiss: [notificationId: string]
-  "assign-to-class": [notification: GeneralNotification]
-  "action-taken": [notificationId: string, actionDetails?: any]
-}>()
+  'assign-to-class': [notification: GeneralNotification]
+  'action-taken': [notificationId: string, actionDetails?: any]
+}>();
 
 // Computed
 const getNotificationIcon = () => {
   switch (props.notification.type) {
-    case "student-registration":
-      return UserPlusIcon
-    case "general-announcement":
-      return MegaphoneIcon
-    case "class-update":
-      return InformationCircleIcon
-    case "system-update":
-      return CogIcon
-    default:
-      return InformationCircleIcon
+  case 'student-registration':
+    return UserPlusIcon;
+  case 'general-announcement':
+    return MegaphoneIcon;
+  case 'class-update':
+    return InformationCircleIcon;
+  case 'system-update':
+    return CogIcon;
+  default:
+    return InformationCircleIcon;
   }
-}
+};
 
 const getNotificationStyles = () => {
   switch (props.notification.type) {
-    case "student-registration":
-      return {
-        background: "bg-green-100 dark:bg-green-900/30",
-        icon: "text-green-600 dark:text-green-400",
-      }
-    case "general-announcement":
-      return {
-        background: "bg-blue-100 dark:bg-blue-900/30",
-        icon: "text-blue-600 dark:text-blue-400",
-      }
-    case "class-update":
-      return {
-        background: "bg-yellow-100 dark:bg-yellow-900/30",
-        icon: "text-yellow-600 dark:text-yellow-400",
-      }
-    case "system-update":
-      return {
-        background: "bg-purple-100 dark:bg-purple-900/30",
-        icon: "text-purple-600 dark:text-purple-400",
-      }
-    default:
-      return {
-        background: "bg-gray-100 dark:bg-gray-700",
-        icon: "text-gray-600 dark:text-gray-400",
-      }
+  case 'student-registration':
+    return {
+      background: 'bg-green-100 dark:bg-green-900/30',
+      icon: 'text-green-600 dark:text-green-400',
+    };
+  case 'general-announcement':
+    return {
+      background: 'bg-blue-100 dark:bg-blue-900/30',
+      icon: 'text-blue-600 dark:text-blue-400',
+    };
+  case 'class-update':
+    return {
+      background: 'bg-yellow-100 dark:bg-yellow-900/30',
+      icon: 'text-yellow-600 dark:text-yellow-400',
+    };
+  case 'system-update':
+    return {
+      background: 'bg-purple-100 dark:bg-purple-900/30',
+      icon: 'text-purple-600 dark:text-purple-400',
+    };
+  default:
+    return {
+      background: 'bg-gray-100 dark:bg-gray-700',
+      icon: 'text-gray-600 dark:text-gray-400',
+    };
   }
-}
+};
 
 const formatDate = (date: Date | any) => {
-  if (!date) return ""
+  if (!date) return '';
 
-  const dateObj = date instanceof Date ? date : date.toDate ? date.toDate() : new Date(date)
-  const now = new Date()
-  const diffInHours = Math.abs(now.getTime() - dateObj.getTime()) / (1000 * 60 * 60)
+  const dateObj = date instanceof Date ? date : date.toDate ? date.toDate() : new Date(date);
+  const now = new Date();
+  const diffInHours = Math.abs(now.getTime() - dateObj.getTime()) / (1000 * 60 * 60);
 
   if (diffInHours < 1) {
-    const minutes = Math.floor(diffInHours * 60)
-    return `hace ${minutes} min`
+    const minutes = Math.floor(diffInHours * 60);
+    return `hace ${minutes} min`;
   } else if (diffInHours < 24) {
-    const hours = Math.floor(diffInHours)
-    return `hace ${hours}h`
+    const hours = Math.floor(diffInHours);
+    return `hace ${hours}h`;
   } else if (diffInHours < 48) {
-    return "ayer"
+    return 'ayer';
   } else {
-    return dateObj.toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "2-digit",
-    })
+    return dateObj.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+    });
   }
-}
+};
 </script>
 
 <style scoped>

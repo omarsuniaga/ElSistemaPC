@@ -47,10 +47,10 @@
 </template>
 
 <script lang="ts">
-import {defineComponent} from "vue"
+import { defineComponent } from 'vue';
 
 export default defineComponent({
-  name: "BaseCard",
-  emits: ["click", "edit", "delete"],
-})
+  name: 'BaseCard',
+  emits: ['click', 'edit', 'delete'],
+});
 </script>

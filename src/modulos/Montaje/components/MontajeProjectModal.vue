@@ -205,8 +205,8 @@
                 >
               </div>
               <button
-                @click="removeMember(index)"
                 class="text-red-500 hover:text-red-700 text-sm"
+                @click="removeMember(index)"
               >
                 🗑️
               </button>
@@ -214,8 +214,8 @@
           </div>
           
           <button
-            @click="addMember"
             class="mt-3 px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
+            @click="addMember"
           >
             ➕ Agregar Miembro
           </button>
@@ -224,16 +224,16 @@
       
       <div class="flex gap-3 mt-6">
         <button
-          @click="handleCreateProject"
           :disabled="!isFormValid || creating"
           class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          @click="handleCreateProject"
         >
           {{ creating ? 'Creando...' : 'Crear Proyecto' }}
         </button>
         <button
-          @click="$emit('close')"
           :disabled="creating"
           class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          @click="$emit('close')"
         >
           Cancelar
         </button>
@@ -243,16 +243,16 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
-import { useMontaje } from '../composables/useMontaje'
+import { reactive, ref, computed } from 'vue';
+import { useMontaje } from '../composables/useMontaje';
 
 const emit = defineEmits<{
   projectCreated: [project: any]
   close: []
-}>()
+}>();
 
-const { createProject } = useMontaje()
-const creating = ref(false)
+const { createProject } = useMontaje();
+const creating = ref(false);
 
 const seasons = [
   'Primavera 2024',
@@ -260,8 +260,8 @@ const seasons = [
   'Otoño 2024',
   'Invierno 2024',
   'Primavera 2025',
-  'Temporada 2024-2025'
-]
+  'Temporada 2024-2025',
+];
 
 const projectTypes = [
   { value: 'concert', label: 'Concierto' },
@@ -271,8 +271,8 @@ const projectTypes = [
   { value: 'educational', label: 'Educativo' },
   { value: 'recording', label: 'Grabación' },
   { value: 'competition', label: 'Competencia' },
-  { value: 'festival', label: 'Festival' }
-]
+  { value: 'festival', label: 'Festival' },
+];
 
 const projectForm = reactive({
   name: '',
@@ -289,36 +289,36 @@ const projectForm = reactive({
     calendar: true,
     email: true,
     metronome: false,
-    tuner: false
+    tuner: false,
   },
-  initialMembers: []
-})
+  initialMembers: [],
+});
 
 const isFormValid = computed(() => {
   return projectForm.name.trim() && 
          projectForm.director.trim() && 
          projectForm.organization.trim() &&
          projectForm.startDate &&
-         projectForm.endDate
-})
+         projectForm.endDate;
+});
 
 const addMember = () => {
   projectForm.initialMembers.push({
     name: '',
     email: '',
     role: 'musician',
-    instruments: ''
-  })
-}
+    instruments: '',
+  });
+};
 
 const removeMember = (index: number) => {
-  projectForm.initialMembers.splice(index, 1)
-}
+  projectForm.initialMembers.splice(index, 1);
+};
 
 const handleCreateProject = async () => {
-  if (!isFormValid.value) return
+  if (!isFormValid.value) return;
   
-  creating.value = true
+  creating.value = true;
   
   try {
     const projectId = await createProject(
@@ -328,8 +328,8 @@ const handleCreateProject = async () => {
       projectForm.organization,
       projectForm.season,
       projectForm.startDate,
-      projectForm.endDate
-    )
+      projectForm.endDate,
+    );
     
     // Create project object for emission
     const newProject = {
@@ -343,25 +343,25 @@ const handleCreateProject = async () => {
         userId: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         instruments: member.instruments.split(',').map(i => i.trim()).filter(Boolean),
         joinedAt: new Date().toISOString(),
-        permissions: []
+        permissions: [],
       })),
       settings: {
         evaluationFrequency: projectForm.evaluationFrequency,
         autoReminders: true,
         reportGeneration: projectForm.reportGeneration,
         exportFormats: ['pdf', 'excel'],
-        integrations: projectForm.integrations
+        integrations: projectForm.integrations,
       },
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
+      updatedAt: new Date().toISOString(),
+    };
     
-    emit('projectCreated', newProject)
+    emit('projectCreated', newProject);
   } catch (error) {
-    console.error('Error creating project:', error)
-    alert('Error al crear el proyecto. Por favor, intenta de nuevo.')
+    console.error('Error creating project:', error);
+    alert('Error al crear el proyecto. Por favor, intenta de nuevo.');
   } finally {
-    creating.value = false
+    creating.value = false;
   }
-}
+};
 </script>

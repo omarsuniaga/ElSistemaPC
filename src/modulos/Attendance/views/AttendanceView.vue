@@ -317,33 +317,33 @@
 </template>
 
 <script setup lang="ts">
-import "@vuepic/vue-datepicker/dist/main.css"
+import '@vuepic/vue-datepicker/dist/main.css';
 
 // Componentes
-import AttendanceList from "../components/AttendanceList.vue"
-import AttendanceReportModal from "../components/AttendanceReportModal.vue"
-import AttendanceObservation from "../components/AttendanceObservation.vue"
-import AttendanceAnalytics from "../components/AttendanceAnalytics.vue"
-import AttendanceTrends from "../components/AttendanceTrends.vue"
-import AttendanceExportModal from "../components/AttendanceExportModal.vue"
-import Calendar from "../../../components/Calendar.vue"
-import DateClassSelector from "../../Classes/components/DateClassSelector.vue"
-import JustifiedAbsenceModal from "../../../components/JustifiedAbsenceModal.vue"
-import EmergencyClassModal from "../components/EmergencyClassModal.vue"
-import ClassesModal from "../components/ClassesModal.vue"
+import AttendanceList from '../components/AttendanceList.vue';
+import AttendanceReportModal from '../components/AttendanceReportModal.vue';
+import AttendanceObservation from '../components/AttendanceObservation.vue';
+import AttendanceAnalytics from '../components/AttendanceAnalytics.vue';
+import AttendanceTrends from '../components/AttendanceTrends.vue';
+import AttendanceExportModal from '../components/AttendanceExportModal.vue';
+import Calendar from '../../../components/Calendar.vue';
+import DateClassSelector from '../../Classes/components/DateClassSelector.vue';
+import JustifiedAbsenceModal from '../../../components/JustifiedAbsenceModal.vue';
+import EmergencyClassModal from '../components/EmergencyClassModal.vue';
+import ClassesModal from '../components/ClassesModal.vue';
 
 // ✨ Composable principal que reemplaza toda la lógica anterior
-import {useAttendanceManager} from "../../../composables/attendance/useAttendanceManager"
-import {format, parseISO} from "date-fns"
+import { useAttendanceManager } from '../../../composables/attendance/useAttendanceManager';
+import { format, parseISO } from 'date-fns';
 
 // Props
 const props = defineProps<{
   date?: string
   classId?: string
-}>()
+}>();
 
 // ✨ UNA LÍNEA reemplaza 1,800+ líneas de lógica
-const attendance = useAttendanceManager(props)
+const attendance = useAttendanceManager(props);
 
 // Exponer todas las propiedades reactivas y métodos del composable
 const {
@@ -422,10 +422,10 @@ const {
   handleMonthChange,
   handleDateChange,
   handleSelectedDateUpdate,
-} = attendance
+} = attendance;
 
 // Re-exportar stores utilizados en el template
-const {attendanceStore, studentsStore, classesStore} = attendance
+const { attendanceStore, studentsStore, classesStore } = attendance;
 </script>
 
 <style scoped>

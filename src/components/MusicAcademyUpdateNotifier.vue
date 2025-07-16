@@ -89,266 +89,266 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted} from "vue"
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 // Estado reactivo
-const showUpdatePrompt = ref(false)
-const showFeatures = ref(false)
-const isUpdating = ref(false)
-const updateProgress = ref(0)
-const newVersion = ref("")
-const updateStatusText = ref("")
+const showUpdatePrompt = ref(false);
+const showFeatures = ref(false);
+const isUpdating = ref(false);
+const updateProgress = ref(0);
+const newVersion = ref('');
+const updateStatusText = ref('');
 
 // Detección de dispositivo
-const isIPad = ref(false)
+const isIPad = ref(false);
 
 // Referencias del Service Worker
-let swRegistration: ServiceWorkerRegistration | null = null
-let updateCheckInterval: ReturnType<typeof setInterval> | null = null
+let swRegistration: ServiceWorkerRegistration | null = null;
+let updateCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 // Computed properties
 const displayVersion = computed(() => {
-  return newVersion.value.split("-")[0] || "1.2.0"
-})
+  return newVersion.value.split('-')[0] || '1.2.0';
+});
 
 const updateButtonText = computed(() => {
-  if (isUpdating.value) return updateStatusText.value
-  return isIPad.value ? "Actualizar y Corregir" : "Actualizar Ahora"
-})
+  if (isUpdating.value) return updateStatusText.value;
+  return isIPad.value ? 'Actualizar y Corregir' : 'Actualizar Ahora';
+});
 
 onMounted(() => {
-  console.log("🎵 Music Academy Update Notifier inicializado")
-  detectDevice()
-  initializeUpdateSystem()
-})
+  console.log('🎵 Music Academy Update Notifier inicializado');
+  detectDevice();
+  initializeUpdateSystem();
+});
 
 onUnmounted(() => {
-  cleanup()
-})
+  cleanup();
+});
 
 // Inicialización
 const detectDevice = () => {
   // Detectar iPad
   isIPad.value =
     /iPad/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   if (isIPad.value) {
-    console.log("📱 iPad detectado - optimizaciones activadas")
+    console.log('📱 iPad detectado - optimizaciones activadas');
   }
-}
+};
 
 const initializeUpdateSystem = async () => {
-  if (!("serviceWorker" in navigator)) {
-    console.log("❌ Service Worker no soportado")
-    return
+  if (!('serviceWorker' in navigator)) {
+    console.log('❌ Service Worker no soportado');
+    return;
   }
 
   try {
     // Escuchar mensajes del SW
-    navigator.serviceWorker.addEventListener("message", handleSWMessage)
+    navigator.serviceWorker.addEventListener('message', handleSWMessage);
 
     // Verificación periódica más frecuente para iPad
-    const checkInterval = isIPad.value ? 15000 : 30000
-    updateCheckInterval = setInterval(checkForUpdates, checkInterval)
+    const checkInterval = isIPad.value ? 15000 : 30000;
+    updateCheckInterval = setInterval(checkForUpdates, checkInterval);
 
     // Verificación inicial
-    await checkForUpdates()
+    await checkForUpdates();
 
-    console.log("✅ Sistema de actualizaciones de Music Academy activo")
+    console.log('✅ Sistema de actualizaciones de Music Academy activo');
   } catch (error) {
-    console.error("❌ Error inicializando actualizaciones:", error)
+    console.error('❌ Error inicializando actualizaciones:', error);
   }
-}
+};
 
 const cleanup = () => {
   if (updateCheckInterval) {
-    clearInterval(updateCheckInterval)
+    clearInterval(updateCheckInterval);
   }
-  navigator.serviceWorker?.removeEventListener("message", handleSWMessage)
-}
+  navigator.serviceWorker?.removeEventListener('message', handleSWMessage);
+};
 
 // Manejo de mensajes del Service Worker
 const handleSWMessage = (event: MessageEvent) => {
-  const {type, version, action} = event.data
+  const { type, version, action } = event.data;
 
-  if (type === "MUSIC_ACADEMY_UPDATED" && action === "RELOAD_REQUIRED") {
-    console.log("🎵 Nueva versión de Music Academy detectada:", version)
+  if (type === 'MUSIC_ACADEMY_UPDATED' && action === 'RELOAD_REQUIRED') {
+    console.log('🎵 Nueva versión de Music Academy detectada:', version);
 
-    newVersion.value = version
-    showUpdatePrompt.value = true
+    newVersion.value = version;
+    showUpdatePrompt.value = true;
 
     // Mostrar características después de un momento
     setTimeout(() => {
-      showFeatures.value = true
-    }, 1500)
+      showFeatures.value = true;
+    }, 1500);
 
     // Log específico para iPad
     if (isIPad.value) {
-      console.log("📱 Actualización crítica para iPad disponible")
+      console.log('📱 Actualización crítica para iPad disponible');
     }
   }
 
-  if (type === "MUSIC_ACADEMY_SYNC_COMPLETE") {
-    console.log("✅ Sincronización completada:", event.data)
+  if (type === 'MUSIC_ACADEMY_SYNC_COMPLETE') {
+    console.log('✅ Sincronización completada:', event.data);
   }
-}
+};
 
 // Verificación de actualizaciones
 const checkForUpdates = async () => {
   try {
-    const registration = await navigator.serviceWorker.getRegistration()
+    const registration = await navigator.serviceWorker.getRegistration();
     if (registration) {
-      swRegistration = registration
+      swRegistration = registration;
 
       // Forzar verificación
-      await registration.update()
+      await registration.update();
 
       // Verificar si hay SW esperando
       if (registration.waiting && !showUpdatePrompt.value) {
-        console.log("⏳ Music Academy SW esperando activación")
-        showUpdatePrompt.value = true
+        console.log('⏳ Music Academy SW esperando activación');
+        showUpdatePrompt.value = true;
       }
     }
   } catch (error) {
-    console.error("❌ Error verificando actualizaciones de Music Academy:", error)
+    console.error('❌ Error verificando actualizaciones de Music Academy:', error);
   }
-}
+};
 
 // Aplicar actualización
 const applyUpdate = async () => {
-  isUpdating.value = true
-  updateProgress.value = 0
+  isUpdating.value = true;
+  updateProgress.value = 0;
 
   try {
-    console.log("🎵 Aplicando actualización de Music Academy...")
+    console.log('🎵 Aplicando actualización de Music Academy...');
 
     // Paso 1: Preparando
-    updateStatusText.value = "Preparando actualización..."
-    updateProgress.value = 20
-    await delay(500)
+    updateStatusText.value = 'Preparando actualización...';
+    updateProgress.value = 20;
+    await delay(500);
 
     // Paso 2: Limpiando caches
-    updateStatusText.value = "Limpiando versiones anteriores..."
-    updateProgress.value = 40
-    await clearMusicAcademyCaches()
+    updateStatusText.value = 'Limpiando versiones anteriores...';
+    updateProgress.value = 40;
+    await clearMusicAcademyCaches();
 
     // Paso 3: Activando nuevo SW
-    updateStatusText.value = "Activando nueva versión..."
-    updateProgress.value = 60
+    updateStatusText.value = 'Activando nueva versión...';
+    updateProgress.value = 60;
 
     if (swRegistration?.waiting) {
-      swRegistration.waiting.postMessage({type: "MUSIC_ACADEMY_SKIP_WAITING"})
+      swRegistration.waiting.postMessage({ type: 'MUSIC_ACADEMY_SKIP_WAITING' });
     }
 
-    await delay(800)
+    await delay(800);
 
     // Paso 4: Preparando recarga
-    updateStatusText.value = isIPad.value ? "Optimizando para iPad..." : "Finalizando..."
-    updateProgress.value = 80
-    await delay(600)
+    updateStatusText.value = isIPad.value ? 'Optimizando para iPad...' : 'Finalizando...';
+    updateProgress.value = 80;
+    await delay(600);
 
     // Paso 5: Recarga final
-    updateStatusText.value = "Recargando Music Academy..."
-    updateProgress.value = 100
-    await delay(400)
+    updateStatusText.value = 'Recargando Music Academy...';
+    updateProgress.value = 100;
+    await delay(400);
 
-    console.log("✅ Actualización aplicada, recargando Music Academy...")
+    console.log('✅ Actualización aplicada, recargando Music Academy...');
 
     // Recarga optimizada para iPad
-    const url = new URL(window.location.href)
-    url.searchParams.set("v", Date.now().toString())
-    url.searchParams.set("app", "music-academy")
+    const url = new URL(window.location.href);
+    url.searchParams.set('v', Date.now().toString());
+    url.searchParams.set('app', 'music-academy');
     if (isIPad.value) {
-      url.searchParams.set("ipad", "1")
+      url.searchParams.set('ipad', '1');
     }
 
-    window.location.href = url.toString()
+    window.location.href = url.toString();
   } catch (error) {
-    console.error("❌ Error aplicando actualización:", error)
-    updateStatusText.value = "Error - Reintentando..."
+    console.error('❌ Error aplicando actualización:', error);
+    updateStatusText.value = 'Error - Reintentando...';
 
     // Fallback: recarga simple
     setTimeout(() => {
-      window.location.reload()
-    }, 1000)
+      window.location.reload();
+    }, 1000);
   }
-}
+};
 
 // Posponer actualización
 const postponeUpdate = () => {
-  console.log("⏰ Actualización de Music Academy pospuesta")
-  showUpdatePrompt.value = false
-  showFeatures.value = false
+  console.log('⏰ Actualización de Music Academy pospuesta');
+  showUpdatePrompt.value = false;
+  showFeatures.value = false;
 
   // Recordatorio más frecuente en iPad
-  const reminderTime = isIPad.value ? 5 * 60 * 1000 : 10 * 60 * 1000
+  const reminderTime = isIPad.value ? 5 * 60 * 1000 : 10 * 60 * 1000;
 
   setTimeout(() => {
     if (!showUpdatePrompt.value) {
-      showUpdatePrompt.value = true
-      console.log("🔔 Recordatorio: Actualización de Music Academy pendiente")
+      showUpdatePrompt.value = true;
+      console.log('🔔 Recordatorio: Actualización de Music Academy pendiente');
     }
-  }, reminderTime)
-}
+  }, reminderTime);
+};
 
 // Cerrar sin actualizar
 const closeUpdate = () => {
-  showUpdatePrompt.value = false
-  showFeatures.value = false
+  showUpdatePrompt.value = false;
+  showFeatures.value = false;
 
   // Recordatorio en 30 minutos
   setTimeout(
     () => {
-      showUpdatePrompt.value = true
+      showUpdatePrompt.value = true;
     },
-    30 * 60 * 1000
-  )
-}
+    30 * 60 * 1000,
+  );
+};
 
 // Limpiar caches específicos de Music Academy
 const clearMusicAcademyCaches = async () => {
   try {
-    const cacheNames = await caches.keys()
+    const cacheNames = await caches.keys();
 
     // Filtrar caches de Music Academy
     const musicAcademyCaches = cacheNames.filter(
       (name) =>
-        name.includes("music-academy") ||
-        name.includes("attendance") ||
-        name.includes("students") ||
-        name.includes("auth")
-    )
+        name.includes('music-academy') ||
+        name.includes('attendance') ||
+        name.includes('students') ||
+        name.includes('auth'),
+    );
 
-    console.log("🧹 Limpiando caches de Music Academy:", musicAcademyCaches)
+    console.log('🧹 Limpiando caches de Music Academy:', musicAcademyCaches);
 
-    await Promise.all(musicAcademyCaches.map((name) => caches.delete(name)))
+    await Promise.all(musicAcademyCaches.map((name) => caches.delete(name)));
 
     // Limpiar localStorage específico
-    const storageKeys = Object.keys(localStorage)
+    const storageKeys = Object.keys(localStorage);
     storageKeys.forEach((key) => {
       if (
-        key.includes("music-academy") ||
-        key.includes("attendance") ||
-        key.includes("auth") ||
-        key.includes("punta-cana")
+        key.includes('music-academy') ||
+        key.includes('attendance') ||
+        key.includes('auth') ||
+        key.includes('punta-cana')
       ) {
-        localStorage.removeItem(key)
+        localStorage.removeItem(key);
       }
-    })
+    });
 
     // Limpiar sessionStorage
-    sessionStorage.clear()
+    sessionStorage.clear();
 
-    console.log("✅ Caches de Music Academy limpiados exitosamente")
+    console.log('✅ Caches de Music Academy limpiados exitosamente');
   } catch (error) {
-    console.error("❌ Error limpiando caches:", error)
-    throw error
+    console.error('❌ Error limpiando caches:', error);
+    throw error;
   }
-}
+};
 
 // Utility functions
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 </script>
 
 <style scoped>

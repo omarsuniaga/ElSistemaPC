@@ -26,17 +26,17 @@
 </template>
 
 <script setup lang="ts">
-import {useRouter} from "vue-router"
-import CreateClassModal from "../components/CreateClassModal.vue"
+import { useRouter } from 'vue-router';
+import CreateClassModal from '../components/CreateClassModal.vue';
 
-const router = useRouter()
+const router = useRouter();
 
 const handleCloseModal = () => {
-  router.push("/admin/classes") // Redirigir a la lista de clases al cerrar
-}
+  router.push('/admin/classes'); // Redirigir a la lista de clases al cerrar
+};
 
 const handleClassCreated = (classData: any) => {
-  console.log("Clase creada exitosamente:", classData)
-  router.push("/admin/classes") // Redirigir a la lista de clases después de crear
-}
+  console.log('Clase creada exitosamente:', classData);
+  router.push('/admin/classes'); // Redirigir a la lista de clases después de crear
+};
 </script>

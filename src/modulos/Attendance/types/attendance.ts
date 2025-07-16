@@ -1,5 +1,5 @@
 // Interfaces completas para el módulo de asistencia
-export type AttendanceStatus = "Presente" | "Ausente" | "Tardanza" | "Justificado"
+export type AttendanceStatus = 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado'
 
 export interface AttendanceRecord {
   id: string
@@ -20,7 +20,7 @@ export interface AttendanceRecord {
 }
 
 export interface StudentAttendanceStatus {
-  status: "Presente" | "Ausente" | "Tardanza" | "Justificado"
+  status: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado'
   justification?: string
   updatedAt?: Date
   updatedBy?: string
@@ -72,7 +72,7 @@ export interface ObservationRecord {
   id?: string
   classId: string
   date: string
-  type: "general" | "comportamiento" | "logro"
+  type: 'general' | 'comportamiento' | 'logro'
   content: string
   createdBy: string
   createdAt: Date
@@ -80,7 +80,7 @@ export interface ObservationRecord {
 }
 
 export interface AttendanceExportConfig {
-  format: "pdf" | "csv"
+  format: 'pdf' | 'csv'
   dateRange: {
     start: string
     end: string
@@ -94,13 +94,13 @@ export interface AttendanceFilters {
   endDate: string
   class?: string
   student?: string
-  status?: "Presente" | "Ausente" | "Tardanza" | "Justificado"
+  status?: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado'
   instrument?: string
   level?: string
   teacherId?: string
   studentId?: string
-  orderBy?: "Fecha" | "status"
-  order?: "asc" | "desc"
+  orderBy?: 'Fecha' | 'status'
+  order?: 'asc' | 'desc'
 }
 
 export interface AttendanceFiltersType {
@@ -109,7 +109,7 @@ export interface AttendanceFiltersType {
   teacherId?: string
   studentId?: string
   classId?: string
-  status?: "Presente" | "Ausente" | "Tardanza" | "Justificado"
+  status?: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado'
   startDate?: string
   endDate?: string
 }
@@ -123,7 +123,7 @@ export interface EmergencyClass {
   date: string
   createdAt: string
   reason?: string
-  status: "Pendiente" | "Aceptada" | "Rechazada" | "Ignorada"
+  status: 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Ignorada'
   responder?: {
     id: string
     name: string
@@ -147,7 +147,7 @@ export interface EmergencyClassStatus {
   date: string
   createdAt: string
   reason?: string
-  status: "Pendiente" | "Aceptada" | "Rechazada" | "Ignorada"
+  status: 'Pendiente' | 'Aceptada' | 'Rechazada' | 'Ignorada'
   responder?: {
     id: string
     name: string
@@ -168,7 +168,7 @@ export interface ClassObservation {
   classId: string
   date: string // Campo necesario para la colección OBSERVACIONES
   fecha?: string // Mantenemos para compatibilidad con código existente
-  type?: "general" | "comportamiento" | "logro" | "contenido" | "dinamica"
+  type?: 'general' | 'comportamiento' | 'logro' | 'contenido' | 'dinamica'
   content:
     | {
         text: string
@@ -182,7 +182,7 @@ export interface ClassObservation {
         classDynamics?: Array<{
           type: string
           description: string
-          effectiveness?: "alta" | "media" | "baja"
+          effectiveness?: 'alta' | 'media' | 'baja'
         }>
       }
     | any // Permitimos contenido flexible para migración
@@ -194,7 +194,7 @@ export interface ClassObservation {
   lastModified?: Date // Fecha de última modificación
   modifiedBy?: string // ID del usuario que hizo la última modificación
   modifiedByName?: string // Nombre del usuario que hizo la última modificación
-  priority?: "alta" | "media" | "baja"
+  priority?: 'alta' | 'media' | 'baja'
   requiresFollowUp?: boolean
   bulletPoints?: string[] // Para compatibilidad con componentes
   studentId?: string // Para observaciones específicas de estudiantes
@@ -214,7 +214,7 @@ export interface JustificationData {
   fecha: string
   reason: string
   documentUrl?: string
-  approvalStatus: "pending" | "approved" | "rejected"
+  approvalStatus: 'pending' | 'approved' | 'rejected'
   approvedBy?: string
   approvedAt?: Date
   createdAt: Date
@@ -226,8 +226,8 @@ export interface StatusChange {
   studentId: number
   date: string
   clase: string
-  oldStatus: "Presente" | "Ausente" | "Tardanza" | "Justificado" | null
-  newStatus: "Presente" | "Ausente" | "Tardanza" | "Justificado"
+  oldStatus: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado' | null
+  newStatus: 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado'
   timestamp: string
 }
 
@@ -251,7 +251,7 @@ export interface ClassObservationData {
   lastModified?: Date // Última modificación
   modifiedBy?: string // ID de quien modificó últimamente
   modifiedByName?: string // Nombre de quien modificó
-  type?: "contenido" | "comportamiento" | "logro" | "general"
+  type?: 'contenido' | 'comportamiento' | 'logro' | 'general'
   category?: string // Categoría de la observación
   categoryId?: string // ID de la categoría/clase
   status?: string // Estado de la observación
@@ -260,7 +260,7 @@ export interface ClassObservationData {
   formattedText?: string // Texto con formato especial
   isEdited?: boolean
   editedAt?: Date
-  priority?: "alta" | "media" | "baja"
+  priority?: 'alta' | 'media' | 'baja'
   requiresFollowUp?: boolean
   bulletPoints?: string[]
   classId?: string // ID de la clase

@@ -39,8 +39,8 @@
 </template>
 
 <script setup lang="ts">
-import {ClockIcon} from "@heroicons/vue/24/outline"
-import * as HeroIcons from "@heroicons/vue/24/outline"
+import { ClockIcon } from '@heroicons/vue/24/outline';
+import * as HeroIcons from '@heroicons/vue/24/outline';
 
 interface Activity {
   id: number
@@ -56,9 +56,9 @@ interface Props {
   activities: Activity[]
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 const getIcon = (iconName: string) => {
-  return (HeroIcons as any)[iconName] || HeroIcons.InformationCircleIcon
-}
+  return (HeroIcons as any)[iconName] || HeroIcons.InformationCircleIcon;
+};
 </script>

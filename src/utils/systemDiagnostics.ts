@@ -4,7 +4,7 @@
  * de todos los componentes del sistema de gestión académica.
  */
 
-import {ref, computed} from "vue"
+import { ref, computed } from 'vue';
 
 /**
  * Interfaz para métricas de rendimiento
@@ -33,7 +33,7 @@ interface StoreStatus {
  */
 interface SystemDiagnostics {
   overall: {
-    status: "healthy" | "warning" | "critical"
+    status: 'healthy' | 'warning' | 'critical'
     uptime: number
     version: string
   }
@@ -53,19 +53,19 @@ interface SystemDiagnostics {
 }
 
 class SystemDiagnosticsManager {
-  private startTime = Date.now()
-  private metrics = ref<SystemDiagnostics | null>(null)
-  private updateInterval: NodeJS.Timeout | null = null
+  private startTime = Date.now();
+  private metrics = ref<SystemDiagnostics | null>(null);
+  private updateInterval: NodeJS.Timeout | null = null;
 
   /**
    * Inicia el monitoreo automático
    */
   startMonitoring(intervalMs = 30000) {
-    this.updateDiagnostics()
+    this.updateDiagnostics();
 
     this.updateInterval = setInterval(() => {
-      this.updateDiagnostics()
-    }, intervalMs)
+      this.updateDiagnostics();
+    }, intervalMs);
   }
 
   /**
@@ -73,8 +73,8 @@ class SystemDiagnosticsManager {
    */
   stopMonitoring() {
     if (this.updateInterval) {
-      clearInterval(this.updateInterval)
-      this.updateInterval = null
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
     }
   }
 
@@ -83,10 +83,10 @@ class SystemDiagnosticsManager {
    */
   async updateDiagnostics() {
     try {
-      const diagnostics = await this.collectDiagnostics()
-      this.metrics.value = diagnostics
+      const diagnostics = await this.collectDiagnostics();
+      this.metrics.value = diagnostics;
     } catch (error) {
-      console.error("Error actualizando diagnósticos:", error)
+      console.error('Error actualizando diagnósticos:', error);
     }
   }
 
@@ -94,13 +94,13 @@ class SystemDiagnosticsManager {
    * Recopila todos los diagnósticos del sistema
    */
   private async collectDiagnostics(): Promise<SystemDiagnostics> {
-    const stores = await this.getStoresStatus()
-    const performance = await this.getPerformanceMetrics()
-    const cache = await this.getCacheMetrics()
-    const services = await this.getServicesStatus()
+    const stores = await this.getStoresStatus();
+    const performance = await this.getPerformanceMetrics();
+    const cache = await this.getCacheMetrics();
+    const services = await this.getServicesStatus();
 
-    const overall = this.calculateOverallStatus(stores, performance, services)
-    const recommendations = this.generateRecommendations(stores, performance, cache)
+    const overall = this.calculateOverallStatus(stores, performance, services);
+    const recommendations = this.generateRecommendations(stores, performance, cache);
 
     return {
       overall,
@@ -109,122 +109,122 @@ class SystemDiagnosticsManager {
       cache,
       services,
       recommendations,
-    }
+    };
   }
 
   /**
    * Obtiene el estado de todos los stores
    */
   private async getStoresStatus(): Promise<StoreStatus[]> {
-    const stores: StoreStatus[] = []
+    const stores: StoreStatus[] = [];
 
     try {
       // Store de Asistencia
-      const {useAttendanceStore} = await import("../modulos/Attendance/store/attendance")
-      const attendanceStore = useAttendanceStore()
+      const { useAttendanceStore } = await import('../modulos/Attendance/store/attendance');
+      const attendanceStore = useAttendanceStore();
       stores.push({
-        name: "Attendance",
+        name: 'Attendance',
         isLoaded: !!attendanceStore.attendanceDocuments,
         itemCount: attendanceStore.attendanceDocuments?.length || 0,
         loading: attendanceStore.loading,
         lastError: attendanceStore.error,
         lastSync: attendanceStore.lastSync,
-      })
+      });
     } catch (error) {
       stores.push({
-        name: "Attendance",
+        name: 'Attendance',
         isLoaded: false,
         itemCount: 0,
         loading: false,
-        lastError: "Error loading store",
+        lastError: 'Error loading store',
         lastSync: null,
-      })
+      });
     }
 
     try {
       // Store de Clases
-      const {useClassesStore} = await import("../modulos/Classes/store/classes")
-      const classesStore = useClassesStore()
+      const { useClassesStore } = await import('../modulos/Classes/store/classes');
+      const classesStore = useClassesStore();
       stores.push({
-        name: "Classes",
+        name: 'Classes',
         isLoaded: !!classesStore.classes,
         itemCount: classesStore.classes?.length || 0,
         loading: classesStore.loading,
         lastError: classesStore.error,
         lastSync: classesStore.lastSync,
-      })
+      });
     } catch (error) {
       stores.push({
-        name: "Classes",
+        name: 'Classes',
         isLoaded: false,
         itemCount: 0,
         loading: false,
-        lastError: "Error loading store",
+        lastError: 'Error loading store',
         lastSync: null,
-      })
+      });
     }
 
     try {
       // Store de Estudiantes
-      const {useStudentsStore} = await import("../modulos/Students/store/students")
-      const studentsStore = useStudentsStore()
+      const { useStudentsStore } = await import('../modulos/Students/store/students');
+      const studentsStore = useStudentsStore();
       stores.push({
-        name: "Students",
+        name: 'Students',
         isLoaded: !!studentsStore.students,
         itemCount: studentsStore.students?.length || 0,
         loading: studentsStore.loading,
         lastError: studentsStore.error,
         lastSync: studentsStore.lastSync,
-      })
+      });
     } catch (error) {
       stores.push({
-        name: "Students",
+        name: 'Students',
         isLoaded: false,
         itemCount: 0,
         loading: false,
-        lastError: "Error loading store",
+        lastError: 'Error loading store',
         lastSync: null,
-      })
+      });
     }
 
     try {
       // Store de Maestros (usando proxy si está disponible)
-      const {useTeachersStore} = await import("../stores/teachersProxy")
-      const teachersStore = useTeachersStore()
+      const { useTeachersStore } = await import('../stores/teachersProxy');
+      const teachersStore = useTeachersStore();
       stores.push({
-        name: "Teachers (Unified)",
+        name: 'Teachers (Unified)',
         isLoaded: !!teachersStore.teachers,
         itemCount: teachersStore.teachers?.value?.length || 0,
         loading: teachersStore.loading?.value || false,
         lastError: teachersStore.error?.value || null,
         lastSync: new Date(),
-      })
+      });
     } catch (error) {
       // Fallback al store original
       try {
-        const {useTeachersStore} = await import("../modulos/Teachers/store/teachers")
-        const teachersStore = useTeachersStore()
+        const { useTeachersStore } = await import('../modulos/Teachers/store/teachers');
+        const teachersStore = useTeachersStore();
         stores.push({
-          name: "Teachers (Original)",
+          name: 'Teachers (Original)',
           isLoaded: !!teachersStore.teachers,
           itemCount: teachersStore.teachers?.length || 0,
           loading: teachersStore.loading,
           lastError: teachersStore.error,
           lastSync: teachersStore.lastSync,
-        })
+        });
       } catch (fallbackError) {
         stores.push({
-          name: "Teachers",
+          name: 'Teachers',
           isLoaded: false,
           itemCount: 0,
           loading: false,
-          lastError: "Error loading teachers store",
+          lastError: 'Error loading teachers store',
           lastSync: null,
-        })
+        });
       }
     }
 
-    return stores
+    return stores;
   }
 
   /**
@@ -234,19 +234,19 @@ class SystemDiagnosticsManager {
     // Simular métricas de rendimiento básicas
     // En una implementación real, estas vendrían de un sistema de monitoreo
 
-    const startTime = performance.now()
+    const startTime = performance.now();
 
     // Simular operación para medir tiempo de respuesta
-    await new Promise((resolve) => setTimeout(resolve, 1))
+    await new Promise((resolve) => setTimeout(resolve, 1));
 
-    const responseTime = performance.now() - startTime
+    const responseTime = performance.now() - startTime;
 
     return {
       responseTime,
       cacheHitRatio: 0.85, // 85% hit ratio simulado
       errorRate: 0.02, // 2% error rate simulado
       lastUpdated: new Date(),
-    }
+    };
   }
 
   /**
@@ -257,24 +257,24 @@ class SystemDiagnosticsManager {
       totalSize: 0,
       hitRatio: 0,
       invalidations: 0,
-    }
+    };
 
     try {
       // Intentar obtener métricas del caché de maestros
-      const {useTeacherClassCache} = await import("../composables/useTeacherClassCache")
-      const cache = useTeacherClassCache()
-      const diagnostics = cache.getDiagnostics()
+      const { useTeacherClassCache } = await import('../composables/useTeacherClassCache');
+      const cache = useTeacherClassCache();
+      const diagnostics = cache.getDiagnostics();
 
       cacheInfo = {
         totalSize: diagnostics.cacheSize,
         hitRatio: diagnostics.hitRate,
         invalidations: diagnostics.invalidationCount,
-      }
+      };
     } catch (error) {
-      console.warn("No se pudieron obtener métricas de caché:", error)
+      console.warn('No se pudieron obtener métricas de caché:', error);
     }
 
-    return cacheInfo
+    return cacheInfo;
   }
 
   /**
@@ -285,35 +285,35 @@ class SystemDiagnosticsManager {
       attendanceService: false,
       teacherCache: false,
       globalState: false,
-    }
+    };
 
     // Verificar servicio unificado de asistencia
     try {
-      const {attendanceService} = await import("../modulos/Attendance/service/attendanceUnified")
-      services.attendanceService = !!attendanceService
+      const { attendanceService } = await import('../modulos/Attendance/service/attendanceUnified');
+      services.attendanceService = !!attendanceService;
     } catch (error) {
-      console.warn("Servicio de asistencia unificado no disponible")
+      console.warn('Servicio de asistencia unificado no disponible');
     }
 
     // Verificar caché de maestros
     try {
-      const {useTeacherClassCache} = await import("../composables/useTeacherClassCache")
-      const cache = useTeacherClassCache()
-      services.teacherCache = !!cache
+      const { useTeacherClassCache } = await import('../composables/useTeacherClassCache');
+      const cache = useTeacherClassCache();
+      services.teacherCache = !!cache;
     } catch (error) {
-      console.warn("Caché de maestros no disponible")
+      console.warn('Caché de maestros no disponible');
     }
 
     // Verificar estado global
     try {
-      const {useGlobalState} = await import("../composables/useGlobalState")
-      const globalState = useGlobalState()
-      services.globalState = !!globalState
+      const { useGlobalState } = await import('../composables/useGlobalState');
+      const globalState = useGlobalState();
+      services.globalState = !!globalState;
     } catch (error) {
-      console.warn("Estado global no disponible")
+      console.warn('Estado global no disponible');
     }
 
-    return services
+    return services;
   }
 
   /**
@@ -322,29 +322,29 @@ class SystemDiagnosticsManager {
   private calculateOverallStatus(
     stores: StoreStatus[],
     performance: PerformanceMetrics,
-    services: any
+    services: any,
   ) {
-    const storesLoaded = stores.filter((s) => s.isLoaded).length
-    const totalStores = stores.length
-    const loadRatio = storesLoaded / totalStores
+    const storesLoaded = stores.filter((s) => s.isLoaded).length;
+    const totalStores = stores.length;
+    const loadRatio = storesLoaded / totalStores;
 
-    const hasErrors = stores.some((s) => s.lastError)
-    const servicesAvailable = Object.values(services).filter(Boolean).length
-    const totalServices = Object.keys(services).length
+    const hasErrors = stores.some((s) => s.lastError);
+    const servicesAvailable = Object.values(services).filter(Boolean).length;
+    const totalServices = Object.keys(services).length;
 
-    let status: "healthy" | "warning" | "critical" = "healthy"
+    let status: 'healthy' | 'warning' | 'critical' = 'healthy';
 
     if (loadRatio < 0.5 || hasErrors || servicesAvailable < totalServices / 2) {
-      status = "critical"
+      status = 'critical';
     } else if (loadRatio < 0.8 || performance.errorRate > 0.05) {
-      status = "warning"
+      status = 'warning';
     }
 
     return {
       status,
       uptime: Date.now() - this.startTime,
-      version: "2.0.0-consolidated",
-    }
+      version: '2.0.0-consolidated',
+    };
   }
 
   /**
@@ -353,64 +353,64 @@ class SystemDiagnosticsManager {
   private generateRecommendations(
     stores: StoreStatus[],
     performance: PerformanceMetrics,
-    cache: any
+    cache: any,
   ): string[] {
-    const recommendations: string[] = []
+    const recommendations: string[] = [];
 
     // Verificar stores con errores
-    const storesWithErrors = stores.filter((s) => s.lastError)
+    const storesWithErrors = stores.filter((s) => s.lastError);
     if (storesWithErrors.length > 0) {
       recommendations.push(
-        `Resolver errores en stores: ${storesWithErrors.map((s) => s.name).join(", ")}`
-      )
+        `Resolver errores en stores: ${storesWithErrors.map((s) => s.name).join(', ')}`,
+      );
     }
 
     // Verificar rendimiento
     if (performance.responseTime > 100) {
-      recommendations.push("Optimizar tiempo de respuesta del sistema")
+      recommendations.push('Optimizar tiempo de respuesta del sistema');
     }
 
     if (performance.errorRate > 0.05) {
-      recommendations.push("Reducir tasa de errores del sistema")
+      recommendations.push('Reducir tasa de errores del sistema');
     }
 
     // Verificar caché
     if (cache.hitRatio < 0.8) {
-      recommendations.push("Mejorar estrategia de caché para mejor rendimiento")
+      recommendations.push('Mejorar estrategia de caché para mejor rendimiento');
     }
 
     // Verificar stores no cargados
-    const unloadedStores = stores.filter((s) => !s.isLoaded)
+    const unloadedStores = stores.filter((s) => !s.isLoaded);
     if (unloadedStores.length > 0) {
       recommendations.push(
-        `Cargar stores pendientes: ${unloadedStores.map((s) => s.name).join(", ")}`
-      )
+        `Cargar stores pendientes: ${unloadedStores.map((s) => s.name).join(', ')}`,
+      );
     }
 
     if (recommendations.length === 0) {
-      recommendations.push("Sistema funcionando correctamente")
+      recommendations.push('Sistema funcionando correctamente');
     }
 
-    return recommendations
+    return recommendations;
   }
 
   /**
    * Obtiene las métricas actuales
    */
   getMetrics() {
-    return this.metrics
+    return this.metrics;
   }
 
   /**
    * Fuerza una actualización inmediata
    */
   async refresh() {
-    await this.updateDiagnostics()
+    await this.updateDiagnostics();
   }
 }
 
 // Instancia singleton
-const systemDiagnostics = new SystemDiagnosticsManager()
+const systemDiagnostics = new SystemDiagnosticsManager();
 
 /**
  * Composable para diagnósticos del sistema
@@ -418,14 +418,14 @@ const systemDiagnostics = new SystemDiagnosticsManager()
 export function useSystemDiagnostics() {
   // Iniciar monitoreo automáticamente
   if (!systemDiagnostics.getMetrics().value) {
-    systemDiagnostics.startMonitoring()
+    systemDiagnostics.startMonitoring();
   }
 
-  const metrics = computed(() => systemDiagnostics.getMetrics().value)
+  const metrics = computed(() => systemDiagnostics.getMetrics().value);
 
-  const isHealthy = computed(() => metrics.value?.overall.status === "healthy")
-  const hasWarnings = computed(() => metrics.value?.overall.status === "warning")
-  const isCritical = computed(() => metrics.value?.overall.status === "critical")
+  const isHealthy = computed(() => metrics.value?.overall.status === 'healthy');
+  const hasWarnings = computed(() => metrics.value?.overall.status === 'warning');
+  const isCritical = computed(() => metrics.value?.overall.status === 'critical');
 
   return {
     // Estado
@@ -445,21 +445,21 @@ export function useSystemDiagnostics() {
     getRecommendations: () => metrics.value?.recommendations || [],
 
     exportDiagnostics: () => JSON.stringify(metrics.value, null, 2),
-  }
+  };
 }
 
 // Función de conveniencia para obtener estado rápido
 export async function getSystemHealthSummary() {
-  await systemDiagnostics.refresh()
-  const metrics = systemDiagnostics.getMetrics().value
+  await systemDiagnostics.refresh();
+  const metrics = systemDiagnostics.getMetrics().value;
 
   return {
-    status: metrics?.overall.status || "unknown",
+    status: metrics?.overall.status || 'unknown',
     storesLoaded: metrics?.stores.filter((s) => s.isLoaded).length || 0,
     totalStores: metrics?.stores.length || 0,
     servicesActive: metrics ? Object.values(metrics.services).filter(Boolean).length : 0,
     recommendations: metrics?.recommendations.length || 0,
-  }
+  };
 }
 
-export type {SystemDiagnostics, StoreStatus, PerformanceMetrics}
+export type { SystemDiagnostics, StoreStatus, PerformanceMetrics };

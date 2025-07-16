@@ -22,39 +22,39 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted} from "vue"
+import { ref, onMounted } from 'vue';
 
-const initStatus = ref("Inicializando...")
-const firebaseStatus = ref("")
+const initStatus = ref('Inicializando...');
+const firebaseStatus = ref('');
 
 onMounted(async () => {
   try {
-    console.log("🔍 [Test App] Iniciando prueba básica...")
+    console.log('🔍 [Test App] Iniciando prueba básica...');
 
     // Test basic initialization
-    initStatus.value = "Probando importaciones..."
+    initStatus.value = 'Probando importaciones...';
 
     // Test Firebase import
-    const firebaseModule = await import("./firebase/config")
-    console.log("✅ [Test App] Firebase importado:", firebaseModule)
+    const firebaseModule = await import('./firebase/config');
+    console.log('✅ [Test App] Firebase importado:', firebaseModule);
 
-    initStatus.value = "Firebase importado ✅"
+    initStatus.value = 'Firebase importado ✅';
 
     // Test stores
-    const {useAuthStore} = await import("./stores/auth")
-    const authStore = useAuthStore()
-    console.log("✅ [Test App] Auth store:", authStore)
+    const { useAuthStore } = await import('./stores/auth');
+    const authStore = useAuthStore();
+    console.log('✅ [Test App] Auth store:', authStore);
 
-    initStatus.value = "Stores funcionando ✅"
+    initStatus.value = 'Stores funcionando ✅';
   } catch (error: any) {
-    console.error("❌ [Test App] Error:", error)
-    initStatus.value = `Error: ${error.message}`
+    console.error('❌ [Test App] Error:', error);
+    initStatus.value = `Error: ${error.message}`;
   }
-})
+});
 
 const testFirebase = async () => {
   try {
-    const {db, auth} = await import("./firebase/config")
+    const { db, auth } = await import('./firebase/config');
     firebaseStatus.value = JSON.stringify(
       {
         hasDB: !!db,
@@ -63,10 +63,10 @@ const testFirebase = async () => {
         timestamp: new Date().toISOString(),
       },
       null,
-      2
-    )
+      2,
+    );
   } catch (error: any) {
-    firebaseStatus.value = `Error: ${error.message}`
+    firebaseStatus.value = `Error: ${error.message}`;
   }
-}
+};
 </script>

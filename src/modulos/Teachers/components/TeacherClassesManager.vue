@@ -1,201 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useClassesStore} from "../../../modulos/Classes/store/classes"
-import {useInstrumentsStore} from "@/stores/instruments"
-import {useToast} from "../../../components/ui/toast/use-toast"
-import {PlusIcon, PencilIcon, TrashIcon, UserGroupIcon, ClockIcon} from "@heroicons/vue/24/outline"
-import ConfirmModal from "../../../components/ConfirmModal.vue"
-
-const props = defineProps({
-  teacherId: {
-    type: String,
-    required: true,
-  },
-  teacherName: {
-    type: String,
-    default: "",
-  },
-})
-
-const emit = defineEmits(["close"])
-
-// Stores
-const classesStore = useClassesStore()
-const instrumentsStore = useInstrumentsStore()
-const {toast} = useToast()
-
-// Estado
-const isLoading = ref(true)
-const showDeleteConfirm = ref(false)
-const classToDelete = ref(null)
-const showClassForm = ref(false)
-const currentClass = ref(null)
-const searchQuery = ref("")
-const filterInstrument = ref("")
-
-// Cargar datos
-onMounted(async () => {
-  try {
-    if (classesStore.classes.length === 0) {
-      await classesStore.fetchClasses()
-    }
-  } catch (error) {
-    console.error("Error al cargar clases:", error)
-    toast({
-      title: "Error",
-      description: "No se pudieron cargar las clases. Por favor, intenta de nuevo.",
-      variant: "destructive",
-    })
-  } finally {
-    isLoading.value = false
-  }
-})
-
-// Computed properties
-const teacherClasses = computed(() => {
-  return classesStore.getClassesByTeacher(props.teacherId) || []
-})
-
-const filteredClasses = computed(() => {
-  let result = teacherClasses.value
-
-  // Filtrar por búsqueda
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(
-      (classItem) =>
-        classItem.name?.toLowerCase().includes(query) ||
-        classItem.instrument?.toLowerCase().includes(query) ||
-        classItem.level?.toLowerCase().includes(query)
-    )
-  }
-
-  // Filtrar por instrumento
-  if (filterInstrument.value) {
-    result = result.filter((classItem) => classItem.instrument === filterInstrument.value)
-  }
-
-  return result
-})
-
-const instruments = computed(() => {
-  // Obtener instrumentos únicos de las clases del maestro
-  const uniqueInstruments = new Set()
-  teacherClasses.value.forEach((classItem) => {
-    if (classItem.instrument) {
-      uniqueInstruments.add(classItem.instrument)
-    }
-  })
-  return Array.from(uniqueInstruments)
-})
-
-const availableClasses = computed(() => {
-  // Clases que no tienen maestro asignado
-  return classesStore.classes.filter(
-    (classItem) =>
-      !classItem.teacherId || classItem.teacherId === null || classItem.teacherId === undefined
-  )
-})
-
-// Métodos
-const getInstrumentName = (instrumentId) => {
-  const instrument = instrumentsStore.instruments.find((i) => i.id === instrumentId)
-  return instrument ? instrument.name : "No asignado"
-}
-
-const formatSchedule = (classItem) => {
-  if (!classItem.schedule || !classItem.schedule.slots || classItem.schedule.slots.length === 0) {
-    return "Sin horario"
-  }
-
-  const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
-
-  return classItem.schedule.slots
-    .map((slot) => {
-      let dayIndex = typeof slot.day === "number" ? slot.day : parseInt(slot.day)
-      if (isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) dayIndex = 0
-
-      return `${dayNames[dayIndex]} ${slot.startTime || "00:00"}-${slot.endTime || "00:00"}`
-    })
-    .join(", ")
-}
-
-const getStudentCount = (classItem) => {
-  return classItem.studentIds?.length || 0
-}
-
-const openClassForm = (classItem = null) => {
-  currentClass.value = classItem
-  showClassForm.value = true
-}
-
-const confirmDeleteClass = (classItem) => {
-  classToDelete.value = classItem
-  showDeleteConfirm.value = true
-}
-
-const deleteClass = async () => {
-  if (!classToDelete.value) return
-
-  try {
-    // Desasignar el maestro de la clase en lugar de eliminarla
-    await classesStore.updateClass({
-      id: classToDelete.value.id,
-      teacherId: null,
-    })
-
-    toast({
-      title: "Éxito",
-      description: "Clase desasignada correctamente",
-      variant: "default",
-    })
-  } catch (error) {
-    console.error("Error al desasignar clase:", error)
-    toast({
-      title: "Error",
-      description: "No se pudo desasignar la clase. Por favor, intenta de nuevo.",
-      variant: "destructive",
-    })
-  } finally {
-    showDeleteConfirm.value = false
-    classToDelete.value = null
-  }
-}
-
-const assignClassToTeacher = async (classId) => {
-  try {
-    // Obtener la clase antes de asignarla
-    const classData = classesStore.getClassById(classId)
-    if (!classData) {
-      throw new Error("Clase no encontrada")
-    }
-
-    // Asignar profesor a la clase
-    await classesStore.updateClass({
-      ...classData,
-      teacherId: props.teacherId,
-    })
-
-    toast({
-      title: "Éxito",
-      description: "Clase asignada correctamente",
-      variant: "default",
-    })
-  } catch (error) {
-    console.error("Error al asignar clase:", error)
-    toast({
-      title: "Error",
-      description: "No se pudo asignar la clase. Por favor, intenta de nuevo.",
-      variant: "destructive",
-    })
-  }
-}
-
-const handleClose = () => {
-  emit("close")
-}
-</script>
-
 <template>
   <div class="teacher-classes-manager">
     <div class="flex justify-between items-center mb-6">
@@ -457,3 +259,201 @@ const handleClose = () => {
     />
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { useClassesStore } from '../../../modulos/Classes/store/classes';
+import { useInstrumentsStore } from '@/stores/instruments';
+import { useToast } from '../../../components/ui/toast/use-toast';
+import { PlusIcon, PencilIcon, TrashIcon, UserGroupIcon, ClockIcon } from '@heroicons/vue/24/outline';
+import ConfirmModal from '../../../components/ConfirmModal.vue';
+
+const props = defineProps({
+  teacherId: {
+    type: String,
+    required: true,
+  },
+  teacherName: {
+    type: String,
+    default: '',
+  },
+});
+
+const emit = defineEmits(['close']);
+
+// Stores
+const classesStore = useClassesStore();
+const instrumentsStore = useInstrumentsStore();
+const { toast } = useToast();
+
+// Estado
+const isLoading = ref(true);
+const showDeleteConfirm = ref(false);
+const classToDelete = ref(null);
+const showClassForm = ref(false);
+const currentClass = ref(null);
+const searchQuery = ref('');
+const filterInstrument = ref('');
+
+// Cargar datos
+onMounted(async () => {
+  try {
+    if (classesStore.classes.length === 0) {
+      await classesStore.fetchClasses();
+    }
+  } catch (error) {
+    console.error('Error al cargar clases:', error);
+    toast({
+      title: 'Error',
+      description: 'No se pudieron cargar las clases. Por favor, intenta de nuevo.',
+      variant: 'destructive',
+    });
+  } finally {
+    isLoading.value = false;
+  }
+});
+
+// Computed properties
+const teacherClasses = computed(() => {
+  return classesStore.getClassesByTeacher(props.teacherId) || [];
+});
+
+const filteredClasses = computed(() => {
+  let result = teacherClasses.value;
+
+  // Filtrar por búsqueda
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(
+      (classItem) =>
+        classItem.name?.toLowerCase().includes(query) ||
+        classItem.instrument?.toLowerCase().includes(query) ||
+        classItem.level?.toLowerCase().includes(query),
+    );
+  }
+
+  // Filtrar por instrumento
+  if (filterInstrument.value) {
+    result = result.filter((classItem) => classItem.instrument === filterInstrument.value);
+  }
+
+  return result;
+});
+
+const instruments = computed(() => {
+  // Obtener instrumentos únicos de las clases del maestro
+  const uniqueInstruments = new Set();
+  teacherClasses.value.forEach((classItem) => {
+    if (classItem.instrument) {
+      uniqueInstruments.add(classItem.instrument);
+    }
+  });
+  return Array.from(uniqueInstruments);
+});
+
+const availableClasses = computed(() => {
+  // Clases que no tienen maestro asignado
+  return classesStore.classes.filter(
+    (classItem) =>
+      !classItem.teacherId || classItem.teacherId === null || classItem.teacherId === undefined,
+  );
+});
+
+// Métodos
+const getInstrumentName = (instrumentId) => {
+  const instrument = instrumentsStore.instruments.find((i) => i.id === instrumentId);
+  return instrument ? instrument.name : 'No asignado';
+};
+
+const formatSchedule = (classItem) => {
+  if (!classItem.schedule || !classItem.schedule.slots || classItem.schedule.slots.length === 0) {
+    return 'Sin horario';
+  }
+
+  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+  return classItem.schedule.slots
+    .map((slot) => {
+      let dayIndex = typeof slot.day === 'number' ? slot.day : parseInt(slot.day);
+      if (isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) dayIndex = 0;
+
+      return `${dayNames[dayIndex]} ${slot.startTime || '00:00'}-${slot.endTime || '00:00'}`;
+    })
+    .join(', ');
+};
+
+const getStudentCount = (classItem) => {
+  return classItem.studentIds?.length || 0;
+};
+
+const openClassForm = (classItem = null) => {
+  currentClass.value = classItem;
+  showClassForm.value = true;
+};
+
+const confirmDeleteClass = (classItem) => {
+  classToDelete.value = classItem;
+  showDeleteConfirm.value = true;
+};
+
+const deleteClass = async () => {
+  if (!classToDelete.value) return;
+
+  try {
+    // Desasignar el maestro de la clase en lugar de eliminarla
+    await classesStore.updateClass({
+      id: classToDelete.value.id,
+      teacherId: null,
+    });
+
+    toast({
+      title: 'Éxito',
+      description: 'Clase desasignada correctamente',
+      variant: 'default',
+    });
+  } catch (error) {
+    console.error('Error al desasignar clase:', error);
+    toast({
+      title: 'Error',
+      description: 'No se pudo desasignar la clase. Por favor, intenta de nuevo.',
+      variant: 'destructive',
+    });
+  } finally {
+    showDeleteConfirm.value = false;
+    classToDelete.value = null;
+  }
+};
+
+const assignClassToTeacher = async (classId) => {
+  try {
+    // Obtener la clase antes de asignarla
+    const classData = classesStore.getClassById(classId);
+    if (!classData) {
+      throw new Error('Clase no encontrada');
+    }
+
+    // Asignar profesor a la clase
+    await classesStore.updateClass({
+      ...classData,
+      teacherId: props.teacherId,
+    });
+
+    toast({
+      title: 'Éxito',
+      description: 'Clase asignada correctamente',
+      variant: 'default',
+    });
+  } catch (error) {
+    console.error('Error al asignar clase:', error);
+    toast({
+      title: 'Error',
+      description: 'No se pudo asignar la clase. Por favor, intenta de nuevo.',
+      variant: 'destructive',
+    });
+  }
+};
+
+const handleClose = () => {
+  emit('close');
+};
+</script>

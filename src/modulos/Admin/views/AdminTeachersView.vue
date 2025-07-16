@@ -487,10 +487,10 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useRouter} from "vue-router"
-import {useRBACStore} from "../../../stores/rbacStore"
-import {useTeachersStore} from "@/stores/teachersUnified"
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useRBACStore } from '../../../stores/rbacStore';
+import { useTeachersStore } from '@/stores/teachersUnified';
 import {
   HomeIcon,
   PlusIcon,
@@ -505,270 +505,270 @@ import {
   ListBulletIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 // Components
-import TeacherCard from "../../Classes/components/TeacherCard.vue"
-import TeachersTable from "../components/TeachersTable.vue"
+import TeacherCard from '../../Classes/components/TeacherCard.vue';
+import TeachersTable from '../components/TeachersTable.vue';
 // import TeacherCreateModal from '../components/TeacherCreateModal.vue'
 // import TeacherEditModal from '../components/TeacherEditModal.vue'
 // import ClassAssignmentModal from '../components/ClassAssignmentModal.vue'
-import ConfirmationModal from "@/components/ConfirmationModal.vue"
+import ConfirmationModal from '@/components/ConfirmationModal.vue';
 
 // Stores
-const router = useRouter()
-const rbacStore = useRBACStore()
-const teachersStore = useTeachersStore()
+const router = useRouter();
+const rbacStore = useRBACStore();
+const teachersStore = useTeachersStore();
 
 // State
-const searchQuery = ref("")
-const statusFilter = ref("")
-const specialtyFilter = ref("")
-const experienceFilter = ref("")
-const viewMode = ref<"grid" | "list">("grid")
-const sortField = ref("name")
-const sortOrder = ref<"asc" | "desc">("asc")
+const searchQuery = ref('');
+const statusFilter = ref('');
+const specialtyFilter = ref('');
+const experienceFilter = ref('');
+const viewMode = ref<'grid' | 'list'>('grid');
+const sortField = ref('name');
+const sortOrder = ref<'asc' | 'desc'>('asc');
 
 // Pagination
-const currentPage = ref(1)
-const itemsPerPage = ref(20)
+const currentPage = ref(1);
+const itemsPerPage = ref(20);
 
 // Modals
-const showCreateModal = ref(false)
-const showEditModal = ref(false)
-const showAssignModal = ref(false)
-const showDeleteModal = ref(false)
-const selectedTeacher = ref<any>(null)
+const showCreateModal = ref(false);
+const showEditModal = ref(false);
+const showAssignModal = ref(false);
+const showDeleteModal = ref(false);
+const selectedTeacher = ref<any>(null);
 
 // Computed
-const teachers = computed(() => teachersStore.teachers)
-const isLoading = computed(() => teachersStore.isLoading)
-const totalTeachers = computed(() => teachers.value.length)
-const activeTeachers = computed(() => teachers.value.filter((t) => t.status === "active").length)
+const teachers = computed(() => teachersStore.teachers);
+const isLoading = computed(() => teachersStore.isLoading);
+const totalTeachers = computed(() => teachers.value.length);
+const activeTeachers = computed(() => teachers.value.filter((t) => t.status === 'active').length);
 const totalAssignedClasses = computed(() =>
-  teachers.value.reduce((sum, t) => sum + (t.assignedClasses?.length || 0), 0)
-)
+  teachers.value.reduce((sum, t) => sum + (t.assignedClasses?.length || 0), 0),
+);
 const totalSpecialties = computed(() => {
-  const specialties = new Set<string>()
-  teachers.value.forEach((t) => t.specialty?.forEach((s: string) => specialties.add(s)))
-  return specialties.size
-})
+  const specialties = new Set<string>();
+  teachers.value.forEach((t) => t.specialty?.forEach((s: string) => specialties.add(s)));
+  return specialties.size;
+});
 
 const uniqueSpecialties = computed(() => {
-  const specialties = new Set<string>()
+  const specialties = new Set<string>();
   teachers.value.forEach((teacher) => {
-    teacher.specialty?.forEach((specialty: string) => specialties.add(specialty))
-  })
-  return Array.from(specialties)
-})
+    teacher.specialty?.forEach((specialty: string) => specialties.add(specialty));
+  });
+  return Array.from(specialties);
+});
 
 // Permissions
-const canCreateTeacher = computed(() => rbacStore.hasPermission("teachers_create"))
-const canViewTeacher = computed(() => rbacStore.hasPermission("teachers_view"))
-const canEditTeacher = computed(() => rbacStore.hasPermission("teachers_edit"))
-const canDeleteTeacher = computed(() => rbacStore.hasPermission("teachers_delete"))
+const canCreateTeacher = computed(() => rbacStore.hasPermission('teachers_create'));
+const canViewTeacher = computed(() => rbacStore.hasPermission('teachers_view'));
+const canEditTeacher = computed(() => rbacStore.hasPermission('teachers_edit'));
+const canDeleteTeacher = computed(() => rbacStore.hasPermission('teachers_delete'));
 
 // Filters
 const hasActiveFilters = computed(
-  () => searchQuery.value || statusFilter.value || specialtyFilter.value || experienceFilter.value
-)
+  () => searchQuery.value || statusFilter.value || specialtyFilter.value || experienceFilter.value,
+);
 
 const filteredTeachers = computed(() => {
-  let filtered = [...teachers.value]
+  let filtered = [...teachers.value];
 
   // Search filter
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(
       (teacher) =>
         teacher.name.toLowerCase().includes(query) ||
         teacher.email.toLowerCase().includes(query) ||
-        (teacher.phone && teacher.phone.toLowerCase().includes(query))
-    )
+        (teacher.phone && teacher.phone.toLowerCase().includes(query)),
+    );
   }
 
   // Status filter
   if (statusFilter.value) {
-    filtered = filtered.filter((teacher) => teacher.status === statusFilter.value)
+    filtered = filtered.filter((teacher) => teacher.status === statusFilter.value);
   }
 
   // Specialty filter
   if (specialtyFilter.value) {
-    filtered = filtered.filter((teacher) => teacher.specialty?.includes(specialtyFilter.value))
+    filtered = filtered.filter((teacher) => teacher.specialty?.includes(specialtyFilter.value));
   }
 
   // Experience filter
   if (experienceFilter.value) {
     filtered = filtered.filter((teacher) => {
-      const years = teacher.experience || 0
+      const years = teacher.experience || 0;
       switch (experienceFilter.value) {
-        case "junior":
-          return years < 2
-        case "mid":
-          return years >= 2 && years <= 5
-        case "senior":
-          return years > 5
-        default:
-          return true
+      case 'junior':
+        return years < 2;
+      case 'mid':
+        return years >= 2 && years <= 5;
+      case 'senior':
+        return years > 5;
+      default:
+        return true;
       }
-    })
+    });
   }
 
   // Sorting
   filtered.sort((a, b) => {
-    const aValue = (a as any)[sortField.value]
-    const bValue = (b as any)[sortField.value]
+    const aValue = (a as any)[sortField.value];
+    const bValue = (b as any)[sortField.value];
 
-    if (typeof aValue === "string" && typeof bValue === "string") {
-      return sortOrder.value === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue)
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return sortOrder.value === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
     }
 
-    return sortOrder.value === "asc" ? aValue - bValue : bValue - aValue
-  })
+    return sortOrder.value === 'asc' ? aValue - bValue : bValue - aValue;
+  });
 
-  return filtered
-})
+  return filtered;
+});
 
 // Pagination
-const totalPages = computed(() => Math.ceil(filteredTeachers.value.length / itemsPerPage.value))
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
-const endIndex = computed(() => startIndex.value + itemsPerPage.value)
+const totalPages = computed(() => Math.ceil(filteredTeachers.value.length / itemsPerPage.value));
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
+const endIndex = computed(() => startIndex.value + itemsPerPage.value);
 
 const paginatedTeachers = computed(() =>
-  filteredTeachers.value.slice(startIndex.value, endIndex.value)
-)
+  filteredTeachers.value.slice(startIndex.value, endIndex.value),
+);
 
 const visiblePages = computed(() => {
-  const pages = []
-  const maxVisible = 7
-  const half = Math.floor(maxVisible / 2)
+  const pages = [];
+  const maxVisible = 7;
+  const half = Math.floor(maxVisible / 2);
 
-  let start = Math.max(1, currentPage.value - half)
-  const end = Math.min(totalPages.value, start + maxVisible - 1)
+  let start = Math.max(1, currentPage.value - half);
+  const end = Math.min(totalPages.value, start + maxVisible - 1);
 
   if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1)
+    start = Math.max(1, end - maxVisible + 1);
   }
 
   for (let i = start; i <= end; i++) {
-    pages.push(i)
+    pages.push(i);
   }
 
-  return pages
-})
+  return pages;
+});
 
 // Methods
 const clearFilters = () => {
-  searchQuery.value = ""
-  statusFilter.value = ""
-  specialtyFilter.value = ""
-  experienceFilter.value = ""
-  currentPage.value = 1
-}
+  searchQuery.value = '';
+  statusFilter.value = '';
+  specialtyFilter.value = '';
+  experienceFilter.value = '';
+  currentPage.value = 1;
+};
 
 const handleSort = (field: string) => {
   if (sortField.value === field) {
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc"
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
   } else {
-    sortField.value = field
-    sortOrder.value = "asc"
+    sortField.value = field;
+    sortOrder.value = 'asc';
   }
-}
+};
 
 const previousPage = () => {
   if (currentPage.value > 1) {
-    currentPage.value--
+    currentPage.value--;
   }
-}
+};
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
-    currentPage.value++
+    currentPage.value++;
   }
-}
+};
 
 const goToPage = (page: number) => {
-  currentPage.value = page
-}
+  currentPage.value = page;
+};
 
 const viewTeacher = (teacher: any) => {
-  router.push(`/admin/teachers/${teacher.id}`)
-}
+  router.push(`/admin/teachers/${teacher.id}`);
+};
 
 const editTeacher = (teacher: any) => {
-  selectedTeacher.value = teacher
-  showEditModal.value = true
-}
+  selectedTeacher.value = teacher;
+  showEditModal.value = true;
+};
 
 const deleteTeacher = (teacher: any) => {
-  selectedTeacher.value = teacher
-  showDeleteModal.value = true
-}
+  selectedTeacher.value = teacher;
+  showDeleteModal.value = true;
+};
 
 const assignClasses = (teacher: any) => {
-  selectedTeacher.value = teacher
-  showAssignModal.value = true
-}
+  selectedTeacher.value = teacher;
+  showAssignModal.value = true;
+};
 
 const confirmDelete = async () => {
   if (selectedTeacher.value) {
-    await teachersStore.deleteTeacher(selectedTeacher.value.id)
-    showDeleteModal.value = false
-    selectedTeacher.value = null
+    await teachersStore.deleteTeacher(selectedTeacher.value.id);
+    showDeleteModal.value = false;
+    selectedTeacher.value = null;
   }
-}
+};
 
 const toggleTeacherStatus = async (teacher: any) => {
-  const newStatus = teacher.status === "active" ? "inactive" : "active"
-  await teachersStore.updateTeacherStatus(teacher.id, newStatus)
-}
+  const newStatus = teacher.status === 'active' ? 'inactive' : 'active';
+  await teachersStore.updateTeacherStatus(teacher.id, newStatus);
+};
 
 const handleTeacherCreated = (teacher: any) => {
-  showCreateModal.value = false
-  teachersStore.loadTeachers()
-}
+  showCreateModal.value = false;
+  teachersStore.loadTeachers();
+};
 
 const handleTeacherUpdated = (teacher: any) => {
-  showEditModal.value = false
-  selectedTeacher.value = null
-  teachersStore.loadTeachers()
-}
+  showEditModal.value = false;
+  selectedTeacher.value = null;
+  teachersStore.loadTeachers();
+};
 
 const handleClassesAssigned = (data: any) => {
-  showAssignModal.value = false
-  selectedTeacher.value = null
-  teachersStore.loadTeachers()
-}
+  showAssignModal.value = false;
+  selectedTeacher.value = null;
+  teachersStore.loadTeachers();
+};
 
 const exportTeachers = () => {
-  teachersStore.exportTeachers(filteredTeachers.value)
-}
+  teachersStore.exportTeachers(filteredTeachers.value);
+};
 
 const getSpecialtyName = (specialty: string): string => {
   const specialties: Record<string, string> = {
-    piano: "Piano",
-    guitar: "Guitarra",
-    violin: "Violín",
-    drums: "Batería",
-    voice: "Canto",
-    bass: "Bajo",
-    flute: "Flauta",
-    saxophone: "Saxofón",
-    trumpet: "Trompeta",
-    cello: "Violonchelo",
-  }
-  return specialties[specialty] || specialty
-}
+    piano: 'Piano',
+    guitar: 'Guitarra',
+    violin: 'Violín',
+    drums: 'Batería',
+    voice: 'Canto',
+    bass: 'Bajo',
+    flute: 'Flauta',
+    saxophone: 'Saxofón',
+    trumpet: 'Trompeta',
+    cello: 'Violonchelo',
+  };
+  return specialties[specialty] || specialty;
+};
 
 // Watch for filter changes to reset pagination
 watch([searchQuery, statusFilter, specialtyFilter, experienceFilter], () => {
-  currentPage.value = 1
-})
+  currentPage.value = 1;
+});
 
 // Lifecycle
 onMounted(() => {
-  teachersStore.loadTeachers()
-})
+  teachersStore.loadTeachers();
+});
 </script>
 
 <style scoped>

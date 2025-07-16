@@ -23,15 +23,15 @@
 const props = defineProps<{
   tabs: Tab[]
   activeTab: string
-}>()
+}>();
 
 const emit = defineEmits<{
-  (e: "select-tab", id: string): void
-}>()
+  (e: 'select-tab', id: string): void
+}>();
 
 const selectTab = (tabId: string) => {
-  emit("select-tab", tabId)
-}
+  emit('select-tab', tabId);
+};
 </script>
 
 <style scoped>

@@ -1,156 +1,3 @@
-<script setup lang="ts">
-import {ref, computed} from "vue"
-import {Dialog, DialogPanel, TransitionRoot, TransitionChild} from "@headlessui/vue"
-import {
-  PlusCircleIcon,
-  XCircleIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  XMarkIcon,
-  DocumentTextIcon,
-  AcademicCapIcon,
-  ClipboardDocumentListIcon,
-  BookOpenIcon,
-  ChartBarIcon,
-} from "@heroicons/vue/24/outline"
-import type {Content, ContentIndicator} from "../types"
-
-const props = defineProps<{
-  initialData?: Partial<Content>
-}>()
-
-const emit = defineEmits<{
-  (e: "submit", data: Partial<Content>): void
-  (e: "cancel"): void
-}>()
-
-const formData = ref({
-  title: "",
-  description: "",
-  level: "",
-  class: "",
-  objectives: [""],
-  prerequisites: [""],
-  duration: "",
-  indicators: [{id: 1, name: "", weight: 0, description: ""}] as ContentIndicator[],
-  materials: [{type: "document", url: "", title: "", description: ""}],
-  evaluationCriteria: [""],
-  ...props.initialData,
-})
-
-const currentStep = ref(0)
-const steps = [
-  {
-    title: "Información Básica",
-    icon: DocumentTextIcon,
-    description: "Detalles generales del contenido",
-  },
-  {
-    title: "Objetivos y Prerequisitos",
-    icon: AcademicCapIcon,
-    description: "Define los objetivos y requisitos previos",
-  },
-  {
-    title: "Indicadores",
-    icon: ChartBarIcon,
-    description: "Establece los indicadores y sus ponderaciones",
-  },
-  {
-    title: "Materiales",
-    icon: BookOpenIcon,
-    description: "Agrega los materiales de estudio",
-  },
-  {
-    title: "Evaluación",
-    icon: ClipboardDocumentListIcon,
-    description: "Define los criterios de evaluación",
-  },
-]
-
-const levels = ["Principiante", "Intermedio", "Avanzado"]
-const classes = [
-  "Piano - Nivel 1",
-  "Piano - Nivel 2",
-  "Violín - Nivel 1",
-  "Violín - Nivel 2",
-  "Guitarra - Nivel 1",
-  "Guitarra - Nivel 2",
-]
-
-// Array manipulation methods
-const addObjective = () => formData.value.objectives.push("")
-const removeObjective = (index: number) => formData.value.objectives.splice(index, 1)
-
-const addPrerequisite = () => formData.value.prerequisites.push("")
-const removePrerequisite = (index: number) => formData.value.prerequisites.splice(index, 1)
-
-const addIndicator = () => {
-  const newId = Math.max(0, ...formData.value.indicators.map((i) => i.id)) + 1
-  formData.value.indicators.push({id: newId, name: "", weight: 0, description: ""})
-}
-
-const removeIndicator = (index: number) => formData.value.indicators.splice(index, 1)
-
-const addMaterial = () => {
-  formData.value.materials.push({type: "document", url: "", title: "", description: ""})
-}
-
-const removeMaterial = (index: number) => formData.value.materials.splice(index, 1)
-
-const addEvaluationCriteria = () => formData.value.evaluationCriteria.push("")
-const removeEvaluationCriteria = (index: number) =>
-  formData.value.evaluationCriteria.splice(index, 1)
-
-// Navigation and validation
-const canGoNext = computed(() => {
-  switch (currentStep.value) {
-    case 0:
-      return (
-        formData.value.title &&
-        formData.value.description &&
-        formData.value.level &&
-        formData.value.class &&
-        formData.value.duration
-      )
-    case 1:
-      return (
-        formData.value.objectives.every((o) => o) && formData.value.prerequisites.every((p) => p)
-      )
-    case 2:
-      return (
-        formData.value.indicators.every((i) => i.name && i.weight && i.description) &&
-        Math.abs(formData.value.indicators.reduce((sum, ind) => sum + ind.weight, 0) - 100) < 0.01
-      )
-    case 3:
-      return formData.value.materials.every((m) => m.type && m.url && m.title)
-    case 4:
-      return formData.value.evaluationCriteria.every((c) => c)
-    default:
-      return false
-  }
-})
-
-const goNext = () => {
-  if (currentStep.value < steps.length - 1) {
-    currentStep.value++
-  }
-}
-
-const goBack = () => {
-  if (currentStep.value > 0) {
-    currentStep.value--
-  }
-}
-
-const handleSubmit = () => {
-  if (Math.abs(formData.value.indicators.reduce((sum, ind) => sum + ind.weight, 0) - 100) > 0.01) {
-    alert("La suma de los pesos de los indicadores debe ser 100%")
-    return
-  }
-  emit("submit", formData.value)
-}
-</script>
-
 <template>
   <TransitionRoot appear show as="template">
     <Dialog as="div" class="relative z-50" @close="emit('cancel')">
@@ -563,3 +410,156 @@ const handleSubmit = () => {
     </Dialog>
   </TransitionRoot>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { Dialog, DialogPanel, TransitionRoot, TransitionChild } from '@headlessui/vue';
+import {
+  PlusCircleIcon,
+  XCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  XMarkIcon,
+  DocumentTextIcon,
+  AcademicCapIcon,
+  ClipboardDocumentListIcon,
+  BookOpenIcon,
+  ChartBarIcon,
+} from '@heroicons/vue/24/outline';
+import type { Content, ContentIndicator } from '../types';
+
+const props = defineProps<{
+  initialData?: Partial<Content>
+}>();
+
+const emit = defineEmits<{
+  (e: 'submit', data: Partial<Content>): void
+  (e: 'cancel'): void
+}>();
+
+const formData = ref({
+  title: '',
+  description: '',
+  level: '',
+  class: '',
+  objectives: [''],
+  prerequisites: [''],
+  duration: '',
+  indicators: [{ id: 1, name: '', weight: 0, description: '' }] as ContentIndicator[],
+  materials: [{ type: 'document', url: '', title: '', description: '' }],
+  evaluationCriteria: [''],
+  ...props.initialData,
+});
+
+const currentStep = ref(0);
+const steps = [
+  {
+    title: 'Información Básica',
+    icon: DocumentTextIcon,
+    description: 'Detalles generales del contenido',
+  },
+  {
+    title: 'Objetivos y Prerequisitos',
+    icon: AcademicCapIcon,
+    description: 'Define los objetivos y requisitos previos',
+  },
+  {
+    title: 'Indicadores',
+    icon: ChartBarIcon,
+    description: 'Establece los indicadores y sus ponderaciones',
+  },
+  {
+    title: 'Materiales',
+    icon: BookOpenIcon,
+    description: 'Agrega los materiales de estudio',
+  },
+  {
+    title: 'Evaluación',
+    icon: ClipboardDocumentListIcon,
+    description: 'Define los criterios de evaluación',
+  },
+];
+
+const levels = ['Principiante', 'Intermedio', 'Avanzado'];
+const classes = [
+  'Piano - Nivel 1',
+  'Piano - Nivel 2',
+  'Violín - Nivel 1',
+  'Violín - Nivel 2',
+  'Guitarra - Nivel 1',
+  'Guitarra - Nivel 2',
+];
+
+// Array manipulation methods
+const addObjective = () => formData.value.objectives.push('');
+const removeObjective = (index: number) => formData.value.objectives.splice(index, 1);
+
+const addPrerequisite = () => formData.value.prerequisites.push('');
+const removePrerequisite = (index: number) => formData.value.prerequisites.splice(index, 1);
+
+const addIndicator = () => {
+  const newId = Math.max(0, ...formData.value.indicators.map((i) => i.id)) + 1;
+  formData.value.indicators.push({ id: newId, name: '', weight: 0, description: '' });
+};
+
+const removeIndicator = (index: number) => formData.value.indicators.splice(index, 1);
+
+const addMaterial = () => {
+  formData.value.materials.push({ type: 'document', url: '', title: '', description: '' });
+};
+
+const removeMaterial = (index: number) => formData.value.materials.splice(index, 1);
+
+const addEvaluationCriteria = () => formData.value.evaluationCriteria.push('');
+const removeEvaluationCriteria = (index: number) =>
+  formData.value.evaluationCriteria.splice(index, 1);
+
+// Navigation and validation
+const canGoNext = computed(() => {
+  switch (currentStep.value) {
+  case 0:
+    return (
+      formData.value.title &&
+        formData.value.description &&
+        formData.value.level &&
+        formData.value.class &&
+        formData.value.duration
+    );
+  case 1:
+    return (
+      formData.value.objectives.every((o) => o) && formData.value.prerequisites.every((p) => p)
+    );
+  case 2:
+    return (
+      formData.value.indicators.every((i) => i.name && i.weight && i.description) &&
+        Math.abs(formData.value.indicators.reduce((sum, ind) => sum + ind.weight, 0) - 100) < 0.01
+    );
+  case 3:
+    return formData.value.materials.every((m) => m.type && m.url && m.title);
+  case 4:
+    return formData.value.evaluationCriteria.every((c) => c);
+  default:
+    return false;
+  }
+});
+
+const goNext = () => {
+  if (currentStep.value < steps.length - 1) {
+    currentStep.value++;
+  }
+};
+
+const goBack = () => {
+  if (currentStep.value > 0) {
+    currentStep.value--;
+  }
+};
+
+const handleSubmit = () => {
+  if (Math.abs(formData.value.indicators.reduce((sum, ind) => sum + ind.weight, 0) - 100) > 0.01) {
+    alert('La suma de los pesos de los indicadores debe ser 100%');
+    return;
+  }
+  emit('submit', formData.value);
+};
+</script>

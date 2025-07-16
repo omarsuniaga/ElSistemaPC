@@ -1,126 +1,3 @@
-<script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import {useStudentsStore} from "../store/students"
-import {useClassesStore} from "../../Classes/store/classes"
-import {useInstrumentoStore} from "../../Instruments/store/instrumento"
-
-const route = useRoute()
-const router = useRouter()
-const studentsStore = useStudentsStore()
-const classesStore = useClassesStore()
-const instrumentoStore = useInstrumentoStore()
-
-const studentId = String(route.params.id)
-const isLoading = ref(false)
-const error = ref<string | null>(null)
-const successMessage = ref<string | null>(null)
-
-// Cargar datos necesarios al montar el componente
-onMounted(async () => {
-  try {
-    await Promise.all([
-      studentsStore.fetchStudents(),
-      classesStore.fetchClasses(),
-      instrumentoStore.fetchInstruments(),
-    ])
-  } catch (err: any) {
-    error.value = err.message || "Error al cargar los datos"
-  }
-})
-
-const originalStudent = computed(() =>
-  studentsStore.students.find((s) => s.id.toString() === studentId)
-)
-
-const instruments = computed(() => instrumentoStore.instruments)
-
-// Asegurar que el campo grupo siempre sea un array al cargar el estudiante
-const normalizeGrupo = (grupo: any): string[] => {
-  if (Array.isArray(grupo)) {
-    return grupo
-  } else if (grupo) {
-    if (typeof grupo === "string") {
-      if (grupo.startsWith("[") && grupo.endsWith("]")) {
-        try {
-          const parsed = JSON.parse(grupo)
-          return Array.isArray(parsed) ? parsed : [grupo]
-        } catch (e) {
-          console.warn("Error parsing grupo value:", e)
-          return [grupo]
-        }
-      }
-      return [grupo]
-    }
-    return [String(grupo)]
-  }
-  return []
-}
-
-const formData = ref<any>(null)
-
-// Watch para actualizar formData cuando se carga el estudiante
-watch(
-  originalStudent,
-  (newStudent) => {
-    if (newStudent) {
-      formData.value = {
-        ...newStudent,
-        grupo: normalizeGrupo(newStudent.grupo),
-      }
-    }
-  },
-  {immediate: true}
-)
-
-const handleSubmit = async () => {
-  if (!formData.value) {
-    console.error("No hay datos del formulario para guardar")
-    return
-  }
-
-  console.log("🔄 Iniciando actualización del estudiante:", studentId)
-  console.log("📝 Datos a guardar:", JSON.stringify(formData.value, null, 2))
-
-  isLoading.value = true
-  error.value = null
-  successMessage.value = null
-
-  try {
-    // Asegurarnos que grupo sea un array antes de guardar
-    if (!Array.isArray(formData.value.grupo)) {
-      formData.value.grupo = normalizeGrupo(formData.value.grupo)
-    }
-
-    console.log("📤 Enviando datos al store...")
-    await studentsStore.updateStudent(String(studentId), formData.value)
-
-    console.log("✅ Estudiante actualizado exitosamente en Firestore")
-    successMessage.value = "Estudiante actualizado exitosamente"
-
-    console.log("🔄 Refrescando lista de estudiantes...")
-
-    // Refrescar la lista de estudiantes para asegurar que los cambios se reflejen
-    await studentsStore.fetchStudents()
-
-    // Esperar un poco para mostrar el mensaje de éxito antes de redirigir
-    setTimeout(() => {
-      console.log("🏠 Redirigiendo a la lista de estudiantes...")
-      router.push("/students/")
-    }, 1500)
-  } catch (err: any) {
-    console.error("❌ Error al actualizar estudiante:", err)
-    error.value = err.message || "Error al actualizar el estudiante"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleCancel = () => {
-  router.push(`/students/${studentId}`)
-}
-</script>
-
 <template>
   <div v-if="formData" class="py-6">
     <!-- Success Message -->
@@ -328,3 +205,126 @@ const handleCancel = () => {
     <p>Estudiante no encontrado</p>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useStudentsStore } from '../store/students';
+import { useClassesStore } from '../../Classes/store/classes';
+import { useInstrumentoStore } from '../../Instruments/store/instrumento';
+
+const route = useRoute();
+const router = useRouter();
+const studentsStore = useStudentsStore();
+const classesStore = useClassesStore();
+const instrumentoStore = useInstrumentoStore();
+
+const studentId = String(route.params.id);
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const successMessage = ref<string | null>(null);
+
+// Cargar datos necesarios al montar el componente
+onMounted(async () => {
+  try {
+    await Promise.all([
+      studentsStore.fetchStudents(),
+      classesStore.fetchClasses(),
+      instrumentoStore.fetchInstruments(),
+    ]);
+  } catch (err: any) {
+    error.value = err.message || 'Error al cargar los datos';
+  }
+});
+
+const originalStudent = computed(() =>
+  studentsStore.students.find((s) => s.id.toString() === studentId),
+);
+
+const instruments = computed(() => instrumentoStore.instruments);
+
+// Asegurar que el campo grupo siempre sea un array al cargar el estudiante
+const normalizeGrupo = (grupo: any): string[] => {
+  if (Array.isArray(grupo)) {
+    return grupo;
+  } else if (grupo) {
+    if (typeof grupo === 'string') {
+      if (grupo.startsWith('[') && grupo.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(grupo);
+          return Array.isArray(parsed) ? parsed : [grupo];
+        } catch (e) {
+          console.warn('Error parsing grupo value:', e);
+          return [grupo];
+        }
+      }
+      return [grupo];
+    }
+    return [String(grupo)];
+  }
+  return [];
+};
+
+const formData = ref<any>(null);
+
+// Watch para actualizar formData cuando se carga el estudiante
+watch(
+  originalStudent,
+  (newStudent) => {
+    if (newStudent) {
+      formData.value = {
+        ...newStudent,
+        grupo: normalizeGrupo(newStudent.grupo),
+      };
+    }
+  },
+  { immediate: true },
+);
+
+const handleSubmit = async () => {
+  if (!formData.value) {
+    console.error('No hay datos del formulario para guardar');
+    return;
+  }
+
+  console.log('🔄 Iniciando actualización del estudiante:', studentId);
+  console.log('📝 Datos a guardar:', JSON.stringify(formData.value, null, 2));
+
+  isLoading.value = true;
+  error.value = null;
+  successMessage.value = null;
+
+  try {
+    // Asegurarnos que grupo sea un array antes de guardar
+    if (!Array.isArray(formData.value.grupo)) {
+      formData.value.grupo = normalizeGrupo(formData.value.grupo);
+    }
+
+    console.log('📤 Enviando datos al store...');
+    await studentsStore.updateStudent(String(studentId), formData.value);
+
+    console.log('✅ Estudiante actualizado exitosamente en Firestore');
+    successMessage.value = 'Estudiante actualizado exitosamente';
+
+    console.log('🔄 Refrescando lista de estudiantes...');
+
+    // Refrescar la lista de estudiantes para asegurar que los cambios se reflejen
+    await studentsStore.fetchStudents();
+
+    // Esperar un poco para mostrar el mensaje de éxito antes de redirigir
+    setTimeout(() => {
+      console.log('🏠 Redirigiendo a la lista de estudiantes...');
+      router.push('/students/');
+    }, 1500);
+  } catch (err: any) {
+    console.error('❌ Error al actualizar estudiante:', err);
+    error.value = err.message || 'Error al actualizar el estudiante';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const handleCancel = () => {
+  router.push(`/students/${studentId}`);
+};
+</script>

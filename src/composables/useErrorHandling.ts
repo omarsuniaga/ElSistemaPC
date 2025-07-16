@@ -3,17 +3,17 @@
  * @fileoverview Proporciona funcionalidades de manejo de errores de forma consistente
  */
 
-import {ref} from "vue"
+import { ref } from 'vue';
 
 export interface ErrorState {
   message: string | null
-  type?: "error" | "warning" | "info"
+  type?: 'error' | 'warning' | 'info'
   details?: any
 }
 
 export function useErrorHandling() {
-  const error = ref<ErrorState | null>(null)
-  const isLoading = ref(false)
+  const error = ref<ErrorState | null>(null);
+  const isLoading = ref(false);
 
   /**
    * Maneja un error de forma segura
@@ -22,54 +22,54 @@ export function useErrorHandling() {
    * @returns El mensaje de error formateado
    */
   const handleError = (err: any, context?: string): string => {
-    console.error(context ? `[${context}]` : "[Error]", err)
+    console.error(context ? `[${context}]` : '[Error]', err);
 
-    let message = "Ha ocurrido un error inesperado"
+    let message = 'Ha ocurrido un error inesperado';
 
-    if (typeof err === "string") {
-      message = err
+    if (typeof err === 'string') {
+      message = err;
     } else if (err?.message) {
-      message = err.message
+      message = err.message;
     } else if (err?.code) {
       // Firebase errors
       switch (err.code) {
-        case "permission-denied":
-          message = "No tienes permisos para realizar esta acción"
-          break
-        case "not-found":
-          message = "El recurso solicitado no fue encontrado"
-          break
-        case "network-request-failed":
-          message = "Error de conexión. Verifica tu internet"
-          break
-        default:
-          message = err.message || "Error desconocido"
+      case 'permission-denied':
+        message = 'No tienes permisos para realizar esta acción';
+        break;
+      case 'not-found':
+        message = 'El recurso solicitado no fue encontrado';
+        break;
+      case 'network-request-failed':
+        message = 'Error de conexión. Verifica tu internet';
+        break;
+      default:
+        message = err.message || 'Error desconocido';
       }
     }
 
     error.value = {
       message,
-      type: "error",
+      type: 'error',
       details: err,
-    }
+    };
 
-    return message
-  }
+    return message;
+  };
 
   /**
    * Limpia el estado de error
    */
   const clearError = () => {
-    error.value = null
-  }
+    error.value = null;
+  };
 
   /**
    * Establece el estado de carga
    * @param loading - Estado de carga
    */
   const setLoading = (loading: boolean) => {
-    isLoading.value = loading
-  }
+    isLoading.value = loading;
+  };
 
   /**
    * Ejecuta una operación asíncrona con manejo de errores
@@ -79,20 +79,20 @@ export function useErrorHandling() {
    */
   const executeWithErrorHandling = async <T>(
     operation: () => Promise<T>,
-    context?: string
+    context?: string,
   ): Promise<T | null> => {
     try {
-      setLoading(true)
-      clearError()
-      const result = await operation()
-      return result
+      setLoading(true);
+      clearError();
+      const result = await operation();
+      return result;
     } catch (err) {
-      handleError(err, context)
-      return null
+      handleError(err, context);
+      return null;
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   /**
    * Muestra una advertencia
@@ -101,9 +101,9 @@ export function useErrorHandling() {
   const showWarning = (message: string) => {
     error.value = {
       message,
-      type: "warning",
-    }
-  }
+      type: 'warning',
+    };
+  };
 
   /**
    * Muestra información
@@ -112,9 +112,9 @@ export function useErrorHandling() {
   const showInfo = (message: string) => {
     error.value = {
       message,
-      type: "info",
-    }
-  }
+      type: 'info',
+    };
+  };
 
   return {
     // Estado
@@ -128,8 +128,8 @@ export function useErrorHandling() {
     executeWithErrorHandling,
     showWarning,
     showInfo,
-  }
+  };
 }
 
 // Re-exportar para compatibilidad
-export {useErrorHandling as useErrorHandler}
+export { useErrorHandling as useErrorHandler };

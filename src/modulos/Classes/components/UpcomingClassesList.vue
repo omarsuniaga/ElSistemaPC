@@ -45,9 +45,9 @@
 </template>
 
 <script setup lang="ts">
-import {CalendarIcon, ClockIcon} from "@heroicons/vue/24/outline"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
+import { CalendarIcon, ClockIcon } from '@heroicons/vue/24/outline';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface UpcomingClass {
   id: string
@@ -61,10 +61,10 @@ interface UpcomingClass {
 
 defineProps<{
   classes: UpcomingClass[]
-}>()
+}>();
 
 // Función para formatear fecha
 const formatDate = (date: Date) => {
-  return format(date, "EEEE, d MMMM", {locale: es})
-}
+  return format(date, 'EEEE, d MMMM', { locale: es });
+};
 </script>

@@ -1,16 +1,3 @@
-<script setup lang="ts">
-import {Chart} from "chart.js"
-import type {KpiData} from "../types/analytics"
-
-defineProps<{
-  title: string
-  value: string | number
-  trend: number
-  icon: any
-  metricType?: "currency" | "percentage" | "default"
-}>()
-</script>
-
 <template>
   <div class="kpi-card p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
     <div class="flex items-center justify-between">
@@ -33,3 +20,16 @@ defineProps<{
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { Chart } from 'chart.js';
+import type { KpiData } from '../types/analytics';
+
+defineProps<{
+  title: string
+  value: string | number
+  trend: number
+  icon: any
+  metricType?: 'currency' | 'percentage' | 'default'
+}>();
+</script>

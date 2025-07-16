@@ -4,8 +4,8 @@
  * Incluye notificaciones push y toast
  */
 
-import {ref, computed} from "vue"
-import {defineStore} from "pinia"
+import { ref, computed } from 'vue';
+import { defineStore } from 'pinia';
 
 // ==================== TIPOS ====================
 
@@ -13,7 +13,7 @@ interface Notification {
   id: string
   title: string
   message?: string
-  type: "success" | "error" | "warning" | "info"
+  type: 'success' | 'error' | 'warning' | 'info'
   duration?: number
   persistent?: boolean
   actions?: NotificationAction[]
@@ -29,7 +29,7 @@ interface NotificationAction {
 interface ToastOptions {
   title?: string
   message?: string
-  type?: "success" | "error" | "warning" | "info"
+  type?: 'success' | 'error' | 'warning' | 'info'
   duration?: number
   persistent?: boolean
   actions?: NotificationAction[]
@@ -37,98 +37,98 @@ interface ToastOptions {
 
 // ==================== STORE DE NOTIFICACIONES ====================
 
-export const useNotificationStore = defineStore("notifications", () => {
+export const useNotificationStore = defineStore('notifications', () => {
   // Estado
-  const notifications = ref<Notification[]>([])
-  const isSupported = ref(false)
-  const permission = ref<NotificationPermission>("default")
+  const notifications = ref<Notification[]>([]);
+  const isSupported = ref(false);
+  const permission = ref<NotificationPermission>('default');
 
   // Computed
   const activeNotifications = computed(() =>
-    notifications.value.filter((n) => n.persistent || isWithinDuration(n))
-  )
+    notifications.value.filter((n) => n.persistent || isWithinDuration(n)),
+  );
 
-  const hasActiveNotifications = computed(() => activeNotifications.value.length > 0)
+  const hasActiveNotifications = computed(() => activeNotifications.value.length > 0);
 
-  const unreadCount = computed(() => activeNotifications.value.length)
+  const unreadCount = computed(() => activeNotifications.value.length);
 
   // ==================== INICIALIZACIÓN ====================
 
   function initialize() {
     // Verificar soporte para notificaciones
-    isSupported.value = "Notification" in window
+    isSupported.value = 'Notification' in window;
 
     if (isSupported.value) {
-      permission.value = Notification.permission
-      console.log("🔔 Sistema de notificaciones inicializado")
+      permission.value = Notification.permission;
+      console.log('🔔 Sistema de notificaciones inicializado');
     } else {
-      console.log("⚠️ Notificaciones no soportadas en este navegador")
+      console.log('⚠️ Notificaciones no soportadas en este navegador');
     }
   }
 
   // ==================== PERMISOS ====================
 
   async function requestPermission(): Promise<boolean> {
-    if (!isSupported.value) return false
+    if (!isSupported.value) return false;
 
     try {
-      const result = await Notification.requestPermission()
-      permission.value = result
-      return result === "granted"
+      const result = await Notification.requestPermission();
+      permission.value = result;
+      return result === 'granted';
     } catch (error) {
-      console.error("Error solicitando permisos de notificación:", error)
-      return false
+      console.error('Error solicitando permisos de notificación:', error);
+      return false;
     }
   }
 
   // ==================== NOTIFICACIONES TOAST ====================
 
   function showToast(title: string, options: ToastOptions = {}): string {
-    const id = `toast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const id = `toast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     const notification: Notification = {
       id,
       title,
       message: options.message,
-      type: options.type || "info",
+      type: options.type || 'info',
       duration: options.duration || 5000,
       persistent: options.persistent || false,
       actions: options.actions,
       timestamp: new Date(),
-    }
+    };
 
-    notifications.value.push(notification)
+    notifications.value.push(notification);
 
     // Auto-remover si no es persistente
     if (!notification.persistent && notification.duration) {
       setTimeout(() => {
-        removeNotification(id)
-      }, notification.duration)
+        removeNotification(id);
+      }, notification.duration);
     }
 
-    console.log(`📱 Toast mostrado: ${title}`)
-    return id
+    console.log(`📱 Toast mostrado: ${title}`);
+    return id;
   }
 
   function showSuccess(title: string, message?: string, duration = 3000): string {
-    return showToast(title, {message, type: "success", duration})
+    return showToast(title, { message, type: 'success', duration });
   }
 
   function showError(title: string, message?: string, persistent = false): string {
     return showToast(title, {
       message,
-      type: "error",
+      type: 'error',
       persistent,
       duration: persistent ? undefined : 8000,
-    })
+    });
   }
 
   function showWarning(title: string, message?: string, duration = 5000): string {
-    return showToast(title, {message, type: "warning", duration})
+    return showToast(title, { message, type: 'warning', duration });
   }
 
   function showInfo(title: string, message?: string, duration = 4000): string {
-    return showToast(title, {message, type: "info", duration})
+    return showToast(title, { message, type: 'info', duration });
   }
 
   // ==================== NOTIFICACIONES PUSH ====================
@@ -142,98 +142,98 @@ export const useNotificationStore = defineStore("notifications", () => {
       tag?: string
       requireInteraction?: boolean
       actions?: Array<{action: string; title: string; icon?: string}>
-    } = {}
+    } = {},
   ): Promise<boolean> {
-    if (!isSupported.value || permission.value !== "granted") {
-      console.log("⚠️ No se pueden mostrar notificaciones push")
-      return false
+    if (!isSupported.value || permission.value !== 'granted') {
+      console.log('⚠️ No se pueden mostrar notificaciones push');
+      return false;
     }
 
     try {
       const notification = new Notification(title, {
         body: options.body,
-        icon: options.icon || "/icons/icon-192.png",
-        badge: options.badge || "/icons/icon-72.png",
+        icon: options.icon || '/icons/icon-192.png',
+        badge: options.badge || '/icons/icon-72.png',
         tag: options.tag,
         requireInteraction: options.requireInteraction || false,
         data: {
           timestamp: Date.now(),
-          source: "music-academy-pwa",
+          source: 'music-academy-pwa',
         },
-      })
+      });
 
       // Manejar click en notificación
       notification.onclick = () => {
-        window.focus()
-        notification.close()
-      }
+        window.focus();
+        notification.close();
+      };
 
-      console.log(`🔔 Notificación push enviada: ${title}`)
-      return true
+      console.log(`🔔 Notificación push enviada: ${title}`);
+      return true;
     } catch (error) {
-      console.error("Error mostrando notificación push:", error)
-      return false
+      console.error('Error mostrando notificación push:', error);
+      return false;
     }
   }
 
   // ==================== GESTIÓN DE NOTIFICACIONES ====================
 
   function removeNotification(id: string) {
-    const index = notifications.value.findIndex((n) => n.id === id)
+    const index = notifications.value.findIndex((n) => n.id === id);
     if (index > -1) {
-      notifications.value.splice(index, 1)
+      notifications.value.splice(index, 1);
     }
   }
 
   function clearAllNotifications() {
-    notifications.value = []
+    notifications.value = [];
   }
 
-  function clearNotificationsByType(type: Notification["type"]) {
-    notifications.value = notifications.value.filter((n) => n.type !== type)
+  function clearNotificationsByType(type: Notification['type']) {
+    notifications.value = notifications.value.filter((n) => n.type !== type);
   }
 
   function markAsRead(id: string) {
-    const notification = notifications.value.find((n) => n.id === id)
+    const notification = notifications.value.find((n) => n.id === id);
     if (notification) {
-      removeNotification(id)
+      removeNotification(id);
     }
   }
 
   // ==================== UTILIDADES ====================
 
   function isWithinDuration(notification: Notification): boolean {
-    if (notification.persistent || !notification.duration) return true
+    if (notification.persistent || !notification.duration) return true;
 
-    const elapsed = Date.now() - notification.timestamp.getTime()
-    return elapsed < notification.duration
+    const elapsed = Date.now() - notification.timestamp.getTime();
+    return elapsed < notification.duration;
   }
 
-  function getNotificationIcon(type: Notification["type"]): string {
+  function getNotificationIcon(type: Notification['type']): string {
     switch (type) {
-      case "success":
-        return "mdi-check-circle"
-      case "error":
-        return "mdi-alert-circle"
-      case "warning":
-        return "mdi-alert"
-      case "info":
-      default:
-        return "mdi-information"
+    case 'success':
+      return 'mdi-check-circle';
+    case 'error':
+      return 'mdi-alert-circle';
+    case 'warning':
+      return 'mdi-alert';
+    case 'info':
+    default:
+      return 'mdi-information';
     }
   }
 
-  function getNotificationColor(type: Notification["type"]): string {
+  function getNotificationColor(type: Notification['type']): string {
     switch (type) {
-      case "success":
-        return "success"
-      case "error":
-        return "error"
-      case "warning":
-        return "warning"
-      case "info":
-      default:
-        return "info"
+    case 'success':
+      return 'success';
+    case 'error':
+      return 'error';
+    case 'warning':
+      return 'warning';
+    case 'info':
+    default:
+      return 'info';
     }
   }
 
@@ -241,66 +241,66 @@ export const useNotificationStore = defineStore("notifications", () => {
 
   function notifyOfflineMode() {
     return showWarning(
-      "Modo Offline",
-      "La aplicación está funcionando sin conexión. Los datos se sincronizarán cuando se restaure la conexión.",
-      8000
-    )
+      'Modo Offline',
+      'La aplicación está funcionando sin conexión. Los datos se sincronizarán cuando se restaure la conexión.',
+      8000,
+    );
   }
 
   function notifyOnlineMode() {
     return showSuccess(
-      "Conexión Restaurada",
-      "La aplicación está de nuevo online. Sincronizando datos...",
-      3000
-    )
+      'Conexión Restaurada',
+      'La aplicación está de nuevo online. Sincronizando datos...',
+      3000,
+    );
   }
 
   function notifySyncCompleted(count: number) {
     return showSuccess(
-      "Sincronización Completada",
-      `${count} operación${count !== 1 ? "es" : ""} sincronizada${count !== 1 ? "s" : ""} exitosamente.`,
-      4000
-    )
+      'Sincronización Completada',
+      `${count} operación${count !== 1 ? 'es' : ''} sincronizada${count !== 1 ? 's' : ''} exitosamente.`,
+      4000,
+    );
   }
 
   function notifySyncError(error: string) {
     return showError(
-      "Error de Sincronización",
+      'Error de Sincronización',
       error,
-      true // Persistente para que el usuario pueda leer el error
-    )
+      true, // Persistente para que el usuario pueda leer el error
+    );
   }
 
   function notifyDataSaved(type: string, offline = false) {
     const message = offline
       ? `${type} guardado offline. Se sincronizará automáticamente.`
-      : `${type} guardado exitosamente.`
+      : `${type} guardado exitosamente.`;
 
-    return showSuccess(`${type} Guardado`, message, 3000)
+    return showSuccess(`${type} Guardado`, message, 3000);
   }
 
   function notifyUpdateAvailable() {
-    return showToast("Actualización Disponible", {
-      message: "Una nueva versión de la aplicación está disponible.",
-      type: "info",
+    return showToast('Actualización Disponible', {
+      message: 'Una nueva versión de la aplicación está disponible.',
+      type: 'info',
       persistent: true,
       actions: [
         {
-          label: "Actualizar",
+          label: 'Actualizar',
           action: () => {
             // Esta función será implementada por el componente que use las notificaciones
-            window.location.reload()
+            window.location.reload();
           },
-          color: "primary",
+          color: 'primary',
         },
         {
-          label: "Más tarde",
+          label: 'Más tarde',
           action: () => {
             // Solo cerrar la notificación
           },
         },
       ],
-    })
+    });
   }
 
   // ==================== RETURN ====================
@@ -347,30 +347,30 @@ export const useNotificationStore = defineStore("notifications", () => {
     notifySyncError,
     notifyDataSaved,
     notifyUpdateAvailable,
-  }
-})
+  };
+});
 
 // ==================== COMPOSABLE ====================
 
 export function useNotifications() {
-  const store = useNotificationStore()
+  const store = useNotificationStore();
 
   // Inicializar el store si no ha sido inicializado
-  if (typeof window !== "undefined") {
-    store.initialize()
+  if (typeof window !== 'undefined') {
+    store.initialize();
   }
 
   // Alias para compatibilidad
   function showNotification(
     title: string,
-    type: "success" | "error" | "warning" | "info" = "info",
-    options: Omit<ToastOptions, "type"> = {}
+    type: 'success' | 'error' | 'warning' | 'info' = 'info',
+    options: Omit<ToastOptions, 'type'> = {},
   ) {
-    return store.showToast(title, {...options, type})
+    return store.showToast(title, { ...options, type });
   }
 
   return {
     ...store,
     showNotification, // Alias para compatibilidad con código existente
-  }
+  };
 }

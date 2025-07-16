@@ -51,91 +51,91 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
-import {XMarkIcon} from "@heroicons/vue/24/outline"
-import {useStudentsStore} from "../../Students/store/students"
+import { ref, computed, watch, onMounted } from 'vue';
+import { XMarkIcon } from '@heroicons/vue/24/outline';
+import { useStudentsStore } from '../../Students/store/students';
 
 const props = defineProps<{
   show: boolean
   classId: string
-}>()
+}>();
 
 const emit = defineEmits<{
-  (e: "close"): void
-  (e: "select", student: {id: string; nombre: string; apellido: string}): void
-}>()
+  (e: 'close'): void
+  (e: 'select', student: {id: string; nombre: string; apellido: string}): void
+}>();
 
-const studentsStore = useStudentsStore()
-const students = ref<any[]>([])
-const filteredStudents = ref<any[]>([])
-const searchTerm = ref("")
-const loading = ref(true)
+const studentsStore = useStudentsStore();
+const students = ref<any[]>([]);
+const filteredStudents = ref<any[]>([]);
+const searchTerm = ref('');
+const loading = ref(true);
 
 // Cargar estudiantes cuando se muestra el modal
 watch(
   () => props.show,
   (newValue) => {
     if (newValue) {
-      loadStudents()
+      loadStudents();
     }
-  }
-)
+  },
+);
 
 onMounted(() => {
   if (props.show) {
-    loadStudents()
+    loadStudents();
   }
-})
+});
 
 // Cargar estudiantes para la clase seleccionada
 const loadStudents = async () => {
-  loading.value = true
+  loading.value = true;
 
   try {
     // Asegurarse de que los estudiantes estén cargados
     if (studentsStore.students.length === 0) {
-      await studentsStore.fetchStudents()
+      await studentsStore.fetchStudents();
     }
 
     // Filtrar estudiantes por la clase
     if (props.classId) {
-      students.value = studentsStore.getStudentsByClass(props.classId)
+      students.value = studentsStore.getStudentsByClass(props.classId);
     } else {
-      students.value = studentsStore.students
+      students.value = studentsStore.students;
     }
 
-    filterStudents()
+    filterStudents();
   } catch (error) {
-    console.error("Error al cargar estudiantes:", error)
+    console.error('Error al cargar estudiantes:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Filtrar estudiantes según el término de búsqueda
 const filterStudents = () => {
   if (!searchTerm.value.trim()) {
-    filteredStudents.value = students.value
+    filteredStudents.value = students.value;
   } else {
-    const term = searchTerm.value.toLowerCase()
+    const term = searchTerm.value.toLowerCase();
     filteredStudents.value = students.value.filter((student) => {
-      const nombreCompleto = `${student.nombre} ${student.apellido}`.toLowerCase()
-      return nombreCompleto.includes(term)
-    })
+      const nombreCompleto = `${student.nombre} ${student.apellido}`.toLowerCase();
+      return nombreCompleto.includes(term);
+    });
   }
-}
+};
 
 // Cerrar el modal
 const close = () => {
-  emit("close")
-}
+  emit('close');
+};
 
 // Seleccionar un estudiante
 const selectStudent = (student) => {
-  emit("select", {
+  emit('select', {
     id: student.id,
     nombre: student.nombre,
     apellido: student.apellido,
-  })
-}
+  });
+};
 </script>

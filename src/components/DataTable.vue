@@ -1,83 +1,3 @@
-<script setup lang="ts">
-import {ref, computed} from "vue"
-import {useTable} from "../composables/useTable"
-import type {TableColumn, FilterOption, ExportOptions} from "../types"
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronUpDownIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
-  FunnelIcon,
-  ArrowDownTrayIcon,
-  ViewColumnsIcon,
-  XMarkIcon,
-} from "@heroicons/vue/24/outline"
-import vuedraggable from "vuedraggable"
-
-const props = defineProps<{
-  items: any[]
-  columns: TableColumn[]
-  storageKey?: string
-  defaultPageSize?: number
-  exportFileName?: string
-  filterOptions?: FilterOption[]
-}>()
-
-const showFilters = ref(false)
-const showColumnManager = ref(false)
-const exportFormat = ref<"xlsx" | "csv">("xlsx")
-
-const {
-  state,
-  paginatedItems,
-  pagination,
-  totalPages,
-  visibleColumns,
-  setPage,
-  setPageSize,
-  setSort,
-  setFilter,
-  clearFilters,
-  toggleColumn,
-  reorderColumns,
-  exportData,
-} = useTable(props.items, props.columns, {
-  storageKey: props.storageKey || "",
-  defaultPageSize: props.defaultPageSize || 10,
-  exportFileName: props.exportFileName || "",
-})
-
-const pageSizeOptions = [10, 25, 50, 100]
-
-const globalSearch = computed<string>({
-  get: () => state.searchQuery,
-  set: (value: string) => {
-    state.searchQuery = value
-  },
-})
-
-const handleExport = () => {
-  interface VisibleColumn {
-    id: string
-  }
-
-  const options: ExportOptions = {
-    format: exportFormat.value,
-    filename: props.exportFileName || "",
-    includeHeaders: true,
-    columnIds: visibleColumns.value.map((col: VisibleColumn) => col.id),
-  }
-  exportData(options)
-}
-
-const getSortIcon = (column: TableColumn) => {
-  if (!column.sortable) return null
-  if (state.value.sortBy !== column.key) return ChevronUpDownIcon
-  return state.value.sortOrder === "asc" ? ChevronUpIcon : ChevronDownIcon
-}
-</script>
-
 <template>
   <div class="space-y-4">
     <!-- Table Controls -->
@@ -266,4 +186,84 @@ const getSortIcon = (column: TableColumn) => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { useTable } from '../composables/useTable';
+import type { TableColumn, FilterOption, ExportOptions } from '../types';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronUpDownIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  FunnelIcon,
+  ArrowDownTrayIcon,
+  ViewColumnsIcon,
+  XMarkIcon,
+} from '@heroicons/vue/24/outline';
+import vuedraggable from 'vuedraggable';
+
+const props = defineProps<{
+  items: any[]
+  columns: TableColumn[]
+  storageKey?: string
+  defaultPageSize?: number
+  exportFileName?: string
+  filterOptions?: FilterOption[]
+}>();
+
+const showFilters = ref(false);
+const showColumnManager = ref(false);
+const exportFormat = ref<'xlsx' | 'csv'>('xlsx');
+
+const {
+  state,
+  paginatedItems,
+  pagination,
+  totalPages,
+  visibleColumns,
+  setPage,
+  setPageSize,
+  setSort,
+  setFilter,
+  clearFilters,
+  toggleColumn,
+  reorderColumns,
+  exportData,
+} = useTable(props.items, props.columns, {
+  storageKey: props.storageKey || '',
+  defaultPageSize: props.defaultPageSize || 10,
+  exportFileName: props.exportFileName || '',
+});
+
+const pageSizeOptions = [10, 25, 50, 100];
+
+const globalSearch = computed<string>({
+  get: () => state.searchQuery,
+  set: (value: string) => {
+    state.searchQuery = value;
+  },
+});
+
+const handleExport = () => {
+  interface VisibleColumn {
+    id: string
+  }
+
+  const options: ExportOptions = {
+    format: exportFormat.value,
+    filename: props.exportFileName || '',
+    includeHeaders: true,
+    columnIds: visibleColumns.value.map((col: VisibleColumn) => col.id),
+  };
+  exportData(options);
+};
+
+const getSortIcon = (column: TableColumn) => {
+  if (!column.sortable) return null;
+  if (state.value.sortBy !== column.key) return ChevronUpDownIcon;
+  return state.value.sortOrder === 'asc' ? ChevronUpIcon : ChevronDownIcon;
+};
+</script>
 ````

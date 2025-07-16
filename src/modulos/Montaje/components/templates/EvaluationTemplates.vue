@@ -9,13 +9,13 @@
         <button
           v-for="template in evaluationTemplates"
           :key="template.id"
-          @click="selectTemplate(template)"
           :class="[
             'p-4 border-2 rounded-lg text-left transition-all duration-200 hover:shadow-md',
             selectedTemplate?.id === template.id
               ? 'border-blue-500 bg-blue-50 shadow-md'
               : 'border-gray-200 hover:border-blue-300'
           ]"
+          @click="selectTemplate(template)"
         >
           <div class="flex items-center gap-2">
             <span class="text-2xl">{{ template.icon }}</span>
@@ -33,8 +33,8 @@
       <div class="flex items-center justify-between mb-6">
         <h3 class="text-lg font-semibold text-gray-900">{{ selectedTemplate.name }}</h3>
         <button
-          @click="useSelectedTemplate"
           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          @click="useSelectedTemplate"
         >
           Usar esta plantilla
         </button>
@@ -46,10 +46,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import GeneralRehearsalTemplate from './GeneralRehearsalTemplate.vue'
-import SectionalRehearsalTemplate from './SectionalRehearsalTemplate.vue'
-import RowRehearsalTemplate from './RowRehearsalTemplate.vue'
+import { ref } from 'vue';
+import GeneralRehearsalTemplate from './GeneralRehearsalTemplate.vue';
+import SectionalRehearsalTemplate from './SectionalRehearsalTemplate.vue';
+import RowRehearsalTemplate from './RowRehearsalTemplate.vue';
 
 const evaluationTemplates = [
   {
@@ -57,34 +57,34 @@ const evaluationTemplates = [
     name: 'Ensayo General',
     description: 'Evaluación completa del ensayo con toda la orquesta o coro',
     icon: '🎼',
-    component: GeneralRehearsalTemplate
+    component: GeneralRehearsalTemplate,
   },
   {
     id: 'sectional',
     name: 'Ensayo Seccional',
     description: 'Evaluación por familias de instrumentos',
     icon: '🎵',
-    component: SectionalRehearsalTemplate
+    component: SectionalRehearsalTemplate,
   },
   {
     id: 'row',
     name: 'Ensayo por Filas',
     description: 'Evaluación por instrumentos específicos',
     icon: '🎻',
-    component: RowRehearsalTemplate
-  }
-]
+    component: RowRehearsalTemplate,
+  },
+];
 
-const selectedTemplate = ref(null)
-const emit = defineEmits(['use-template'])
+const selectedTemplate = ref(null);
+const emit = defineEmits(['use-template']);
 
 const selectTemplate = (template) => {
-  selectedTemplate.value = template
-}
+  selectedTemplate.value = template;
+};
 
 const useSelectedTemplate = () => {
   if (selectedTemplate.value) {
-    emit('use-template', selectedTemplate.value)
+    emit('use-template', selectedTemplate.value);
   }
-}
+};
 </script>

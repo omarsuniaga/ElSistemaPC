@@ -1,66 +1,3 @@
-<script setup lang="ts">
-import {computed} from "vue"
-
-const props = defineProps({
-  firstName: {
-    type: String,
-    default: "",
-  },
-  lastName: {
-    type: String,
-    default: "",
-  },
-  size: {
-    type: String,
-    default: "md",
-    validator: (value: string) => ["xs", "sm", "md", "lg", "xl"].includes(value),
-  },
-  showEditButton: {
-    type: Boolean,
-    default: false,
-  },
-})
-
-const _emit = defineEmits(["edit"])
-
-const initials = computed(() => {
-  const first = props.firstName?.charAt(0) || ""
-  const last = props.lastName?.charAt(0) || ""
-  return `${first}${last}`.toUpperCase()
-})
-
-const sizeClasses: Record<string, string> = {
-  xs: "w-6 h-6 text-xs",
-  sm: "w-8 h-8 text-xs",
-  md: "w-10 h-10 text-sm",
-  lg: "w-16 h-16 text-lg",
-  xl: "w-24 h-24 text-xl",
-}
-
-const backgroundColor = computed(() => {
-  const name = `${props.firstName} ${props.lastName}`.toLowerCase()
-  const colors = [
-    "bg-blue-500",
-    "bg-green-500",
-    "bg-purple-500",
-    "bg-pink-500",
-    "bg-yellow-500",
-    "bg-indigo-500",
-    "bg-red-500",
-    "bg-teal-500",
-    "bg-orange-500",
-    "bg-cyan-500",
-  ]
-
-  let hash = 0
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  }
-
-  return colors[Math.abs(hash) % colors.length]
-})
-</script>
-
 <template>
   <div class="relative">
     <!-- Avatar con iniciales -->
@@ -97,5 +34,68 @@ const backgroundColor = computed(() => {
     </button>
   </div>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+
+const props = defineProps({
+  firstName: {
+    type: String,
+    default: '',
+  },
+  lastName: {
+    type: String,
+    default: '',
+  },
+  size: {
+    type: String,
+    default: 'md',
+    validator: (value: string) => ['xs', 'sm', 'md', 'lg', 'xl'].includes(value),
+  },
+  showEditButton: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+const _emit = defineEmits(['edit']);
+
+const initials = computed(() => {
+  const first = props.firstName?.charAt(0) || '';
+  const last = props.lastName?.charAt(0) || '';
+  return `${first}${last}`.toUpperCase();
+});
+
+const sizeClasses: Record<string, string> = {
+  xs: 'w-6 h-6 text-xs',
+  sm: 'w-8 h-8 text-xs',
+  md: 'w-10 h-10 text-sm',
+  lg: 'w-16 h-16 text-lg',
+  xl: 'w-24 h-24 text-xl',
+};
+
+const backgroundColor = computed(() => {
+  const name = `${props.firstName} ${props.lastName}`.toLowerCase();
+  const colors = [
+    'bg-blue-500',
+    'bg-green-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-yellow-500',
+    'bg-indigo-500',
+    'bg-red-500',
+    'bg-teal-500',
+    'bg-orange-500',
+    'bg-cyan-500',
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+});
+</script>
 
 export default { name: 'StudentAvatar' }

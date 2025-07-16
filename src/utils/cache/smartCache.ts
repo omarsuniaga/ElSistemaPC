@@ -3,7 +3,7 @@
  * Sistema de cache inteligente con invalidación automática
  */
 
-import {logger} from "@/utils/logging/logger"
+import { logger } from '@/utils/logging/logger';
 
 interface CacheEntry<T = any> {
   data: T
@@ -18,7 +18,7 @@ interface CacheEntry<T = any> {
 interface CacheOptions {
   ttl?: number // Time to live en milisegundos
   tags?: string[] // Tags para invalidación grupal
-  priority?: "low" | "medium" | "high"
+  priority?: 'low' | 'medium' | 'high'
   serialize?: boolean // Si serializar para localStorage
 }
 
@@ -33,251 +33,251 @@ interface CacheStats {
 }
 
 class SmartCache {
-  private static instance: SmartCache
-  private memoryCache = new Map<string, CacheEntry>()
+  private static instance: SmartCache;
+  private memoryCache = new Map<string, CacheEntry>();
   private stats = {
     hits: 0,
     misses: 0,
     sets: 0,
     deletes: 0,
-  }
-  private maxMemorySize = 50 * 1024 * 1024 // 50MB máximo
-  private currentMemorySize = 0
-  private cleanupInterval: number | null = null
+  };
+  private maxMemorySize = 50 * 1024 * 1024; // 50MB máximo
+  private currentMemorySize = 0;
+  private cleanupInterval: number | null = null;
 
   private constructor() {
-    this.startCleanupProcess()
-    this.loadFromPersistentCache()
+    this.startCleanupProcess();
+    this.loadFromPersistentCache();
   }
 
   static getInstance(): SmartCache {
     if (!SmartCache.instance) {
-      SmartCache.instance = new SmartCache()
+      SmartCache.instance = new SmartCache();
     }
-    return SmartCache.instance
+    return SmartCache.instance;
   }
 
   private startCleanupProcess() {
     // Limpiar cada 5 minutos
     this.cleanupInterval = window.setInterval(
       () => {
-        this.cleanup()
+        this.cleanup();
       },
-      5 * 60 * 1000
-    )
+      5 * 60 * 1000,
+    );
   }
 
   private loadFromPersistentCache() {
     try {
-      const stored = localStorage.getItem("music-academy-cache")
+      const stored = localStorage.getItem('music-academy-cache');
       if (stored) {
-        const data = JSON.parse(stored)
+        const data = JSON.parse(stored);
         for (const [key, entry] of Object.entries(data)) {
           if (this.isValidEntry(entry as CacheEntry)) {
-            this.memoryCache.set(key, entry as CacheEntry)
+            this.memoryCache.set(key, entry as CacheEntry);
           }
         }
-        logger.debug("CACHE", `Cargadas ${this.memoryCache.size} entradas desde localStorage`)
+        logger.debug('CACHE', `Cargadas ${this.memoryCache.size} entradas desde localStorage`);
       }
     } catch (error) {
-      logger.warn("CACHE", "Error cargando cache persistente", error)
+      logger.warn('CACHE', 'Error cargando cache persistente', error);
     }
   }
 
   private saveToPersistentCache() {
     try {
       const serializableEntries = Array.from(this.memoryCache.entries())
-        .filter(([_, entry]) => entry.tags.includes("persistent"))
+        .filter(([_, entry]) => entry.tags.includes('persistent'))
         .reduce(
           (acc, [key, entry]) => {
-            acc[key] = entry
-            return acc
+            acc[key] = entry;
+            return acc;
           },
-          {} as Record<string, CacheEntry>
-        )
+          {} as Record<string, CacheEntry>,
+        );
 
-      localStorage.setItem("music-academy-cache", JSON.stringify(serializableEntries))
+      localStorage.setItem('music-academy-cache', JSON.stringify(serializableEntries));
     } catch (error) {
-      logger.warn("CACHE", "Error guardando cache persistente", error)
+      logger.warn('CACHE', 'Error guardando cache persistente', error);
     }
   }
 
   private isValidEntry(entry: any): boolean {
     return (
       entry &&
-      typeof entry.timestamp === "number" &&
-      typeof entry.ttl === "number" &&
+      typeof entry.timestamp === 'number' &&
+      typeof entry.ttl === 'number' &&
       entry.data !== undefined &&
       Date.now() - entry.timestamp < entry.ttl
-    )
+    );
   }
 
   private calculateMemorySize(data: any): number {
     try {
-      return new Blob([JSON.stringify(data)]).size
+      return new Blob([JSON.stringify(data)]).size;
     } catch {
-      return JSON.stringify(data).length * 2 // Aproximación
+      return JSON.stringify(data).length * 2; // Aproximación
     }
   }
 
   private evictLRU() {
-    if (this.memoryCache.size === 0) return
+    if (this.memoryCache.size === 0) return;
 
     // Encontrar entrada menos recientemente usada
-    let oldestEntry: [string, CacheEntry] | null = null
-    let oldestTime = Date.now()
+    let oldestEntry: [string, CacheEntry] | null = null;
+    let oldestTime = Date.now();
 
     for (const [key, entry] of this.memoryCache.entries()) {
       if (entry.lastAccessed < oldestTime) {
-        oldestTime = entry.lastAccessed
-        oldestEntry = [key, entry]
+        oldestTime = entry.lastAccessed;
+        oldestEntry = [key, entry];
       }
     }
 
     if (oldestEntry) {
-      this.delete(oldestEntry[0])
-      logger.debug("CACHE", `Evicted LRU entry: ${oldestEntry[0]}`)
+      this.delete(oldestEntry[0]);
+      logger.debug('CACHE', `Evicted LRU entry: ${oldestEntry[0]}`);
     }
   }
 
   private cleanup() {
-    const now = Date.now()
-    let removedCount = 0
+    const now = Date.now();
+    let removedCount = 0;
 
     for (const [key, entry] of this.memoryCache.entries()) {
       // Remover entradas expiradas
       if (now - entry.timestamp > entry.ttl) {
-        this.memoryCache.delete(key)
-        removedCount++
+        this.memoryCache.delete(key);
+        removedCount++;
       }
     }
 
     // Si aún hay mucha memoria usada, aplicar LRU
     while (this.currentMemorySize > this.maxMemorySize * 0.8) {
-      this.evictLRU()
+      this.evictLRU();
     }
 
     if (removedCount > 0) {
-      logger.debug("CACHE", `Cleanup: removed ${removedCount} expired entries`)
+      logger.debug('CACHE', `Cleanup: removed ${removedCount} expired entries`);
     }
 
     // Guardar cache persistente cada cleanup
-    this.saveToPersistentCache()
+    this.saveToPersistentCache();
   }
 
   set<T>(key: string, data: T, options: CacheOptions = {}): void {
     const {
       ttl = 30 * 60 * 1000, // 30 minutos por defecto
       tags = [],
-      priority = "medium",
+      priority = 'medium',
       serialize = false,
-    } = options
+    } = options;
 
-    const now = Date.now()
+    const now = Date.now();
     const entry: CacheEntry<T> = {
       data,
       timestamp: now,
       ttl,
       key,
-      tags: serialize ? [...tags, "persistent"] : tags,
+      tags: serialize ? [...tags, 'persistent'] : tags,
       accessCount: 0,
       lastAccessed: now,
-    }
+    };
 
-    const size = this.calculateMemorySize(data)
+    const size = this.calculateMemorySize(data);
 
     // Si la entrada es muy grande, no la guardamos
     if (size > this.maxMemorySize * 0.1) {
-      logger.warn("CACHE", `Entry too large for cache: ${key} (${size} bytes)`)
-      return
+      logger.warn('CACHE', `Entry too large for cache: ${key} (${size} bytes)`);
+      return;
     }
 
     // Si no hay espacio, hacer limpieza
     while (this.currentMemorySize + size > this.maxMemorySize) {
-      this.evictLRU()
+      this.evictLRU();
     }
 
-    this.memoryCache.set(key, entry)
-    this.currentMemorySize += size
-    this.stats.sets++
+    this.memoryCache.set(key, entry);
+    this.currentMemorySize += size;
+    this.stats.sets++;
 
-    logger.debug("CACHE", `Set: ${key} (${size} bytes, TTL: ${ttl}ms)`)
+    logger.debug('CACHE', `Set: ${key} (${size} bytes, TTL: ${ttl}ms)`);
   }
 
   get<T>(key: string): T | null {
-    const entry = this.memoryCache.get(key)
+    const entry = this.memoryCache.get(key);
 
     if (!entry) {
-      this.stats.misses++
-      return null
+      this.stats.misses++;
+      return null;
     }
 
-    const now = Date.now()
+    const now = Date.now();
 
     // Verificar si ha expirado
     if (now - entry.timestamp > entry.ttl) {
-      this.memoryCache.delete(key)
-      this.stats.misses++
-      return null
+      this.memoryCache.delete(key);
+      this.stats.misses++;
+      return null;
     }
 
     // Actualizar estadísticas de acceso
-    entry.accessCount++
-    entry.lastAccessed = now
-    this.stats.hits++
+    entry.accessCount++;
+    entry.lastAccessed = now;
+    this.stats.hits++;
 
-    return entry.data as T
+    return entry.data as T;
   }
 
   delete(key: string): boolean {
-    const deleted = this.memoryCache.delete(key)
+    const deleted = this.memoryCache.delete(key);
     if (deleted) {
-      this.stats.deletes++
+      this.stats.deletes++;
     }
-    return deleted
+    return deleted;
   }
 
   invalidateByTag(tag: string): number {
-    let count = 0
+    let count = 0;
 
     for (const [key, entry] of this.memoryCache.entries()) {
       if (entry.tags.includes(tag)) {
-        this.memoryCache.delete(key)
-        count++
+        this.memoryCache.delete(key);
+        count++;
       }
     }
 
-    logger.debug("CACHE", `Invalidated ${count} entries with tag: ${tag}`)
-    return count
+    logger.debug('CACHE', `Invalidated ${count} entries with tag: ${tag}`);
+    return count;
   }
 
   has(key: string): boolean {
-    const entry = this.memoryCache.get(key)
-    if (!entry) return false
+    const entry = this.memoryCache.get(key);
+    if (!entry) return false;
 
     // Verificar si ha expirado
-    const now = Date.now()
+    const now = Date.now();
     if (now - entry.timestamp > entry.ttl) {
-      this.memoryCache.delete(key)
-      return false
+      this.memoryCache.delete(key);
+      return false;
     }
 
-    return true
+    return true;
   }
 
   clear(): void {
-    this.memoryCache.clear()
-    this.currentMemorySize = 0
-    localStorage.removeItem("music-academy-cache")
-    logger.info("CACHE", "Cache cleared")
+    this.memoryCache.clear();
+    this.currentMemorySize = 0;
+    localStorage.removeItem('music-academy-cache');
+    logger.info('CACHE', 'Cache cleared');
   }
 
   getStats(): CacheStats {
-    const entries = Array.from(this.memoryCache.values())
+    const entries = Array.from(this.memoryCache.values());
     const hitRate =
       this.stats.hits + this.stats.misses > 0
         ? this.stats.hits / (this.stats.hits + this.stats.misses)
-        : 0
+        : 0;
 
     return {
       totalKeys: this.memoryCache.size,
@@ -287,97 +287,97 @@ class SmartCache {
       totalMisses: this.stats.misses,
       oldestEntry: entries.length > 0 ? Math.min(...entries.map((e) => e.timestamp)) : 0,
       newestEntry: entries.length > 0 ? Math.max(...entries.map((e) => e.timestamp)) : 0,
-    }
+    };
   }
 
   // Métodos de conveniencia para casos específicos
   cacheApiResponse<T>(url: string, data: T, ttl = 5 * 60 * 1000) {
-    this.set(`api:${url}`, data, {ttl, tags: ["api"]})
+    this.set(`api:${url}`, data, { ttl, tags: ['api'] });
   }
 
   cacheUserData<T>(userId: string, data: T, ttl = 15 * 60 * 1000) {
     this.set(`user:${userId}`, data, {
       ttl,
-      tags: ["user", `user:${userId}`],
+      tags: ['user', `user:${userId}`],
       serialize: true,
-    })
+    });
   }
 
   cacheFirestoreQuery<T>(collection: string, query: string, data: T, ttl = 10 * 60 * 1000) {
     this.set(`firestore:${collection}:${query}`, data, {
       ttl,
-      tags: ["firestore", collection],
-    })
+      tags: ['firestore', collection],
+    });
   }
 
   invalidateUser(userId: string) {
-    return this.invalidateByTag(`user:${userId}`)
+    return this.invalidateByTag(`user:${userId}`);
   }
 
   invalidateApi() {
-    return this.invalidateByTag("api")
+    return this.invalidateByTag('api');
   }
 
   invalidateFirestore(collection?: string) {
-    return this.invalidateByTag(collection ? collection : "firestore")
+    return this.invalidateByTag(collection ? collection : 'firestore');
   }
 
   destroy() {
     if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval)
+      clearInterval(this.cleanupInterval);
     }
-    this.clear()
+    this.clear();
   }
 }
 
 // Decorador para cache automático
 export function cached(options: CacheOptions & {keyGenerator?: (...args: any[]) => string} = {}) {
   return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
-    const originalMethod = descriptor.value
-    const cache = SmartCache.getInstance()
+    const originalMethod = descriptor.value;
+    const cache = SmartCache.getInstance();
 
     descriptor.value = async function (...args: any[]) {
       const keyGen =
         options.keyGenerator ||
-        ((...args) => `${target.constructor.name}:${propertyKey}:${JSON.stringify(args)}`)
-      const cacheKey = keyGen(...args)
+        ((...args) => `${target.constructor.name}:${propertyKey}:${JSON.stringify(args)}`);
+      const cacheKey = keyGen(...args);
 
       // Intentar obtener del cache
-      const cached = cache.get(cacheKey)
+      const cached = cache.get(cacheKey);
       if (cached !== null) {
-        logger.debug("CACHE", `Cache hit: ${propertyKey}`)
-        return cached
+        logger.debug('CACHE', `Cache hit: ${propertyKey}`);
+        return cached;
       }
 
       // Ejecutar método original
-      const result = await originalMethod.apply(this, args)
+      const result = await originalMethod.apply(this, args);
 
       // Guardar en cache
-      cache.set(cacheKey, result, options)
-      logger.debug("CACHE", `Cache set: ${propertyKey}`)
+      cache.set(cacheKey, result, options);
+      logger.debug('CACHE', `Cache set: ${propertyKey}`);
 
-      return result
-    }
+      return result;
+    };
 
-    return descriptor
-  }
+    return descriptor;
+  };
 }
 
 // Plugin para Vue
 export function createCachePlugin() {
-  const cache = SmartCache.getInstance()
+  const cache = SmartCache.getInstance();
 
   return {
     install(app: any) {
-      app.config.globalProperties.$cache = cache
+      app.config.globalProperties.$cache = cache;
 
       // Limpiar cache al salir
-      window.addEventListener("beforeunload", () => {
-        cache.saveToPersistentCache()
-      })
+      window.addEventListener('beforeunload', () => {
+        cache.saveToPersistentCache();
+      });
     },
-  }
+  };
 }
 
-export const smartCache = SmartCache.getInstance()
-export type {CacheOptions, CacheEntry, CacheStats}
+export const smartCache = SmartCache.getInstance();
+export type { CacheOptions, CacheEntry, CacheStats };

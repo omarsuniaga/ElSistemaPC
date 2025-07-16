@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import {PropType} from "vue"
+import { PropType } from 'vue';
 
 interface Session {
   dateTime: string | Date // Can be ISO string or Date object
@@ -31,15 +31,15 @@ const props = defineProps({
     type: Array as PropType<Session[]>,
     default: () => [],
   },
-})
+});
 
 const formatSessionTime = (dateTime: string | Date): string => {
-  const date = new Date(dateTime)
-  return date.toLocaleString("es-ES", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  })
-}
+  const date = new Date(dateTime);
+  return date.toLocaleString('es-ES', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+};
 </script>
 
 <style scoped>

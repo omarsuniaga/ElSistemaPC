@@ -51,7 +51,7 @@
       </div>
 
       <!-- Estado de Asistencias -->
-      <div v-if="attendanceInfo.total > 0" class="text-xs">
+      <div v-if="attendanceInfo.total > 0 && !isFutureDate" class="text-xs">
         <div 
           v-if="attendanceInfo.completed === attendanceInfo.total"
           class="text-green-600 dark:text-green-400 flex items-center"
@@ -95,9 +95,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { format } from 'date-fns'
-import { CalendarService } from '../services/CalendarService'
+import { computed, ref, watch } from 'vue';
+import { format } from 'date-fns';
+import { CalendarService } from '../services/CalendarService';
 
 // Props
 interface Props {
@@ -106,101 +106,121 @@ interface Props {
   isToday: boolean
   isSelected: boolean
   teacherId?: string
+  // Nueva prop para indicar si el día tiene registros de asistencia
+  hasAttendanceRecords?: boolean
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
   'click': [date: Date]
-}>()
+}>();
 
 // Composables - Funciones simplificadas
 const validateClassForDay = (classItem: any, dayOfWeek: number) => {
-  if (!classItem?.name) return false
+  if (!classItem?.name) return false;
   
   // Ensayo General solo martes (2), jueves (4), sábado (6)
-  if (classItem.name === "Ensayo General") {
-    return [2, 4, 6].includes(dayOfWeek)
+  if (classItem.name === 'Ensayo General') {
+    return [2, 4, 6].includes(dayOfWeek);
   }
   
-  return true
-}
+  return true;
+};
 
 const debugClass = (classItem: any, date: string) => {
-  const dayOfWeek = new Date(date).getDay()
-  const dayNames = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"]
+  const dayOfWeek = new Date(date).getDay();
+  const dayNames = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
   
-  console.log(`[DEBUG] Clase: ${classItem.name}`)
-  console.log(`[DEBUG] Fecha: ${date} (${dayNames[dayOfWeek]})`)
-  console.log(`[DEBUG] Día de la semana: ${dayOfWeek}`)
-  console.log(`[DEBUG] ¿Debe aparecer?: ${validateClassForDay(classItem, dayOfWeek)}`)
-}
+  console.log(`[DEBUG] Clase: ${classItem.name}`);
+  console.log(`[DEBUG] Fecha: ${date} (${dayNames[dayOfWeek]})`);
+  console.log(`[DEBUG] Día de la semana: ${dayOfWeek}`);
+  console.log(`[DEBUG] ¿Debe aparecer?: ${validateClassForDay(classItem, dayOfWeek)}`);
+};
 
 // Estado
-const loading = ref(false)
+const loading = ref(false);
 const classesInfo = ref({
   scheduled: 0,
-  total: 0
-})
+  total: 0,
+});
 const attendanceInfo = ref({
   total: 0,
   completed: 0,
-  pending: 0
-})
+  pending: 0,
+});
 
 // Computed
-const dayNumber = computed(() => props.date.getDate())
+const dayNumber = computed(() => props.date.getDate());
 
-const dateString = computed(() => format(props.date, 'yyyy-MM-dd'))
+const dateString = computed(() => format(props.date, 'yyyy-MM-dd'));
 
 const dayClasses = computed(() => {
-  const classes = ['hover:bg-gray-50 dark:hover:bg-gray-700']
+  const classes = [];
+  
+  // Aplicar hover solo a fechas interactivas
+  if (isInteractive.value) {
+    classes.push('hover:bg-gray-50 dark:hover:bg-gray-700');
+  }
   
   // Estado del mes
   if (!props.isCurrentMonth) {
-    classes.push('text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-900')
+    classes.push('text-gray-400 dark:text-gray-600 bg-gray-50 dark:bg-gray-900');
   } else {
-    classes.push('bg-white dark:bg-gray-800')
+    classes.push('bg-white dark:bg-gray-800');
   }
   
-  // Estado de selección
-  if (props.isSelected) {
-    classes.push('bg-blue-50 dark:bg-blue-900/20')
+  // Estado de selección (solo permitido si es interactivo)
+  if (props.isSelected && isInteractive.value) {
+    classes.push('bg-blue-50 dark:bg-blue-900/20');
   }
   
   // Estado de hoy
   if (props.isToday) {
-    classes.push('ring-2 ring-red-500 ring-opacity-50')
+    classes.push('ring-2 ring-red-500 ring-opacity-50');
   }
   
-  // Estado de actividad
-  if (classesInfo.value.scheduled > 0) {
+  // Fechas futuras (deshabilitadas)
+  if (isFutureDate.value) {
+    classes.push('opacity-50 cursor-not-allowed');
+  } 
+  // Fechas sin registros de asistencia (excepto hoy)
+  else if (!props.hasAttendanceRecords && !props.isToday) {
+    classes.push('opacity-75 cursor-default');
+  } 
+  // Fechas interactivas
+  else {
+    classes.push('cursor-pointer');
+  }
+  
+  // Estado de actividad (solo mostrar indicador si tiene registros)
+  if (props.hasAttendanceRecords && classesInfo.value.scheduled > 0) {
     if (attendanceInfo.value.completed === attendanceInfo.value.total) {
-      classes.push('border-l-4 border-green-500')
+      classes.push('border-l-4 border-green-500');
     } else if (attendanceInfo.value.completed > 0) {
-      classes.push('border-l-4 border-yellow-500')
+      classes.push('border-l-4 border-yellow-500');
     } else {
-      classes.push('border-l-4 border-blue-500')
+      classes.push('border-l-4 border-blue-500');
     }
   }
   
-  return classes.join(' ')
-})
+  return classes.join(' ');
+});
 
 const dateTextClasses = computed(() => {
-  const classes = []
+  const classes = [];
   
   if (props.isToday) {
-    classes.push('text-red-600 dark:text-red-400 font-bold')
+    classes.push('text-red-600 dark:text-red-400 font-bold');
   } else if (!props.isCurrentMonth) {
-    classes.push('text-gray-400 dark:text-gray-600')
+    classes.push('text-gray-400 dark:text-gray-600');
   } else {
-    classes.push('text-gray-900 dark:text-white')
+    classes.push('text-gray-900 dark:text-white');
   }
   
-  return classes.join(' ')
-})
+  return classes.join(' ');
+});
 
 // Methods
 const getClassIndicatorColor = (index: number): string => {
@@ -208,66 +228,89 @@ const getClassIndicatorColor = (index: number): string => {
     'bg-blue-500',   // Primera clase
     'bg-green-500',  // Segunda clase
     'bg-purple-500', // Tercera clase
-  ]
+  ];
   
-  return colors[index - 1] || 'bg-gray-500'
-}
+  return colors[index - 1] || 'bg-gray-500';
+};
 
 const loadDayInfo = async () => {
   if (!props.teacherId || !props.isCurrentMonth) {
-    return
+    return;
   }
   
   try {
-    loading.value = true
+    loading.value = true;
     
     // Simular carga de información del día
     // TODO: Implementar carga real de clases y asistencias
     
-    console.log(`[CalendarDay] Loading info for ${dateString.value}`)
+    console.log(`[CalendarDay] Loading info for ${dateString.value}`);
     
     // Simular datos para demo
-    const dayOfWeek = props.date.getDay()
-    const hasClasses = [1, 2, 4, 6].includes(dayOfWeek) // Lun, Mar, Jue, Sáb
+    const dayOfWeek = props.date.getDay();
+    const hasClasses = [1, 2, 4, 6].includes(dayOfWeek); // Lun, Mar, Jue, Sáb
     
     if (hasClasses) {
       classesInfo.value = {
         scheduled: Math.floor(Math.random() * 3) + 1,
-        total: Math.floor(Math.random() * 3) + 1
-      }
+        total: Math.floor(Math.random() * 3) + 1,
+      };
       
       attendanceInfo.value = {
         total: classesInfo.value.scheduled,
         completed: Math.floor(Math.random() * classesInfo.value.scheduled),
-        pending: 0
-      }
+        pending: 0,
+      };
       
-      attendanceInfo.value.pending = attendanceInfo.value.total - attendanceInfo.value.completed
+      attendanceInfo.value.pending = attendanceInfo.value.total - attendanceInfo.value.completed;
     } else {
-      classesInfo.value = { scheduled: 0, total: 0 }
-      attendanceInfo.value = { total: 0, completed: 0, pending: 0 }
+      classesInfo.value = { scheduled: 0, total: 0 };
+      attendanceInfo.value = { total: 0, completed: 0, pending: 0 };
     }
     
   } catch (error) {
-    console.error('[CalendarDay] Error loading day info:', error)
+    console.error('[CalendarDay] Error loading day info:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
+
+// Verificar si la fecha es futura comparando con la fecha actual
+const isFutureDate = computed(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Normalizar a medianoche
+  return props.date > today;
+});
+
+// Verificar si el día es interactuable (no es futuro y tiene registros o es hoy)
+const isInteractive = computed(() => {
+  // Si tiene registros de asistencia o es hoy
+  return (props.hasAttendanceRecords || props.isToday) && !isFutureDate.value;
+});
 
 const handleClick = () => {
-  console.log(`[CalendarDay] Clicked: ${dateString.value}`)
-  emit('click', props.date)
-}
+  // Sólo permitir interacción si no es fecha futura y tiene registros o es hoy
+  if (!isInteractive.value) {
+    console.log(`[CalendarDay] Día no interactuable: ${dateString.value}`, {
+      isFuture: isFutureDate.value,
+      hasAttendanceRecords: props.hasAttendanceRecords,
+      isToday: props.isToday
+    });
+    return;
+  }
+  
+  console.log(`[CalendarDay] Clicked: ${dateString.value}`);
+  emit('click', props.date);
+};
 
 // Watchers
 watch(
   [() => props.teacherId, () => props.isCurrentMonth, dateString],
   () => {
-    loadDayInfo()
+    loadDayInfo();
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 </script>
 
 <style scoped>
@@ -292,6 +335,4 @@ watch(
 }
 
 .dark .hover\\:bg-gray-700:hover {
-  background-color: rgb(55, 65, 81);
-}
-</style>
+  background-color: rgb(55, 65, 81

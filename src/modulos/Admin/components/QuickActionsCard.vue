@@ -28,7 +28,7 @@ interface QuickAction {
   id: string
   label: string
   icon: any
-  color: "blue" | "green" | "purple" | "yellow" | "red" | "indigo"
+  color: 'blue' | 'green' | 'purple' | 'yellow' | 'red' | 'indigo'
   disabled?: boolean
 }
 
@@ -37,33 +37,33 @@ interface Props {
   actions: QuickAction[]
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 defineEmits<{
-  (e: "action-click", actionId: string): void
-}>()
+  (e: 'action-click', actionId: string): void
+}>();
 
 const getButtonColor = (color: string): string => {
   const colorMap = {
-    blue: "bg-blue-600",
-    green: "bg-green-600",
-    purple: "bg-purple-600",
-    yellow: "bg-yellow-600",
-    red: "bg-red-600",
-    indigo: "bg-indigo-600",
-  }
-  return colorMap[color as keyof typeof colorMap] || "bg-blue-600"
-}
+    blue: 'bg-blue-600',
+    green: 'bg-green-600',
+    purple: 'bg-purple-600',
+    yellow: 'bg-yellow-600',
+    red: 'bg-red-600',
+    indigo: 'bg-indigo-600',
+  };
+  return colorMap[color as keyof typeof colorMap] || 'bg-blue-600';
+};
 
 const getButtonHoverColor = (color: string): string => {
   const colorMap = {
-    blue: "bg-blue-700",
-    green: "bg-green-700",
-    purple: "bg-purple-700",
-    yellow: "bg-yellow-700",
-    red: "bg-red-700",
-    indigo: "bg-indigo-700",
-  }
-  return colorMap[color as keyof typeof colorMap] || "bg-blue-700"
-}
+    blue: 'bg-blue-700',
+    green: 'bg-green-700',
+    purple: 'bg-purple-700',
+    yellow: 'bg-yellow-700',
+    red: 'bg-red-700',
+    indigo: 'bg-indigo-700',
+  };
+  return colorMap[color as keyof typeof colorMap] || 'bg-blue-700';
+};
 </script>

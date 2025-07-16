@@ -169,79 +169,60 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import type {MusicalWork, Measure, Instrument} from "../types/repertoire"
-import {INSTRUMENT_SECTIONS} from "../types/repertoire"
-import {useRepertoireStore} from "../stores/repertoire"
-import {useStudentsStore} from "../../Students/store/students"
+import { ref, computed } from 'vue';
+import type { MusicalWork, Measure, Instrument } from '../types/repertoire';
+import { INSTRUMENT_SECTIONS } from '../types/repertoire';
+import { useRepertoireStore } from '../stores/repertoire';
+import { useStudentsStore } from '../../Students/store/students';
 
 const props = defineProps<{
   work: MusicalWork
   repertoireId: number
-}>()
+}>();
 
-const repertoireStore = useRepertoireStore()
-const studentsStore = useStudentsStore()
+const repertoireStore = useRepertoireStore();
+const studentsStore = useStudentsStore();
 
-const currentView = ref<"general" | "student" | "section">("general")
-const selectedStudent = ref("")
-const selectedSection = ref("")
+const currentView = ref<'general' | 'student' | 'section'>('general');
+const selectedStudent = ref('');
+const selectedSection = ref('');
 
 const viewModes = {
-  general: "Vista General",
-  student: "Por Estudiante",
-  section: "Por Sección",
-}
+  general: 'Vista General',
+  student: 'Por Estudiante',
+  section: 'Por Sección',
+};
 
-const sections = INSTRUMENT_SECTIONS
-const students = computed(() => studentsStore.students)
+const sections = INSTRUMENT_SECTIONS;
+const students = computed(() => studentsStore.students);
 
 const sectionInstruments = computed(() => {
-  if (!selectedSection.value) return []
-  return props.work.instruments.filter((i) => i.section === selectedSection.value)
-})
+  if (!selectedSection.value) return [];
+  return props.work.instruments.filter((i) => i.section === selectedSection.value);
+});
 
 const studentInstruments = computed(() => {
-  if (!selectedStudent.value) return []
+  if (!selectedStudent.value) return [];
   return props.work.instruments.filter(
-    (i) => i.studentProgress?.[selectedStudent.value] !== undefined
-  )
-})
+    (i) => i.studentProgress?.[selectedStudent.value] !== undefined,
+  );
+});
 
 const getStudentName = (studentId: string) => {
-  const student = studentsStore.students.find((s) => s.id.toString() === studentId)
-  return student ? `${student.nombre} ${student.apellido}` : "Estudiante"
-}
+  const student = studentsStore.students.find((s) => s.id.toString() === studentId);
+  return student ? `${student.nombre} ${student.apellido}` : 'Estudiante';
+};
 
 const getStatusColor = (progress: number) => {
-  if (progress <= 20) return "bg-red-500"
-  if (progress <= 40) return "bg-orange-500"
-  if (progress <= 60) return "bg-yellow-500"
-  if (progress <= 80) return "bg-blue-500"
-  return "bg-green-500"
-}
+  if (progress <= 20) return 'bg-red-500';
+  if (progress <= 40) return 'bg-orange-500';
+  if (progress <= 60) return 'bg-yellow-500';
+  if (progress <= 80) return 'bg-blue-500';
+  return 'bg-green-500';
+};
 
 const updateProgress = async (measure: Measure, instrument: Instrument) => {
-  const newProgress = Math.min(100, Math.floor(measure.progress / 20) * 20 + 20)
-
-  try {
-    await repertoireStore.updateMeasureProgress(
-      props.repertoireId,
-      props.work.id,
-      instrument.id,
-      measure.id,
-      newProgress
-    )
-  } catch (err) {
-    console.error("Error updating progress:", err)
-  }
-}
-
-const updateStudentProgress = async (measure: Measure, instrument: Instrument) => {
-  if (!selectedStudent.value) return
-
-  const currentProgress = measure.studentProgress?.[selectedStudent.value] || 0
-  const newProgress = Math.min(100, Math.floor(currentProgress / 20) * 20 + 20)
+  const newProgress = Math.min(100, Math.floor(measure.progress / 20) * 20 + 20);
 
   try {
     await repertoireStore.updateMeasureProgress(
@@ -250,18 +231,37 @@ const updateStudentProgress = async (measure: Measure, instrument: Instrument) =
       instrument.id,
       measure.id,
       newProgress,
-      selectedStudent.value
-    )
+    );
   } catch (err) {
-    console.error("Error updating student progress:", err)
+    console.error('Error updating progress:', err);
   }
-}
+};
+
+const updateStudentProgress = async (measure: Measure, instrument: Instrument) => {
+  if (!selectedStudent.value) return;
+
+  const currentProgress = measure.studentProgress?.[selectedStudent.value] || 0;
+  const newProgress = Math.min(100, Math.floor(currentProgress / 20) * 20 + 20);
+
+  try {
+    await repertoireStore.updateMeasureProgress(
+      props.repertoireId,
+      props.work.id,
+      instrument.id,
+      measure.id,
+      newProgress,
+      selectedStudent.value,
+    );
+  } catch (err) {
+    console.error('Error updating student progress:', err);
+  }
+};
 
 const getSectionProgress = (workId: number, sectionName: string) => {
-  return repertoireStore.getSectionProgress(workId, sectionName)
-}
+  return repertoireStore.getSectionProgress(workId, sectionName);
+};
 
 const getInstrumentProgress = (workId: number, instrumentId: number, studentId?: string) => {
-  return repertoireStore.getInstrumentProgress(workId, instrumentId, studentId)
-}
+  return repertoireStore.getInstrumentProgress(workId, instrumentId, studentId);
+};
 </script>

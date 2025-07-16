@@ -1,16 +1,16 @@
-import { ref, computed } from 'vue'
-import type { PerformanceMetrics, AnalyticsReport } from '../types/analytics'
+import { ref, computed } from 'vue';
+import type { PerformanceMetrics, AnalyticsReport } from '../types/analytics';
 
 export function useAnalytics() {
-  const metrics = ref<PerformanceMetrics[]>([])
-  const reports = ref<AnalyticsReport[]>([])
-  const loading = ref(false)
+  const metrics = ref<PerformanceMetrics[]>([]);
+  const reports = ref<AnalyticsReport[]>([]);
+  const loading = ref(false);
 
   const generatePerformanceReport = async (workId: string, _period?: string) => {
-    loading.value = true
+    loading.value = true;
     try {
       // Simulate analytics generation
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       const report: AnalyticsReport = {
         id: `report_${Date.now()}`,
@@ -24,38 +24,38 @@ export function useAnalytics() {
           insights: [
             'La sección de cuerdas muestra una mejora constante del 15% en las últimas 4 semanas',
             'Los vientos necesitan más trabajo en afinación y cohesión',
-            'El tiempo de práctica promedio ha aumentado un 23%'
+            'El tiempo de práctica promedio ha aumentado un 23%',
           ],
           recommendations: [
             'Incrementar ensayos seccionales para vientos',
             'Implementar ejercicios específicos de afinación',
-            'Establecer metas semanales más específicas'
-          ]
+            'Establecer metas semanales más específicas',
+          ],
         },
         generatedAt: new Date().toISOString(),
-        workId
-      }
+        workId,
+      };
       
-      reports.value.unshift(report)
-      return report
+      reports.value.unshift(report);
+      return report;
     } finally {
-      loading.value = false
+      loading.value = false;
     }
-  }
+  };
 
   const getProgressTrend = (_instrumentId?: string, _weeks: number = 4) => {
     // Calculate progress trend over time
-    const trend = Math.random() * 2 - 1 // Mock trend between -1 and 1
-    return trend
-  }
+    const trend = Math.random() * 2 - 1; // Mock trend between -1 and 1
+    return trend;
+  };
 
   const getPredictiveInsights = (_workId?: string) => {
     return [
       'Basado en el progreso actual, la obra estará lista para presentación en 6 semanas',
       'Se recomienda enfocar los próximos ensayos en la sección de desarrollo',
-      'La memorización podría completarse 2 semanas antes de lo previsto'
-    ]
-  }
+      'La memorización podría completarse 2 semanas antes de lo previsto',
+    ];
+  };
 
   return {
     metrics: computed(() => metrics.value),
@@ -63,6 +63,6 @@ export function useAnalytics() {
     loading: computed(() => loading.value),
     generatePerformanceReport,
     getProgressTrend,
-    getPredictiveInsights
-  }
+    getPredictiveInsights,
+  };
 }

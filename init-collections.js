@@ -1,15 +1,15 @@
 // Script para verificar y crear colecciones necesarias para el sistema de notificaciones
 // Ejecutar este script una vez para inicializar las colecciones requeridas
 
-import { db, isFirebaseReady } from '../src/firebase.js'
+import { db, isFirebaseReady } from '../src/firebase.js';
 import { 
   collection, 
   getDocs, 
   addDoc, 
   serverTimestamp,
   query,
-  limit 
-} from 'firebase/firestore'
+  limit, 
+} from 'firebase/firestore';
 
 // Colecciones requeridas
 const REQUIRED_COLLECTIONS = [
@@ -22,8 +22,8 @@ const REQUIRED_COLLECTIONS = [
       message: 'Las notificaciones han sido configuradas correctamente',
       timestamp: new Date(),
       read: false,
-      urgency: 'low'
-    }
+      urgency: 'low',
+    },
   },
   {
     name: 'ASISTENCIAS',
@@ -36,10 +36,10 @@ const REQUIRED_COLLECTIONS = [
         presentes: [],
         ausentes: [],
         tarde: [],
-        justificacion: []
+        justificacion: [],
       },
-      createdAt: new Date()
-    }
+      createdAt: new Date(),
+    },
   },
   {
     name: 'CLASES',
@@ -50,8 +50,8 @@ const REQUIRED_COLLECTIONS = [
       className: 'Clase de Ejemplo',
       studentIds: [],
       teacherId: 'sample_teacher',
-      schedule: 'Horario pendiente'
-    }
+      schedule: 'Horario pendiente',
+    },
   },
   {
     name: 'users',
@@ -62,62 +62,62 @@ const REQUIRED_COLLECTIONS = [
       lastName: 'Ejemplo',
       email: 'maestro@ejemplo.com',
       role: 'Teacher',
-      active: true
-    }
-  }
-]
+      active: true,
+    },
+  },
+];
 
 async function checkAndCreateCollections() {
-  console.log('🔍 Verificando colecciones de Firebase...')
+  console.log('🔍 Verificando colecciones de Firebase...');
   
   if (!isFirebaseReady()) {
-    console.error('❌ Firebase no está listo. Verifica la configuración.')
-    return
+    console.error('❌ Firebase no está listo. Verifica la configuración.');
+    return;
   }
 
   for (const collectionInfo of REQUIRED_COLLECTIONS) {
     try {
-      console.log(`\n📁 Verificando colección: ${collectionInfo.name}`)
+      console.log(`\n📁 Verificando colección: ${collectionInfo.name}`);
       
       // Intentar leer la colección
-      const collectionRef = collection(db, collectionInfo.name)
-      const snapshot = await getDocs(query(collectionRef, limit(1)))
+      const collectionRef = collection(db, collectionInfo.name);
+      const snapshot = await getDocs(query(collectionRef, limit(1)));
       
       if (snapshot.empty) {
-        console.log(`⚠️  Colección '${collectionInfo.name}' está vacía o no existe`)
-        console.log(`📝 Creando documento de ejemplo...`)
+        console.log(`⚠️  Colección '${collectionInfo.name}' está vacía o no existe`);
+        console.log('📝 Creando documento de ejemplo...');
         
         // Crear documento de ejemplo
         await addDoc(collectionRef, {
           ...collectionInfo.sampleDoc,
           _isSystemGenerated: true,
           _description: `Documento generado automáticamente para ${collectionInfo.description}`,
-          _createdAt: serverTimestamp()
-        })
+          _createdAt: serverTimestamp(),
+        });
         
-        console.log(`✅ Documento de ejemplo creado en '${collectionInfo.name}'`)
+        console.log(`✅ Documento de ejemplo creado en '${collectionInfo.name}'`);
       } else {
-        console.log(`✅ Colección '${collectionInfo.name}' existe y tiene datos`)
+        console.log(`✅ Colección '${collectionInfo.name}' existe y tiene datos`);
       }
       
     } catch (error) {
-      console.error(`❌ Error verificando colección '${collectionInfo.name}':`, error)
+      console.error(`❌ Error verificando colección '${collectionInfo.name}':`, error);
     }
   }
   
-  console.log('\n🎉 Verificación completada!')
-  console.log('💡 Ahora puedes reiniciar la aplicación para probar el sistema de notificaciones')
+  console.log('\n🎉 Verificación completada!');
+  console.log('💡 Ahora puedes reiniciar la aplicación para probar el sistema de notificaciones');
 }
 
 // Ejecutar verificación cuando se carga el script
 if (typeof window !== 'undefined') {
   // En el navegador
   setTimeout(() => {
-    checkAndCreateCollections()
-  }, 2000) // Esperar a que Firebase se inicialice
+    checkAndCreateCollections();
+  }, 2000); // Esperar a que Firebase se inicialice
 } else {
   // En Node.js (si se ejecuta desde terminal)
-  checkAndCreateCollections()
+  checkAndCreateCollections();
 }
 
-export { checkAndCreateCollections }
+export { checkAndCreateCollections };

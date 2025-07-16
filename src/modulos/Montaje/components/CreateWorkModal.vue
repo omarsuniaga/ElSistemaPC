@@ -3,32 +3,38 @@
     <div class="relative p-6 border w-full max-w-4xl mx-4 shadow-lg rounded-lg dark:bg-gray-700">
       <h3 class="text-2xl font-bold text-gray-100 mb-8">Crear Nueva Obra Musical</h3>
       
-      <form @submit.prevent="handleSubmit" class="space-y-6 w-full">
+      <form class="space-y-6 w-full" @submit.prevent="handleSubmit">
         <div class="relative z-0 w-full group mb-6">
-          <input type="text" id="name" v-model="form.name" required
+          <input
+id="name" v-model="form.name" type="text" required
                  class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" 
                  placeholder=" " />
-          <label for="name" 
+          <label
+for="name" 
                  class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
             Nombre de la Obra
           </label>
         </div>
 
         <div class="relative z-0 w-full group mb-6">
-          <input type="text" id="composer" v-model="form.composer" required
+          <input
+id="composer" v-model="form.composer" type="text" required
                  class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer" 
                  placeholder=" " />
-          <label for="composer" 
+          <label
+for="composer" 
                  class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
             Compositor
           </label>
         </div>
 
         <div class="relative z-0 w-full group mb-6">
-          <textarea id="description" v-model="form.description" rows="3"
+          <textarea
+id="description" v-model="form.description" rows="3"
                     class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                     placeholder=" "></textarea>
-          <label for="description" 
+          <label
+for="description" 
                  class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
             Descripción
           </label>
@@ -36,19 +42,23 @@
 
         <div class="grid md:grid-cols-2 md:gap-6">
           <div class="relative z-0 w-full group mb-6">
-            <input type="number" id="compas" v-model.number="form.compas" required min="1"
+            <input
+id="compas" v-model.number="form.compas" type="number" required min="1"
                    class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                    placeholder=" " />
-            <label for="compas" 
+            <label
+for="compas" 
                    class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
               Total de Compases
             </label>
           </div>
           <div class="relative z-0 w-full group mb-6">
-            <input type="number" id="agruparEn" v-model.number="form.agruparEn" required min="1"
+            <input
+id="agruparEn" v-model.number="form.agruparEn" type="number" required min="1"
                    class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                    placeholder=" " />
-            <label for="agruparEn" 
+            <label
+for="agruparEn" 
                    class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
               Compases por fila
             </label>
@@ -57,19 +67,23 @@
 
         <div class="grid md:grid-cols-2 md:gap-6">
           <div class="relative z-0 w-full group mb-6">
-            <input type="text" id="key" v-model="form.key"
+            <input
+id="key" v-model="form.key" type="text"
                    class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                    placeholder=" " />
-            <label for="key" 
+            <label
+for="key" 
                    class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
               Tonalidad
             </label>
           </div>
           <div class="relative z-0 w-full group mb-6">
-            <input type="text" id="tempo" v-model="form.tempo"
+            <input
+id="tempo" v-model="form.tempo" type="text"
                    class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                    placeholder=" " />
-            <label for="tempo" 
+            <label
+for="tempo" 
                    class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
               Tempo
             </label>
@@ -77,10 +91,12 @@
         </div>
 
         <div class="relative z-0 w-full group mb-6">
-          <input type="text" id="timeSignature" v-model="form.timeSignature"
+          <input
+id="timeSignature" v-model="form.timeSignature" type="text"
                  class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                  placeholder=" " />
-          <label for="timeSignature" 
+          <label
+for="timeSignature" 
                  class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
             Compás
           </label>
@@ -88,20 +104,24 @@
 
         <div class="grid md:grid-cols-2 md:gap-6">
           <div class="relative z-0 w-full group mb-6">
-            <input type="date" id="startDate" v-model="form.startDate"
+            <input
+id="startDate" v-model="form.startDate" type="date"
                    class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                    placeholder=" " />
-            <label for="startDate" 
+            <label
+for="startDate" 
                    class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
               Fecha de Inicio
             </label>
           </div>
           <div class="relative z-0 w-full group mb-6">
-            <input type="date" id="endDate" 
-                   v-model="form.endDate"
+            <input
+id="endDate" v-model="form.endDate" 
+                   type="date"
                    class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
                    placeholder=" " />
-            <label for="endDate" 
+            <label
+for="endDate" 
                    class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">
               Fecha de Fin (Opcional)
             </label>
@@ -114,8 +134,8 @@
             <h3 class="text-lg font-medium text-gray-900 dark:text-white">Instrumentos</h3>
             <button
               type="button"
-              @click="showInstrumentsModal = true"
               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              @click="showInstrumentsModal = true"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -127,7 +147,8 @@
           <!-- Lista de instrumentos seleccionados -->
           <div v-if="form.instruments && form.instruments.length > 0" class="mt-2">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              <div v-for="(instrument, index) in form.instruments" :key="index" 
+              <div
+v-for="(instrument, index) in form.instruments" :key="index" 
                    class="flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-700 rounded-md">
                 <span class="text-sm text-gray-800 dark:text-gray-200">
                   {{ instrument.name }} 
@@ -142,11 +163,13 @@
         </div>
 
         <div class="flex justify-end space-x-3 mt-8">
-          <button type="button" @click="$emit('close')"
-                  class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600">
+          <button
+type="button" class="text-gray-500 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
+                  @click="$emit('close')">
             Cancelar
           </button>
-          <button type="submit"
+          <button
+type="submit"
                   class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
             Crear Obra
           </button>
@@ -164,13 +187,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineEmits, onMounted, onBeforeUnmount, watch } from 'vue'
-import InstrumentsModal from './InstrumentsModal.vue'
-import { useMusicalWorks } from '../composables/useHeatMapProjects'
-import type { MusicalWork, Instrument, LevelConfig } from '../type/heatmap'
+import { ref, defineEmits, onMounted, onBeforeUnmount, watch } from 'vue';
+import InstrumentsModal from './InstrumentsModal.vue';
+import { useMusicalWorks } from '../composables/useHeatMapProjects';
+import type { MusicalWork, Instrument, LevelConfig } from '../type/heatmap';
 
-const emit = defineEmits(['close', 'workCreated'])
-const { createWork, getDefaultInstruments, defaultLevels } = useMusicalWorks()
+const emit = defineEmits(['close', 'workCreated']);
+const { createWork, getDefaultInstruments, defaultLevels } = useMusicalWorks();
 
 interface WorkForm {
   name: string
@@ -216,7 +239,7 @@ const form = ref<WorkForm>({
   endDate: '',
   instruments: getDefaultInstruments(),
   levels: defaultLevels,
-})
+});
 
 // Bloquear y desbloquear scroll del body
 const lockBodyScroll = () => {
@@ -322,17 +345,17 @@ const handleSubmit = async () => {
       tags: [],
       sections: [],
       resources: [],
-      milestones: []
-    }
+      milestones: [],
+    };
 
-    const newWorkId = await createWork(workData)
-    emit('workCreated', newWorkId)
-    emit('close')
+    const newWorkId = await createWork(workData);
+    emit('workCreated', newWorkId);
+    emit('close');
   } catch (error) {
-    console.error("Error al crear la obra:", error)
-    alert("Error al crear la obra. Consulta la consola para más detalles.")
+    console.error('Error al crear la obra:', error);
+    alert('Error al crear la obra. Consulta la consola para más detalles.');
   }
-}
+};
 </script>
 
 <style scoped>

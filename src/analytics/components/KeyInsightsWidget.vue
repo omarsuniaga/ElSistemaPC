@@ -83,92 +83,92 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import type {KeyInsight} from "@/analytics/composables/useAdvancedAnalytics"
+import { computed } from 'vue';
+import type { KeyInsight } from '@/analytics/composables/useAdvancedAnalytics';
 
 interface Props {
   insights: KeyInsight[]
   loading?: boolean
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const actionableCount = computed(() => {
-  return props.insights.filter((insight) => insight.actionable).length
-})
+  return props.insights.filter((insight) => insight.actionable).length;
+});
 
 const improvingTrends = computed(() => {
-  return props.insights.filter((insight) => insight.trend === "up").length
-})
+  return props.insights.filter((insight) => insight.trend === 'up').length;
+});
 
 function getCategoryIcon(category: string): string {
   const iconMap = {
-    attendance: "📊",
-    performance: "🎯",
-    engagement: "💪",
-    efficiency: "⚡",
-  }
-  return iconMap[category as keyof typeof iconMap] || "💡"
+    attendance: '📊',
+    performance: '🎯',
+    engagement: '💪',
+    efficiency: '⚡',
+  };
+  return iconMap[category as keyof typeof iconMap] || '💡';
 }
 
 function getCategoryBorder(category: string): string {
   const borderMap = {
-    attendance: "border-l-4 border-l-blue-500",
-    performance: "border-l-4 border-l-green-500",
-    engagement: "border-l-4 border-l-purple-500",
-    efficiency: "border-l-4 border-l-orange-500",
-  }
-  return borderMap[category as keyof typeof borderMap] || "border-l-4 border-l-gray-500"
+    attendance: 'border-l-4 border-l-blue-500',
+    performance: 'border-l-4 border-l-green-500',
+    engagement: 'border-l-4 border-l-purple-500',
+    efficiency: 'border-l-4 border-l-orange-500',
+  };
+  return borderMap[category as keyof typeof borderMap] || 'border-l-4 border-l-gray-500';
 }
 
 function getMetricColor(metric: number): string {
-  if (metric >= 0.8) return "text-green-600"
-  if (metric >= 0.6) return "text-yellow-600"
-  return "text-red-600"
+  if (metric >= 0.8) return 'text-green-600';
+  if (metric >= 0.6) return 'text-yellow-600';
+  return 'text-red-600';
 }
 
 function getTrendColor(trend: string): string {
   const colorMap = {
-    up: "bg-green-100 text-green-800",
-    down: "bg-red-100 text-red-800",
-    stable: "bg-gray-100 text-gray-800",
-  }
-  return colorMap[trend as keyof typeof colorMap] || "bg-gray-100 text-gray-800"
+    up: 'bg-green-100 text-green-800',
+    down: 'bg-red-100 text-red-800',
+    stable: 'bg-gray-100 text-gray-800',
+  };
+  return colorMap[trend as keyof typeof colorMap] || 'bg-gray-100 text-gray-800';
 }
 
 function getTrendText(trend: string): string {
   const textMap = {
-    up: "📈 Mejorando",
-    down: "📉 Decreciendo",
-    stable: "➡️ Estable",
-  }
-  return textMap[trend as keyof typeof textMap] || "Sin datos"
+    up: '📈 Mejorando',
+    down: '📉 Decreciendo',
+    stable: '➡️ Estable',
+  };
+  return textMap[trend as keyof typeof textMap] || 'Sin datos';
 }
 
 function formatMetric(metric: number): string {
   if (metric < 1) {
-    return `${(metric * 100).toFixed(1)}%`
+    return `${(metric * 100).toFixed(1)}%`;
   }
-  return metric.toFixed(1)
+  return metric.toFixed(1);
 }
 
 function takeAction(insight: KeyInsight) {
-  console.log("Tomando acción para insight:", insight.title)
+  console.log('Tomando acción para insight:', insight.title);
 
   // Implementar acciones específicas según la categoría
   switch (insight.category) {
-    case "attendance":
-      // Abrir modal de mejora de asistencia
-      break
-    case "performance":
-      // Navegar a análisis de rendimiento
-      break
-    case "engagement":
-      // Abrir herramientas de engagement
-      break
-    case "efficiency":
-      // Mostrar optimizaciones sugeridas
-      break
+  case 'attendance':
+    // Abrir modal de mejora de asistencia
+    break;
+  case 'performance':
+    // Navegar a análisis de rendimiento
+    break;
+  case 'engagement':
+    // Abrir herramientas de engagement
+    break;
+  case 'efficiency':
+    // Mostrar optimizaciones sugeridas
+    break;
   }
 }
 </script>

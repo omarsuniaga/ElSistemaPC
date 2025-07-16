@@ -91,9 +91,9 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {useClassesStore} from "../../../modulos/Classes/store/classes" // Ruta corregida
-import {ClockIcon, MapPinIcon, UserGroupIcon, MusicalNoteIcon} from "@heroicons/vue/24/outline"
+import { ref, computed } from 'vue';
+import { useClassesStore } from '../../../modulos/Classes/store/classes'; // Ruta corregida
+import { ClockIcon, MapPinIcon, UserGroupIcon, MusicalNoteIcon } from '@heroicons/vue/24/outline';
 
 // Interfaces
 interface ScheduleSlot {
@@ -122,19 +122,19 @@ interface ClassData {
 const props = defineProps<{
   teacherId: string
   classes: ClassData[]
-}>()
+}>();
 
 // Emits
-const emit = defineEmits(["view-class"])
+const emit = defineEmits(['view-class']);
 
 // Store
-const classesStore = useClassesStore()
+const classesStore = useClassesStore();
 
 // State
-const selectedClass = ref<ClassData | null>(null)
+const selectedClass = ref<ClassData | null>(null);
 
 // Días de la semana con mapeo numérico
-const weekDays = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const dayToNumber = {
   Lunes: 1,
   Martes: 2,
@@ -143,123 +143,123 @@ const dayToNumber = {
   Viernes: 5,
   Sábado: 6,
   Domingo: 0,
-}
+};
 
 // Obtener clases para un día específico
 const getClassesForDay = (day: string) => {
   // Convertir el nombre del día a su valor numérico
-  const dayNumber = dayToNumber[day as keyof typeof dayToNumber]
+  const dayNumber = dayToNumber[day as keyof typeof dayToNumber];
 
   return props.classes.filter((classItem) => {
     if (!classItem.schedule?.slots || !Array.isArray(classItem.schedule.slots)) {
-      return false
+      return false;
     }
 
     return classItem.schedule.slots.some((slot) => {
       // Manejar tanto valores numéricos como strings
-      if (typeof slot.day === "number") {
-        return slot.day === dayNumber
-      } else if (typeof slot.day === "string") {
+      if (typeof slot.day === 'number') {
+        return slot.day === dayNumber;
+      } else if (typeof slot.day === 'string') {
         // Normalizar el nombre del día
-        const normalizedDay = slot.day.toLowerCase().trim()
+        const normalizedDay = slot.day.toLowerCase().trim();
         return (
           normalizedDay === day.toLowerCase() ||
           normalizedDay === day.slice(0, 3).toLowerCase() ||
           parseInt(normalizedDay) === dayNumber
-        )
+        );
       }
-      return false
-    })
-  })
-}
+      return false;
+    });
+  });
+};
 
 // Methods
 const selectClass = (class_: ClassData) => {
   if (class_?.id) {
-    console.log("Selected class:", class_.id)
-    selectedClass.value = class_
-    emit("view-class", class_.id)
+    console.log('Selected class:', class_.id);
+    selectedClass.value = class_;
+    emit('view-class', class_.id);
   }
-}
+};
 
 // Helper para obtener el slot de horario para un día específico
 const getScheduleForDay = (class_: ClassData, day: string): ScheduleSlot | undefined => {
   if (!class_.schedule?.slots || !Array.isArray(class_.schedule.slots)) {
-    return undefined
+    return undefined;
   }
 
-  const dayNumber = dayToNumber[day as keyof typeof dayToNumber]
+  const dayNumber = dayToNumber[day as keyof typeof dayToNumber];
 
   return class_.schedule.slots.find((slot) => {
-    if (typeof slot.day === "number") {
-      return slot.day === dayNumber
-    } else if (typeof slot.day === "string") {
-      const normalizedDay = slot.day.toLowerCase().trim()
+    if (typeof slot.day === 'number') {
+      return slot.day === dayNumber;
+    } else if (typeof slot.day === 'string') {
+      const normalizedDay = slot.day.toLowerCase().trim();
       return (
         normalizedDay === day.toLowerCase() ||
         normalizedDay === day.slice(0, 3).toLowerCase() ||
         parseInt(normalizedDay) === dayNumber
-      )
+      );
     }
-    return false
-  })
-}
+    return false;
+  });
+};
 
 // Formatear rango de tiempo para mostrar
 const formatScheduleTime = (scheduleSlot: ScheduleSlot | undefined): string => {
-  if (!scheduleSlot) return "Horario no disponible"
-  return `${scheduleSlot.startTime} - ${scheduleSlot.endTime}`
-}
+  if (!scheduleSlot) return 'Horario no disponible';
+  return `${scheduleSlot.startTime} - ${scheduleSlot.endTime}`;
+};
 
 // Formatear duración de clase
 const formatClassDuration = (startTime: string, endTime: string): string => {
-  if (!startTime || !endTime) return "N/A"
+  if (!startTime || !endTime) return 'N/A';
 
   // Validación básica del formato de hora (HH:MM)
-  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/
+  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
   if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
-    console.warn("Formato de hora inválido para cálculo de duración:", startTime, endTime)
-    return "Duración inválida"
+    console.warn('Formato de hora inválido para cálculo de duración:', startTime, endTime);
+    return 'Duración inválida';
   }
 
   try {
-    const [startHours, startMinutes] = startTime.split(":").map(Number)
-    const [endHours, endMinutes] = endTime.split(":").map(Number)
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
 
-    const startDate = new Date(0, 0, 0, startHours, startMinutes)
-    const endDate = new Date(0, 0, 0, endHours, endMinutes)
+    const startDate = new Date(0, 0, 0, startHours, startMinutes);
+    const endDate = new Date(0, 0, 0, endHours, endMinutes);
 
     // Manejar casos donde la hora de finalización es anterior a la de inicio
     if (endDate <= startDate) {
       console.warn(
-        "La hora de finalización es anterior o igual a la de inicio:",
+        'La hora de finalización es anterior o igual a la de inicio:',
         startTime,
-        endTime
-      )
-      return "Duración inválida"
+        endTime,
+      );
+      return 'Duración inválida';
     }
 
-    const totalMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60)
+    const totalMinutes = (endDate.getTime() - startDate.getTime()) / (1000 * 60);
 
-    if (totalMinutes <= 0) return "Duración inválida"
+    if (totalMinutes <= 0) return 'Duración inválida';
 
-    const hours = Math.floor(totalMinutes / 60)
-    const minutes = totalMinutes % 60
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
 
-    let durationString = ""
+    let durationString = '';
     if (hours > 0) {
-      durationString += `${hours}h`
+      durationString += `${hours}h`;
     }
     if (minutes > 0) {
-      durationString += `${hours > 0 ? " " : ""}${minutes}min`
+      durationString += `${hours > 0 ? ' ' : ''}${minutes}min`;
     }
 
-    return durationString || "0min"
+    return durationString || '0min';
   } catch (error) {
-    console.error("Error calculando duración:", error)
-    return "Error"
+    console.error('Error calculando duración:', error);
+    return 'Error';
   }
-}
+};
 </script>
 
 <style scoped>

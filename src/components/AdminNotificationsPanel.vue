@@ -328,8 +328,8 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref, watch} from "vue"
-import {useAdminNotifications} from "@/composables/useAdminNotifications"
+import { computed, ref, watch } from 'vue';
+import { useAdminNotifications } from '@/composables/useAdminNotifications';
 
 // Composable
 const {
@@ -345,54 +345,54 @@ const {
   toggleShowUnreadOnly,
   getNotificationIcon,
   formatNotificationTime,
-} = useAdminNotifications()
+} = useAdminNotifications();
 
 // Estado local del componente
-const showNotificationDetails = ref(false)
+const showNotificationDetails = ref(false);
 
 // Computed para mostrar el dialog
-const selectedNotification = computed(() => state.selectedNotification)
+const selectedNotification = computed(() => state.selectedNotification);
 
 // Watch para mostrar detalles cuando se selecciona una notificación
 watch(
   selectedNotification,
   (newValue) => {
     if (newValue) {
-      showNotificationDetails.value = true
+      showNotificationDetails.value = true;
     }
   },
-  {immediate: false}
-)
+  { immediate: false },
+);
 
 // Función para obtener etiquetas de tipo
 const getTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
-    teacher_login: "Login Profesor",
-    attendance_report: "Asistencia",
-    student_observation: "Observación",
-    system_notification: "Sistema",
-  }
-  return labels[type] || type
-}
+    teacher_login: 'Login Profesor',
+    attendance_report: 'Asistencia',
+    student_observation: 'Observación',
+    system_notification: 'Sistema',
+  };
+  return labels[type] || type;
+};
 
 // Funciones para clases de Tailwind CSS basadas en urgencia
 const getUrgencyColorClasses = (urgency: string): string => {
   const classes: Record<string, string> = {
-    high: "bg-red-100 text-red-800",
-    medium: "bg-yellow-100 text-yellow-800",
-    low: "bg-green-100 text-green-800",
-  }
-  return classes[urgency] || "bg-gray-100 text-gray-800"
-}
+    high: 'bg-red-100 text-red-800',
+    medium: 'bg-yellow-100 text-yellow-800',
+    low: 'bg-green-100 text-green-800',
+  };
+  return classes[urgency] || 'bg-gray-100 text-gray-800';
+};
 
 const getUrgencyChipClasses = (urgency: string): string => {
   const classes: Record<string, string> = {
-    high: "bg-red-50 text-red-700 border-red-200",
-    medium: "bg-yellow-50 text-yellow-700 border-yellow-200",
-    low: "bg-green-50 text-green-700 border-green-200",
-  }
-  return classes[urgency] || "bg-gray-50 text-gray-700 border-gray-200"
-}
+    high: 'bg-red-50 text-red-700 border-red-200',
+    medium: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    low: 'bg-green-50 text-green-700 border-green-200',
+  };
+  return classes[urgency] || 'bg-gray-50 text-gray-700 border-gray-200';
+};
 </script>
 
 <style scoped>

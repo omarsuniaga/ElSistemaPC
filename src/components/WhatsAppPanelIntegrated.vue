@@ -236,8 +236,8 @@
 </template>
 
 <script setup lang="ts">
-import {reactive} from "vue"
-import {useWhatsAppIntegration} from "@/composables/useWhatsAppIntegration"
+import { reactive } from 'vue';
+import { useWhatsAppIntegration } from '@/composables/useWhatsAppIntegration';
 
 // Usar el composable de integración
 const {
@@ -260,40 +260,40 @@ const {
   restartWhatsApp,
   removeNotification,
   clearError,
-} = useWhatsAppIntegration()
+} = useWhatsAppIntegration();
 
 // Estado local para el formulario de prueba
 const testMessage = reactive({
-  phone: "",
+  phone: '',
   content:
-    "🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.",
-})
+    '🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.',
+});
 
 // Formatear tiempo para mostrar
 const formatTime = (date: Date): string => {
-  return date.toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  })
-}
+  return date.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+};
 
 // Manejar envío de mensaje de prueba
 const handleSendTest = async () => {
-  if (!testMessage.phone || !testMessage.content) return
+  if (!testMessage.phone || !testMessage.content) return;
 
   const success = await sendMessage({
     number: testMessage.phone,
     message: testMessage.content,
-  })
+  });
 
   if (success) {
     // Limpiar formulario después del envío exitoso
-    testMessage.phone = ""
+    testMessage.phone = '';
     testMessage.content =
-      "🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente."
+      '🎵 Mensaje de prueba desde la Academia Musical!\n\nEste es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.';
   }
-}
+};
 </script>
 
 <style scoped>

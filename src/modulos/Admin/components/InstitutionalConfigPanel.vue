@@ -185,170 +185,170 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, watch} from "vue"
+import { ref, computed, onMounted, watch } from 'vue';
 import {
   BuildingOfficeIcon,
   PhotoIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
   XMarkIcon,
-} from "@heroicons/vue/24/outline"
-import {useInstitutionalConfigStore} from "../store/institutionalConfig"
+} from '@heroicons/vue/24/outline';
+import { useInstitutionalConfigStore } from '../store/institutionalConfig';
 
 // Store
-const configStore = useInstitutionalConfigStore()
+const configStore = useInstitutionalConfigStore();
 
 // Local state
-const localTitle = ref("")
-const isSavingTitle = ref(false)
-const isDragging = ref(false)
-const saveMessage = ref<{type: "success" | "error"; text: string} | null>(null)
+const localTitle = ref('');
+const isSavingTitle = ref(false);
+const isDragging = ref(false);
+const saveMessage = ref<{type: 'success' | 'error'; text: string} | null>(null);
 
 // Computed
-const institutionalTitle = computed(() => configStore.institutionalTitle)
-const institutionalLogoUrl = computed(() => configStore.institutionalLogoUrl)
-const isLoading = computed(() => configStore.isLoading)
-const isUploading = computed(() => configStore.isUploading)
-const error = computed(() => configStore.error)
+const institutionalTitle = computed(() => configStore.institutionalTitle);
+const institutionalLogoUrl = computed(() => configStore.institutionalLogoUrl);
+const isLoading = computed(() => configStore.isLoading);
+const isUploading = computed(() => configStore.isUploading);
+const error = computed(() => configStore.error);
 
 // File input ref
-const fileInput = ref<HTMLInputElement>()
+const fileInput = ref<HTMLInputElement>();
 
 // Methods
 const updateTitleIfChanged = async () => {
-  const trimmedTitle = localTitle.value.trim()
+  const trimmedTitle = localTitle.value.trim();
 
   if (trimmedTitle === institutionalTitle.value) {
-    return // No cambios
+    return; // No cambios
   }
 
   if (!trimmedTitle) {
-    localTitle.value = institutionalTitle.value
-    return
+    localTitle.value = institutionalTitle.value;
+    return;
   }
 
-  isSavingTitle.value = true
+  isSavingTitle.value = true;
 
   try {
-    const success = await configStore.updateTitle(trimmedTitle)
+    const success = await configStore.updateTitle(trimmedTitle);
     if (success) {
-      showSaveMessage("success", "Título actualizado correctamente")
+      showSaveMessage('success', 'Título actualizado correctamente');
     } else {
-      showSaveMessage("error", "Error al actualizar el título")
-      localTitle.value = institutionalTitle.value // Revertir
+      showSaveMessage('error', 'Error al actualizar el título');
+      localTitle.value = institutionalTitle.value; // Revertir
     }
   } catch (error) {
-    showSaveMessage("error", "Error al actualizar el título")
-    localTitle.value = institutionalTitle.value // Revertir
+    showSaveMessage('error', 'Error al actualizar el título');
+    localTitle.value = institutionalTitle.value; // Revertir
   } finally {
-    isSavingTitle.value = false
+    isSavingTitle.value = false;
   }
-}
+};
 
 const handleFileSelect = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
   if (file) {
-    uploadLogo(file)
+    uploadLogo(file);
   }
-}
+};
 
 const handleDrop = (event: DragEvent) => {
-  event.preventDefault()
-  isDragging.value = false
+  event.preventDefault();
+  isDragging.value = false;
 
-  const files = event.dataTransfer?.files
+  const files = event.dataTransfer?.files;
   if (files && files.length > 0) {
-    uploadLogo(files[0])
+    uploadLogo(files[0]);
   }
-}
+};
 
 const uploadLogo = async (file: File) => {
   try {
-    const success = await configStore.uploadLogo(file)
+    const success = await configStore.uploadLogo(file);
     if (success) {
-      showSaveMessage("success", "Logo subido correctamente")
+      showSaveMessage('success', 'Logo subido correctamente');
       // Limpiar input
       if (fileInput.value) {
-        fileInput.value.value = ""
+        fileInput.value.value = '';
       }
     } else {
-      showSaveMessage("error", "Error al subir el logo")
+      showSaveMessage('error', 'Error al subir el logo');
     }
   } catch (error) {
-    showSaveMessage("error", "Error al subir el logo")
+    showSaveMessage('error', 'Error al subir el logo');
   }
-}
+};
 
 const removeCurrentLogo = async () => {
-  if (confirm("¿Estás seguro de que quieres eliminar el logo actual?")) {
+  if (confirm('¿Estás seguro de que quieres eliminar el logo actual?')) {
     try {
-      const success = await configStore.removeLogo()
+      const success = await configStore.removeLogo();
       if (success) {
-        showSaveMessage("success", "Logo eliminado correctamente")
+        showSaveMessage('success', 'Logo eliminado correctamente');
       } else {
-        showSaveMessage("error", "Error al eliminar el logo")
+        showSaveMessage('error', 'Error al eliminar el logo');
       }
     } catch (error) {
-      showSaveMessage("error", "Error al eliminar el logo")
+      showSaveMessage('error', 'Error al eliminar el logo');
     }
   }
-}
+};
 
 const resetToDefaults = async () => {
   if (
     confirm(
-      "¿Estás seguro de que quieres restaurar la configuración por defecto? Esto eliminará el logo actual."
+      '¿Estás seguro de que quieres restaurar la configuración por defecto? Esto eliminará el logo actual.',
     )
   ) {
     try {
-      const success = await configStore.resetConfig()
+      const success = await configStore.resetConfig();
       if (success) {
-        localTitle.value = configStore.institutionalTitle
-        showSaveMessage("success", "Configuración restaurada por defecto")
+        localTitle.value = configStore.institutionalTitle;
+        showSaveMessage('success', 'Configuración restaurada por defecto');
       } else {
-        showSaveMessage("error", "Error al restaurar la configuración")
+        showSaveMessage('error', 'Error al restaurar la configuración');
       }
     } catch (error) {
-      showSaveMessage("error", "Error al restaurar la configuración")
+      showSaveMessage('error', 'Error al restaurar la configuración');
     }
   }
-}
+};
 
-const showSaveMessage = (type: "success" | "error", text: string) => {
-  saveMessage.value = {type, text}
+const showSaveMessage = (type: 'success' | 'error', text: string) => {
+  saveMessage.value = { type, text };
   setTimeout(() => {
-    saveMessage.value = null
-  }, 3000)
-}
+    saveMessage.value = null;
+  }, 3000);
+};
 
 const clearError = () => {
-  configStore.clearError()
-}
+  configStore.clearError();
+};
 
 // Watchers
 watch(institutionalTitle, (newTitle) => {
   if (localTitle.value !== newTitle) {
-    localTitle.value = newTitle
+    localTitle.value = newTitle;
   }
-})
+});
 
 // Drag and drop event handlers
 const onDragEnter = () => {
-  isDragging.value = true
-}
+  isDragging.value = true;
+};
 
 const onDragLeave = (event: DragEvent) => {
-  if (!(event.target as Element)?.closest(".border-dashed")) {
-    isDragging.value = false
+  if (!(event.target as Element)?.closest('.border-dashed')) {
+    isDragging.value = false;
   }
-}
+};
 
 // Lifecycle
 onMounted(async () => {
-  await configStore.loadConfig()
-  localTitle.value = institutionalTitle.value
-})
+  await configStore.loadConfig();
+  localTitle.value = institutionalTitle.value;
+});
 </script>
 
 <style scoped>

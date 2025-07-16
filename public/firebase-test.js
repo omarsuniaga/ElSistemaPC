@@ -7,7 +7,7 @@ console.log('🔍 Verificando Firebase...');
 const envVars = {
   'VITE_APP_PROJECT_ID': import.meta.env.VITE_APP_PROJECT_ID,
   'VITE_APP_API_KEY': import.meta.env.VITE_APP_API_KEY ? '✓ Configurado' : '❌ Faltante',
-  'VITE_USE_EMULATORS': import.meta.env.VITE_USE_EMULATORS
+  'VITE_USE_EMULATORS': import.meta.env.VITE_USE_EMULATORS,
 };
 
 console.log('📋 Variables de entorno:', envVars);

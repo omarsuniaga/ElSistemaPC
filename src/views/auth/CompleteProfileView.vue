@@ -1,268 +1,3 @@
-<script setup lang="ts">
-import {ref, reactive, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {getFirestore, doc, getDoc, updateDoc} from "firebase/firestore"
-import {getAuth} from "firebase/auth"
-import {uploadFile} from "../../services/storage"
-import FileUpload from "../../components/FileUpload.vue"
-import {
-  UserIcon,
-  AcademicCapIcon,
-  BriefcaseIcon,
-  MapPinIcon,
-  ExclamationCircleIcon,
-  CheckCircleIcon,
-} from "@heroicons/vue/24/outline"
-
-const router = useRouter()
-const auth = getAuth()
-const db = getFirestore()
-
-const isLoading = ref(true)
-const isSaving = ref(false)
-const error = ref("")
-const successMessage = ref("")
-const isUploading = ref(false)
-const uploadProgress = ref(0)
-
-// Datos del formulario
-const formData = reactive({
-  bio: "",
-  experience: "",
-  address: "",
-  specialties: [] as string,
-  education: [] as {institution: string; degree: string; year: string}[],
-  photoURL: "",
-  availability: {
-    type: "complete", // 'complete' = tiempo completo, 'partial' = tiempo parcial
-    schedule: [
-      {day: "Lunes", enabled: false, startTime: "08:00", endTime: "18:00"},
-      {day: "Martes", enabled: false, startTime: "08:00", endTime: "18:00"},
-      {day: "Miércoles", enabled: false, startTime: "08:00", endTime: "18:00"},
-      {day: "Jueves", enabled: false, startTime: "08:00", endTime: "18:00"},
-      {day: "Viernes", enabled: false, startTime: "08:00", endTime: "18:00"},
-      {day: "Sábado", enabled: false, startTime: "08:00", endTime: "14:00"},
-    ],
-  },
-  profileCompleted: false,
-})
-
-// Nueva especialidad o educación
-const newSpecialty = ref("")
-const newEducation = reactive({
-  institution: "",
-  degree: "",
-  year: "",
-})
-
-// Cargar datos del usuario
-const loadUserProfile = async () => {
-  isLoading.value = true
-  error.value = ""
-
-  try {
-    const currentUser = auth.currentUser
-
-    if (!currentUser) {
-      router.push("/login")
-      return
-    }
-
-    const userDocRef = doc(db, "USERS", currentUser.uid)
-    const userDoc = await getDoc(userDocRef)
-
-    if (userDoc.exists()) {
-      const userData = userDoc.data()
-
-      // Si el perfil ya está completo, redirigir
-      if (userData.profileCompleted) {
-        router.push("/pending-approval")
-        return
-      }
-
-      // Si el usuario está aprobado, redirigir al dashboard
-      if (userData.status === "aprobado") {
-        router.push("/")
-        return
-      }
-
-      // Llenar el formulario con datos existentes
-      formData.bio = userData.bio || ""
-      formData.experience = userData.experience || ""
-      formData.address = userData.address || ""
-      formData.specialties = userData.specialties || []
-      formData.education = userData.education || []
-      formData.photoURL =
-        userData.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.name}`
-    } else {
-      error.value = "No se pudo encontrar la información de usuario"
-    }
-  } catch (err) {
-    console.error("Error al cargar perfil:", err)
-    error.value = "Error al cargar el perfil"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Añadir una especialidad
-const addSpecialty = () => {
-  if (newSpecialty.value.trim() && !formData.specialties.includes(newSpecialty.value)) {
-    formData.specialties.push(newSpecialty.value)
-    newSpecialty.value = ""
-  }
-}
-
-// Remover una especialidad
-const removeSpecialty = (index: number) => {
-  formData.specialties.splice(index, 1)
-}
-
-// Añadir educación
-const addEducation = () => {
-  if (newEducation.institution.trim() && newEducation.degree.trim()) {
-    formData.education.push({
-      institution: newEducation.institution,
-      degree: newEducation.degree,
-      year: newEducation.year,
-    })
-
-    // Limpiar el formulario
-    newEducation.institution = ""
-    newEducation.degree = ""
-    newEducation.year = ""
-  }
-}
-
-// Remover educación
-const removeEducation = (index: number) => {
-  formData.education.splice(index, 1)
-}
-
-// Manejar la subida de foto de perfil
-const handlePhotoUpload = async (files: FileList) => {
-  if (!files.length) return
-
-  const currentUser = auth.currentUser
-  if (!currentUser) return
-
-  isUploading.value = true
-  uploadProgress.value = 0
-
-  try {
-    const file = files[0]
-    const path = `avatars/${currentUser.uid}/${file.name}`
-
-    const onProgress = (progress: number) => {
-      uploadProgress.value = Math.round(progress * 100)
-    }
-
-    const url = await uploadFile(file, path, onProgress)
-    formData.photoURL = url
-  } catch (err) {
-    console.error("Error al subir foto:", err)
-    error.value = "Error al subir la foto de perfil"
-  } finally {
-    isUploading.value = false
-  }
-}
-
-// Guardar el perfil
-const saveProfile = async () => {
-  isSaving.value = true
-  error.value = ""
-  successMessage.value = ""
-
-  try {
-    const currentUser = auth.currentUser
-
-    if (!currentUser) {
-      router.push("/login")
-      return
-    }
-
-    const userDocRef = doc(db, "USERS", currentUser.uid)
-
-    // Actualizar datos del perfil
-    await updateDoc(userDocRef, {
-      bio: formData.bio,
-      experience: formData.experience,
-      address: formData.address,
-      specialties: formData.specialties,
-      education: formData.education,
-      photoURL: formData.photoURL,
-      availability: formData.availability, // Guardar la información de disponibilidad
-      profileCompleted: true,
-      updatedAt: new Date().toISOString(),
-    })
-
-    successMessage.value = "Perfil completado con éxito"
-
-    // Redirigir después de 2 segundos
-    setTimeout(() => {
-      router.push("/pending-approval")
-    }, 2000)
-  } catch (err) {
-    console.error("Error al guardar perfil:", err)
-    error.value = "Error al actualizar el perfil"
-  } finally {
-    isSaving.value = false
-  }
-}
-
-// Validar y enviar el formulario
-const handleSubmit = () => {
-  error.value = ""
-
-  // Validaciones obligatorias
-  if (formData.bio.trim().length < 10) {
-    error.value = "Por favor, introduce una biografía más detallada (mínimo 10 caracteres)"
-    return
-  }
-
-  if (formData.specialties.length === 0) {
-    error.value = "Por favor, añade al menos una especialidad"
-    return
-  }
-
-  if (!formData.address.trim()) {
-    error.value = "Por favor, ingresa tu dirección"
-    return
-  }
-
-  if (formData.education.length === 0) {
-    error.value = "Por favor, añade al menos una formación académica"
-    return
-  }
-
-  // Validar horario si es tiempo parcial
-  if (formData.availability.type === "partial") {
-    const hasEnabledDay = formData.availability.schedule.some((day) => day.enabled)
-    if (!hasEnabledDay) {
-      error.value = "Por favor, selecciona al menos un día de disponibilidad"
-      return
-    }
-
-    // Validar que los días habilitados tengan horarios válidos
-    const invalidSchedule = formData.availability.schedule
-      .filter((day) => day.enabled)
-      .some((day) => !day.startTime || !day.endTime)
-
-    if (invalidSchedule) {
-      error.value = "Por favor, completa los horarios para todos los días seleccionados"
-      return
-    }
-  }
-
-  saveProfile()
-}
-
-// Cargar datos al montar el componente
-onMounted(() => {
-  loadUserProfile()
-})
-</script>
-
 <template>
   <div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-3xl mx-auto space-y-8">
@@ -730,3 +465,268 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { uploadFile } from '../../services/storage';
+import FileUpload from '../../components/FileUpload.vue';
+import {
+  UserIcon,
+  AcademicCapIcon,
+  BriefcaseIcon,
+  MapPinIcon,
+  ExclamationCircleIcon,
+  CheckCircleIcon,
+} from '@heroicons/vue/24/outline';
+
+const router = useRouter();
+const auth = getAuth();
+const db = getFirestore();
+
+const isLoading = ref(true);
+const isSaving = ref(false);
+const error = ref('');
+const successMessage = ref('');
+const isUploading = ref(false);
+const uploadProgress = ref(0);
+
+// Datos del formulario
+const formData = reactive({
+  bio: '',
+  experience: '',
+  address: '',
+  specialties: [] as string,
+  education: [] as {institution: string; degree: string; year: string}[],
+  photoURL: '',
+  availability: {
+    type: 'complete', // 'complete' = tiempo completo, 'partial' = tiempo parcial
+    schedule: [
+      { day: 'Lunes', enabled: false, startTime: '08:00', endTime: '18:00' },
+      { day: 'Martes', enabled: false, startTime: '08:00', endTime: '18:00' },
+      { day: 'Miércoles', enabled: false, startTime: '08:00', endTime: '18:00' },
+      { day: 'Jueves', enabled: false, startTime: '08:00', endTime: '18:00' },
+      { day: 'Viernes', enabled: false, startTime: '08:00', endTime: '18:00' },
+      { day: 'Sábado', enabled: false, startTime: '08:00', endTime: '14:00' },
+    ],
+  },
+  profileCompleted: false,
+});
+
+// Nueva especialidad o educación
+const newSpecialty = ref('');
+const newEducation = reactive({
+  institution: '',
+  degree: '',
+  year: '',
+});
+
+// Cargar datos del usuario
+const loadUserProfile = async () => {
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      router.push('/login');
+      return;
+    }
+
+    const userDocRef = doc(db, 'USERS', currentUser.uid);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+
+      // Si el perfil ya está completo, redirigir
+      if (userData.profileCompleted) {
+        router.push('/pending-approval');
+        return;
+      }
+
+      // Si el usuario está aprobado, redirigir al dashboard
+      if (userData.status === 'aprobado') {
+        router.push('/');
+        return;
+      }
+
+      // Llenar el formulario con datos existentes
+      formData.bio = userData.bio || '';
+      formData.experience = userData.experience || '';
+      formData.address = userData.address || '';
+      formData.specialties = userData.specialties || [];
+      formData.education = userData.education || [];
+      formData.photoURL =
+        userData.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.name}`;
+    } else {
+      error.value = 'No se pudo encontrar la información de usuario';
+    }
+  } catch (err) {
+    console.error('Error al cargar perfil:', err);
+    error.value = 'Error al cargar el perfil';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Añadir una especialidad
+const addSpecialty = () => {
+  if (newSpecialty.value.trim() && !formData.specialties.includes(newSpecialty.value)) {
+    formData.specialties.push(newSpecialty.value);
+    newSpecialty.value = '';
+  }
+};
+
+// Remover una especialidad
+const removeSpecialty = (index: number) => {
+  formData.specialties.splice(index, 1);
+};
+
+// Añadir educación
+const addEducation = () => {
+  if (newEducation.institution.trim() && newEducation.degree.trim()) {
+    formData.education.push({
+      institution: newEducation.institution,
+      degree: newEducation.degree,
+      year: newEducation.year,
+    });
+
+    // Limpiar el formulario
+    newEducation.institution = '';
+    newEducation.degree = '';
+    newEducation.year = '';
+  }
+};
+
+// Remover educación
+const removeEducation = (index: number) => {
+  formData.education.splice(index, 1);
+};
+
+// Manejar la subida de foto de perfil
+const handlePhotoUpload = async (files: FileList) => {
+  if (!files.length) return;
+
+  const currentUser = auth.currentUser;
+  if (!currentUser) return;
+
+  isUploading.value = true;
+  uploadProgress.value = 0;
+
+  try {
+    const file = files[0];
+    const path = `avatars/${currentUser.uid}/${file.name}`;
+
+    const onProgress = (progress: number) => {
+      uploadProgress.value = Math.round(progress * 100);
+    };
+
+    const url = await uploadFile(file, path, onProgress);
+    formData.photoURL = url;
+  } catch (err) {
+    console.error('Error al subir foto:', err);
+    error.value = 'Error al subir la foto de perfil';
+  } finally {
+    isUploading.value = false;
+  }
+};
+
+// Guardar el perfil
+const saveProfile = async () => {
+  isSaving.value = true;
+  error.value = '';
+  successMessage.value = '';
+
+  try {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      router.push('/login');
+      return;
+    }
+
+    const userDocRef = doc(db, 'USERS', currentUser.uid);
+
+    // Actualizar datos del perfil
+    await updateDoc(userDocRef, {
+      bio: formData.bio,
+      experience: formData.experience,
+      address: formData.address,
+      specialties: formData.specialties,
+      education: formData.education,
+      photoURL: formData.photoURL,
+      availability: formData.availability, // Guardar la información de disponibilidad
+      profileCompleted: true,
+      updatedAt: new Date().toISOString(),
+    });
+
+    successMessage.value = 'Perfil completado con éxito';
+
+    // Redirigir después de 2 segundos
+    setTimeout(() => {
+      router.push('/pending-approval');
+    }, 2000);
+  } catch (err) {
+    console.error('Error al guardar perfil:', err);
+    error.value = 'Error al actualizar el perfil';
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+// Validar y enviar el formulario
+const handleSubmit = () => {
+  error.value = '';
+
+  // Validaciones obligatorias
+  if (formData.bio.trim().length < 10) {
+    error.value = 'Por favor, introduce una biografía más detallada (mínimo 10 caracteres)';
+    return;
+  }
+
+  if (formData.specialties.length === 0) {
+    error.value = 'Por favor, añade al menos una especialidad';
+    return;
+  }
+
+  if (!formData.address.trim()) {
+    error.value = 'Por favor, ingresa tu dirección';
+    return;
+  }
+
+  if (formData.education.length === 0) {
+    error.value = 'Por favor, añade al menos una formación académica';
+    return;
+  }
+
+  // Validar horario si es tiempo parcial
+  if (formData.availability.type === 'partial') {
+    const hasEnabledDay = formData.availability.schedule.some((day) => day.enabled);
+    if (!hasEnabledDay) {
+      error.value = 'Por favor, selecciona al menos un día de disponibilidad';
+      return;
+    }
+
+    // Validar que los días habilitados tengan horarios válidos
+    const invalidSchedule = formData.availability.schedule
+      .filter((day) => day.enabled)
+      .some((day) => !day.startTime || !day.endTime);
+
+    if (invalidSchedule) {
+      error.value = 'Por favor, completa los horarios para todos los días seleccionados';
+      return;
+    }
+  }
+
+  saveProfile();
+};
+
+// Cargar datos al montar el componente
+onMounted(() => {
+  loadUserProfile();
+});
+</script>

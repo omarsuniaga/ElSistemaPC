@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 import {
   AcademicCapIcon,
   UserGroupIcon,
@@ -39,7 +39,7 @@ import {
   UsersIcon,
   TableCellsIcon,
   CheckCircleIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 
 interface ReportType {
   id: string
@@ -52,11 +52,11 @@ interface ReportType {
 const props = defineProps<{
   type: ReportType
   selected: boolean
-}>()
+}>();
 
 defineEmits<{
   select: [id: string]
-}>()
+}>();
 
 const iconComponent = computed(() => {
   const iconMap = {
@@ -65,18 +65,18 @@ const iconComponent = computed(() => {
     CalendarDaysIcon,
     UsersIcon,
     TableCellsIcon,
-  }
-  return iconMap[props.type.icon as keyof typeof iconMap] || UsersIcon
-})
+  };
+  return iconMap[props.type.icon as keyof typeof iconMap] || UsersIcon;
+});
 
 const iconColorClass = computed(() => {
   const colorMap = {
-    blue: "bg-gradient-to-r from-blue-500 to-blue-600",
-    green: "bg-gradient-to-r from-green-500 to-green-600",
-    purple: "bg-gradient-to-r from-purple-500 to-purple-600",
-    orange: "bg-gradient-to-r from-orange-500 to-orange-600",
-    red: "bg-gradient-to-r from-red-500 to-red-600",
-  }
-  return colorMap[props.type.color as keyof typeof colorMap] || colorMap.blue
-})
+    blue: 'bg-gradient-to-r from-blue-500 to-blue-600',
+    green: 'bg-gradient-to-r from-green-500 to-green-600',
+    purple: 'bg-gradient-to-r from-purple-500 to-purple-600',
+    orange: 'bg-gradient-to-r from-orange-500 to-orange-600',
+    red: 'bg-gradient-to-r from-red-500 to-red-600',
+  };
+  return colorMap[props.type.color as keyof typeof colorMap] || colorMap.blue;
+});
 </script>

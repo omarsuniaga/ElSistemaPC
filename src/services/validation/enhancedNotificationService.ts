@@ -4,9 +4,9 @@
 import {
   validateStudentsForBulkNotification,
   validateNotificationRequest,
-} from "./attendanceValidator"
-import {sendBatchWithRateLimit} from "./rateLimitManager"
-import {executeWithErrorHandling, getSystemHealthReport} from "./errorManager"
+} from './attendanceValidator';
+import { sendBatchWithRateLimit } from './rateLimitManager';
+import { executeWithErrorHandling, getSystemHealthReport } from './errorManager';
 
 // Interfaces mejoradas
 interface EnhancedNotificationResult {
@@ -29,7 +29,7 @@ interface EnhancedNotificationResult {
     retryAttempts: number
   }
   healthStatus: {
-    systemStatus: "HEALTHY" | "WARNING" | "CRITICAL"
+    systemStatus: 'HEALTHY' | 'WARNING' | 'CRITICAL'
     canContinue: boolean
     warnings: string[]
   }
@@ -54,7 +54,7 @@ interface NotificationOptions {
     completed: number
     total: number
     currentStudent: string
-    phase: "validation" | "sending" | "completed"
+    phase: 'validation' | 'sending' | 'completed'
   }) => void
 }
 
@@ -70,10 +70,10 @@ export class EnhancedNotificationService {
     dryRun: false,
     batchSize: 10,
     onProgress: () => {},
-  }
+  };
 
   constructor(options?: Partial<NotificationOptions>) {
-    this.options = {...this.options, ...options}
+    this.options = { ...this.options, ...options };
   }
 
   /**
@@ -81,18 +81,18 @@ export class EnhancedNotificationService {
    */
   async sendNotifications(request: {
     studentIds: string[]
-    messageType: "tardanza" | "ausencia_justificada" | "inasistencia" | "custom"
+    messageType: 'tardanza' | 'ausencia_justificada' | 'inasistencia' | 'custom'
     customMessage?: string
     getStudentData: (id: string) => Promise<any>
     getMessageTemplate: (type: string, escalationLevel?: number) => string
     sendWhatsAppMessage: (phone: string, message: string) => Promise<boolean>
     escalationLevels?: Record<string, number> // studentId -> level
   }): Promise<EnhancedNotificationResult> {
-    const startTime = Date.now()
+    const startTime = Date.now();
 
     console.log(
-      `🚀 Enhanced Notifications - Iniciando proceso mejorado para ${request.studentIds.length} estudiantes`
-    )
+      `🚀 Enhanced Notifications - Iniciando proceso mejorado para ${request.studentIds.length} estudiantes`,
+    );
 
     // Inicializar resultado
     const result: EnhancedNotificationResult = {
@@ -115,38 +115,38 @@ export class EnhancedNotificationService {
         retryAttempts: 0,
       },
       healthStatus: {
-        systemStatus: "HEALTHY",
+        systemStatus: 'HEALTHY',
         canContinue: true,
         warnings: [],
       },
       detailedResults: [],
-    }
+    };
 
     try {
       // Fase 1: Verificar salud del sistema
       this.updateProgress(
-        "validation",
+        'validation',
         0,
         request.studentIds.length,
-        "Verificando salud del sistema"
-      )
+        'Verificando salud del sistema',
+      );
 
-      const healthReport = getSystemHealthReport()
-      result.healthStatus.systemStatus = healthReport.status
-      result.healthStatus.warnings = healthReport.recommendations
+      const healthReport = getSystemHealthReport();
+      result.healthStatus.systemStatus = healthReport.status;
+      result.healthStatus.warnings = healthReport.recommendations;
 
-      if (healthReport.status === "CRITICAL") {
-        result.healthStatus.canContinue = false
-        throw new Error("Sistema en estado crítico. Suspendiendo envíos automáticos.")
+      if (healthReport.status === 'CRITICAL') {
+        result.healthStatus.canContinue = false;
+        throw new Error('Sistema en estado crítico. Suspendiendo envíos automáticos.');
       }
 
       // Fase 2: Validación completa
       this.updateProgress(
-        "validation",
+        'validation',
         0,
         request.studentIds.length,
-        "Validando datos de estudiantes"
-      )
+        'Validando datos de estudiantes',
+      );
 
       const validationResult = await executeWithErrorHandling(
         () =>
@@ -156,18 +156,18 @@ export class EnhancedNotificationService {
             customMessage: request.customMessage,
             getStudentData: request.getStudentData,
           }),
-        "Validación de notificación"
-      )
+        'Validación de notificación',
+      );
 
       if (!validationResult.success || !validationResult.result) {
-        throw new Error(`Error en validación: ${validationResult.error}`)
+        throw new Error(`Error en validación: ${validationResult.error}`);
       }
 
-      const validation = validationResult.result
-      result.validation.validStudents = validation.studentValidation.valid.length
-      result.validation.invalidStudents = validation.studentValidation.invalid.length
-      result.validation.recommendations = validation.recommendations
-      result.summary.invalid = validation.studentValidation.invalid.length
+      const validation = validationResult.result;
+      result.validation.validStudents = validation.studentValidation.valid.length;
+      result.validation.invalidStudents = validation.studentValidation.invalid.length;
+      result.validation.recommendations = validation.recommendations;
+      result.summary.invalid = validation.studentValidation.invalid.length;
 
       // Agregar estudiantes inválidos al resultado detallado
       validation.studentValidation.invalid.forEach((student) => {
@@ -176,16 +176,16 @@ export class EnhancedNotificationService {
           studentName: student.name,
           phoneNumbers: student.phoneNumbers,
           success: false,
-          error: student.errors.join(", "),
-        })
-      })
+          error: student.errors.join(', '),
+        });
+      });
 
       if (!validation.canProceed) {
-        throw new Error("Validación falló: " + validation.recommendations.join(", "))
+        throw new Error('Validación falló: ' + validation.recommendations.join(', '));
       }
 
       // Fase 3: Preparar mensajes
-      this.updateProgress("validation", 25, request.studentIds.length, "Preparando mensajes")
+      this.updateProgress('validation', 25, request.studentIds.length, 'Preparando mensajes');
 
       const messages: Array<{
         phoneNumber: string
@@ -193,11 +193,11 @@ export class EnhancedNotificationService {
         messageType: string
         studentId: string
         studentName: string
-      }> = []
+      }> = [];
 
       for (const student of validation.studentValidation.valid) {
-        const escalationLevel = request.escalationLevels?.[student.id]
-        const messageTemplate = request.getMessageTemplate(request.messageType, escalationLevel)
+        const escalationLevel = request.escalationLevels?.[student.id];
+        const messageTemplate = request.getMessageTemplate(request.messageType, escalationLevel);
 
         for (const phoneNumber of student.phoneNumbers) {
           messages.push({
@@ -206,33 +206,33 @@ export class EnhancedNotificationService {
             messageType: request.messageType,
             studentId: student.id,
             studentName: student.name,
-          })
+          });
         }
       }
 
       // Modo dry run
       if (this.options.dryRun) {
-        console.log("🧪 Dry Run - No se enviarán mensajes reales")
-        result.success = true
-        result.summary.successful = messages.length
-        return result
+        console.log('🧪 Dry Run - No se enviarán mensajes reales');
+        result.success = true;
+        result.summary.successful = messages.length;
+        return result;
       }
 
       // Fase 4: Envío con rate limiting
-      this.updateProgress("sending", 50, request.studentIds.length, "Enviando notificaciones")
+      this.updateProgress('sending', 50, request.studentIds.length, 'Enviando notificaciones');
 
       const batchResult = await sendBatchWithRateLimit(
         messages,
         request.sendWhatsAppMessage,
         (completed, total, current) => {
           this.updateProgress(
-            "sending",
+            'sending',
             50 + (completed / total) * 45,
             request.studentIds.length,
-            current
-          )
-        }
-      )
+            current,
+          );
+        },
+      );
 
       // Procesar resultados
       const studentResults = new Map<
@@ -245,7 +245,7 @@ export class EnhancedNotificationService {
           error?: string
           escalationLevel?: number
         }
-      >()
+      >();
 
       // Inicializar todos los estudiantes válidos
       validation.studentValidation.valid.forEach((student) => {
@@ -255,49 +255,49 @@ export class EnhancedNotificationService {
           phoneNumbers: student.phoneNumbers,
           success: true, // Asumimos éxito inicialmente
           escalationLevel: request.escalationLevels?.[student.id],
-        })
-      })
+        });
+      });
 
       // Actualizar con resultados reales
       batchResult.results.forEach((msgResult, index) => {
-        const message = messages[index]
-        const studentResult = studentResults.get(message.studentId)
+        const message = messages[index];
+        const studentResult = studentResults.get(message.studentId);
 
         if (studentResult) {
           if (!msgResult.success) {
-            studentResult.success = false
-            studentResult.error = msgResult.error || "Error desconocido"
+            studentResult.success = false;
+            studentResult.error = msgResult.error || 'Error desconocido';
           }
         }
-      })
+      });
 
       // Convertir a array y actualizar resumen
-      result.detailedResults.push(...Array.from(studentResults.values()))
-      result.summary.successful = batchResult.summary.successful
-      result.summary.failed = batchResult.summary.failed
-      result.summary.rateLimited = batchResult.summary.rateLimited
+      result.detailedResults.push(...Array.from(studentResults.values()));
+      result.summary.successful = batchResult.summary.successful;
+      result.summary.failed = batchResult.summary.failed;
+      result.summary.rateLimited = batchResult.summary.rateLimited;
 
       // Fase 5: Finalización
-      this.updateProgress("completed", 100, request.studentIds.length, "Proceso completado")
+      this.updateProgress('completed', 100, request.studentIds.length, 'Proceso completado');
 
-      result.success = batchResult.summary.successful > 0
-      result.performance.totalDuration = Date.now() - startTime
-      result.performance.averageTimePerMessage = result.performance.totalDuration / messages.length
+      result.success = batchResult.summary.successful > 0;
+      result.performance.totalDuration = Date.now() - startTime;
+      result.performance.averageTimePerMessage = result.performance.totalDuration / messages.length;
 
       console.log(
-        `✅ Enhanced Notifications - Proceso completado: ${result.summary.successful} éxitos, ${result.summary.failed} fallos`
-      )
+        `✅ Enhanced Notifications - Proceso completado: ${result.summary.successful} éxitos, ${result.summary.failed} fallos`,
+      );
 
-      return result
+      return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error("❌ Enhanced Notifications - Error en proceso:", errorMessage)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('❌ Enhanced Notifications - Error en proceso:', errorMessage);
 
-      result.success = false
-      result.performance.totalDuration = Date.now() - startTime
-      result.healthStatus.warnings.push(errorMessage)
+      result.success = false;
+      result.performance.totalDuration = Date.now() - startTime;
+      result.healthStatus.warnings.push(errorMessage);
 
-      return result
+      return result;
     }
   }
 
@@ -305,17 +305,17 @@ export class EnhancedNotificationService {
    * Notificación de progreso
    */
   private updateProgress(
-    phase: "validation" | "sending" | "completed",
+    phase: 'validation' | 'sending' | 'completed',
     percentage: number,
     total: number,
-    currentOperation: string
+    currentOperation: string,
   ): void {
     this.options.onProgress({
       completed: Math.floor((percentage / 100) * total),
       total,
       currentStudent: currentOperation,
       phase,
-    })
+    });
   }
 
   /**
@@ -330,39 +330,39 @@ export class EnhancedNotificationService {
       health: getSystemHealthReport(),
       // rateLimits: getRateLimitStatistics(),
       // errors: getErrorStatistics()
-    }
+    };
   }
 
   /**
    * Configurar opciones del servicio
    */
   configure(options: Partial<NotificationOptions>): void {
-    this.options = {...this.options, ...options}
+    this.options = { ...this.options, ...options };
   }
 }
 
 /**
  * Instancia global del servicio mejorado
  */
-export const enhancedNotificationService = new EnhancedNotificationService()
+export const enhancedNotificationService = new EnhancedNotificationService();
 
 /**
  * Función helper para migrar desde el servicio anterior
  */
 export const sendNotificationsWithValidation = (
   studentIds: string[],
-  messageType: "tardanza" | "ausencia_justificada" | "inasistencia",
+  messageType: 'tardanza' | 'ausencia_justificada' | 'inasistencia',
   options?: {
     onProgress?: (completed: number, total: number, current: string) => void
     dryRun?: boolean
-  }
+  },
 ) => {
   // Esta función será implementada para integrar con el servicio existente
-  console.log("🔄 Migración pendiente - Usar enhancedNotificationService directamente")
-}
+  console.log('🔄 Migración pendiente - Usar enhancedNotificationService directamente');
+};
 
 export default {
   EnhancedNotificationService,
   enhancedNotificationService,
   sendNotificationsWithValidation,
-}
+};

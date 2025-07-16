@@ -1,461 +1,3 @@
-<script setup lang="ts">
-import {ref, onMounted, computed, watch, onUnmounted, shallowRef} from "vue"
-import {useRouter} from "vue-router"
-import {useAuthStore} from "../stores/auth"
-import {useProfileStore} from "../modulos/Profile/store/profile"
-import {useColorMode} from "@vueuse/core"
-import FileUpload from "../components/FileUpload.vue"
-import ReportGenerator from "../modulos/Analytics/components/ReportGenerator.vue"
-import AccessRequests from "../components/AccessRequests.vue"
-import EmergencyClassRequests from "../components/EmergencyClassRequests.vue"
-import {useEmergencyClassStore} from "../modulos/Attendance/store/emergencyClass"
-// import { clearLocalStorage } from '../utils/localStorageUtils'
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  query,
-  where,
-  onSnapshot,
-} from "firebase/firestore"
-import {getApp} from "firebase/app"
-import {getAuth, signOut} from "firebase/auth"
-import {safeGet, safeArrayLength, safeStoreAccess} from "../utils/safeAccess"
-import {useAdminErrorHandling} from "../composables/useAdminErrorHandling"
-import {
-  UserIcon,
-  CogIcon,
-  BellIcon,
-  ClockIcon,
-  DocumentTextIcon,
-  LanguageIcon,
-  GlobeAmericasIcon,
-  ChartBarIcon,
-  ShieldCheckIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  PencilIcon,
-  CameraIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  CalendarIcon,
-  TrophyIcon,
-  AcademicCapIcon,
-  StarIcon,
-  SunIcon,
-  MoonIcon,
-  PencilSquareIcon,
-  ArrowRightOnRectangleIcon,
-  XMarkIcon,
-  KeyIcon,
-  ComputerDesktopIcon,
-  LockClosedIcon,
-  UserCircleIcon,
-  CheckIcon,
-} from "@heroicons/vue/24/outline"
-
-const router = useRouter()
-const authStore = useAuthStore()
-const profileStore = useProfileStore()
-const colorMode = useColorMode()
-const emergencyClassStore = useEmergencyClassStore()
-const {handleAdminError, clearResolvedErrors} = useAdminErrorHandling()
-
-// Variables de estado
-const isLoading = ref(false)
-const error = ref("")
-const isEditing = ref(false)
-const showReports = ref(false)
-const isUploading = ref(false)
-const uploadProgress = ref(0)
-const profileActivityLog = ref<Array<{activity: string; timestamp: string}>>([])
-const showSecuritySettings = ref(false)
-
-// Nuevo estado para las solicitudes de clases emergentes
-const showEmergencyClassRequests = ref(false)
-const pendingEmergencyClasses = ref(0)
-
-// Get current user UID
-const currentUserUid = computed(() => safeGet(authStore.user, "uid", ""))
-
-// Datos del formulario
-const formData = ref({
-  displayName: "",
-  email: "",
-  phoneNumber: "",
-  preferences: {
-    theme: "dark",
-    language: "es",
-    timezone: "",
-    emailNotifications: true,
-  },
-})
-
-// Estado para las solicitudes pendientes
-const pendingRequests = ref(0)
-const showAccessRequests = ref(false)
-// Referencia para la suscripción a Firestore
-const unsubscribePendingRequests = shallowRef<(() => void) | null>(null)
-
-// Cálculo del completado del perfil
-const profileCompletion = computed(() => {
-  const profile = safeStoreAccess(profileStore, "profile", null)
-  if (!profile) return 0
-
-  let total = 0
-  let completed = 0
-
-  // Campos básicos
-  const fields = ["displayName", "email", "phone", "photoURL"]
-
-  total += fields.length
-
-  fields.forEach((field) => {
-    if (safeGet(profile, field)) completed++
-  })
-
-  // Preferencias
-  const preferenceFields = ["theme", "language", "timezone", "emailNotifications"]
-
-  total += preferenceFields.length
-
-  preferenceFields.forEach((field) => {
-    if (safeGet(profile, `preferences.${field}`)) completed++
-  })
-
-  return Math.round((completed / total) * 100)
-})
-
-// Información del tema actual para el botón
-const themeInfo = computed(() => {
-  if (colorMode.value === "dark") {
-    return {
-      icon: SunIcon,
-      text: "Cambiar a modo claro",
-    }
-  } else {
-    return {
-      icon: MoonIcon,
-      text: "Cambiar a modo oscuro",
-    }
-  }
-})
-
-// Establecer el modo oscuro como predeterminado
-colorMode.value = "dark"
-
-// Función para alternar el tema
-const toggleTheme = () => {
-  colorMode.value = colorMode.value === "dark" ? "light" : "dark"
-
-  // Update theme preference in both local state and Firestore
-  const profile = safeStoreAccess(profileStore, "profile", null)
-  if (profile) {
-    const currentPreferences = safeGet(profile, "preferences", {})
-    const updatedPreferences = {
-      ...currentPreferences,
-      theme: colorMode.value,
-    }
-    profileStore.updateSettings(updatedPreferences)
-
-    // Also update in Firestore users collection
-    if (currentUserUid.value) {
-      const db = getFirestore(getApp())
-      const userDocRef = doc(db, "USERS", currentUserUid.value)
-      setDoc(
-        userDocRef,
-        {
-          preferences: updatedPreferences,
-        },
-        {merge: true}
-      )
-    }
-  }
-}
-
-// Función para iniciar modo de edición
-const startEditing = () => {
-  const profile = safeStoreAccess(profileStore, "profile", null)
-  if (!profile) return
-
-  const defaultPreferences = {
-    theme: "dark",
-    language: "es",
-    timezone: "",
-    emailNotifications: true,
-  }
-
-  formData.value = {
-    displayName: safeGet(profile, "displayName", ""),
-    email: safeGet(profile, "email", ""),
-    phoneNumber: safeGet(profile, "phone", ""),
-    preferences: {...defaultPreferences, ...safeGet(profile, "preferences", {})},
-  }
-
-  isEditing.value = true
-  showReports.value = false
-  showAccessRequests.value = false
-  showSecuritySettings.value = false
-}
-
-// Función para cancelar edición
-const cancelEditing = () => {
-  isEditing.value = false
-}
-
-// Función para manejar el envío del formulario
-const handleSubmit = async () => {
-  if (!profileStore.profile) return
-
-  isLoading.value = true
-  error.value = ""
-
-  try {
-    await profileStore.updateProfile({
-      displayName: formData.value.displayName,
-      email: formData.value.email,
-      phone: formData.value.phoneNumber,
-    })
-
-    await profileStore.updateSettings(formData.value.preferences)
-
-    isEditing.value = false
-
-    // Registrar actividad
-    addToActivityLog("Perfil actualizado")
-  } catch (err) {
-    error.value = handleAdminError(err, "Error al actualizar el perfil").message
-    console.error("Error updating profile", err)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Función para manejar la selección de una nueva foto
-const handlePhotoUpload = () => {
-  isUploading.value = true
-  uploadProgress.value = 0
-}
-
-// Función para manejar el éxito de la carga de la foto
-const handlePhotoSuccess = async (url) => {
-  isUploading.value = false
-
-  try {
-    await profileStore.updateProfile({
-      photoURL: url,
-    })
-
-    // Registrar actividad
-    addToActivityLog("Foto de perfil actualizada")
-  } catch (err) {
-    error.value = handleAdminError(err, "Error al actualizar la foto de perfil").message
-    console.error("Error updating profile photo", err)
-  }
-}
-
-// Función para cerrar sesión
-const handleSignOut = async () => {
-  try {
-    const auth = getAuth()
-    await signOut(auth)
-    router.push("/login")
-  } catch (err) {
-    error.value = handleAdminError(err, "Error al cerrar sesión").message
-    console.error("Error signing out", err)
-  }
-}
-
-// Función para obtener información adicional del usuario desde Firebase
-const fetchUserFromFirebase = async () => {
-  if (!currentUserUid.value) return
-
-  try {
-    const db = getFirestore(getApp())
-    const userDocRef = doc(db, "USERS", currentUserUid.value)
-    const userDoc = await getDoc(userDocRef)
-
-    if (userDoc.exists()) {
-      const userData = userDoc.data()
-
-      // Actualizar datos del perfil local si hay información adicional
-      if (userData) {
-        await profileStore.mergeFirebaseData(userData)
-      }
-    }
-  } catch (err) {
-    console.error("Error fetching user data from Firebase", err)
-  }
-}
-
-// Función para añadir entradas al registro de actividad
-const addToActivityLog = (activity) => {
-  profileActivityLog.value.unshift({
-    activity,
-    timestamp: new Date().toISOString(),
-  })
-
-  // Mantener el registro limitado a 10 entradas
-  if (profileActivityLog.value.length > 10) {
-    profileActivityLog.value = profileActivityLog.value.slice(0, 10)
-  }
-}
-
-const startWatchingPendingRequests = () => {
-  // Solo directores y administradores pueden ver solicitudes
-  if (!["Director", "Administrador"].includes(authStore.user?.role || "")) return
-
-  // Cancelar suscripción previa si existe
-  if (unsubscribePendingRequests.value) {
-    unsubscribePendingRequests.value()
-    unsubscribePendingRequests.value = null
-  }
-
-  // Iniciar nueva suscripción
-  const db = getFirestore(getApp())
-  const pendingRequestsQuery = query(collection(db, "USERS"), where("status", "==", "pendiente"))
-  // Suscribirse en tiempo real pero solo con una suscripción activa
-  unsubscribePendingRequests.value = onSnapshot(
-    pendingRequestsQuery,
-    (snapshot) => {
-      pendingRequests.value = safeArrayLength(snapshot.docs)
-    },
-    (err) => {
-      console.error("Error al verificar solicitudes pendientes", err)
-    }
-  )
-}
-
-// Detener la suscripción cuando ya no es necesaria
-const stopWatchingPendingRequests = () => {
-  if (unsubscribePendingRequests.value) {
-    unsubscribePendingRequests.value()
-    unsubscribePendingRequests.value = null
-  }
-}
-
-// Alternar la vista de solicitudes de acceso
-const toggleAccessRequests = () => {
-  showAccessRequests.value = !showAccessRequests.value
-  showReports.value = false
-  isEditing.value = false
-  showSecuritySettings.value = false
-  showEmergencyClassRequests.value = false
-}
-
-// Alternar la vista de configuración de seguridad
-const toggleSecuritySettings = () => {
-  showSecuritySettings.value = !showSecuritySettings.value
-  showReports.value = false
-  isEditing.value = false
-  showAccessRequests.value = false
-  showEmergencyClassRequests.value = false
-}
-
-// Alternar la vista de solicitudes de clases emergentes
-const toggleEmergencyClassRequests = () => {
-  showEmergencyClassRequests.value = !showEmergencyClassRequests.value
-  showReports.value = false
-  isEditing.value = false
-  showAccessRequests.value = false
-  showSecuritySettings.value = false
-
-  if (showEmergencyClassRequests.value) {
-    loadPendingEmergencyClasses()
-  }
-}
-
-// Cargar las solicitudes pendientes de clases emergentes
-const loadPendingEmergencyClasses = async () => {
-  try {
-    await emergencyClassStore.fetchEmergencyClasses("Pendiente" as any)
-    pendingEmergencyClasses.value = safeArrayLength(emergencyClassStore.getPendingEmergencyClasses)
-  } catch (error) {
-    handleAdminError(error, "Error al cargar clases emergentes pendientes")
-  }
-}
-
-// Observar cambios en el rol de usuario para iniciar/detener suscripciones apropiadamente
-watch(
-  () => safeGet(authStore.user, "role"),
-  (newRole) => {
-    if (["Director", "Administrador"].includes(newRole || "")) {
-      startWatchingPendingRequests()
-      loadPendingEmergencyClasses()
-    } else {
-      stopWatchingPendingRequests()
-    }
-  }
-)
-
-// Mantener o detener la observación según el estado de la app
-watch(
-  () => showAccessRequests.value,
-  (isShowing) => {
-    // Si se muestra la vista de solicitudes, seguir observando
-    // Si cambia a otra vista y no hay notificaciones, considerar detener
-    if (!isShowing && pendingRequests.value === 0) {
-      stopWatchingPendingRequests()
-    } else if (["Director", "Administrador"].includes(authStore.user?.role || "")) {
-      startWatchingPendingRequests()
-    }
-  }
-)
-
-onMounted(async () => {
-  if (!authStore.isLoggedIn) {
-    router.push("/login")
-    return
-  }
-
-  isLoading.value = true
-  error.value = ""
-  try {
-    await profileStore.fetchProfile()
-    await fetchUserFromFirebase()
-    const profile = safeStoreAccess(profileStore, "profile", null)
-    if (profile) {
-      const defaultPreferences = {
-        theme: "dark",
-        language: "es",
-        timezone: "",
-        emailNotifications: true,
-      }
-
-      formData.value = {
-        displayName: safeGet(profile, "displayName", ""),
-        email: safeGet(profile, "email", ""),
-        phoneNumber: safeGet(profile, "phone", ""),
-        preferences: {...defaultPreferences, ...safeGet(profile, "preferences", {})},
-      }
-
-      // Iniciar vigilancia de solicitudes si es un admin/director
-      const userRole = safeGet(authStore.user, "role", "")
-      if (["Director", "Administrador"].includes(userRole)) {
-        startWatchingPendingRequests()
-      }
-
-      // Registrar actividad
-      addToActivityLog("Perfil cargado")
-    } else {
-      throw new Error("No se pudo cargar el perfil")
-    }
-  } catch (err) {
-    error.value = handleAdminError(err, "Error al cargar el perfil").message
-    console.error("Error loading profile", err)
-  } finally {
-    isLoading.value = false
-  }
-})
-
-// Limpiar suscripciones al desmontar
-onUnmounted(() => {
-  stopWatchingPendingRequests()
-})
-</script>
-
 <template>
   <div class="profile-container py-6 max-w-5xl mx-auto px-4 mb-14">
     <!-- Header y botones -->
@@ -1200,6 +742,464 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed, watch, onUnmounted, shallowRef } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import { useProfileStore } from '../modulos/Profile/store/profile';
+import { useColorMode } from '@vueuse/core';
+import FileUpload from '../components/FileUpload.vue';
+import ReportGenerator from '../modulos/Analytics/components/ReportGenerator.vue';
+import AccessRequests from '../components/AccessRequests.vue';
+import EmergencyClassRequests from '../components/EmergencyClassRequests.vue';
+import { useEmergencyClassStore } from '../modulos/Attendance/store/emergencyClass';
+// import { clearLocalStorage } from '../utils/localStorageUtils'
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from 'firebase/firestore';
+import { getApp } from 'firebase/app';
+import { getAuth, signOut } from 'firebase/auth';
+import { safeGet, safeArrayLength, safeStoreAccess } from '../utils/safeAccess';
+import { useAdminErrorHandling } from '../composables/useAdminErrorHandling';
+import {
+  UserIcon,
+  CogIcon,
+  BellIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  LanguageIcon,
+  GlobeAmericasIcon,
+  ChartBarIcon,
+  ShieldCheckIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  PencilIcon,
+  CameraIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  CalendarIcon,
+  TrophyIcon,
+  AcademicCapIcon,
+  StarIcon,
+  SunIcon,
+  MoonIcon,
+  PencilSquareIcon,
+  ArrowRightOnRectangleIcon,
+  XMarkIcon,
+  KeyIcon,
+  ComputerDesktopIcon,
+  LockClosedIcon,
+  UserCircleIcon,
+  CheckIcon,
+} from '@heroicons/vue/24/outline';
+
+const router = useRouter();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
+const colorMode = useColorMode();
+const emergencyClassStore = useEmergencyClassStore();
+const { handleAdminError, clearResolvedErrors } = useAdminErrorHandling();
+
+// Variables de estado
+const isLoading = ref(false);
+const error = ref('');
+const isEditing = ref(false);
+const showReports = ref(false);
+const isUploading = ref(false);
+const uploadProgress = ref(0);
+const profileActivityLog = ref<Array<{activity: string; timestamp: string}>>([]);
+const showSecuritySettings = ref(false);
+
+// Nuevo estado para las solicitudes de clases emergentes
+const showEmergencyClassRequests = ref(false);
+const pendingEmergencyClasses = ref(0);
+
+// Get current user UID
+const currentUserUid = computed(() => safeGet(authStore.user, 'uid', ''));
+
+// Datos del formulario
+const formData = ref({
+  displayName: '',
+  email: '',
+  phoneNumber: '',
+  preferences: {
+    theme: 'dark',
+    language: 'es',
+    timezone: '',
+    emailNotifications: true,
+  },
+});
+
+// Estado para las solicitudes pendientes
+const pendingRequests = ref(0);
+const showAccessRequests = ref(false);
+// Referencia para la suscripción a Firestore
+const unsubscribePendingRequests = shallowRef<(() => void) | null>(null);
+
+// Cálculo del completado del perfil
+const profileCompletion = computed(() => {
+  const profile = safeStoreAccess(profileStore, 'profile', null);
+  if (!profile) return 0;
+
+  let total = 0;
+  let completed = 0;
+
+  // Campos básicos
+  const fields = ['displayName', 'email', 'phone', 'photoURL'];
+
+  total += fields.length;
+
+  fields.forEach((field) => {
+    if (safeGet(profile, field)) completed++;
+  });
+
+  // Preferencias
+  const preferenceFields = ['theme', 'language', 'timezone', 'emailNotifications'];
+
+  total += preferenceFields.length;
+
+  preferenceFields.forEach((field) => {
+    if (safeGet(profile, `preferences.${field}`)) completed++;
+  });
+
+  return Math.round((completed / total) * 100);
+});
+
+// Información del tema actual para el botón
+const themeInfo = computed(() => {
+  if (colorMode.value === 'dark') {
+    return {
+      icon: SunIcon,
+      text: 'Cambiar a modo claro',
+    };
+  } else {
+    return {
+      icon: MoonIcon,
+      text: 'Cambiar a modo oscuro',
+    };
+  }
+});
+
+// Establecer el modo oscuro como predeterminado
+colorMode.value = 'dark';
+
+// Función para alternar el tema
+const toggleTheme = () => {
+  colorMode.value = colorMode.value === 'dark' ? 'light' : 'dark';
+
+  // Update theme preference in both local state and Firestore
+  const profile = safeStoreAccess(profileStore, 'profile', null);
+  if (profile) {
+    const currentPreferences = safeGet(profile, 'preferences', {});
+    const updatedPreferences = {
+      ...currentPreferences,
+      theme: colorMode.value,
+    };
+    profileStore.updateSettings(updatedPreferences);
+
+    // Also update in Firestore users collection
+    if (currentUserUid.value) {
+      const db = getFirestore(getApp());
+      const userDocRef = doc(db, 'USERS', currentUserUid.value);
+      setDoc(
+        userDocRef,
+        {
+          preferences: updatedPreferences,
+        },
+        { merge: true },
+      );
+    }
+  }
+};
+
+// Función para iniciar modo de edición
+const startEditing = () => {
+  const profile = safeStoreAccess(profileStore, 'profile', null);
+  if (!profile) return;
+
+  const defaultPreferences = {
+    theme: 'dark',
+    language: 'es',
+    timezone: '',
+    emailNotifications: true,
+  };
+
+  formData.value = {
+    displayName: safeGet(profile, 'displayName', ''),
+    email: safeGet(profile, 'email', ''),
+    phoneNumber: safeGet(profile, 'phone', ''),
+    preferences: { ...defaultPreferences, ...safeGet(profile, 'preferences', {}) },
+  };
+
+  isEditing.value = true;
+  showReports.value = false;
+  showAccessRequests.value = false;
+  showSecuritySettings.value = false;
+};
+
+// Función para cancelar edición
+const cancelEditing = () => {
+  isEditing.value = false;
+};
+
+// Función para manejar el envío del formulario
+const handleSubmit = async () => {
+  if (!profileStore.profile) return;
+
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    await profileStore.updateProfile({
+      displayName: formData.value.displayName,
+      email: formData.value.email,
+      phone: formData.value.phoneNumber,
+    });
+
+    await profileStore.updateSettings(formData.value.preferences);
+
+    isEditing.value = false;
+
+    // Registrar actividad
+    addToActivityLog('Perfil actualizado');
+  } catch (err) {
+    error.value = handleAdminError(err, 'Error al actualizar el perfil').message;
+    console.error('Error updating profile', err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Función para manejar la selección de una nueva foto
+const handlePhotoUpload = () => {
+  isUploading.value = true;
+  uploadProgress.value = 0;
+};
+
+// Función para manejar el éxito de la carga de la foto
+const handlePhotoSuccess = async (url) => {
+  isUploading.value = false;
+
+  try {
+    await profileStore.updateProfile({
+      photoURL: url,
+    });
+
+    // Registrar actividad
+    addToActivityLog('Foto de perfil actualizada');
+  } catch (err) {
+    error.value = handleAdminError(err, 'Error al actualizar la foto de perfil').message;
+    console.error('Error updating profile photo', err);
+  }
+};
+
+// Función para cerrar sesión
+const handleSignOut = async () => {
+  try {
+    const auth = getAuth();
+    await signOut(auth);
+    router.push('/login');
+  } catch (err) {
+    error.value = handleAdminError(err, 'Error al cerrar sesión').message;
+    console.error('Error signing out', err);
+  }
+};
+
+// Función para obtener información adicional del usuario desde Firebase
+const fetchUserFromFirebase = async () => {
+  if (!currentUserUid.value) return;
+
+  try {
+    const db = getFirestore(getApp());
+    const userDocRef = doc(db, 'USERS', currentUserUid.value);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+
+      // Actualizar datos del perfil local si hay información adicional
+      if (userData) {
+        await profileStore.mergeFirebaseData(userData);
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching user data from Firebase', err);
+  }
+};
+
+// Función para añadir entradas al registro de actividad
+const addToActivityLog = (activity) => {
+  profileActivityLog.value.unshift({
+    activity,
+    timestamp: new Date().toISOString(),
+  });
+
+  // Mantener el registro limitado a 10 entradas
+  if (profileActivityLog.value.length > 10) {
+    profileActivityLog.value = profileActivityLog.value.slice(0, 10);
+  }
+};
+
+const startWatchingPendingRequests = () => {
+  // Solo directores y administradores pueden ver solicitudes
+  if (!['Director', 'Administrador'].includes(authStore.user?.role || '')) return;
+
+  // Cancelar suscripción previa si existe
+  if (unsubscribePendingRequests.value) {
+    unsubscribePendingRequests.value();
+    unsubscribePendingRequests.value = null;
+  }
+
+  // Iniciar nueva suscripción
+  const db = getFirestore(getApp());
+  const pendingRequestsQuery = query(collection(db, 'USERS'), where('status', '==', 'pendiente'));
+  // Suscribirse en tiempo real pero solo con una suscripción activa
+  unsubscribePendingRequests.value = onSnapshot(
+    pendingRequestsQuery,
+    (snapshot) => {
+      pendingRequests.value = safeArrayLength(snapshot.docs);
+    },
+    (err) => {
+      console.error('Error al verificar solicitudes pendientes', err);
+    },
+  );
+};
+
+// Detener la suscripción cuando ya no es necesaria
+const stopWatchingPendingRequests = () => {
+  if (unsubscribePendingRequests.value) {
+    unsubscribePendingRequests.value();
+    unsubscribePendingRequests.value = null;
+  }
+};
+
+// Alternar la vista de solicitudes de acceso
+const toggleAccessRequests = () => {
+  showAccessRequests.value = !showAccessRequests.value;
+  showReports.value = false;
+  isEditing.value = false;
+  showSecuritySettings.value = false;
+  showEmergencyClassRequests.value = false;
+};
+
+// Alternar la vista de configuración de seguridad
+const toggleSecuritySettings = () => {
+  showSecuritySettings.value = !showSecuritySettings.value;
+  showReports.value = false;
+  isEditing.value = false;
+  showAccessRequests.value = false;
+  showEmergencyClassRequests.value = false;
+};
+
+// Alternar la vista de solicitudes de clases emergentes
+const toggleEmergencyClassRequests = () => {
+  showEmergencyClassRequests.value = !showEmergencyClassRequests.value;
+  showReports.value = false;
+  isEditing.value = false;
+  showAccessRequests.value = false;
+  showSecuritySettings.value = false;
+
+  if (showEmergencyClassRequests.value) {
+    loadPendingEmergencyClasses();
+  }
+};
+
+// Cargar las solicitudes pendientes de clases emergentes
+const loadPendingEmergencyClasses = async () => {
+  try {
+    await emergencyClassStore.fetchEmergencyClasses('Pendiente' as any);
+    pendingEmergencyClasses.value = safeArrayLength(emergencyClassStore.getPendingEmergencyClasses);
+  } catch (error) {
+    handleAdminError(error, 'Error al cargar clases emergentes pendientes');
+  }
+};
+
+// Observar cambios en el rol de usuario para iniciar/detener suscripciones apropiadamente
+watch(
+  () => safeGet(authStore.user, 'role'),
+  (newRole) => {
+    if (['Director', 'Administrador'].includes(newRole || '')) {
+      startWatchingPendingRequests();
+      loadPendingEmergencyClasses();
+    } else {
+      stopWatchingPendingRequests();
+    }
+  },
+);
+
+// Mantener o detener la observación según el estado de la app
+watch(
+  () => showAccessRequests.value,
+  (isShowing) => {
+    // Si se muestra la vista de solicitudes, seguir observando
+    // Si cambia a otra vista y no hay notificaciones, considerar detener
+    if (!isShowing && pendingRequests.value === 0) {
+      stopWatchingPendingRequests();
+    } else if (['Director', 'Administrador'].includes(authStore.user?.role || '')) {
+      startWatchingPendingRequests();
+    }
+  },
+);
+
+onMounted(async () => {
+  if (!authStore.isLoggedIn) {
+    router.push('/login');
+    return;
+  }
+
+  isLoading.value = true;
+  error.value = '';
+  try {
+    await profileStore.fetchProfile();
+    await fetchUserFromFirebase();
+    const profile = safeStoreAccess(profileStore, 'profile', null);
+    if (profile) {
+      const defaultPreferences = {
+        theme: 'dark',
+        language: 'es',
+        timezone: '',
+        emailNotifications: true,
+      };
+
+      formData.value = {
+        displayName: safeGet(profile, 'displayName', ''),
+        email: safeGet(profile, 'email', ''),
+        phoneNumber: safeGet(profile, 'phone', ''),
+        preferences: { ...defaultPreferences, ...safeGet(profile, 'preferences', {}) },
+      };
+
+      // Iniciar vigilancia de solicitudes si es un admin/director
+      const userRole = safeGet(authStore.user, 'role', '');
+      if (['Director', 'Administrador'].includes(userRole)) {
+        startWatchingPendingRequests();
+      }
+
+      // Registrar actividad
+      addToActivityLog('Perfil cargado');
+    } else {
+      throw new Error('No se pudo cargar el perfil');
+    }
+  } catch (err) {
+    error.value = handleAdminError(err, 'Error al cargar el perfil').message;
+    console.error('Error loading profile', err);
+  } finally {
+    isLoading.value = false;
+  }
+});
+
+// Limpiar suscripciones al desmontar
+onUnmounted(() => {
+  stopWatchingPendingRequests();
+});
+</script>
 
 <style lang="postcss">
 /* Estilo para el indicador de notificaciones */

@@ -1,15 +1,15 @@
-import {defineStore} from "pinia"
+import { defineStore } from 'pinia';
 import type {
   ScheduleAssignment,
   ScheduleMetrics,
   ScheduleCreationRequest,
   ScheduleUpdateRequest,
   ScheduleState,
-} from "../types/schedule"
-import * as scheduleService from "../service/schedules"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useStudentsStore} from "../../Students/store/students"
-import {useClassesStore} from "../../Classes/store/classes"
+} from '../types/schedule';
+import * as scheduleService from '../service/schedules';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useStudentsStore } from '../../Students/store/students';
+import { useClassesStore } from '../../Classes/store/classes';
 
 // Definición de tipos internos para métricas (opcional, para mejorar el tipeo)
 type TeacherStats = {
@@ -30,7 +30,7 @@ type RoomStats = {
   utilizationRate: number
 }
 
-export const useScheduleStore = defineStore("schedule", {
+export const useScheduleStore = defineStore('schedule', {
   state: (): ScheduleState => ({
     schedules: [],
     rooms: [],
@@ -73,28 +73,28 @@ export const useScheduleStore = defineStore("schedule", {
     getSchedulesByDayAndTime:
       (state) => (dayOfWeek: string, timeSlot: {startTime: string; endTime: string}) =>
         state.schedules.filter((schedule) => {
-          const scheduleDay = schedule.scheduleDay
+          const scheduleDay = schedule.scheduleDay;
           return (
             scheduleDay &&
             scheduleDay.dayOfWeek === dayOfWeek &&
             scheduleDay.timeSlot.startTime === timeSlot.startTime &&
             scheduleDay.timeSlot.endTime === timeSlot.endTime
-          )
+          );
         }),
     // obtener horarios por profesor y dia de la semana
     getSchedulesByTeacherAndDay: (state) => (teacherId: string, dayOfWeek: string) =>
       state.schedules.filter((schedule) => {
-        const scheduleDay = schedule.scheduleDay
+        const scheduleDay = schedule.scheduleDay;
         return (
           scheduleDay && scheduleDay.teacherId === teacherId && scheduleDay.dayOfWeek === dayOfWeek
-        )
+        );
       }),
 
     // obtener horarios por clase y dia de la semana
     getSchedulesByClassAndDay: (state) => (classId: string, dayOfWeek: string) =>
       state.schedules.filter((schedule) => {
-        const scheduleDay = schedule.scheduleDay
-        return scheduleDay && scheduleDay.classId === classId && scheduleDay.dayOfWeek === dayOfWeek
+        const scheduleDay = schedule.scheduleDay;
+        return scheduleDay && scheduleDay.classId === classId && scheduleDay.dayOfWeek === dayOfWeek;
       }),
     // obtener horarios por dia de la semana
     getSchedulesByDay: (state) => (dayOfWeek: string) =>
@@ -108,14 +108,14 @@ export const useScheduleStore = defineStore("schedule", {
      * Actualiza las métricas y la fecha de última sincronización.
      */
     async fetchAllSchedules() {
-      this.loading = true
+      this.loading = true;
       try {
-        const result = await scheduleService.getAllSchedulesFirebase()
+        const result = await scheduleService.getAllSchedulesFirebase();
         if (result.success && result.data) {
           // Filtrar solo los horarios que tienen scheduleDay definido
           const validSchedules = result.data.filter((schedule) => {
             if (!schedule.scheduleDay) {
-              return false
+              return false;
             }
 
             // Validar estructura básica de scheduleDay
@@ -125,26 +125,26 @@ export const useScheduleStore = defineStore("schedule", {
               !schedule.scheduleDay.timeSlot.startTime ||
               !schedule.scheduleDay.timeSlot.endTime
             ) {
-              console.warn("Estructura de scheduleDay inválida:", schedule)
-              return false
+              console.warn('Estructura de scheduleDay inválida:', schedule);
+              return false;
             }
 
-            return true
-          })
+            return true;
+          });
 
-          this.schedules = await this.populateScheduleData(validSchedules as ScheduleAssignment[])
-          this.lastSync = new Date()
+          this.schedules = await this.populateScheduleData(validSchedules as ScheduleAssignment[]);
+          this.lastSync = new Date();
 
           // Recalcular métricas basadas en los horarios válidos
-          await this.calculateMetrics()
+          await this.calculateMetrics();
         }
-        return this.schedules
+        return this.schedules;
       } catch (error: any) {
-        console.error("Error fetching schedules:", error)
-        this.error = error.message
-        return []
+        console.error('Error fetching schedules:', error);
+        this.error = error.message;
+        return [];
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
@@ -152,25 +152,25 @@ export const useScheduleStore = defineStore("schedule", {
      * fetchScheduleById: Recupera un horario específico por ID y lo actualiza o agrega al estado.
      */
     async fetchScheduleById(id: string) {
-      this.loading = true
+      this.loading = true;
       try {
-        const response = await scheduleService.getScheduleByIdFirebase(id)
+        const response = await scheduleService.getScheduleByIdFirebase(id);
         if (response.success && response.data) {
-          const populatedSchedule = await this.populateScheduleData(response.data)
-          const index = this.schedules.findIndex((s) => s.id === id)
+          const populatedSchedule = await this.populateScheduleData(response.data);
+          const index = this.schedules.findIndex((s) => s.id === id);
           if (index !== -1) {
-            this.schedules[index] = populatedSchedule[0]
+            this.schedules[index] = populatedSchedule[0];
           } else {
-            this.schedules.push(populatedSchedule[0])
+            this.schedules.push(populatedSchedule[0]);
           }
         } else {
-          throw new Error(response.error || "Schedule not found")
+          throw new Error(response.error || 'Schedule not found');
         }
       } catch (error: any) {
-        console.error("Error in fetchScheduleById:", error)
-        this.error = error.message
+        console.error('Error in fetchScheduleById:', error);
+        this.error = error.message;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
@@ -181,24 +181,24 @@ export const useScheduleStore = defineStore("schedule", {
     // En schedule.ts (store de schedules)
     // En schedule.ts (store de schedules)
     async createSchedule(request: ScheduleCreationRequest) {
-      this.loading = true
+      this.loading = true;
       try {
         // Llama al servicio que crea el schedule
-        const response = await scheduleService.createSchedule(request)
+        const response = await scheduleService.createSchedule(request);
         if (response.success && response.data) {
           // Se puede poblar la información extra si fuera necesario
-          this.schedules.push(response.data[0]) // Suponiendo que response.data es un array
-          await this.calculateMetrics()
-          return response.data
+          this.schedules.push(response.data[0]); // Suponiendo que response.data es un array
+          await this.calculateMetrics();
+          return response.data;
         } else {
-          throw new Error(response.error || "Error creating schedule")
+          throw new Error(response.error || 'Error creating schedule');
         }
       } catch (error: any) {
-        console.error("Error in createSchedule:", error)
-        this.error = error.message
-        throw error
+        console.error('Error in createSchedule:', error);
+        this.error = error.message;
+        throw error;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
@@ -207,28 +207,28 @@ export const useScheduleStore = defineStore("schedule", {
      * Se espera que request contenga scheduleId y los campos a actualizar.
      */
     async updateSchedule(request: ScheduleUpdateRequest) {
-      this.loading = true
+      this.loading = true;
       try {
         const response = await scheduleService.updateSchedule(request.scheduleId, {
           scheduleId: request.scheduleId,
           status: request.status,
           // Otras propiedades a actualizar se pueden agregar aquí
-        })
+        });
         if (!response || !response.success) {
-          throw new Error("Failed to update schedule")
+          throw new Error('Failed to update schedule');
         }
-        const populatedSchedule = await this.populateScheduleData([response.data])
-        const index = this.schedules.findIndex((s) => s.id === request.scheduleId)
+        const populatedSchedule = await this.populateScheduleData([response.data]);
+        const index = this.schedules.findIndex((s) => s.id === request.scheduleId);
         if (index !== -1) {
-          this.schedules[index] = populatedSchedule[0]
+          this.schedules[index] = populatedSchedule[0];
         }
-        await this.calculateMetrics()
+        await this.calculateMetrics();
       } catch (error: any) {
-        console.error("Error in updateSchedule:", error)
-        this.error = error.message
-        throw error
+        console.error('Error in updateSchedule:', error);
+        this.error = error.message;
+        throw error;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
@@ -236,17 +236,17 @@ export const useScheduleStore = defineStore("schedule", {
      * deleteSchedule: Elimina un horario a partir de su ID.
      */
     async deleteSchedule(id: string) {
-      this.loading = true
+      this.loading = true;
       try {
-        await scheduleService.deleteSchedule(id)
-        this.schedules = this.schedules.filter((s) => s.id !== id)
-        await this.calculateMetrics()
+        await scheduleService.deleteSchedule(id);
+        this.schedules = this.schedules.filter((s) => s.id !== id);
+        await this.calculateMetrics();
       } catch (error: any) {
-        console.error("Error in deleteSchedule:", error)
-        this.error = error.message
-        throw error
+        console.error('Error in deleteSchedule:', error);
+        this.error = error.message;
+        throw error;
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
 
@@ -256,49 +256,49 @@ export const useScheduleStore = defineStore("schedule", {
      * Retorna un arreglo de horarios con datos derivados (por ejemplo, teacherName, className, studentNames).
      */
     async populateScheduleData(schedules: ScheduleAssignment[]): Promise<ScheduleAssignment[]> {
-      if (!schedules || !schedules.length) return []
+      if (!schedules || !schedules.length) return [];
 
-      const teachersStore = useTeachersStore()
-      const studentsStore = useStudentsStore()
-      const classesStore = useClassesStore()
+      const teachersStore = useTeachersStore();
+      const studentsStore = useStudentsStore();
+      const classesStore = useClassesStore();
 
       // Caches para evitar búsquedas repetidas
-      const teacherCache = new Map<string, any>()
-      const studentCache = new Map<string, any>()
-      const classCache = new Map<string, any>()
+      const teacherCache = new Map<string, any>();
+      const studentCache = new Map<string, any>();
+      const classCache = new Map<string, any>();
 
       // Recopilar todos los IDs necesarios
-      const teacherIds = new Set<string>()
-      const studentIds = new Set<string>()
-      const classIds = new Set<string>()
+      const teacherIds = new Set<string>();
+      const studentIds = new Set<string>();
+      const classIds = new Set<string>();
 
       schedules.forEach((schedule) => {
-        if (schedule.scheduleDay?.teacherId) teacherIds.add(schedule.scheduleDay.teacherId)
-        if (schedule.scheduleDay?.classId) classIds.add(schedule.scheduleDay.classId)
-        schedule.scheduleDay?.studentIds?.forEach((id) => studentIds.add(id))
-      })
+        if (schedule.scheduleDay?.teacherId) teacherIds.add(schedule.scheduleDay.teacherId);
+        if (schedule.scheduleDay?.classId) classIds.add(schedule.scheduleDay.classId);
+        schedule.scheduleDay?.studentIds?.forEach((id) => studentIds.add(id));
+      });
 
       // Cargar datos en paralelo
       await Promise.all([
         teachersStore.fetchTeachers(),
         studentsStore.fetchStudents(),
         classesStore.fetchClasses(),
-      ])
+      ]);
 
       // Poblar las caches
-      teachersStore.teachers?.forEach((teacher) => teacherCache.set(teacher.id, teacher))
-      studentsStore.students?.forEach((student) => studentCache.set(student.id, student))
-      classesStore.classes?.forEach((class_) => classCache.set(class_.id, class_))
+      teachersStore.teachers?.forEach((teacher) => teacherCache.set(teacher.id, teacher));
+      studentsStore.students?.forEach((student) => studentCache.set(student.id, student));
+      classesStore.classes?.forEach((class_) => classCache.set(class_.id, class_));
 
       return schedules.map((schedule) => {
         const teacher = schedule.scheduleDay?.teacherId
           ? teacherCache.get(schedule.scheduleDay.teacherId)
-          : null
+          : null;
         const class_ = schedule.scheduleDay?.classId
           ? classCache.get(schedule.scheduleDay.classId)
-          : null
+          : null;
         const students =
-          schedule.scheduleDay?.studentIds?.map((id) => studentCache.get(id)).filter(Boolean) || []
+          schedule.scheduleDay?.studentIds?.map((id) => studentCache.get(id)).filter(Boolean) || [];
 
         return {
           ...schedule,
@@ -309,8 +309,8 @@ export const useScheduleStore = defineStore("schedule", {
           teacherName: teacher?.name,
           className: class_?.name,
           studentNames: students.map((s: any) => s.name),
-        }
-      })
+        };
+      });
     },
 
     /**
@@ -318,7 +318,7 @@ export const useScheduleStore = defineStore("schedule", {
      * Se calculan estadísticas por profesor, clase, salón y globales.
      */
     async calculateMetrics() {
-      if (!this.schedules.length) return
+      if (!this.schedules.length) return;
 
       const metrics: ScheduleMetrics = {
         teacherMetrics: [],
@@ -331,118 +331,118 @@ export const useScheduleStore = defineStore("schedule", {
           averageClassSize: 0,
           roomUtilizationRate: 0,
         },
-      }
+      };
 
       // --- Cálculo de métricas por profesor ---
-      const teacherMap = new Map<string, TeacherStats>()
+      const teacherMap = new Map<string, TeacherStats>();
       this.schedules.forEach((schedule) => {
         // Soporta estructuras anidadas o con datos poblados
         const teacherId: string | undefined =
-          schedule.scheduleDay?.teacherId || schedule.teacher?.id
-        const timeSlot = schedule.scheduleDay?.timeSlot
+          schedule.scheduleDay?.teacherId || schedule.teacher?.id;
+        const timeSlot = schedule.scheduleDay?.timeSlot;
         const studentIds: string[] =
           schedule.scheduleDay?.studentIds ||
-          (schedule.students ? schedule.students.map((s: any) => s.id) : [])
-        const dayOfWeek = schedule.scheduleDay?.dayOfWeek
+          (schedule.students ? schedule.students.map((s: any) => s.id) : []);
+        const dayOfWeek = schedule.scheduleDay?.dayOfWeek;
 
         if (!teacherId) {
-          console.warn("Schedule missing teacherId:", schedule)
-          return
+          console.warn('Schedule missing teacherId:', schedule);
+          return;
         }
 
         if (!timeSlot || !timeSlot.startTime || !timeSlot.endTime) {
-          console.warn("Schedule missing time values:", schedule)
-          return
+          console.warn('Schedule missing time values:', schedule);
+          return;
         }
 
-        const duration = calculateDuration(timeSlot.startTime, timeSlot.endTime)
+        const duration = calculateDuration(timeSlot.startTime, timeSlot.endTime);
         if (!teacherMap.has(teacherId)) {
           teacherMap.set(teacherId, {
             weeklyHours: 0,
             totalClasses: 0,
             totalStudents: 0,
             classesPerDay: {},
-          })
+          });
         }
-        const teacherStats = teacherMap.get(teacherId)!
-        teacherStats.weeklyHours += duration / 60
-        teacherStats.totalClasses++
-        teacherStats.totalStudents += studentIds.length
+        const teacherStats = teacherMap.get(teacherId)!;
+        teacherStats.weeklyHours += duration / 60;
+        teacherStats.totalClasses++;
+        teacherStats.totalStudents += studentIds.length;
         if (dayOfWeek) {
-          teacherStats.classesPerDay[dayOfWeek] = (teacherStats.classesPerDay[dayOfWeek] || 0) + 1
+          teacherStats.classesPerDay[dayOfWeek] = (teacherStats.classesPerDay[dayOfWeek] || 0) + 1;
         }
-      })
+      });
 
       metrics.teacherMetrics = Array.from(teacherMap.entries()).map(([teacherId, stats]) => ({
         teacherId,
         ...stats,
-      }))
+      }));
 
       // --- Cálculo de métricas por clase ---
-      const classMap = new Map<string, ClassStats>()
+      const classMap = new Map<string, ClassStats>();
       this.schedules.forEach((schedule) => {
-        const classId: string | undefined = schedule.scheduleDay?.classId || schedule.class?.id
+        const classId: string | undefined = schedule.scheduleDay?.classId || schedule.class?.id;
         const studentIds: string[] =
           schedule.scheduleDay?.studentIds ||
-          (schedule.students ? schedule.students.map((s: any) => s.id) : [])
+          (schedule.students ? schedule.students.map((s: any) => s.id) : []);
 
         if (!classId) {
-          console.warn("Schedule missing classId:", schedule)
-          return
+          console.warn('Schedule missing classId:', schedule);
+          return;
         }
         if (!Array.isArray(studentIds)) {
-          console.warn("Invalid studentIds format:", schedule)
-          return
+          console.warn('Invalid studentIds format:', schedule);
+          return;
         }
         if (!classMap.has(classId)) {
           classMap.set(classId, {
             enrolledStudents: 0,
             averageAttendance: 0,
             scheduleConflicts: 0,
-          })
+          });
         }
-        const classStats = classMap.get(classId)!
-        classStats.enrolledStudents = Math.max(classStats.enrolledStudents, studentIds.length)
-      })
+        const classStats = classMap.get(classId)!;
+        classStats.enrolledStudents = Math.max(classStats.enrolledStudents, studentIds.length);
+      });
 
       metrics.classMetrics = Array.from(classMap.entries()).map(([classId, stats]) => ({
         classId,
         ...stats,
-      }))
+      }));
 
       // --- Cálculo de métricas por salón ---
-      const roomMap = new Map<string, RoomStats>()
+      const roomMap = new Map<string, RoomStats>();
       this.schedules.forEach((schedule) => {
-        const roomId: string | undefined = schedule.scheduleDay?.roomId || schedule.room?.id
-        const timeSlot = schedule.scheduleDay?.timeSlot
+        const roomId: string | undefined = schedule.scheduleDay?.roomId || schedule.room?.id;
+        const timeSlot = schedule.scheduleDay?.timeSlot;
         if (!roomId) {
-          console.warn("Schedule missing roomId:", schedule)
-          return
+          console.warn('Schedule missing roomId:', schedule);
+          return;
         }
-        if (typeof roomId !== "string" || roomId.trim() === "") {
-          console.warn("Invalid roomId format:", roomId)
-          return
+        if (typeof roomId !== 'string' || roomId.trim() === '') {
+          console.warn('Invalid roomId format:', roomId);
+          return;
         }
         if (!timeSlot || !timeSlot.startTime || !timeSlot.endTime) {
-          console.warn("Schedule missing time values:", schedule)
-          return
+          console.warn('Schedule missing time values:', schedule);
+          return;
         }
-        const duration = calculateDuration(timeSlot.startTime, timeSlot.endTime)
+        const duration = calculateDuration(timeSlot.startTime, timeSlot.endTime);
         if (!roomMap.has(roomId)) {
           roomMap.set(roomId, {
             usageHours: 0,
             utilizationRate: 0,
-          })
+          });
         }
-        const roomStats = roomMap.get(roomId)!
-        roomStats.usageHours += duration / 60
-      })
+        const roomStats = roomMap.get(roomId)!;
+        roomStats.usageHours += duration / 60;
+      });
 
       metrics.roomUtilization = Array.from(roomMap.entries()).map(([roomId, stats]) => ({
         roomId,
         ...stats,
         utilizationRate: (stats.usageHours / (40 * 4)) * 100, // Asumiendo 40 horas por semana durante 4 semanas
-      }))
+      }));
 
       // --- Cálculo de métricas globales ---
       metrics.globalMetrics = {
@@ -450,7 +450,7 @@ export const useScheduleStore = defineStore("schedule", {
         totalActiveTeachers: teacherMap.size,
         totalEnrolledStudents: Array.from(classMap.values()).reduce(
           (total, stats) => total + stats.enrolledStudents,
-          0
+          0,
         ),
         averageClassSize:
           metrics.classMetrics.reduce((sum, metric) => sum + metric.enrolledStudents, 0) /
@@ -458,16 +458,16 @@ export const useScheduleStore = defineStore("schedule", {
         roomUtilizationRate:
           metrics.roomUtilization.reduce((sum, metric) => sum + metric.utilizationRate, 0) /
           (metrics.roomUtilization.length || 1),
-      }
+      };
 
-      this.metrics = metrics
+      this.metrics = metrics;
     },
 
     /**
      * forceSync: Forzar una sincronización de los horarios.
      */
     async forceSync() {
-      await this.fetchAllSchedules()
+      await this.fetchAllSchedules();
     },
 
     /**
@@ -475,7 +475,7 @@ export const useScheduleStore = defineStore("schedule", {
      */
     async fixInvalidSchedules() {
       try {
-        this.loading = true
+        this.loading = true;
         const invalidSchedules = this.schedules.filter((schedule) => {
           // Verificar estructura del horario
           if (
@@ -485,13 +485,13 @@ export const useScheduleStore = defineStore("schedule", {
             !schedule.scheduleDay.timeSlot.startTime ||
             !schedule.scheduleDay.timeSlot.endTime
           ) {
-            return true
+            return true;
           }
-          return false
-        })
+          return false;
+        });
 
         if (invalidSchedules.length === 0) {
-          return {success: true, message: "No se encontraron horarios inválidos"}
+          return { success: true, message: 'No se encontraron horarios inválidos' };
         }
 
         // Corregir cada horario inválido
@@ -499,43 +499,43 @@ export const useScheduleStore = defineStore("schedule", {
           const fixedSchedule = {
             ...schedule,
             scheduleDay: {
-              dayOfWeek: schedule.scheduleDay?.dayOfWeek || "Lunes",
+              dayOfWeek: schedule.scheduleDay?.dayOfWeek || 'Lunes',
               timeSlot: {
-                startTime: schedule.scheduleDay?.timeSlot?.startTime || "08:00",
-                endTime: schedule.scheduleDay?.timeSlot?.endTime || "09:30",
+                startTime: schedule.scheduleDay?.timeSlot?.startTime || '08:00',
+                endTime: schedule.scheduleDay?.timeSlot?.endTime || '09:30',
                 duration: 90,
               },
-              classId: schedule.scheduleDay?.classId || "",
-              teacherId: schedule.scheduleDay?.teacherId || "",
-              roomId: schedule.scheduleDay?.roomId || "",
+              classId: schedule.scheduleDay?.classId || '',
+              teacherId: schedule.scheduleDay?.teacherId || '',
+              roomId: schedule.scheduleDay?.roomId || '',
               studentIds: schedule.scheduleDay?.studentIds || [],
             },
-          }
+          };
 
           // Actualizar en Firestore
-          await this.updateSchedule(fixedSchedule)
-          return fixedSchedule
-        })
+          await this.updateSchedule(fixedSchedule);
+          return fixedSchedule;
+        });
 
-        await Promise.all(updates)
-        await this.fetchAllSchedules() // Recargar horarios
+        await Promise.all(updates);
+        await this.fetchAllSchedules(); // Recargar horarios
 
         return {
           success: true,
           message: `Se corrigieron ${invalidSchedules.length} horarios`,
-        }
+        };
       } catch (error: any) {
-        console.error("Error fixing schedules:", error)
+        console.error('Error fixing schedules:', error);
         return {
           success: false,
           error: error.message,
-        }
+        };
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
   },
-})
+});
 
 /**
  * calculateDuration: Calcula la duración en minutos entre dos horas (formato "HH:mm").
@@ -543,21 +543,21 @@ export const useScheduleStore = defineStore("schedule", {
  */
 function calculateDuration(startTime: string, endTime: string): number {
   if (!startTime || !endTime) {
-    console.warn("Invalid time values:", {startTime, endTime})
-    return 0
+    console.warn('Invalid time values:', { startTime, endTime });
+    return 0;
   }
 
-  const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/
+  const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
   if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
-    console.warn("Invalid time format:", {startTime, endTime})
-    return 0
+    console.warn('Invalid time format:', { startTime, endTime });
+    return 0;
   }
 
-  const [startHours, startMinutes] = startTime.split(":").map(Number)
-  const [endHours, endMinutes] = endTime.split(":").map(Number)
+  const [startHours, startMinutes] = startTime.split(':').map(Number);
+  const [endHours, endMinutes] = endTime.split(':').map(Number);
 
-  const startTotalMinutes = startHours * 60 + startMinutes
-  const endTotalMinutes = endHours * 60 + endMinutes
+  const startTotalMinutes = startHours * 60 + startMinutes;
+  const endTotalMinutes = endHours * 60 + endMinutes;
 
-  return endTotalMinutes - startTotalMinutes
+  return endTotalMinutes - startTotalMinutes;
 }

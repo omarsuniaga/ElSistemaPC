@@ -172,92 +172,92 @@
 </template>
 
 <script setup lang="ts">
-import {ref, onMounted} from "vue"
-import type {TimeSlot} from "../../../utils/scheduleConflicts"
-import {timeSlotsOverlap} from "../../../utils/scheduleConflicts"
+import { ref, onMounted } from 'vue';
+import type { TimeSlot } from '../../../utils/scheduleConflicts';
+import { timeSlotsOverlap } from '../../../utils/scheduleConflicts';
 
 // Datos de demostración
 const mockStudents = ref([
-  {id: "1", name: "Ana García"},
-  {id: "2", name: "Carlos López"},
-  {id: "3", name: "María Rodríguez"},
-  {id: "4", name: "Diego Martínez"},
-])
+  { id: '1', name: 'Ana García' },
+  { id: '2', name: 'Carlos López' },
+  { id: '3', name: 'María Rodríguez' },
+  { id: '4', name: 'Diego Martínez' },
+]);
 
 const mockClasses = ref([
   {
-    id: "class1",
-    name: "Piano Principiante",
-    instrument: "Piano",
-    level: "Principiante",
-    studentIds: ["1", "2"],
+    id: 'class1',
+    name: 'Piano Principiante',
+    instrument: 'Piano',
+    level: 'Principiante',
+    studentIds: ['1', '2'],
     schedule: {
       slots: [
-        {day: "Lunes", startTime: "10:00", endTime: "11:00"},
-        {day: "Miércoles", startTime: "10:00", endTime: "11:00"},
+        { day: 'Lunes', startTime: '10:00', endTime: '11:00' },
+        { day: 'Miércoles', startTime: '10:00', endTime: '11:00' },
       ],
     },
   },
   {
-    id: "class2",
-    name: "Guitarra Intermedio",
-    instrument: "Guitarra",
-    level: "Intermedio",
-    studentIds: ["1", "3"],
+    id: 'class2',
+    name: 'Guitarra Intermedio',
+    instrument: 'Guitarra',
+    level: 'Intermedio',
+    studentIds: ['1', '3'],
     schedule: {
       slots: [
-        {day: "Martes", startTime: "14:00", endTime: "15:30"},
-        {day: "Jueves", startTime: "14:00", endTime: "15:30"},
+        { day: 'Martes', startTime: '14:00', endTime: '15:30' },
+        { day: 'Jueves', startTime: '14:00', endTime: '15:30' },
       ],
     },
   },
   {
-    id: "class3",
-    name: "Violín Avanzado",
-    instrument: "Violín",
-    level: "Avanzado",
-    studentIds: ["2", "4"],
+    id: 'class3',
+    name: 'Violín Avanzado',
+    instrument: 'Violín',
+    level: 'Avanzado',
+    studentIds: ['2', '4'],
     schedule: {
       slots: [
-        {day: "Lunes", startTime: "16:00", endTime: "17:30"},
-        {day: "Miércoles", startTime: "16:00", endTime: "17:30"},
+        { day: 'Lunes', startTime: '16:00', endTime: '17:30' },
+        { day: 'Miércoles', startTime: '16:00', endTime: '17:30' },
       ],
     },
   },
-])
+]);
 
-const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 
 // Estado del componente
-const selectedStudentId = ref("")
-const selectedStudentSchedule = ref<any>(null)
+const selectedStudentId = ref('');
+const selectedStudentSchedule = ref<any>(null);
 const newClass = ref({
-  day: "",
-  startTime: "",
-  endTime: "",
-})
-const validationResult = ref<any>(null)
+  day: '',
+  startTime: '',
+  endTime: '',
+});
+const validationResult = ref<any>(null);
 
 // Analizar el horario de un estudiante
 const analyzeStudent = () => {
   if (!selectedStudentId.value) {
-    selectedStudentSchedule.value = null
-    return
+    selectedStudentSchedule.value = null;
+    return;
   }
 
-  const student = mockStudents.value.find((s) => s.id === selectedStudentId.value)
+  const student = mockStudents.value.find((s) => s.id === selectedStudentId.value);
   const studentClasses = mockClasses.value.filter((c) =>
-    c.studentIds.includes(selectedStudentId.value)
-  )
+    c.studentIds.includes(selectedStudentId.value),
+  );
 
   selectedStudentSchedule.value = {
     studentName: student?.name,
     classes: studentClasses,
-  }
+  };
 
   // Limpiar resultado anterior
-  validationResult.value = null
-}
+  validationResult.value = null;
+};
 
 // Verificar conflicto con nueva clase
 const checkConflict = () => {
@@ -267,46 +267,46 @@ const checkConflict = () => {
     !newClass.value.startTime ||
     !newClass.value.endTime
   ) {
-    return
+    return;
   }
 
   const newSlot: TimeSlot = {
     day: newClass.value.day,
     startTime: newClass.value.startTime,
     endTime: newClass.value.endTime,
-  }
+  };
 
-  let conflictFound = false
-  let conflictingClass: any = null
+  let conflictFound = false;
+  let conflictingClass: any = null;
 
   // Verificar conflictos con cada clase existente del estudiante
   for (const class_ of selectedStudentSchedule.value.classes) {
     for (const existingSlot of class_.schedule.slots) {
       if (timeSlotsOverlap(newSlot, existingSlot)) {
-        conflictFound = true
+        conflictFound = true;
         conflictingClass = {
           name: class_.name,
           day: existingSlot.day,
           startTime: existingSlot.startTime,
           endTime: existingSlot.endTime,
-        }
-        break
+        };
+        break;
       }
     }
-    if (conflictFound) break
+    if (conflictFound) break;
   }
 
   validationResult.value = {
     hasConflict: conflictFound,
     conflictingClass,
-  }
-}
+  };
+};
 
 onMounted(() => {
   // Seleccionar primer estudiante por defecto para demostración
-  selectedStudentId.value = "1"
-  analyzeStudent()
-})
+  selectedStudentId.value = '1';
+  analyzeStudent();
+});
 </script>
 
 <style scoped>

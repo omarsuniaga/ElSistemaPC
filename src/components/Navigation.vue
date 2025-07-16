@@ -1,34 +1,4 @@
 <!-- /src/components/Navigation.vue -->
-<script setup lang="ts">
-import {computed} from "vue"
-import {useRoute, useRouter} from "vue-router"
-import {useAuthStore} from "../stores/auth"
-import DynamicNavigation from "./Navigation/DynamicNavigation.vue"
-
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
-
-// Lista de rutas públicas donde no se debe mostrar la navegación
-const publicRoutes = ["/login", "/register", "/reset-password", "/forgot-password"]
-
-// Computed para determinar si la navegación debe mostrarse
-const shouldShowNavigation = computed(() => {
-  // No mostrar si el usuario no está autenticado
-  if (!authStore.isLoggedIn) return false
-
-  // No mostrar en rutas públicas
-  if (publicRoutes.includes(route.path)) return false
-
-  return true
-})
-
-// Handle navigation click events
-const handleNavClick = (item: any) => {
-  console.log("Navigation clicked:", item)
-}
-</script>
-
 <template>
   <!-- Botón "Atrás" que aparece en todas las páginas excepto la principal -->
   <div
@@ -68,6 +38,36 @@ const handleNavClick = (item: any) => {
     </div>
   </nav>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import DynamicNavigation from './Navigation/DynamicNavigation.vue';
+
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+
+// Lista de rutas públicas donde no se debe mostrar la navegación
+const publicRoutes = ['/login', '/register', '/reset-password', '/forgot-password'];
+
+// Computed para determinar si la navegación debe mostrarse
+const shouldShowNavigation = computed(() => {
+  // No mostrar si el usuario no está autenticado
+  if (!authStore.isLoggedIn) return false;
+
+  // No mostrar en rutas públicas
+  if (publicRoutes.includes(route.path)) return false;
+
+  return true;
+});
+
+// Handle navigation click events
+const handleNavClick = (item: any) => {
+  console.log('Navigation clicked:', item);
+};
+</script>
 
 <style scoped>
 /* Estilos para integrar la navegación dinámica en el footer */

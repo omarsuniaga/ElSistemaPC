@@ -69,9 +69,9 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
-import {DocumentIcon, CheckCircleIcon} from "@heroicons/vue/24/outline"
-import {usePDFReportTypes} from "../../composables/usePDFReportTypes"
+import { computed } from 'vue';
+import { DocumentIcon, CheckCircleIcon } from '@heroicons/vue/24/outline';
+import { usePDFReportTypes } from '../../composables/usePDFReportTypes';
 
 // Props
 interface Props {
@@ -79,62 +79,62 @@ interface Props {
   selectedFields: string[]
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
-  "update:selectedFields": [value: string[]]
-}>()
+  'update:selectedFields': [value: string[]]
+}>();
 
 // Composables
-const {getFieldLabel} = usePDFReportTypes()
+const { getFieldLabel } = usePDFReportTypes();
 
 // Computed
 const availableFields = computed(() => {
   const fieldMap: {[key: string]: string[]} = {
     students: [
-      "name",
-      "age",
-      "instrument",
-      "teacher",
-      "class",
-      "schedule",
-      "enrollmentDate",
-      "status",
-      "phone",
-      "email",
+      'name',
+      'age',
+      'instrument',
+      'teacher',
+      'class',
+      'schedule',
+      'enrollmentDate',
+      'status',
+      'phone',
+      'email',
     ],
-    classes: ["name", "teacher", "instrument", "schedule", "students", "capacity", "status"],
-    teachers: ["name", "instrument", "classes", "students", "phone", "email", "status"],
-    attendance: ["student", "class", "date", "status", "observations"],
-    performance: ["student", "class", "evaluation", "score", "date", "comments"],
-  }
+    classes: ['name', 'teacher', 'instrument', 'schedule', 'students', 'capacity', 'status'],
+    teachers: ['name', 'instrument', 'classes', 'students', 'phone', 'email', 'status'],
+    attendance: ['student', 'class', 'date', 'status', 'observations'],
+    performance: ['student', 'class', 'evaluation', 'score', 'date', 'comments'],
+  };
 
-  return fieldMap[props.selectedReportType] || []
-})
+  return fieldMap[props.selectedReportType] || [];
+});
 
 // Funciones
 const toggleField = (field: string) => {
   const newFields = props.selectedFields.includes(field)
     ? props.selectedFields.filter((f) => f !== field)
-    : [...props.selectedFields, field]
+    : [...props.selectedFields, field];
 
-  emit("update:selectedFields", newFields)
-}
+  emit('update:selectedFields', newFields);
+};
 
 const selectAll = () => {
-  emit("update:selectedFields", [...availableFields.value])
-}
+  emit('update:selectedFields', [...availableFields.value]);
+};
 
 const deselectAll = () => {
-  emit("update:selectedFields", [])
-}
+  emit('update:selectedFields', []);
+};
 </script>
 
 <script lang="ts">
-import {defineComponent} from "vue"
+import { defineComponent } from 'vue';
 
 export default defineComponent({
-  name: "FieldsSelector",
-})
+  name: 'FieldsSelector',
+});
 </script>

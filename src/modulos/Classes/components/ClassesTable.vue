@@ -1,89 +1,3 @@
-<script setup lang="ts">
-import {computed} from "vue"
-import {useTeachersStore} from "../../Teachers/store/teachers"
-import {useStudentsStore} from "../../Students/store/students"
-import {
-  UserGroupIcon,
-  PencilIcon,
-  EyeIcon,
-  ClockIcon,
-  AcademicCapIcon,
-  ExclamationCircleIcon,
-} from "@heroicons/vue/24/outline"
-import Modal from "../../../shared/Modal.vue"
-
-const props = defineProps({
-  classes: {
-    type: Array,
-    required: true,
-    default: () => [],
-  },
-})
-
-const teachersStore = useTeachersStore()
-const studentsStore = useStudentsStore()
-
-// Estado para modales
-const showStudentsModal = ref(false)
-const showObservationsModal = ref(false)
-const selectedClass = ref(null)
-
-// Obtener nombre del profesor con manejo de errores
-const getTeacherName = (teacherId) => {
-  try {
-    if (!teacherId) return "Sin profesor asignado"
-    if (!teachersStore.teachers?.length) return "Profesores no cargados"
-
-    const teacher = teachersStore.teachers.find((t) => t.id === teacherId)
-    return teacher?.name || "Profesor no encontrado"
-  } catch (error) {
-    console.error("Error al obtener profesor:", error)
-    return "Error al cargar profesor"
-  }
-}
-
-// Obtener estudiantes de una clase con memoización para mejor rendimiento
-const getStudents = computed(() => {
-  return (studentIds) => {
-    if (!studentIds?.length) return []
-    return studentsStore.students.filter((s) => studentIds.includes(s.id))
-  }
-})
-
-// Determinar estado del horario con TypeScript
-type ClassStatus = "en_proceso" | "terminado" | "sin_ejecutar" | "en_espera"
-
-const getScheduleStatus = (startTime: string, endTime: string): ClassStatus => {
-  const now = new Date()
-  const start = new Date(startTime)
-  const end = new Date(endTime)
-
-  // Margen de 15 minutos antes para considerar "en espera"
-  const waitingThreshold = new Date(start.getTime() - 15 * 60 * 1000)
-
-  if (now > end) return "terminado"
-  if (now >= start && now <= end) return "en_proceso"
-  if (now >= waitingThreshold && now < start) return "en_espera"
-  return "sin_ejecutar"
-}
-
-// Asignar colores Tailwind CSS según estado
-const statusColor = (status: ClassStatus): string => {
-  switch (status) {
-    case "en_proceso":
-      return "bg-green-100 text-green-800"
-    case "terminado":
-      return "bg-gray-100 text-gray-600"
-    case "sin_ejecutar":
-      return "bg-blue-100 text-blue-800"
-    case "en_espera":
-      return "bg-yellow-100 text-yellow-800"
-    default:
-      return "bg-gray-100"
-  }
-}
-</script>
-
 <template>
   <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">
@@ -256,6 +170,92 @@ const statusColor = (status: ClassStatus): string => {
     </div>
   </Modal>
 </template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useStudentsStore } from '../../Students/store/students';
+import {
+  UserGroupIcon,
+  PencilIcon,
+  EyeIcon,
+  ClockIcon,
+  AcademicCapIcon,
+  ExclamationCircleIcon,
+} from '@heroicons/vue/24/outline';
+import Modal from '../../../shared/Modal.vue';
+
+const props = defineProps({
+  classes: {
+    type: Array,
+    required: true,
+    default: () => [],
+  },
+});
+
+const teachersStore = useTeachersStore();
+const studentsStore = useStudentsStore();
+
+// Estado para modales
+const showStudentsModal = ref(false);
+const showObservationsModal = ref(false);
+const selectedClass = ref(null);
+
+// Obtener nombre del profesor con manejo de errores
+const getTeacherName = (teacherId) => {
+  try {
+    if (!teacherId) return 'Sin profesor asignado';
+    if (!teachersStore.teachers?.length) return 'Profesores no cargados';
+
+    const teacher = teachersStore.teachers.find((t) => t.id === teacherId);
+    return teacher?.name || 'Profesor no encontrado';
+  } catch (error) {
+    console.error('Error al obtener profesor:', error);
+    return 'Error al cargar profesor';
+  }
+};
+
+// Obtener estudiantes de una clase con memoización para mejor rendimiento
+const getStudents = computed(() => {
+  return (studentIds) => {
+    if (!studentIds?.length) return [];
+    return studentsStore.students.filter((s) => studentIds.includes(s.id));
+  };
+});
+
+// Determinar estado del horario con TypeScript
+type ClassStatus = 'en_proceso' | 'terminado' | 'sin_ejecutar' | 'en_espera'
+
+const getScheduleStatus = (startTime: string, endTime: string): ClassStatus => {
+  const now = new Date();
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+
+  // Margen de 15 minutos antes para considerar "en espera"
+  const waitingThreshold = new Date(start.getTime() - 15 * 60 * 1000);
+
+  if (now > end) return 'terminado';
+  if (now >= start && now <= end) return 'en_proceso';
+  if (now >= waitingThreshold && now < start) return 'en_espera';
+  return 'sin_ejecutar';
+};
+
+// Asignar colores Tailwind CSS según estado
+const statusColor = (status: ClassStatus): string => {
+  switch (status) {
+  case 'en_proceso':
+    return 'bg-green-100 text-green-800';
+  case 'terminado':
+    return 'bg-gray-100 text-gray-600';
+  case 'sin_ejecutar':
+    return 'bg-blue-100 text-blue-800';
+  case 'en_espera':
+    return 'bg-yellow-100 text-yellow-800';
+  default:
+    return 'bg-gray-100';
+  }
+};
+</script>
 
 <style scoped>
 /* Estilos adicionales si son necesarios */

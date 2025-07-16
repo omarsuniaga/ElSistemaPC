@@ -260,8 +260,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch} from "vue"
-import type {ClassData, ClassTeacher} from "../types/class"
+import { ref, computed, watch } from 'vue';
+import type { ClassData, ClassTeacher } from '../types/class';
 
 interface Props {
   open: boolean
@@ -269,7 +269,7 @@ interface Props {
   teacher: {id: string; name: string} | null
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   close: []
@@ -295,74 +295,74 @@ const emit = defineEmits<{
       teacherId: string
     },
   ]
-}>()
+}>();
 
 // Reactive data
-const selectedPermissionLevel = ref<"read" | "write" | "manage">("read")
-const canAddObservations = ref(true)
-const canEditClass = ref(false)
-const canManageTeachers = ref(false)
-const canTakeAttendance = ref(true)
-const canViewAttendanceHistory = ref(true)
-const canManageStudents = ref(false)
-const canManageSchedule = ref(false)
-const isRemovingAccess = ref(false)
+const selectedPermissionLevel = ref<'read' | 'write' | 'manage'>('read');
+const canAddObservations = ref(true);
+const canEditClass = ref(false);
+const canManageTeachers = ref(false);
+const canTakeAttendance = ref(true);
+const canViewAttendanceHistory = ref(true);
+const canManageStudents = ref(false);
+const canManageSchedule = ref(false);
+const isRemovingAccess = ref(false);
 
 // Initial permissions from the class data
 const initialPermissions = computed(() => {
-  if (!props.classData || !props.teacher) return []
-  return props.classData.permissions?.[props.teacher.id] || []
-})
+  if (!props.classData || !props.teacher) return [];
+  return props.classData.permissions?.[props.teacher.id] || [];
+});
 
 // Get teacher permissions object from classData.teachers array
 const teacherPermissions = computed(() => {
-  if (!props.classData || !props.teacher || !props.classData.teachers) return null
+  if (!props.classData || !props.teacher || !props.classData.teachers) return null;
 
   const teacher = props.classData.teachers.find(
     (t) =>
-      (typeof t === "string" && t === props.teacher?.id) ||
-      (typeof t === "object" && t.teacherId === props.teacher?.id)
-  )
+      (typeof t === 'string' && t === props.teacher?.id) ||
+      (typeof t === 'object' && t.teacherId === props.teacher?.id),
+  );
 
-  if (teacher && typeof teacher === "object") {
-    return teacher.permissions
+  if (teacher && typeof teacher === 'object') {
+    return teacher.permissions;
   }
 
-  return null
-})
+  return null;
+});
 
 // Available specific permissions based on level
 const availablePermissions = computed(() => {
   const basePermissions = [
-    {key: "canTakeAttendance", label: "Tomar asistencia", enabled: true},
-    {key: "canAddObservations", label: "Agregar observaciones", enabled: true},
-    {key: "canViewAttendanceHistory", label: "Ver historial de asistencia", enabled: true},
-  ]
+    { key: 'canTakeAttendance', label: 'Tomar asistencia', enabled: true },
+    { key: 'canAddObservations', label: 'Agregar observaciones', enabled: true },
+    { key: 'canViewAttendanceHistory', label: 'Ver historial de asistencia', enabled: true },
+  ];
 
-  if (selectedPermissionLevel.value === "write") {
+  if (selectedPermissionLevel.value === 'write') {
     return [
       ...basePermissions,
-      {key: "canEditClass", label: "Editar información de la clase", enabled: true},
-      {key: "canManageStudents", label: "Gestionar estudiantes", enabled: true},
-    ]
+      { key: 'canEditClass', label: 'Editar información de la clase', enabled: true },
+      { key: 'canManageStudents', label: 'Gestionar estudiantes', enabled: true },
+    ];
   }
 
-  if (selectedPermissionLevel.value === "manage") {
+  if (selectedPermissionLevel.value === 'manage') {
     return [
       ...basePermissions,
-      {key: "canEditClass", label: "Editar información de la clase", enabled: true},
-      {key: "canManageStudents", label: "Gestionar estudiantes", enabled: true},
-      {key: "canManageTeachers", label: "Gestionar otros maestros", enabled: true},
-      {key: "canManageSchedule", label: "Modificar horarios", enabled: true},
-    ]
+      { key: 'canEditClass', label: 'Editar información de la clase', enabled: true },
+      { key: 'canManageStudents', label: 'Gestionar estudiantes', enabled: true },
+      { key: 'canManageTeachers', label: 'Gestionar otros maestros', enabled: true },
+      { key: 'canManageSchedule', label: 'Modificar horarios', enabled: true },
+    ];
   }
 
-  return basePermissions
-})
+  return basePermissions;
+});
 
 // Check if there are changes from initial state
 const hasChanges = computed(() => {
-  const currentPermissions = teacherPermissions.value
+  const currentPermissions = teacherPermissions.value;
 
   // Compare current form values with teacher's existing permissions
   if (!currentPermissions) {
@@ -375,7 +375,7 @@ const hasChanges = computed(() => {
       canViewAttendanceHistory.value ||
       canManageStudents.value ||
       canManageSchedule.value
-    )
+    );
   }
 
   return (
@@ -386,21 +386,21 @@ const hasChanges = computed(() => {
     canViewAttendanceHistory.value !== (currentPermissions.canViewAttendanceHistory || false) ||
     canManageStudents.value !== (currentPermissions.canManageStudents || false) ||
     canManageSchedule.value !== (currentPermissions.canManageSchedule || false)
-  )
-})
+  );
+});
 
 // Helper methods
 const getProgramName = (level?: string): string => {
-  if (!level) return "Sin programa"
+  if (!level) return 'Sin programa';
   const programs: Record<string, string> = {
-    preparatoria: "Preparatoria",
-    "teoria-musical": "Teoría Musical",
-    coro: "Coro",
-    orquesta: "Orquesta",
-    otros: "Otros",
-  }
-  return programs[level] || level
-}
+    preparatoria: 'Preparatoria',
+    'teoria-musical': 'Teoría Musical',
+    coro: 'Coro',
+    orquesta: 'Orquesta',
+    otros: 'Otros',
+  };
+  return programs[level] || level;
+};
 
 const getPermissionsObject = () => {
   return {
@@ -411,105 +411,105 @@ const getPermissionsObject = () => {
     canViewAttendanceHistory: canViewAttendanceHistory.value,
     canManageStudents: canManageStudents.value,
     canManageSchedule: canManageSchedule.value,
-  }
-}
+  };
+};
 
 const savePermissions = () => {
-  if (!props.classData || !props.teacher) return
+  if (!props.classData || !props.teacher) return;
 
-  const permissions = getPermissionsObject()
+  const permissions = getPermissionsObject();
 
-  emit("save", {
+  emit('save', {
     classId: props.classData.id,
     teacherId: props.teacher.id,
     permissions,
     role: selectedPermissionLevel.value,
-  })
-}
+  });
+};
 
 const removeAccess = () => {
-  if (!props.classData || !props.teacher) return
+  if (!props.classData || !props.teacher) return;
 
-  emit("remove", {
+  emit('remove', {
     classId: props.classData.id,
     teacherId: props.teacher.id,
-  })
-}
+  });
+};
 
 // Initialize form when dialog opens
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen && props.classData && props.teacher) {
-      const permissions = initialPermissions.value
+      const permissions = initialPermissions.value;
 
       // Determine the permission level
-      if (permissions.includes("manage")) {
-        selectedPermissionLevel.value = "manage"
-      } else if (permissions.includes("write")) {
-        selectedPermissionLevel.value = "write"
+      if (permissions.includes('manage')) {
+        selectedPermissionLevel.value = 'manage';
+      } else if (permissions.includes('write')) {
+        selectedPermissionLevel.value = 'write';
       } else {
-        selectedPermissionLevel.value = "read"
+        selectedPermissionLevel.value = 'read';
       }
 
       // Set specific permissions from teacher's current permissions
-      const currentPermissions = teacherPermissions.value
+      const currentPermissions = teacherPermissions.value;
       if (currentPermissions) {
-        canAddObservations.value = currentPermissions.canAddObservations || false
-        canEditClass.value = currentPermissions.canEditClass || false
-        canManageTeachers.value = currentPermissions.canManageTeachers || false
-        canTakeAttendance.value = currentPermissions.canTakeAttendance || false
-        canViewAttendanceHistory.value = currentPermissions.canViewAttendanceHistory || false
-        canManageStudents.value = currentPermissions.canManageStudents || false
-        canManageSchedule.value = currentPermissions.canManageSchedule || false
+        canAddObservations.value = currentPermissions.canAddObservations || false;
+        canEditClass.value = currentPermissions.canEditClass || false;
+        canManageTeachers.value = currentPermissions.canManageTeachers || false;
+        canTakeAttendance.value = currentPermissions.canTakeAttendance || false;
+        canViewAttendanceHistory.value = currentPermissions.canViewAttendanceHistory || false;
+        canManageStudents.value = currentPermissions.canManageStudents || false;
+        canManageSchedule.value = currentPermissions.canManageSchedule || false;
       } else {
         // Initialize with default permissions based on level
-        canAddObservations.value = false
-        canEditClass.value = false
-        canManageTeachers.value = false
-        canTakeAttendance.value = false
-        canViewAttendanceHistory.value = false
-        canManageStudents.value = false
-        canManageSchedule.value = false
+        canAddObservations.value = false;
+        canEditClass.value = false;
+        canManageTeachers.value = false;
+        canTakeAttendance.value = false;
+        canViewAttendanceHistory.value = false;
+        canManageStudents.value = false;
+        canManageSchedule.value = false;
       }
 
-      isRemovingAccess.value = false
+      isRemovingAccess.value = false;
     }
-  }
-)
+  },
+);
 
 // Auto-select relevant permissions when level changes
 watch(selectedPermissionLevel, (newLevel) => {
-  if (newLevel === "read") {
+  if (newLevel === 'read') {
     // Reset all permissions for read-only access
-    canAddObservations.value = false
-    canEditClass.value = false
-    canManageTeachers.value = false
-    canTakeAttendance.value = false
-    canViewAttendanceHistory.value = false
-    canManageStudents.value = false
-    canManageSchedule.value = false
-  } else if (newLevel === "write") {
+    canAddObservations.value = false;
+    canEditClass.value = false;
+    canManageTeachers.value = false;
+    canTakeAttendance.value = false;
+    canViewAttendanceHistory.value = false;
+    canManageStudents.value = false;
+    canManageSchedule.value = false;
+  } else if (newLevel === 'write') {
     // Set basic permissions for write access
-    canTakeAttendance.value = true
-    canAddObservations.value = true
-    canViewAttendanceHistory.value = true
-    canEditClass.value = true
-    canManageStudents.value = true
+    canTakeAttendance.value = true;
+    canAddObservations.value = true;
+    canViewAttendanceHistory.value = true;
+    canEditClass.value = true;
+    canManageStudents.value = true;
     // Keep management permissions false for write level
-    canManageTeachers.value = false
-    canManageSchedule.value = false
-  } else if (newLevel === "manage") {
+    canManageTeachers.value = false;
+    canManageSchedule.value = false;
+  } else if (newLevel === 'manage') {
     // Set all permissions for manage access
-    canTakeAttendance.value = true
-    canAddObservations.value = true
-    canViewAttendanceHistory.value = true
-    canEditClass.value = true
-    canManageStudents.value = true
-    canManageTeachers.value = true
-    canManageSchedule.value = true
+    canTakeAttendance.value = true;
+    canAddObservations.value = true;
+    canViewAttendanceHistory.value = true;
+    canEditClass.value = true;
+    canManageStudents.value = true;
+    canManageTeachers.value = true;
+    canManageSchedule.value = true;
   }
-})
+});
 </script>
 
 <style scoped>

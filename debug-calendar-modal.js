@@ -5,13 +5,13 @@
 
 // Función para verificar el estado actual del dashboard
 function debugDashboardState() {
-  console.log("🔍 [DEBUG] Verificando estado del dashboard...");
+  console.log('🔍 [DEBUG] Verificando estado del dashboard...');
   
   // Verificar si Vue está disponible
   if (typeof window.Vue !== 'undefined') {
-    console.log("✅ Vue está disponible");
+    console.log('✅ Vue está disponible');
   } else {
-    console.log("❌ Vue no está disponible");
+    console.log('❌ Vue no está disponible');
   }
   
   // Verificar elementos del DOM
@@ -20,9 +20,9 @@ function debugDashboardState() {
                           document.querySelector('[class*="calendar"]');
   
   if (calendarElement) {
-    console.log("✅ Elemento del calendario encontrado:", calendarElement);
+    console.log('✅ Elemento del calendario encontrado:', calendarElement);
   } else {
-    console.log("❌ Elemento del calendario no encontrado");
+    console.log('❌ Elemento del calendario no encontrado');
   }
   
   // Verificar si hay días clickeables
@@ -30,17 +30,17 @@ function debugDashboardState() {
   console.log(`📅 Elementos de días encontrados: ${dayElements.length}`);
   
   if (dayElements.length > 0) {
-    console.log("✅ Primeros 3 elementos de días:", Array.from(dayElements).slice(0, 3));
+    console.log('✅ Primeros 3 elementos de días:', Array.from(dayElements).slice(0, 3));
     
     // Agregar event listeners para debug
     dayElements.forEach((day, index) => {
       if (index < 5) { // Solo los primeros 5 para no saturar
         day.addEventListener('click', function(e) {
-          console.log(`🖱️ [DEBUG] Día clickeado:`, {
+          console.log('🖱️ [DEBUG] Día clickeado:', {
             element: this,
             dataset: this.dataset,
             textContent: this.textContent,
-            className: this.className
+            className: this.className,
           });
         });
       }
@@ -53,10 +53,10 @@ function debugDashboardState() {
   
   // Verificar funciones globales de debug
   if (typeof window.debugClassData === 'function') {
-    console.log("✅ Función debugClassData disponible");
+    console.log('✅ Función debugClassData disponible');
     window.debugClassData();
   } else {
-    console.log("❌ Función debugClassData no disponible");
+    console.log('❌ Función debugClassData no disponible');
   }
 }
 
@@ -84,23 +84,23 @@ function simulateCalendarClick(dateString) {
   }
   
   if (targetElement) {
-    console.log("✅ Elemento objetivo encontrado:", targetElement);
+    console.log('✅ Elemento objetivo encontrado:', targetElement);
     targetElement.click();
   } else {
-    console.log("❌ No se encontró elemento clickeable para la fecha");
+    console.log('❌ No se encontró elemento clickeable para la fecha');
   }
 }
 
 // Función para verificar datos de clases
 function debugClassesData() {
-  console.log("📚 [DEBUG] Verificando datos de clases...");
+  console.log('📚 [DEBUG] Verificando datos de clases...');
   
   // Verificar localStorage/sessionStorage
   const storageKeys = Object.keys(localStorage).filter(key => 
-    key.includes('class') || key.includes('attendance') || key.includes('teacher')
+    key.includes('class') || key.includes('attendance') || key.includes('teacher'),
   );
   
-  console.log("🗄️ Keys relevantes en localStorage:", storageKeys);
+  console.log('🗄️ Keys relevantes en localStorage:', storageKeys);
   
   storageKeys.forEach(key => {
     try {
@@ -113,7 +113,7 @@ function debugClassesData() {
 }
 
 // Ejecutar todas las verificaciones
-console.log("🚀 [DEBUG] Iniciando verificaciones del calendario...");
+console.log('🚀 [DEBUG] Iniciando verificaciones del calendario...');
 debugDashboardState();
 debugClassesData();
 

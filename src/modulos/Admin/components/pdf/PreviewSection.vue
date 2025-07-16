@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import {DocumentIcon, InformationCircleIcon} from "@heroicons/vue/24/outline"
+import { DocumentIcon, InformationCircleIcon } from '@heroicons/vue/24/outline';
 
 // Props
 interface Props {
@@ -119,28 +119,28 @@ interface Props {
   isLoading: boolean
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 const emit = defineEmits<{
-  "generate-preview": []
-}>()
+  'generate-preview': []
+}>();
 
 // Funciones
 const generatePreview = () => {
-  emit("generate-preview")
-}
+  emit('generate-preview');
+};
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case "active":
-      return "Activo"
-    case "inactive":
-      return "Inactivo"
-    case "pending":
-      return "Pendiente"
-    default:
-      return status
+  case 'active':
+    return 'Activo';
+  case 'inactive':
+    return 'Inactivo';
+  case 'pending':
+    return 'Pendiente';
+  default:
+    return status;
   }
-}
+};
 </script>

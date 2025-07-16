@@ -46,20 +46,20 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 
 defineProps<{
   loading?: boolean
-}>()
+}>();
 
 defineEmits<{
-  "download-pdf": []
-  "export-csv": []
-  "export-xls": []
-  "debug-store": []
-}>()
+  'download-pdf': []
+  'export-csv': []
+  'export-xls': []
+  'debug-store': []
+}>();
 
 const isDevelopmentMode = computed(() => {
-  return process.env.NODE_ENV === "development"
-})
+  return process.env.NODE_ENV === 'development';
+});
 </script>

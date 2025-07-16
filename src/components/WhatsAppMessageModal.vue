@@ -165,23 +165,23 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, watch, onMounted} from "vue"
+import { ref, computed, watch, onMounted } from 'vue';
 import {
   XMarkIcon,
   PhoneIcon,
   DocumentDuplicateIcon,
   ClipboardDocumentIcon,
   CogIcon,
-} from "@heroicons/vue/24/outline"
+} from '@heroicons/vue/24/outline';
 import {
   useWhatsAppPresets,
   type MessageData,
   type WhatsAppPreset,
-} from "../composables/useWhatsAppPresets"
-import {useAuthStore} from "../stores/auth"
-import WhatsAppTemplateManager from "./WhatsAppTemplateManager.vue"
-import {addDoc, collection} from "firebase/firestore"
-import {db} from "../firebase/config"
+} from '../composables/useWhatsAppPresets';
+import { useAuthStore } from '../stores/auth';
+import WhatsAppTemplateManager from './WhatsAppTemplateManager.vue';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '../firebase/config';
 
 interface Props {
   isOpen: boolean
@@ -189,105 +189,105 @@ interface Props {
 }
 
 interface Emits {
-  (e: "close"): void
-  (e: "message-sent", data: {preset: WhatsAppPreset; message: string}): void
+  (e: 'close'): void
+  (e: 'message-sent', data: {preset: WhatsAppPreset; message: string}): void
 }
 
-const props = defineProps<Props>()
-const emit = defineEmits<Emits>()
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
 
-const authStore = useAuthStore()
-const {presets, loading, error, loadPresets, processTemplate, copyToClipboard} =
-  useWhatsAppPresets()
+const authStore = useAuthStore();
+const { presets, loading, error, loadPresets, processTemplate, copyToClipboard } =
+  useWhatsAppPresets();
 
-const selectedPreset = ref<WhatsAppPreset | null>(null)
-const copying = ref<"phone" | "message" | "all" | null>(null)
-const showTemplateManager = ref(false)
+const selectedPreset = ref<WhatsAppPreset | null>(null);
+const copying = ref<'phone' | 'message' | 'all' | null>(null);
+const showTemplateManager = ref(false);
 
 // Asegurar que MessageData tenga studentId opcional
 type MessageDataWithId = MessageData & {studentId?: string; id?: string}
 
 // Mensaje procesado con los datos del estudiante
 const processedMessage = computed(() => {
-  if (!selectedPreset.value) return ""
-  return processTemplate(selectedPreset.value.template, props.studentData)
-})
+  if (!selectedPreset.value) return '';
+  return processTemplate(selectedPreset.value.template, props.studentData);
+});
 
 // Obtener icono según la categoría
 const getPresetIcon = (category: string) => {
   const icons = {
-    disciplinary: "⚠️",
-    administrative: "📋",
-    reminder: "🔔",
-    custom: "✏️",
-  }
-  return icons[category as keyof typeof icons] || "📝"
-}
+    disciplinary: '⚠️',
+    administrative: '📋',
+    reminder: '🔔',
+    custom: '✏️',
+  };
+  return icons[category as keyof typeof icons] || '📝';
+};
 
 // Copiar teléfono
 const copyPhone = async () => {
-  copying.value = "phone"
+  copying.value = 'phone';
   try {
-    const success = await copyToClipboard(props.studentData.representantePhone)
+    const success = await copyToClipboard(props.studentData.representantePhone);
     if (success) {
       setTimeout(() => {
-        copying.value = null
-      }, 2000)
+        copying.value = null;
+      }, 2000);
     }
   } catch (err) {
-    console.error("Error copying phone:", err)
-    copying.value = null
+    console.error('Error copying phone:', err);
+    copying.value = null;
   }
-}
+};
 
 // Copiar mensaje
 const copyMessage = async () => {
-  copying.value = "message"
+  copying.value = 'message';
   try {
-    const success = await copyToClipboard(processedMessage.value)
+    const success = await copyToClipboard(processedMessage.value);
     if (success) {
       setTimeout(() => {
-        copying.value = null
-      }, 2000)
+        copying.value = null;
+      }, 2000);
     }
   } catch (err) {
-    console.error("Error copying message:", err)
-    copying.value = null
+    console.error('Error copying message:', err);
+    copying.value = null;
   }
-}
+};
 
 // Copiar todo (teléfono + mensaje)
 const copyAll = async () => {
-  copying.value = "all"
+  copying.value = 'all';
   try {
-    const fullText = `Teléfono: ${props.studentData.representantePhone}\n\nMensaje:\n${processedMessage.value}`
-    const success = await copyToClipboard(fullText)
+    const fullText = `Teléfono: ${props.studentData.representantePhone}\n\nMensaje:\n${processedMessage.value}`;
+    const success = await copyToClipboard(fullText);
     if (success) {
       setTimeout(() => {
-        copying.value = null
-      }, 2000)
+        copying.value = null;
+      }, 2000);
     }
   } catch (err) {
-    console.error("Error copying all:", err)
-    copying.value = null
+    console.error('Error copying all:', err);
+    copying.value = null;
   }
-}
+};
 
 // Abrir WhatsApp
 enum WhatsAppLogType {
-  INDIVIDUAL = "individual",
-  BULK = "bulk",
+  INDIVIDUAL = 'individual',
+  BULK = 'bulk',
 }
 
 const openWhatsApp = async () => {
-  const phone = props.studentData.representantePhone.replace(/\D/g, "")
-  const message = encodeURIComponent(processedMessage.value)
-  const url = `https://wa.me/${phone}?text=${message}`
+  const phone = props.studentData.representantePhone.replace(/\D/g, '');
+  const message = encodeURIComponent(processedMessage.value);
+  const url = `https://wa.me/${phone}?text=${message}`;
 
   // Registrar el intento de envío en Firestore
   if (selectedPreset.value) {
     try {
-      await addDoc(collection(db, "whatsapp_logs"), {
+      await addDoc(collection(db, 'whatsapp_logs'), {
         studentId:
           (props.studentData as MessageDataWithId).studentId ||
           (props.studentData as MessageDataWithId).id ||
@@ -297,70 +297,70 @@ const openWhatsApp = async () => {
         presetId: selectedPreset.value.id,
         presetName: selectedPreset.value.name,
         sentAt: new Date(),
-        status: "pending",
+        status: 'pending',
         type: WhatsAppLogType.INDIVIDUAL,
-      })
+      });
     } catch (err) {
-      console.error("Error registrando log de WhatsApp:", err)
+      console.error('Error registrando log de WhatsApp:', err);
     }
   }
 
-  window.open(url, "_blank")
+  window.open(url, '_blank');
 
   // Emitir evento de mensaje enviado
   if (selectedPreset.value) {
-    emit("message-sent", {
+    emit('message-sent', {
       preset: selectedPreset.value,
       message: processedMessage.value,
-    })
+    });
   }
-}
+};
 
 // Cerrar modal
 const closeModal = () => {
-  selectedPreset.value = null
-  copying.value = null
-  emit("close")
-}
+  selectedPreset.value = null;
+  copying.value = null;
+  emit('close');
+};
 
 // Gestión de plantillas
 const openTemplateManager = () => {
-  showTemplateManager.value = true
-}
+  showTemplateManager.value = true;
+};
 
 const closeTemplateManager = () => {
-  showTemplateManager.value = false
-}
+  showTemplateManager.value = false;
+};
 
 const handleTemplateCreated = (template: WhatsAppPreset) => {
   // Recargar los presets para incluir la nueva plantilla
-  loadPresets()
-}
+  loadPresets();
+};
 
 const handleTemplateUpdated = (template: WhatsAppPreset) => {
   // Recargar los presets para reflejar los cambios
-  loadPresets()
+  loadPresets();
   // Si la plantilla editada era la seleccionada, deseleccionarla para forzar recarga
   if (selectedPreset.value?.id === template.id) {
-    selectedPreset.value = null
+    selectedPreset.value = null;
   }
-}
+};
 
 // Cargar presets al abrir el modal
 watch(
   () => props.isOpen,
   (isOpen) => {
     if (isOpen) {
-      loadPresets()
+      loadPresets();
     }
-  }
-)
+  },
+);
 
 onMounted(() => {
   if (props.isOpen) {
-    loadPresets()
+    loadPresets();
   }
-})
+});
 </script>
 
 <style scoped>

@@ -57,9 +57,9 @@
         <!-- Quick Actions Menu -->
         <div class="relative flex-shrink-0">
           <button
-            @click="showMenu = !showMenu"
             class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
             title="Opciones"
+            @click="showMenu = !showMenu"
           >
             <EllipsisVerticalIcon class="w-5 h-5" />
           </button>
@@ -73,8 +73,8 @@
             <div class="py-2">
               <!-- View Profile -->
               <button
-                @click="handleViewProfile"
                 class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                @click="handleViewProfile"
               >
                 <UserIcon class="w-5 h-5 text-blue-500" />
                 <span>Ver Perfil Completo</span>
@@ -83,8 +83,8 @@
               <!-- Edit Student -->
               <button
                 v-if="permissions.canEdit"
-                @click="handleEdit"
                 class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                @click="handleEdit"
               >
                 <PencilIcon class="w-5 h-5 text-green-500" />
                 <span>Editar Estudiante</span>
@@ -92,8 +92,8 @@
 
               <!-- Download Schedule -->
               <button
-                @click="handleDownloadSchedule"
                 class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                @click="handleDownloadSchedule"
               >
                 <CalendarDaysIcon class="w-5 h-5 text-purple-500" />
                 <span>Descargar Horario</span>
@@ -102,8 +102,8 @@
               <!-- WhatsApp Parents -->
               <button
                 v-if="hasParentPhones"
-                @click="handleWhatsAppParents"
                 class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                @click="handleWhatsAppParents"
               >
                 <ChatBubbleLeftEllipsisIcon class="w-5 h-5 text-green-600" />
                 <span>WhatsApp a Padres</span>
@@ -114,8 +114,8 @@
               <!-- Toggle Status -->
               <button
                 v-if="permissions.canEdit"
-                @click="handleToggleStatus"
                 class="w-full px-4 py-3 text-left text-sm text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 flex items-center space-x-3 transition-colors"
+                @click="handleToggleStatus"
               >
                 <component :is="student.activo ? PauseIcon : PlayIcon" class="w-5 h-5" />
                 <span>{{ student.activo ? "Desactivar" : "Activar" }}</span>
@@ -124,8 +124,8 @@
               <!-- Delete Student -->
               <button
                 v-if="permissions.canDelete"
-                @click="handleDelete"
                 class="w-full px-4 py-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors"
+                @click="handleDelete"
               >
                 <TrashIcon class="w-5 h-5" />
                 <span>Eliminar Estudiante</span>
@@ -214,8 +214,8 @@
       <!-- Quick Action Buttons -->
       <div class="mt-6 flex flex-wrap gap-2">
         <button
-          @click="handleViewProfile"
           class="flex-1 min-w-0 px-3 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-200 text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
+          @click="handleViewProfile"
         >
           <EyeIcon class="w-4 h-4" />
           <span>Ver Perfil</span>
@@ -223,8 +223,8 @@
 
         <button
           v-if="permissions.canEdit"
-          @click="handleEdit"
           class="flex-1 min-w-0 px-3 py-2 bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-700 dark:text-green-200 text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
+          @click="handleEdit"
         >
           <PencilIcon class="w-4 h-4" />
           <span>Editar</span>
@@ -271,14 +271,14 @@
         </p>
         <div class="flex justify-end space-x-3">
           <button
-            @click="showDeleteConfirmation = false"
             class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
+            @click="showDeleteConfirmation = false"
           >
             Cancelar
           </button>
           <button
-            @click="confirmDelete"
             class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            @click="confirmDelete"
           >
             Eliminar
           </button>
@@ -289,8 +289,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed} from "vue"
-import {useRouter} from "vue-router"
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   EllipsisVerticalIcon,
   EyeIcon,
@@ -305,13 +305,13 @@ import {
   PlayIcon,
   PauseIcon,
   ChatBubbleLeftEllipsisIcon,
-} from "@heroicons/vue/24/outline"
-import type {Student} from "@/types"
+} from '@heroicons/vue/24/outline';
+import type { Student } from '@/types';
 
 // Define component name
 defineOptions({
-  name: "StudentCard",
-})
+  name: 'StudentCard',
+});
 
 // Props
 interface Props {
@@ -323,258 +323,258 @@ interface Props {
   }
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Emits
 interface Emits {
   view: [student: Student]
   edit: [student: Student]
   delete: [student: Student]
-  "toggle-status": [student: Student]
-  "view-profile": [student: Student]
-  "download-schedule": [student: Student]
-  "whatsapp-parents": [student: Student]
+  'toggle-status': [student: Student]
+  'view-profile': [student: Student]
+  'download-schedule': [student: Student]
+  'whatsapp-parents': [student: Student]
 }
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // Router
-const router = useRouter()
+const router = useRouter();
 
 // State
-const showMenu = ref(false)
-const showDeleteConfirmation = ref(false)
+const showMenu = ref(false);
+const showDeleteConfirmation = ref(false);
 
 // Computed Properties
 const _hasAnyPermission = computed(
-  () => props.permissions.canView || props.permissions.canEdit || props.permissions.canDelete
-)
+  () => props.permissions.canView || props.permissions.canEdit || props.permissions.canDelete,
+);
 
 const hasParentPhones = computed(() => {
   return (
     (props.student.tlf_madre && props.student.tlf_madre.trim()) ||
     (props.student.tlf_padre && props.student.tlf_padre.trim())
-  )
-})
+  );
+});
 
 // Attendance calculation (mock data - replace with real calculation)
 const attendancePercentage = computed(() => {
   // TODO: Implement real attendance calculation
   // For now, return a value based on student ID to simulate different levels
-  const studentId = props.student.id || ""
-  const hash = studentId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  return Math.max(30, Math.min(95, 50 + (hash % 45)))
-})
+  const studentId = props.student.id || '';
+  const hash = studentId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return Math.max(30, Math.min(95, 50 + (hash % 45)));
+});
 
 const attendanceLevel = computed(() => {
-  const percentage = attendancePercentage.value
-  if (percentage >= 85) return "Excelente"
-  if (percentage >= 70) return "Bueno"
-  if (percentage >= 55) return "Regular"
-  return "Crítico"
-})
+  const percentage = attendancePercentage.value;
+  if (percentage >= 85) return 'Excelente';
+  if (percentage >= 70) return 'Bueno';
+  if (percentage >= 55) return 'Regular';
+  return 'Crítico';
+});
 
 const attendanceDescription = computed(() => {
-  const percentage = attendancePercentage.value
-  if (percentage >= 85) return "Estudiante muy constante, asistencia ejemplar"
-  if (percentage >= 70) return "Asistencia aceptable con algunas ausencias"
-  if (percentage >= 55) return "Asistencia irregular, requiere atención"
-  return "Asistencia crítica, requiere intervención inmediata"
-})
+  const percentage = attendancePercentage.value;
+  if (percentage >= 85) return 'Estudiante muy constante, asistencia ejemplar';
+  if (percentage >= 70) return 'Asistencia aceptable con algunas ausencias';
+  if (percentage >= 55) return 'Asistencia irregular, requiere atención';
+  return 'Asistencia crítica, requiere intervención inmediata';
+});
 
 const attendanceBackgroundColor = computed(() => {
-  const percentage = attendancePercentage.value
+  const percentage = attendancePercentage.value;
   if (percentage >= 85)
-    return "bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-800/20"
+    return 'bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-800/20';
   if (percentage >= 70)
-    return "bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-900/20 dark:to-amber-800/20"
+    return 'bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-900/20 dark:to-amber-800/20';
   if (percentage >= 55)
-    return "bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20"
-  return "bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20"
-})
+    return 'bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20';
+  return 'bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20';
+});
 
 const attendanceIndicatorColor = computed(() => {
-  const percentage = attendancePercentage.value
-  if (percentage >= 85) return "bg-gradient-to-r from-green-400 to-emerald-500"
-  if (percentage >= 70) return "bg-gradient-to-r from-yellow-400 to-amber-500"
-  if (percentage >= 55) return "bg-gradient-to-r from-orange-400 to-orange-500"
-  return "bg-gradient-to-r from-red-400 to-red-500"
-})
+  const percentage = attendancePercentage.value;
+  if (percentage >= 85) return 'bg-gradient-to-r from-green-400 to-emerald-500';
+  if (percentage >= 70) return 'bg-gradient-to-r from-yellow-400 to-amber-500';
+  if (percentage >= 55) return 'bg-gradient-to-r from-orange-400 to-orange-500';
+  return 'bg-gradient-to-r from-red-400 to-red-500';
+});
 
 const attendanceTextColor = computed(() => {
-  const percentage = attendancePercentage.value
-  if (percentage >= 85) return "text-green-700 dark:text-green-300"
-  if (percentage >= 70) return "text-yellow-700 dark:text-yellow-300"
-  if (percentage >= 55) return "text-orange-700 dark:text-orange-300"
-  return "text-red-700 dark:text-red-300"
-})
+  const percentage = attendancePercentage.value;
+  if (percentage >= 85) return 'text-green-700 dark:text-green-300';
+  if (percentage >= 70) return 'text-yellow-700 dark:text-yellow-300';
+  if (percentage >= 55) return 'text-orange-700 dark:text-orange-300';
+  return 'text-red-700 dark:text-red-300';
+});
 
 const attendanceBarColor = computed(() => {
-  const percentage = attendancePercentage.value
-  if (percentage >= 85) return "bg-gradient-to-r from-green-400 to-emerald-500"
-  if (percentage >= 70) return "bg-gradient-to-r from-yellow-400 to-amber-500"
-  if (percentage >= 55) return "bg-gradient-to-r from-orange-400 to-orange-500"
-  return "bg-gradient-to-r from-red-400 to-red-500"
-})
+  const percentage = attendancePercentage.value;
+  if (percentage >= 85) return 'bg-gradient-to-r from-green-400 to-emerald-500';
+  if (percentage >= 70) return 'bg-gradient-to-r from-yellow-400 to-amber-500';
+  if (percentage >= 55) return 'bg-gradient-to-r from-orange-400 to-orange-500';
+  return 'bg-gradient-to-r from-red-400 to-red-500';
+});
 
 const avatarBackgroundColor = computed(() => {
   // Generate consistent color based on student name
-  const name = `${props.student.nombre} ${props.student.apellido}`.toLowerCase()
+  const name = `${props.student.nombre} ${props.student.apellido}`.toLowerCase();
   const colors = [
-    "bg-gradient-to-br from-blue-400 to-blue-600",
-    "bg-gradient-to-br from-green-400 to-green-600",
-    "bg-gradient-to-br from-purple-400 to-purple-600",
-    "bg-gradient-to-br from-pink-400 to-pink-600",
-    "bg-gradient-to-br from-indigo-400 to-indigo-600",
-    "bg-gradient-to-br from-red-400 to-red-600",
-    "bg-gradient-to-br from-teal-400 to-teal-600",
-    "bg-gradient-to-br from-orange-400 to-orange-600",
-  ]
+    'bg-gradient-to-br from-blue-400 to-blue-600',
+    'bg-gradient-to-br from-green-400 to-green-600',
+    'bg-gradient-to-br from-purple-400 to-purple-600',
+    'bg-gradient-to-br from-pink-400 to-pink-600',
+    'bg-gradient-to-br from-indigo-400 to-indigo-600',
+    'bg-gradient-to-br from-red-400 to-red-600',
+    'bg-gradient-to-br from-teal-400 to-teal-600',
+    'bg-gradient-to-br from-orange-400 to-orange-600',
+  ];
 
-  let hash = 0
+  let hash = 0;
   for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
 
-  return colors[Math.abs(hash) % colors.length]
-})
+  return colors[Math.abs(hash) % colors.length];
+});
 
 // Methods
 const getInitials = (name: string): string => {
-  if (!name || typeof name !== "string") {
-    return "??"
+  if (!name || typeof name !== 'string') {
+    return '??';
   }
   return name
-    .split(" ")
+    .split(' ')
     .map((word) => word.charAt(0))
-    .join("")
+    .join('')
     .substring(0, 2)
-    .toUpperCase()
-}
+    .toUpperCase();
+};
 
 const getInstrumentName = (instrument: any): string => {
   if (!instrument) {
-    return "Sin instrumento"
+    return 'Sin instrumento';
   }
   
   // Si es un string, devolverlo directamente
-  if (typeof instrument === "string") {
-    return instrument
+  if (typeof instrument === 'string') {
+    return instrument;
   }
   
   // Si es un objeto, buscar la propiedad del nombre
-  if (typeof instrument === "object") {
+  if (typeof instrument === 'object') {
     // Intentar diferentes propiedades comunes para el nombre
     return (
       instrument.nombre ||
       instrument.name ||
       instrument.instrumento ||
       instrument.tipo ||
-      "Instrumento no especificado"
-    )
+      'Instrumento no especificado'
+    );
   }
   
-  return "Sin instrumento"
-}
+  return 'Sin instrumento';
+};
 
 const formatPhone = (phone: string): string => {
-  if (!phone) return ""
+  if (!phone) return '';
   // Basic phone formatting - can be customized based on locale
-  const cleaned = phone.replace(/\D/g, "")
+  const cleaned = phone.replace(/\D/g, '');
   if (cleaned.length === 11) {
-    return cleaned.replace(/(\d{4})(\d{3})(\d{4})/, "$1-$2-$3")
+    return cleaned.replace(/(\d{4})(\d{3})(\d{4})/, '$1-$2-$3');
   }
   if (cleaned.length === 10) {
-    return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3")
+    return cleaned.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
   }
-  return phone
-}
+  return phone;
+};
 
 const formatDate = (dateString: string): string => {
-  if (!dateString) return ""
+  if (!dateString) return '';
   try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("es-ES", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   } catch {
-    return dateString
+    return dateString;
   }
-}
+};
 
 // Event Handlers
 const handleViewProfile = async () => {
-  showMenu.value = false
+  showMenu.value = false;
   
   try {
-    console.log("Navigating to profile for student:", props.student.id)
+    console.log('Navigating to profile for student:', props.student.id);
     // Navigate to student profile using the student ID
     await router.push({
-      name: "StudentProfile",
+      name: 'StudentProfile',
       params: {
         id: props.student.id,
       },
-    })
+    });
   } catch (error) {
-    console.error("Error navigating to student profile:", error)
+    console.error('Error navigating to student profile:', error);
     // Fallback: emit event for parent component to handle
-    emit("view-profile", props.student)
+    emit('view-profile', props.student);
   }
-}
+};
 
 const _handleView = () => {
-  showMenu.value = false
-  emit("view", props.student)
-}
+  showMenu.value = false;
+  emit('view', props.student);
+};
 
 const handleEdit = () => {
-  showMenu.value = false
-  emit("edit", props.student)
-}
+  showMenu.value = false;
+  emit('edit', props.student);
+};
 
 const handleDelete = () => {
-  showMenu.value = false
-  showDeleteConfirmation.value = true
-}
+  showMenu.value = false;
+  showDeleteConfirmation.value = true;
+};
 
 const confirmDelete = () => {
-  showDeleteConfirmation.value = false
-  emit("delete", props.student)
-}
+  showDeleteConfirmation.value = false;
+  emit('delete', props.student);
+};
 
 const handleToggleStatus = () => {
-  showMenu.value = false
-  emit("toggle-status", props.student)
-}
+  showMenu.value = false;
+  emit('toggle-status', props.student);
+};
 
 const handleDownloadSchedule = () => {
-  showMenu.value = false
-  emit("download-schedule", props.student)
-}
+  showMenu.value = false;
+  emit('download-schedule', props.student);
+};
 
 const handleWhatsAppParents = () => {
-  showMenu.value = false
-  emit("whatsapp-parents", props.student)
-}
+  showMenu.value = false;
+  emit('whatsapp-parents', props.student);
+};
 
 // Click outside directive
 const vClickOutside = {
   mounted(el: HTMLElement & {clickOutsideEvent?: (event: Event) => void}, binding: any) {
     el.clickOutsideEvent = (event: Event) => {
       if (!(el === event.target || el.contains(event.target as Node))) {
-        binding.value()
+        binding.value();
       }
-    }
-    document.addEventListener("click", el.clickOutsideEvent)
+    };
+    document.addEventListener('click', el.clickOutsideEvent);
   },
   unmounted(el: HTMLElement & {clickOutsideEvent?: (event: Event) => void}) {
     if (el.clickOutsideEvent) {
-      document.removeEventListener("click", el.clickOutsideEvent)
+      document.removeEventListener('click', el.clickOutsideEvent);
     }
   },
-}
+};
 </script>
 
 <style scoped>

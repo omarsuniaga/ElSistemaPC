@@ -1,0 +1,1734 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="176" failures="125" errors="0" time="5.0841208">
+    <testsuite name="src/modulos/Montaje/composables/useMontaje.test.ts" timestamp="2025-07-12T09:34:51.273Z" hostname="DESKTOP-HJERFBD" tests="17" failures="17" errors="0" skipped="0" time="0.0640434">
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; Inicialización &gt; debe retornar todas las funciones y propiedades necesarias" time="0.0254387">
+            <failure message="expected { …(10) } to have property &quot;cargarObra&quot;" type="AssertionError">
+AssertionError: expected { …(10) } to have property &quot;cargarObra&quot;
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:47:26
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; Inicialización &gt; debe exponer propiedades reactivas del store" time="0.0018528">
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:60:24
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; cargarObra &gt; debe llamar al método del store con el ID correcto" time="0.0014425">
+            <failure message="cargarObra is not a function" type="TypeError">
+TypeError: cargarObra is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:69:13
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; cargarObra &gt; debe manejar errores del store" time="0.0017896">
+            <failure message="cargarObra is not a function" type="TypeError">
+TypeError: cargarObra is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:78:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; guardarCompas &gt; debe actualizar estado de compás correctamente" time="0.0018027">
+            <failure message="guardarCompas is not a function" type="TypeError">
+TypeError: guardarCompas is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:94:28
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; guardarCompas &gt; debe validar datos del compás" time="0.0016974">
+            <failure message="guardarCompas is not a function" type="TypeError">
+TypeError: guardarCompas is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:114:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; guardarCompas &gt; debe requerir obraId" time="0.0011956">
+            <failure message="guardarCompas is not a function" type="TypeError">
+TypeError: guardarCompas is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:120:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; crearObra &gt; debe crear obra con datos válidos" time="0.0011218">
+            <failure message="crearObra is not a function" type="TypeError">
+TypeError: crearObra is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:137:28
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; crearObra &gt; debe validar datos requeridos" time="0.0035519">
+            <failure message="crearObra is not a function" type="TypeError">
+TypeError: crearObra is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:152:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; crearObra &gt; debe validar rango de dificultad" time="0.0016888">
+            <failure message="crearObra is not a function" type="TypeError">
+TypeError: crearObra is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:162:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; generarReporteObra &gt; debe generar reporte con datos completos" time="0.0017411">
+            <failure message="generarReporteObra is not a function" type="TypeError">
+TypeError: generarReporteObra is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:203:29
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; generarReporteObra &gt; debe requerir obra cargada" time="0.001411">
+            <failure message="generarReporteObra is not a function" type="TypeError">
+TypeError: generarReporteObra is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:228:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; generarReporteObra &gt; debe generar reporte incluso sin evaluaciones" time="0.0017416">
+            <failure message="generarReporteObra is not a function" type="TypeError">
+TypeError: generarReporteObra is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:235:29
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; Manejo de errores &gt; debe propagar errores del store" time="0.0042187">
+            <failure message="cargarObra is not a function" type="TypeError">
+TypeError: cargarObra is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:248:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; Manejo de errores &gt; debe manejar errores de validación" time="0.0020876">
+            <failure message="crearObra is not a function" type="TypeError">
+TypeError: crearObra is not a function
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:254:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; Estados de carga &gt; debe reflejar estado de carga del store" time="0.0014758">
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:263:24
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/composables/useMontaje.test.ts" name="useMontaje Composable &gt; Estados de carga &gt; debe reflejar errores del store" time="0.0013151">
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ src/modulos/Montaje/composables/useMontaje.test.ts:270:20
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/integration/montaje.integration.test.ts" timestamp="2025-07-12T09:34:51.296Z" hostname="DESKTOP-HJERFBD" tests="13" failures="13" errors="0" skipped="0" time="0.1312331">
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Flujo Completo de Carga de Obra &gt; debe cargar obra y datos relacionados correctamente" time="0.0709447">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Flujo Completo de Carga de Obra &gt; debe manejar errores de carga gracefulmente" time="0.0046214">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Integración entre Stores &gt; debe sincronizar alumnos y clases correctamente" time="0.0113559">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Integración entre Stores &gt; debe actualizar progreso cuando cambian estados de compases" time="0.0045314">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Interacción Usuario-Interfaz &gt; debe responder a selección de compases en HeatMap" time="0.004363">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Interacción Usuario-Interfaz &gt; debe actualizar observaciones de compás" time="0.0050855">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Validación de Datos y Estados &gt; debe validar consistencia de datos entre stores" time="0.005973">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Validación de Datos y Estados &gt; debe mantener integridad de estados de compases" time="0.0033343">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Performance y Optimización &gt; debe cachear datos correctamente" time="0.0041756">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Performance y Optimización &gt; debe limpiar recursos al cambiar de obra" time="0.0030016">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Manejo de Estados Edge Cases &gt; debe manejar obra sin compases" time="0.0024491">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Manejo de Estados Edge Cases &gt; debe manejar alumnos sin asignar a filas" time="0.0031797">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/integration/montaje.integration.test.ts" name="Integración Completa del Módulo Montaje &gt; Manejo de Estados Edge Cases &gt; debe validar datos corruptos o incompletos" time="0.0020787">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ Module.useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/integration/montaje.integration.test.ts:65:20
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/service/montajeService.test.ts" timestamp="2025-07-12T09:34:51.323Z" hostname="DESKTOP-HJERFBD" tests="1" failures="1" errors="0" skipped="0" time="0">
+        <testcase classname="src/modulos/Montaje/service/montajeService.test.ts" name="src/modulos/Montaje/service/montajeService.test.ts" time="0">
+            <system-out>
+✅ Test setup para módulo Montaje cargado correctamente
+
+            </system-out>
+            <failure message="Transform failed with 1 error:
+C:/Users/Admin/Desktop/Music_Academy_App_Act/src/modulos/Montaje/service/montajeService.test.ts:306:0: ERROR: Unexpected &quot;}&quot;" type="Error">
+Error: Transform failed with 1 error:
+C:/Users/Admin/Desktop/Music_Academy_App_Act/src/modulos/Montaje/service/montajeService.test.ts:306:0: ERROR: Unexpected &quot;}&quot;
+  Plugin: vite:esbuild
+  File: C:/Users/Admin/Desktop/Music_Academy_App_Act/src/modulos/Montaje/service/montajeService.test.ts:306:0
+  
+  Unexpected &quot;}&quot;
+  304|      });
+  305|    });
+  306|  });
+     |  ^
+  307|  
+  
+ ❯ failureErrorWithLog node_modules/esbuild/lib/main.js:1463:15
+ ❯ node_modules/esbuild/lib/main.js:734:50
+ ❯ responseCallbacks.&lt;computed&gt; node_modules/esbuild/lib/main.js:601:9
+ ❯ handleIncomingPacket node_modules/esbuild/lib/main.js:656:12
+ ❯ Socket.readFromStdout node_modules/esbuild/lib/main.js:579:7
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/store/montaje.simple.test.ts" timestamp="2025-07-12T09:34:51.326Z" hostname="DESKTOP-HJERFBD" tests="6" failures="5" errors="0" skipped="0" time="2.5565568">
+        <testcase classname="src/modulos/Montaje/store/montaje.simple.test.ts" name="Montaje Store - Tests Básicos &gt; debe importar el store correctamente" time="2.5011077">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/store/montaje.simple.test.ts" name="Montaje Store - Tests Básicos &gt; debe crear una instancia del store" time="0.0336569">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/store/montaje.simple.test.ts:42:19
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/store/montaje.simple.test.ts" name="Montaje Store - Tests Básicos &gt; debe tener el estado inicial correcto" time="0.0052319">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/store/montaje.simple.test.ts:52:19
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/store/montaje.simple.test.ts" name="Montaje Store - Tests Básicos &gt; debe tener las funciones principales definidas" time="0.0031586">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/store/montaje.simple.test.ts:64:19
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/store/montaje.simple.test.ts" name="Montaje Store - Tests Básicos &gt; debe poder limpiar el estado" time="0.0037547">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/store/montaje.simple.test.ts:75:19
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/store/montaje.simple.test.ts" name="Montaje Store - Tests Básicos &gt; debe tener getters computados definidos" time="0.0033424">
+            <failure message="actualizarCompassesMasivamente is not defined" type="ReferenceError">
+ReferenceError: actualizarCompassesMasivamente is not defined
+ ❯ src/modulos/Montaje/store/montaje.ts:1214:5
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:98
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:88
+ ❯ EffectScope.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:85:16
+ ❯ node_modules/pinia/dist/pinia.mjs:1464:54
+ ❯ fallbackRunWithContext node_modules/pinia/dist/pinia.mjs:1156:40
+ ❯ createSetupStore node_modules/pinia/dist/pinia.mjs:1464:24
+ ❯ useStore node_modules/pinia/dist/pinia.mjs:1708:17
+ ❯ src/modulos/Montaje/store/montaje.simple.test.ts:90:19
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/store/montaje.test.ts" timestamp="2025-07-12T09:34:51.337Z" hostname="DESKTOP-HJERFBD" tests="1" failures="1" errors="0" skipped="0" time="0">
+        <testcase classname="src/modulos/Montaje/store/montaje.test.ts" name="src/modulos/Montaje/store/montaje.test.ts" time="0">
+            <system-out>
+✅ Test setup para módulo Montaje cargado correctamente
+
+            </system-out>
+            <failure message="Failed to resolve import &quot;../montaje&quot; from &quot;src/modulos/Montaje/store/montaje.test.ts&quot;. Does the file exist?" type="Error">
+Error: Failed to resolve import &quot;../montaje&quot; from &quot;src/modulos/Montaje/store/montaje.test.ts&quot;. Does the file exist?
+  Plugin: vite:import-analysis
+  File: C:/Users/Admin/Desktop/Music_Academy_App_Act/src/modulos/Montaje/store/montaje.test.ts:4:0
+  35 |  }));
+  36 |  const __vi_import_0__ = await import(&quot;pinia&quot;);
+  37 |  const __vi_import_1__ = await import(&quot;../montaje&quot;);
+     |                                       ^
+  38 |  const __vi_import_2__ = await import(&quot;../../service/montajeService&quot;);
+  39 |  const __vi_import_3__ = await import(&quot;../../types&quot;);
+ ❯ TransformPluginContext._formatLog node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:42499:41
+ ❯ TransformPluginContext.error node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:42496:16
+ ❯ normalizeUrl node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:40475:23
+ ❯ node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:40594:37
+ ❯ TransformPluginContext.transform node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:40521:7
+ ❯ EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:42294:18
+ ❯ loadAndTransform node_modules/vite/dist/node/chunks/dep-DBxKXgDP.js:35735:27
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/store/repertorio.spec.ts" timestamp="2025-07-12T09:34:51.339Z" hostname="DESKTOP-HJERFBD" tests="3" failures="2" errors="0" skipped="0" time="0.0483071">
+        <testcase classname="src/modulos/Montaje/store/repertorio.spec.ts" name="Repertorio Store &gt; debe inicializar con valores por defecto" time="0.0349487">
+            <failure message="expected undefined to be false // Object.is equality" type="AssertionError">
+AssertionError: expected undefined to be false // Object.is equality
+
+- Expected: 
+false
+
++ Received: 
+undefined
+
+ ❯ src/modulos/Montaje/store/repertorio.spec.ts:13:27
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/store/repertorio.spec.ts" name="Repertorio Store &gt; debe manejar estados de carga" time="0.0042462">
+            <failure message="store.setLoading is not a function" type="TypeError">
+TypeError: store.setLoading is not a function
+ ❯ src/modulos/Montaje/store/repertorio.spec.ts:18:11
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/store/repertorio.spec.ts" name="Repertorio Store &gt; debe agregar un repertorio" time="0.0053113">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" timestamp="2025-07-12T09:34:51.343Z" hostname="DESKTOP-HJERFBD" tests="25" failures="10" errors="0" skipped="0" time="0.8049557">
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Renderizado básico &gt; debe renderizarse cuando isOpen es true" time="0.1555517">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Renderizado básico &gt; no debe renderizarse cuando isOpen es false" time="0.0083971">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Renderizado básico &gt; debe mostrar el resumen de selección correctamente" time="0.031457">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Renderizado básico &gt; debe mostrar un solo compás en el resumen cuando hay uno" time="0.0257383">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Selección de estados &gt; debe mostrar todos los estados disponibles" time="0.0351556">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Selección de estados &gt; debe seleccionar un estado al hacer clic" time="0.0421259">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Selección de estados &gt; debe mostrar textarea de observaciones solo para estado &quot;Con dificultad&quot;" time="0.0579462">
+            <failure message="expected false to be true // Object.is equality" type="AssertionError">
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/modulos/Montaje/tests/EstadoSelectorModal.test.ts:119:49
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Selección de alumnos &gt; debe mostrar la lista de alumnos disponibles" time="0.0211766">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Selección de alumnos &gt; debe marcar alumnos preseleccionados" time="0.0289308">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Selección de alumnos &gt; debe mostrar alumnos ausentes con estilo diferente" time="0.030322">
+            <failure message="expected [ &apos;fixed&apos;, &apos;inset-0&apos;, &apos;z-50&apos;, …(5) ] to include &apos;opacity-50&apos;" type="AssertionError">
+AssertionError: expected [ &apos;fixed&apos;, &apos;inset-0&apos;, &apos;z-50&apos;, …(5) ] to include &apos;opacity-50&apos;
+ ❯ src/modulos/Montaje/tests/EstadoSelectorModal.test.ts:150:39
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Selección de alumnos &gt; debe permitir seleccionar/deseleccionar alumnos individualmente" time="0.0215017">
+            <failure message="expected [] to include &apos;alumno-1&apos;" type="AssertionError">
+AssertionError: expected [] to include &apos;alumno-1&apos;
+ ❯ src/modulos/Montaje/tests/EstadoSelectorModal.test.ts:162:47
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Selección de alumnos &gt; debe implementar &quot;Seleccionar todos&quot; correctamente" time="0.0250068">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Filtro por asistencia &gt; debe mostrar botón de filtro por asistencia cuando está habilitado" time="0.0213225">
+            <failure message="wrapper.find(...).filter is not a function" type="TypeError">
+TypeError: wrapper.find(...).filter is not a function
+ ❯ src/modulos/Montaje/tests/EstadoSelectorModal.test.ts:182:10
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Filtro por asistencia &gt; debe filtrar por asistencia al hacer clic" time="0.0353659">
+            <failure message="wrapper.find(...).filter is not a function" type="TypeError">
+TypeError: wrapper.find(...).filter is not a function
+ ❯ src/modulos/Montaje/tests/EstadoSelectorModal.test.ts:192:10
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Filtro por asistencia &gt; no debe mostrar botón de filtro cuando está deshabilitado" time="0.0167978">
+            <failure message="wrapper.find(...).filter is not a function" type="TypeError">
+TypeError: wrapper.find(...).filter is not a function
+ ❯ src/modulos/Montaje/tests/EstadoSelectorModal.test.ts:210:10
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Emisión de eventos &gt; debe emitir evento &quot;update&quot; al confirmar selección" time="0.0255027">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Emisión de eventos &gt; debe emitir evento &quot;close&quot; al cancelar" time="0.0217505">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Emisión de eventos &gt; debe emitir evento &quot;close&quot; al hacer clic en X" time="0.0248838">
+            <failure message="Cannot call trigger on an empty VueWrapper." type="Error">
+Error: Cannot call trigger on an empty VueWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1574:27
+ ❯ src/modulos/Montaje/tests/EstadoSelectorModal.test.ts:250:47
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Emisión de eventos &gt; debe emitir evento &quot;close&quot; al hacer clic fuera del modal" time="0.0216123">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Validaciones &gt; debe deshabilitar botón &quot;Aplicar&quot; si no hay estado seleccionado" time="0.023069">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Validaciones &gt; debe habilitar botón &quot;Aplicar&quot; cuando hay estado seleccionado" time="0.0212562">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Reset del formulario &gt; debe limpiar el formulario al cerrar" time="0.0231115">
+            <failure message="Cannot call setValue on an empty DOMWrapper." type="Error">
+Error: Cannot call setValue on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1574:27
+ ❯ src/modulos/Montaje/tests/EstadoSelectorModal.test.ts:296:22
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Reset del formulario &gt; debe restaurar alumnos preseleccionados al abrir el modal" time="0.0250925">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Integración con observaciones &gt; debe incluir observación en el evento para estado CON_DIFICULTAD" time="0.0325756">
+            <failure message="Cannot call setValue on an empty DOMWrapper." type="Error">
+Error: Cannot call setValue on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1574:27
+ ❯ src/modulos/Montaje/tests/EstadoSelectorModal.test.ts:333:22
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/EstadoSelectorModal.test.ts" name="EstadoSelectorModal &gt; Integración con observaciones &gt; debe limpiar observación para otros estados" time="0.0163201">
+            <failure message="Cannot call setValue on an empty DOMWrapper." type="Error">
+Error: Cannot call setValue on an empty DOMWrapper.
+ ❯ Object.get node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:1574:27
+ ❯ src/modulos/Montaje/tests/EstadoSelectorModal.test.ts:356:22
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/tests/index.test.ts" timestamp="2025-07-12T09:34:51.361Z" hostname="DESKTOP-HJERFBD" tests="1" failures="0" errors="0" skipped="0" time="0.005669">
+        <testcase classname="src/modulos/Montaje/tests/index.test.ts" name="Montaje Tests &gt; should run basic test" time="0.0029444">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" timestamp="2025-07-12T09:34:51.362Z" hostname="DESKTOP-HJERFBD" tests="18" failures="18" errors="0" skipped="0" time="0.1860684">
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Renderizado básico &gt; debe renderizarse correctamente" time="0.0769467">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Renderizado básico &gt; debe mostrar todas las familias de instrumentos" time="0.0082444">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Renderizado básico &gt; debe mostrar instrumentos por defecto (familia &quot;Todos&quot;)" time="0.0088053">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Selección de familias &gt; debe cambiar la familia seleccionada al hacer clic" time="0.0137352">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Selección de familias &gt; debe filtrar instrumentos según la familia seleccionada" time="0.0093306">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Selección de instrumentos &gt; debe permitir seleccionar un instrumento" time="0.0084919">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Selección de instrumentos &gt; debe reflejar la selección inicial en el modelValue" time="0.0049814">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Selección de instrumentos &gt; debe permitir deseleccionar instrumentos" time="0.0050364">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Funcionalidad de limpiar selección &gt; debe mostrar el botón de limpiar cuando hay instrumentos seleccionados" time="0.0082288">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Funcionalidad de limpiar selección &gt; debe limpiar la selección al hacer clic en limpiar" time="0.0053369">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Integración con filas (showRows=true) &gt; debe mostrar filas cuando showRows es true y hay classId" time="0.0046071">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Integración con filas (showRows=true) &gt; debe cargar la clase cuando se proporciona classId" time="0.0034817">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Integración con filas (showRows=true) &gt; debe permitir seleccionar filas completas" time="0.0035327">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Integración con filas (showRows=true) &gt; debe mostrar todas las filas de la clase" time="0.0033531">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Emisión de eventos &gt; debe emitir update:modelValue con la lista correcta" time="0.0034576">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Emisión de eventos &gt; debe emitir selection-change con información detallada" time="0.0032785">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Sincronización con props &gt; debe actualizar la selección interna cuando cambia modelValue" time="0.0042126">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/InstrumentGroupSelector.test.ts" name="InstrumentGroupSelector &gt; Sincronización con props &gt; debe mantener sincronización bidireccional" time="0.0033444">
+            <failure message="Cannot convert undefined or null to object" type="TypeError">
+TypeError: Cannot convert undefined or null to object
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:135:36
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/components/InstrumentGroupSelector.vue:147:27
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/components/InstrumentGroupSelector.vue:26:32
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/tests/montajeStore.test.ts" timestamp="2025-07-12T09:34:51.399Z" hostname="DESKTOP-HJERFBD" tests="1" failures="1" errors="0" skipped="0" time="0">
+        <testcase classname="src/modulos/Montaje/tests/montajeStore.test.ts" name="src/modulos/Montaje/tests/montajeStore.test.ts" time="0">
+            <system-out>
+✅ Test setup para módulo Montaje cargado correctamente
+
+            </system-out>
+            <failure message="Transform failed with 1 error:
+C:/Users/Admin/Desktop/Music_Academy_App_Act/src/modulos/Montaje/tests/montajeStore.test.ts:269:6: ERROR: Unexpected &quot;)&quot;" type="Error">
+Error: Transform failed with 1 error:
+C:/Users/Admin/Desktop/Music_Academy_App_Act/src/modulos/Montaje/tests/montajeStore.test.ts:269:6: ERROR: Unexpected &quot;)&quot;
+  Plugin: vite:esbuild
+  File: C:/Users/Admin/Desktop/Music_Academy_App_Act/src/modulos/Montaje/tests/montajeStore.test.ts:269:6
+  
+  Unexpected &quot;)&quot;
+  267|        const planId = await montajeService.crearPlanAccion(datosCompletos);
+  268|          datosNuevoPlan as unknown as Omit&lt;PlanAccion, &apos;id&apos; | &apos;auditoria&apos;&gt;,
+  269|        );
+     |        ^
+  270|  
+  271|        // Verificar que el servicio fue llamado con los datos correctos
+  
+ ❯ failureErrorWithLog node_modules/esbuild/lib/main.js:1463:15
+ ❯ node_modules/esbuild/lib/main.js:734:50
+ ❯ responseCallbacks.&lt;computed&gt; node_modules/esbuild/lib/main.js:601:9
+ ❯ handleIncomingPacket node_modules/esbuild/lib/main.js:656:12
+ ❯ Socket.readFromStdout node_modules/esbuild/lib/main.js:579:7
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" timestamp="2025-07-12T09:34:51.401Z" hostname="DESKTOP-HJERFBD" tests="14" failures="2" errors="0" skipped="0" time="0.4824112">
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Selección de compases &gt; debe agregar un compás a la selección" time="0.0159448">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Selección de compases &gt; debe eliminar un compás de la selección" time="0.0044306">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Selección de compases &gt; debe limpiar toda la selección" time="0.004019">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Selección de compases &gt; no debe agregar duplicados" time="0.0020556">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Selección por arrastre (drag-select) &gt; debe iniciar drag selection correctamente" time="0.003193">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Selección por arrastre (drag-select) &gt; debe actualizar el área de selección durante el arrastre" time="0.0020608">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Selección por arrastre (drag-select) &gt; debe seleccionar compases dentro del área de arrastre" time="0.003904">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Cambio de estados &gt; debe cambiar el estado de los compases seleccionados" time="0.0040531">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Cambio de estados &gt; debe incluir observación solo para estado CON_DIFICULTAD" time="0.0037595">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Cambio de estados &gt; no debe hacer nada si no hay compases seleccionados" time="0.0020001">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Historial de acciones &gt; debe registrar acciones en el historial" time="0.0366418">
+            <failure message="expected [] to have a length of 1 but got +0" type="AssertionError">
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ src/modulos/Montaje/tests/useHeatmapTracking.test.ts:207:48
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Historial de acciones &gt; debe limitar el historial a 20 acciones" time="0.0042227">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Integración con obra reactiva &gt; debe funcionar con un ref reactivo para obraId" time="0.0030459">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useHeatmapTracking.test.ts" name="useHeatmapTracking &gt; Manejo de errores &gt; debe manejar errores al cambiar estado de compases" time="0.387488">
+            <failure message="promise resolved &quot;[ { obraId: &apos;obra-test-error&apos;, …(8) } ]&quot; instead of rejecting" type="AssertionError">
+AssertionError: promise resolved &quot;[ { obraId: &apos;obra-test-error&apos;, …(8) } ]&quot; instead of rejecting
+
+- Expected: 
+Error {
+  &quot;message&quot;: &quot;rejected promise&quot;,
+}
+
++ Received: 
+[
+  {
+    &quot;alumnosIds&quot;: [],
+    &quot;estado&quot;: &quot;LOGRADO&quot;,
+    &quot;evaluadorId&quot;: &quot;test-user-123&quot;,
+    &quot;instrumento&quot;: &quot;VIOLIN_I&quot;,
+    &quot;numero&quot;: 1,
+    &quot;obraId&quot;: &quot;obra-test-error&quot;,
+    &quot;observacion&quot;: &quot;&quot;,
+    &quot;seccion&quot;: &quot;A&quot;,
+    &quot;ultimaActualizacion&quot;: 2025-07-12T09:34:41.117Z,
+  },
+]
+
+ ❯ src/modulos/Montaje/tests/useHeatmapTracking.test.ts:265:7
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/tests/useMaestroMontajeData.test.ts" timestamp="2025-07-12T09:34:51.408Z" hostname="DESKTOP-HJERFBD" tests="3" failures="1" errors="0" skipped="0" time="0.0484273">
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeData.test.ts" name="useMaestroMontajeData &gt; debería cargar los datos del maestro al montar el componente" time="0.0334034">
+            <system-err>
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+            </system-err>
+            <failure message="expected false to be true // Object.is equality" type="AssertionError">
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ src/modulos/Montaje/tests/useMaestroMontajeData.test.ts:34:33
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeData.test.ts" name="useMaestroMontajeData &gt; debería establecer errorData si el usuario no está autenticado" time="0.0079737">
+            <system-err>
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+Error cargando datos del maestro: Error: Usuario no autenticado para cargar datos del maestro.
+    at loadMaestroData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\composables\useMaestroMontajeData.ts:70:15[90m)[39m
+    at [90mC:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\tests\useMaestroMontajeData.test.ts:51:11
+    at [90mfile:///C:/Users/Admin/Desktop/Music_Academy_App_Act/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:155:11
+    at [90mfile:///C:/Users/Admin/Desktop/Music_Academy_App_Act/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:752:26
+    at [90mfile:///C:/Users/Admin/Desktop/Music_Academy_App_Act/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1897:20
+    at new Promise (&lt;anonymous&gt;)
+    at runWithTimeout [90m(file:///C:/Users/Admin/Desktop/Music_Academy_App_Act/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1863:10[90m)[39m
+    at runTest [90m(file:///C:/Users/Admin/Desktop/Music_Academy_App_Act/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1574:12[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///C:/Users/Admin/Desktop/Music_Academy_App_Act/[39mnode_modules/[4m@vitest[24m/runner/dist/chunk-hooks.js:1729:8[90m)[39m
+
+            </system-err>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeData.test.ts" name="useMaestroMontajeData &gt; debería exponer los datos simulados correctamente" time="0.0031406">
+            <system-err>
+[Vue warn]: onMounted is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
+
+            </system-err>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" timestamp="2025-07-12T09:34:51.412Z" hostname="DESKTOP-HJERFBD" tests="10" failures="1" errors="0" skipped="0" time="0.2355187">
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" name="useMaestroMontajeUI &gt; debería filtrar obras por término de búsqueda" time="0.0071161">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" name="useMaestroMontajeUI &gt; debería filtrar obras por estado" time="0.0016875">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" name="useMaestroMontajeUI &gt; debería combinar filtros de búsqueda y estado" time="0.0009179">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" name="useMaestroMontajeUI &gt; debería devolver todas las obras si no hay filtros" time="0.000588">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" name="useMaestroMontajeUI &gt; debería formatear la fecha correctamente" time="0.2078625">
+            <failure message="expected &apos;11 jul, 10:30&apos; to match /11 de jul\.?\s*\d{2}:\d{2}/" type="AssertionError">
+AssertionError: expected &apos;11 jul, 10:30&apos; to match /11 de jul\.?\s*\d{2}:\d{2}/
+
+- Expected: 
+/11 de jul\.?\s*\d{2}:\d{2}/
+
++ Received: 
+&quot;11 jul, 10:30&quot;
+
+ ❯ src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts:92:30
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" name="useMaestroMontajeUI &gt; debería devolver la clase de color de progreso correcta" time="0.0014397">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" name="useMaestroMontajeUI &gt; debería devolver la clase de barra de progreso correcta" time="0.0008142">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" name="useMaestroMontajeUI &gt; debería abrir y cerrar el modal de observaciones" time="0.0023908">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" name="useMaestroMontajeUI &gt; debería abrir y cerrar el modal de evaluación" time="0.0018516">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMaestroMontajeUI.test.ts" name="useMaestroMontajeUI &gt; debería registrar el filtro por instrumento en la consola" time="0.0060002">
+            <system-out>
+Filtrando por instrumento: { obraId: [32m&apos;1&apos;[39m, instrumentoId: [32m&apos;VIOLIN_I&apos;[39m }
+
+            </system-out>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/tests/useMontaje.test.ts" timestamp="2025-07-12T09:34:51.417Z" hostname="DESKTOP-HJERFBD" tests="14" failures="14" errors="0" skipped="0" time="0.0598061">
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Inicialización &gt; debe inicializar correctamente" time="0.0233458">
+            <failure message="expected undefined to be defined" type="AssertionError">
+AssertionError: expected undefined to be defined
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:80:21
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Funciones de obras &gt; debe cargar obras correctamente" time="0.0022211">
+            <failure message="cargarObras is not a function" type="TypeError">
+TypeError: cargarObras is not a function
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:103:13
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Funciones de obras &gt; debe crear obra con validación" time="0.0018864">
+            <failure message="Cannot read properties of undefined (reading &apos;BORRADOR&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;BORRADOR&apos;)
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:115:28
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Funciones de obras &gt; debe actualizar obra existente" time="0.001926">
+            <failure message="actualizarObra is not a function" type="TypeError">
+TypeError: actualizarObra is not a function
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:132:13
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Funciones de obras &gt; debe eliminar obra con confirmación" time="0.0017693">
+            <failure message="eliminarObra is not a function" type="TypeError">
+TypeError: eliminarObra is not a function
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:141:13
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Funciones de planes &gt; debe crear plan de acción" time="0.0015839">
+            <failure message="crearPlan is not a function" type="TypeError">
+TypeError: crearPlan is not a function
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:160:13
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Funciones de planes &gt; debe actualizar plan existente" time="0.0013803">
+            <failure message="actualizarPlan is not a function" type="TypeError">
+TypeError: actualizarPlan is not a function
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:174:13
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Funciones de frases &gt; debe crear frase con validación de rangos" time="0.0020283">
+            <failure message="crearFrase is not a function" type="TypeError">
+TypeError: crearFrase is not a function
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:194:13
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Funciones de evaluaciones &gt; debe crear evaluación continua" time="0.0024834">
+            <failure message="crearEvaluacion is not a function" type="TypeError">
+TypeError: crearEvaluacion is not a function
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:213:13
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Gestión de estado de compases &gt; debe cambiar estado de compás" time="0.0051767">
+            <failure message="cambiarEstadoCompass is not a function" type="TypeError">
+TypeError: cambiarEstadoCompass is not a function
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:223:13
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Utilidades &gt; debe calcular progreso correctamente" time="0.0048481">
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:246:33
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Utilidades &gt; debe manejar caso sin frases para progreso" time="0.0013706">
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:254:33
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Manejo de errores &gt; debe propagar errores de las acciones del store" time="0.0015373">
+            <failure message="cargarObras is not a function" type="TypeError">
+TypeError: cargarObras is not a function
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:265:20
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontaje.test.ts" name="useMontaje Composable &gt; Manejo de errores &gt; debe limpiar errores al iniciar nuevas operaciones" time="0.0013277">
+            <failure message="cargarObras is not a function" type="TypeError">
+TypeError: cargarObras is not a function
+ ❯ src/modulos/Montaje/tests/useMontaje.test.ts:274:13
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/tests/useMontajePermissions.test.ts" timestamp="2025-07-12T09:34:51.435Z" hostname="DESKTOP-HJERFBD" tests="5" failures="0" errors="0" skipped="0" time="0.0113767">
+        <testcase classname="src/modulos/Montaje/tests/useMontajePermissions.test.ts" name="useMontajePermissions &gt; debería otorgar todos los permisos si el usuario es Director" time="0.0051292">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontajePermissions.test.ts" name="useMontajePermissions &gt; debería otorgar todos los permisos si el usuario es Superusuario" time="0.0011544">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontajePermissions.test.ts" name="useMontajePermissions &gt; debería otorgar permisos específicos para el rol de Maestro" time="0.0014804">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontajePermissions.test.ts" name="useMontajePermissions &gt; debería denegar permisos si el usuario no está autenticado" time="0.0005653">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/tests/useMontajePermissions.test.ts" name="useMontajePermissions &gt; debería denegar permisos si el rol no tiene permisos definidos" time="0.0005216">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/utils/index.test.ts" timestamp="2025-07-12T09:34:51.437Z" hostname="DESKTOP-HJERFBD" tests="23" failures="18" errors="0" skipped="0" time="0.0784617">
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; formatDate &gt; debe formatear fechas correctamente" time="0.0051008">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; formatDate &gt; debe manejar fechas nulas" time="0.0008404">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; formatDate &gt; debe manejar objetos Timestamp de Firebase" time="0.0006416">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; formatDuration &gt; debe formatear duración en segundos" time="0.0242986">
+            <failure message="expected &apos;1h&apos; to be &apos;1min&apos; // Object.is equality" type="AssertionError">
+AssertionError: expected &apos;1h&apos; to be &apos;1min&apos; // Object.is equality
+
+Expected: &quot;1min&quot;
+Received: &quot;1h&quot;
+
+ ❯ src/modulos/Montaje/utils/index.test.ts:29:34
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; formatDuration &gt; debe formatear duración con horas y minutos" time="0.0029227">
+            <failure message="expected &apos;61h 1min&apos; to be &apos;1h 1min&apos; // Object.is equality" type="AssertionError">
+AssertionError: expected &apos;61h 1min&apos; to be &apos;1h 1min&apos; // Object.is equality
+
+Expected: &quot;1h 1min&quot;
+Received: &quot;61h 1min&quot;
+
+ ❯ src/modulos/Montaje/utils/index.test.ts:35:36
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; formatDuration &gt; debe manejar valores negativos" time="0.0006451">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; formatDuration &gt; debe manejar valores no numéricos" time="0.0009505">
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; validateObra &gt; debe validar obra correcta" time="0.0012778">
+            <failure message="(0 , validateObra) is not a function" type="TypeError">
+TypeError: (0 , validateObra) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:60:22
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; validateObra &gt; debe detectar título faltante" time="0.0022172">
+            <failure message="(0 , validateObra) is not a function" type="TypeError">
+TypeError: (0 , validateObra) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:67:22
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; validateObra &gt; debe detectar compositor faltante" time="0.0015342">
+            <failure message="(0 , validateObra) is not a function" type="TypeError">
+TypeError: (0 , validateObra) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:75:22
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; validateObra &gt; debe validar nivel de dificultad" time="0.0017237">
+            <failure message="(0 , validateObra) is not a function" type="TypeError">
+TypeError: (0 , validateObra) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:85:14
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; validateObra &gt; debe validar duración positiva" time="0.0012337">
+            <failure message="(0 , validateObra) is not a function" type="TypeError">
+TypeError: (0 , validateObra) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:94:22
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; validateObra &gt; debe acumular múltiples errores" time="0.001109">
+            <failure message="(0 , validateObra) is not a function" type="TypeError">
+TypeError: (0 , validateObra) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:107:22
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; calculateProgress &gt; debe calcular progreso con Map de estados" time="0.0014366">
+            <failure message="(0 , calculateProgress) is not a function" type="TypeError">
+TypeError: (0 , calculateProgress) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:123:24
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; calculateProgress &gt; debe calcular progreso con array de compases" time="0.001216">
+            <failure message="(0 , calculateProgress) is not a function" type="TypeError">
+TypeError: (0 , calculateProgress) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:137:24
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; calculateProgress &gt; debe manejar casos sin compases" time="0.0013406">
+            <failure message="(0 , calculateProgress) is not a function" type="TypeError">
+TypeError: (0 , calculateProgress) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:144:14
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; calculateProgress &gt; debe manejar todos los compases completados" time="0.0011869">
+            <failure message="(0 , calculateProgress) is not a function" type="TypeError">
+TypeError: (0 , calculateProgress) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:155:24
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; calculateProgress &gt; debe manejar ningún compás completado" time="0.0010916">
+            <failure message="(0 , calculateProgress) is not a function" type="TypeError">
+TypeError: (0 , calculateProgress) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:165:24
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; calculateProgress &gt; debe redondear decimales correctamente" time="0.0010905">
+            <failure message="(0 , calculateProgress) is not a function" type="TypeError">
+TypeError: (0 , calculateProgress) is not a function
+ ❯ src/modulos/Montaje/utils/index.test.ts:176:24
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; Funciones de validación específicas &gt; debe validar números de compás" time="0.0088108">
+            <failure message="Cannot find module &apos;./index&apos;
+Require stack:
+- C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts" type="Error">
+Error: Cannot find module &apos;./index&apos;
+Require stack:
+- C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts
+ ❯ src/modulos/Montaje/utils/index.test.ts:185:39
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: &apos;MODULE_NOT_FOUND&apos;, requireStack: [ &apos;C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts&apos; ] }
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; Funciones de validación específicas &gt; debe validar estados de compás" time="0.0041228">
+            <failure message="Cannot find module &apos;./index&apos;
+Require stack:
+- C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts" type="Error">
+Error: Cannot find module &apos;./index&apos;
+Require stack:
+- C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts
+ ❯ src/modulos/Montaje/utils/index.test.ts:195:40
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: &apos;MODULE_NOT_FOUND&apos;, requireStack: [ &apos;C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts&apos; ] }
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; Transformadores de datos &gt; debe transformar datos de obra para UI" time="0.0036136">
+            <failure message="Cannot find module &apos;./index&apos;
+Require stack:
+- C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts" type="Error">
+Error: Cannot find module &apos;./index&apos;
+Require stack:
+- C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts
+ ❯ src/modulos/Montaje/utils/index.test.ts:208:38
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: &apos;MODULE_NOT_FOUND&apos;, requireStack: [ &apos;C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts&apos; ] }
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/utils/index.test.ts" name="Utilidades de Montaje &gt; Transformadores de datos &gt; debe asignar colores de progreso correctamente" time="0.0039593">
+            <failure message="Cannot find module &apos;./index&apos;
+Require stack:
+- C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts" type="Error">
+Error: Cannot find module &apos;./index&apos;
+Require stack:
+- C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts
+ ❯ src/modulos/Montaje/utils/index.test.ts:227:36
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { code: &apos;MODULE_NOT_FOUND&apos;, requireStack: [ &apos;C:\Users\Admin\Desktop\Music_Academy_App_Act\src\modulos\Montaje\utils\index.test.ts&apos; ] }
+            </failure>
+        </testcase>
+    </testsuite>
+    <testsuite name="src/modulos/Montaje/views/ObraDetailView.test.ts" timestamp="2025-07-12T09:34:51.460Z" hostname="DESKTOP-HJERFBD" tests="21" failures="21" errors="0" skipped="0" time="0.3712856">
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Renderizado inicial &gt; debe renderizar correctamente" time="0.0933861">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Renderizado inicial &gt; debe mostrar información de la obra" time="0.0550082">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Renderizado inicial &gt; debe mostrar tabs de navegación" time="0.0353007">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Renderizado inicial &gt; debe mostrar el mapa de calor por defecto" time="0.0106438">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Carga de datos &gt; debe llamar a loadData al montar" time="0.0138031">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Carga de datos &gt; debe cargar alumnos y clases" time="0.009195">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Carga de datos &gt; debe manejar error cuando la obra no existe" time="0.0085764">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Navegación entre tabs &gt; debe cambiar de tab al hacer clic" time="0.0090836">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Navegación entre tabs &gt; debe mostrar contenido correcto para cada tab" time="0.0140566">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Interacciones de usuario &gt; debe abrir modal de edición al hacer clic en Editar" time="0.0094354">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Interacciones de usuario &gt; debe manejar generación de reportes" time="0.0075717">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Interacciones de usuario &gt; debe navegar hacia atrás al hacer clic en Volver" time="0.0069059">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Propiedades computadas &gt; debe calcular progressPercentage correctamente" time="0.0066797">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Propiedades computadas &gt; debe calcular completedPhrases correctamente" time="0.0072955">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Propiedades computadas &gt; debe filtrar compases correctamente" time="0.0070624">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Manejo de errores &gt; debe mostrar estado de carga" time="0.0064782">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Manejo de errores &gt; debe manejar errores de carga graciosamente" time="0.0160038">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Estados de datos &gt; debe mostrar estado vacío para frases" time="0.0065856">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Estados de datos &gt; debe mostrar estado vacío para evaluaciones" time="0.0080327">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Accesibilidad &gt; debe tener estructura de encabezados apropiada" time="0.0213115">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+        <testcase classname="src/modulos/Montaje/views/ObraDetailView.test.ts" name="ObraDetailView &gt; Accesibilidad &gt; debe tener botones con texto descriptivo" time="0.0124664">
+            <system-err>
+[Vue warn]: App already provides property with key &quot;Symbol(pinia)&quot;. It will be overwritten with the new value.
+
+Error loading obra data: TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+    at loadData [90m(C:\Users\Admin\Desktop\Music_Academy_App_Act\[39msrc\modulos\Montaje\views\ObraDetailView.vue:388:29[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+            </system-err>
+            <failure message="Cannot read properties of undefined (reading &apos;value&apos;)" type="TypeError">
+TypeError: Cannot read properties of undefined (reading &apos;value&apos;)
+ ❯ ComputedRefImpl.fn src/modulos/Montaje/views/ObraDetailView.vue:358:49
+ ❯ refreshComputed node_modules/@vue/reactivity/dist/reactivity.cjs.js:395:28
+ ❯ ComputedRefImpl.get value [as value] node_modules/@vue/reactivity/dist/reactivity.cjs.js:1642:5
+ ❯ unref node_modules/@vue/reactivity/dist/reactivity.cjs.js:1487:29
+ ❯ Object.get node_modules/@vue/reactivity/dist/reactivity.cjs.js:1493:64
+ ❯ Proxy._sfc_render src/modulos/Montaje/views/ObraDetailView.vue:110:29
+ ❯ renderComponentRoot node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6500:16
+ ❯ ReactiveEffect.componentUpdateFn [as fn] node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5291:46
+ ❯ ReactiveEffect.run node_modules/@vue/reactivity/dist/reactivity.cjs.js:241:19
+ ❯ setupRenderEffect node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:5426:5
+            </failure>
+        </testcase>
+    </testsuite>
+</testsuites>

@@ -296,38 +296,38 @@
 </template>
 
 <script setup>
-import {ref, computed} from "vue"
-import {ChevronLeftIcon, ChevronRightIcon} from "@heroicons/vue/24/outline"
-import {format} from "date-fns"
-import {es} from "date-fns/locale"
+import { ref, computed } from 'vue';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const props = defineProps({
   attendanceData: {
     type: Array,
     required: true,
   },
-})
+});
 
-const emit = defineEmits(["export-student"])
+const emit = defineEmits(['export-student']);
 
 // Estado reactivo
-const selectedClass = ref("")
-const statusFilter = ref("")
-const currentPage = ref(1)
-const pageSize = ref(10)
-const selectedStudent = ref(null)
+const selectedClass = ref('');
+const statusFilter = ref('');
+const currentPage = ref(1);
+const pageSize = ref(10);
+const selectedStudent = ref(null);
 
 // Clases disponibles
 const availableClasses = computed(() => {
   return props.attendanceData.map((cls) => ({
     id: cls.classId,
-    name: cls.className || "Clase sin nombre",
-  }))
-})
+    name: cls.className || 'Clase sin nombre',
+  }));
+});
 
 // Procesar datos de estudiantes
 const processedStudents = computed(() => {
-  const students = []
+  const students = [];
 
   props.attendanceData.forEach((classData) => {
     classData.students?.forEach((student) => {
@@ -338,145 +338,145 @@ const processedStudents = computed(() => {
         justified: 0,
         total: 0,
         lastAttendanceDate: null,
-      }
+      };
 
-      const recentAttendance = []
+      const recentAttendance = [];
 
       student.attendance?.forEach((record) => {
-        stats.total++
-        stats[record.status] = (stats[record.status] || 0) + 1
+        stats.total++;
+        stats[record.status] = (stats[record.status] || 0) + 1;
 
         if (
           !stats.lastAttendanceDate ||
           new Date(record.date) > new Date(stats.lastAttendanceDate)
         ) {
-          stats.lastAttendanceDate = record.date
+          stats.lastAttendanceDate = record.date;
         }
 
-        recentAttendance.push(record)
-      })
+        recentAttendance.push(record);
+      });
 
-      stats.attendanceRate = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0
+      stats.attendanceRate = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0;
 
       // Ordenar por fecha más reciente
-      recentAttendance.sort((a, b) => new Date(b.date) - new Date(a.date))
+      recentAttendance.sort((a, b) => new Date(b.date) - new Date(a.date));
 
       students.push({
         ...student,
         classId: classData.classId,
-        className: classData.className || "Clase sin nombre",
+        className: classData.className || 'Clase sin nombre',
         stats,
         recentAttendance: recentAttendance.slice(0, 10), // Últimos 10 registros
-      })
-    })
-  })
+      });
+    });
+  });
 
-  return students
-})
+  return students;
+});
 
 // Estudiantes filtrados
 const filteredStudents = computed(() => {
-  let filtered = processedStudents.value
+  let filtered = processedStudents.value;
 
   if (selectedClass.value) {
-    filtered = filtered.filter((s) => s.classId === selectedClass.value)
+    filtered = filtered.filter((s) => s.classId === selectedClass.value);
   }
 
   if (statusFilter.value) {
     filtered = filtered.filter((s) => {
-      const lastRecord = s.recentAttendance[0]
-      return lastRecord?.status === statusFilter.value
-    })
+      const lastRecord = s.recentAttendance[0];
+      return lastRecord?.status === statusFilter.value;
+    });
   }
 
-  return filtered
-})
+  return filtered;
+});
 
 // Paginación
-const totalStudents = computed(() => filteredStudents.value.length)
-const totalPages = computed(() => Math.ceil(totalStudents.value / pageSize.value))
+const totalStudents = computed(() => filteredStudents.value.length);
+const totalPages = computed(() => Math.ceil(totalStudents.value / pageSize.value));
 
 const paginatedStudents = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  const end = start + pageSize.value
-  return filteredStudents.value.slice(start, end)
-})
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return filteredStudents.value.slice(start, end);
+});
 
 const visiblePages = computed(() => {
-  const pages = []
-  const start = Math.max(1, currentPage.value - 2)
-  const end = Math.min(totalPages.value, currentPage.value + 2)
+  const pages = [];
+  const start = Math.max(1, currentPage.value - 2);
+  const end = Math.min(totalPages.value, currentPage.value + 2);
 
   for (let i = start; i <= end; i++) {
-    pages.push(i)
+    pages.push(i);
   }
 
-  return pages
-})
+  return pages;
+});
 
 // Métodos de paginación
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
-    currentPage.value++
+    currentPage.value++;
   }
-}
+};
 
 const previousPage = () => {
   if (currentPage.value > 1) {
-    currentPage.value--
+    currentPage.value--;
   }
-}
+};
 
 const goToPage = (page) => {
-  currentPage.value = page
-}
+  currentPage.value = page;
+};
 
 // Métodos auxiliares
 const getInitials = (firstName, lastName) => {
-  return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase()
-}
+  return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+};
 
 const getAttendanceColor = (rate) => {
-  if (rate >= 90) return "bg-green-500"
-  if (rate >= 70) return "bg-yellow-500"
-  return "bg-red-500"
-}
+  if (rate >= 90) return 'bg-green-500';
+  if (rate >= 70) return 'bg-yellow-500';
+  return 'bg-red-500';
+};
 
 const getStatusColor = (status) => {
   const colors = {
-    present: "text-green-600",
-    absent: "text-red-600",
-    late: "text-yellow-600",
-    justified: "text-blue-600",
-  }
-  return colors[status] || "text-gray-600"
-}
+    present: 'text-green-600',
+    absent: 'text-red-600',
+    late: 'text-yellow-600',
+    justified: 'text-blue-600',
+  };
+  return colors[status] || 'text-gray-600';
+};
 
 const getStatusText = (status) => {
   const texts = {
-    present: "Presente",
-    absent: "Ausente",
-    late: "Tardanza",
-    justified: "Justificado",
-  }
-  return texts[status] || status
-}
+    present: 'Presente',
+    absent: 'Ausente',
+    late: 'Tardanza',
+    justified: 'Justificado',
+  };
+  return texts[status] || status;
+};
 
 const formatDate = (date) => {
-  if (!date) return "N/A"
-  return format(new Date(date), "dd/MM/yyyy", {locale: es})
-}
+  if (!date) return 'N/A';
+  return format(new Date(date), 'dd/MM/yyyy', { locale: es });
+};
 
 // Acciones
 const viewStudentDetail = (student) => {
-  selectedStudent.value = student
-}
+  selectedStudent.value = student;
+};
 
 const closeStudentDetail = () => {
-  selectedStudent.value = null
-}
+  selectedStudent.value = null;
+};
 
 const exportStudentData = (student) => {
-  emit("export-student", student)
-}
+  emit('export-student', student);
+};
 </script>

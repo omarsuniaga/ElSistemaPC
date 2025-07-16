@@ -1,98 +1,3 @@
-<script setup lang="ts">
-import {ref, onMounted, onUnmounted} from "vue"
-import {useRouter} from "vue-router"
-import {getFirestore, doc, getDoc, onSnapshot} from "firebase/firestore"
-import {getAuth, signOut} from "firebase/auth"
-import {
-  ClockIcon,
-  ExclamationCircleIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-} from "@heroicons/vue/24/outline"
-
-const router = useRouter()
-const auth = getAuth()
-const db = getFirestore()
-
-const isLoading = ref(true)
-const error = ref("")
-const userStatus = ref<"pendiente" | "aprobado" | "rechazado" | null>(null)
-const rejectionReason = ref("")
-const unsubscribeRef = ref<(() => void) | null>(null)
-
-// Comprueba el estado de aprobación del usuario
-const checkApprovalStatus = async () => {
-  isLoading.value = true
-  error.value = ""
-
-  try {
-    const currentUser = auth.currentUser
-
-    if (!currentUser) {
-      router.push("/login")
-      return
-    }
-
-    const userDocRef = doc(db, "USERS", currentUser.uid)
-
-    // Escuchar cambios en tiempo real
-    const unsubscribe = onSnapshot(
-      userDocRef,
-      (userDoc) => {
-        if (userDoc.exists()) {
-          const userData = userDoc.data()
-          userStatus.value = userData.status
-          rejectionReason.value = userData.rejectionReason || ""
-
-          // Si el usuario ya está aprobado, redirigir al dashboard
-          if (userData.status === "aprobado") {
-            router.push("/")
-          }
-        } else {
-          error.value = "No se pudo encontrar la información de usuario"
-        }
-
-        isLoading.value = false
-      },
-      (err) => {
-        console.error("Error al verificar estado:", err)
-        error.value = "Error al comprobar el estado de aprobación"
-        isLoading.value = false
-      }
-    )
-
-    // Guardar referencia para limpiarla al desmontar
-    unsubscribeRef.value = unsubscribe
-  } catch (err) {
-    console.error("Error al verificar estado:", err)
-    error.value = "Error al comprobar el estado de aprobación"
-    isLoading.value = false
-  }
-}
-
-// Cerrar sesión
-const handleLogout = async () => {
-  try {
-    await signOut(auth)
-    router.push("/login")
-  } catch (err) {
-    console.error("Error al cerrar sesión:", err)
-    error.value = "Error al cerrar sesión"
-  }
-}
-
-onMounted(() => {
-  checkApprovalStatus()
-})
-
-onUnmounted(() => {
-  // Limpiar la suscripción al desmontar el componente
-  if (unsubscribeRef.value) {
-    unsubscribeRef.value()
-  }
-})
-</script>
-
 <template>
   <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
     <div class="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg">
@@ -193,3 +98,98 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { getFirestore, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { getAuth, signOut } from 'firebase/auth';
+import {
+  ClockIcon,
+  ExclamationCircleIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+} from '@heroicons/vue/24/outline';
+
+const router = useRouter();
+const auth = getAuth();
+const db = getFirestore();
+
+const isLoading = ref(true);
+const error = ref('');
+const userStatus = ref<'pendiente' | 'aprobado' | 'rechazado' | null>(null);
+const rejectionReason = ref('');
+const unsubscribeRef = ref<(() => void) | null>(null);
+
+// Comprueba el estado de aprobación del usuario
+const checkApprovalStatus = async () => {
+  isLoading.value = true;
+  error.value = '';
+
+  try {
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) {
+      router.push('/login');
+      return;
+    }
+
+    const userDocRef = doc(db, 'USERS', currentUser.uid);
+
+    // Escuchar cambios en tiempo real
+    const unsubscribe = onSnapshot(
+      userDocRef,
+      (userDoc) => {
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          userStatus.value = userData.status;
+          rejectionReason.value = userData.rejectionReason || '';
+
+          // Si el usuario ya está aprobado, redirigir al dashboard
+          if (userData.status === 'aprobado') {
+            router.push('/');
+          }
+        } else {
+          error.value = 'No se pudo encontrar la información de usuario';
+        }
+
+        isLoading.value = false;
+      },
+      (err) => {
+        console.error('Error al verificar estado:', err);
+        error.value = 'Error al comprobar el estado de aprobación';
+        isLoading.value = false;
+      },
+    );
+
+    // Guardar referencia para limpiarla al desmontar
+    unsubscribeRef.value = unsubscribe;
+  } catch (err) {
+    console.error('Error al verificar estado:', err);
+    error.value = 'Error al comprobar el estado de aprobación';
+    isLoading.value = false;
+  }
+};
+
+// Cerrar sesión
+const handleLogout = async () => {
+  try {
+    await signOut(auth);
+    router.push('/login');
+  } catch (err) {
+    console.error('Error al cerrar sesión:', err);
+    error.value = 'Error al cerrar sesión';
+  }
+};
+
+onMounted(() => {
+  checkApprovalStatus();
+});
+
+onUnmounted(() => {
+  // Limpiar la suscripción al desmontar el componente
+  if (unsubscribeRef.value) {
+    unsubscribeRef.value();
+  }
+});
+</script>

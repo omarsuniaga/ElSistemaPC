@@ -24,17 +24,17 @@
 </template>
 
 <script setup lang="ts">
-import type {Obra} from "../types"
+import type { Obra } from '../types';
 
 interface Props {
   obra?: Obra | null
-  "repertorio-id"?: string
+  'repertorio-id'?: string
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 defineEmits<{
-  (e: "close"): void
-  (e: "guardar", data: Obra): void
-}>()
+  (e: 'close'): void
+  (e: 'guardar', data: Obra): void
+}>();
 </script>

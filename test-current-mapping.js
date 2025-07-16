@@ -4,7 +4,7 @@ console.log('='.repeat(70));
 
 // Replicar las funciones actuales del componente
 const getDayIndex = (dayString) => {
-  if (typeof dayString === "number") return dayString;
+  if (typeof dayString === 'number') return dayString;
 
   const dayMapping = {
     // Formato completo español
@@ -59,9 +59,9 @@ const ejemploClase = {
     slots: [
       { day: 'Martes', startTime: '17:00', endTime: '18:30' },
       { day: 'Jueves', startTime: '17:00', endTime: '18:30' },
-      { day: 'Sábado', startTime: '09:00', endTime: '12:30' }
-    ]
-  }
+      { day: 'Sábado', startTime: '09:00', endTime: '12:30' },
+    ],
+  },
 };
 
 console.log('📊 DATOS DE PRUEBA:');
@@ -74,7 +74,7 @@ console.log(`\n🎯 FECHA DE PRUEBA: ${domingo6Julio.toLocaleDateString('es-ES',
   weekday: 'long', 
   year: 'numeric', 
   month: 'long', 
-  day: 'numeric' 
+  day: 'numeric', 
 })}`);
 
 const jsDay = domingo6Julio.getDay();
@@ -93,7 +93,7 @@ ejemploClase.schedule.slots.forEach((slot, index) => {
 
 // TEST PRINCIPAL
 const shouldShowClass = hasScheduledClasses(domingo6Julio, [ejemploClase]);
-console.log(`\n🏁 RESULTADO:`);
+console.log('\n🏁 RESULTADO:');
 console.log(`¿Debería mostrar clase el domingo? ${shouldShowClass ? '❌ SÍ (ERROR)' : '✅ NO (CORRECTO)'}`);
 
 // Verificar toda la semana
@@ -105,7 +105,7 @@ for (let i = 0; i < 7; i++) {
   const dayName = weekDays[i];
   const shouldShow = hasScheduledClasses(testDate, [ejemploClase]);
   const expected = ['Martes', 'Jueves', 'Sábado'].some(scheduledDay => 
-    getDayIndex(scheduledDay) === i
+    getDayIndex(scheduledDay) === i,
   );
   
   const status = shouldShow === expected ? '✅' : '❌';

@@ -2,7 +2,7 @@
   <div class="teacher-works-container">
     <div class="header-container">
       <h1 class="title">Obras por Instrumento</h1>
-      <div class="instruments-filter" v-if="teacherInstruments.length > 0">
+      <div v-if="teacherInstruments.length > 0" class="instruments-filter">
         <span class="filter-label">Filtrar por instrumento:</span>
         <select v-model="selectedInstrument" class="instrument-select">
           <option :value="null">Todos mis instrumentos</option>
@@ -20,7 +20,7 @@
     
     <div v-else-if="error" class="error-container">
       <p class="error-message">{{ error }}</p>
-      <button @click="cargarObrasProfesor" class="retry-button">Reintentar</button>
+      <button class="retry-button" @click="cargarObrasProfesor">Reintentar</button>
     </div>
     
     <div v-else-if="obras.length === 0" class="empty-container">
@@ -64,89 +64,89 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useMontajeStore } from '../store/montaje'
-import { useAuthStore } from '@/stores/auth'
-import { Obra, TipoInstrumento } from '../types'
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { useMontajeStore } from '../store/montaje';
+import { useAuthStore } from '@/stores/auth';
+import { Obra, TipoInstrumento } from '../types';
 
-const router = useRouter()
-const montajeStore = useMontajeStore()
-const authStore = useAuthStore()
+const router = useRouter();
+const montajeStore = useMontajeStore();
+const authStore = useAuthStore();
 
 // Estado
-const selectedInstrument = ref<TipoInstrumento | null>(null)
-const currentRepertorioId = ref('principal') // Por defecto
+const selectedInstrument = ref<TipoInstrumento | null>(null);
+const currentRepertorioId = ref('principal'); // Por defecto
 
 // Getters computed
-const isLoading = computed(() => montajeStore.isLoading)
-const error = computed(() => montajeStore.error)
-const obras = computed(() => montajeStore.obras)
-const teacherInstruments = computed(() => montajeStore.teacherInstruments)
+const isLoading = computed(() => montajeStore.isLoading);
+const error = computed(() => montajeStore.error);
+const obras = computed(() => montajeStore.obras);
+const teacherInstruments = computed(() => montajeStore.teacherInstruments);
 
 // Filtrar obras según el instrumento seleccionado
 const obrasFiltradas = computed(() => {
   if (!selectedInstrument.value) {
-    return obras.value
+    return obras.value;
   }
   
   return obras.value.filter(obra => 
-    obra.instrumentacion?.includes(selectedInstrument.value)
-  )
-})
+    obra.instrumentacion?.includes(selectedInstrument.value),
+  );
+});
 
 // Funciones
 async function cargarObrasProfesor() {
   if (!authStore.user?.uid) {
-    console.error('Usuario no autenticado')
-    return
+    console.error('Usuario no autenticado');
+    return;
   }
   
   try {
-    await montajeStore.cargarObrasPorInstrumentoProfesor(currentRepertorioId.value)
+    await montajeStore.cargarObrasPorInstrumentoProfesor(currentRepertorioId.value);
   } catch (err) {
-    console.error('Error al cargar obras del profesor:', err)
+    console.error('Error al cargar obras del profesor:', err);
   }
 }
 
 function verDetalleObra(obra: Obra) {
-  montajeStore.selectWork(obra)
-  router.push({ name: 'MontajeWorkDetail', params: { workId: obra.id } })
+  montajeStore.selectWork(obra);
+  router.push({ name: 'MontajeWorkDetail', params: { workId: obra.id } });
 }
 
 function getDifficultyClass(dificultad?: string) {
   switch (dificultad?.toLowerCase()) {
-    case 'fácil':
-    case 'facil':
-      return 'difficulty-easy'
-    case 'medio':
-    case 'intermedio':
-      return 'difficulty-medium'
-    case 'difícil':
-    case 'dificil':
-      return 'difficulty-hard'
-    default:
-      return 'difficulty-normal'
+  case 'fácil':
+  case 'facil':
+    return 'difficulty-easy';
+  case 'medio':
+  case 'intermedio':
+    return 'difficulty-medium';
+  case 'difícil':
+  case 'dificil':
+    return 'difficulty-hard';
+  default:
+    return 'difficulty-normal';
   }
 }
 
 function calcularProgreso(obra: Obra): number {
   // Implementar cálculo de progreso según estados de compases para esta obra
   // Por ahora retornamos un valor aleatorio entre 0-100 como ejemplo
-  return Math.floor(Math.random() * 100)
+  return Math.floor(Math.random() * 100);
 }
 
 // Vigilar cambios en el instrumento seleccionado
 watch(selectedInstrument, () => {
-  montajeStore.instrumentFilter = selectedInstrument.value
-})
+  montajeStore.instrumentFilter = selectedInstrument.value;
+});
 
 // Al montar el componente
 onMounted(async () => {
   if (authStore.isTeacher && authStore.user?.uid) {
-    cargarObrasProfesor()
+    cargarObrasProfesor();
   }
-})
+});
 </script>
 
 <style scoped>

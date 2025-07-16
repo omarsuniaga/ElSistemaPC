@@ -5,8 +5,8 @@
         🎼 Progreso Musical
       </h3>
       <button
-        @click="openMontaje"
         class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+        @click="openMontaje"
       >
         Ver todo →
       </button>
@@ -66,39 +66,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { moduleManager } from '../core/ModuleManager'
+import { ref, onMounted } from 'vue';
+import { moduleManager } from '../core/ModuleManager';
 
-const loading = ref(true)
-const stats = ref<any>(null)
-const nextSession = ref<any>(null)
+const loading = ref(true);
+const stats = ref<any>(null);
+const nextSession = ref<any>(null);
 
 const loadStats = async () => {
   try {
     // Simular carga de estadísticas
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
     stats.value = {
       overallProgress: 67,
       activeWorks: 3,
-      totalEvaluations: 45
-    }
+      totalEvaluations: 45,
+    };
     
     nextSession.value = {
       title: 'Ensayo General - Sinfonía No. 40',
-      date: new Date(Date.now() + 86400000).toISOString()
-    }
+      date: new Date(Date.now() + 86400000).toISOString(),
+    };
   } catch (error) {
-    console.error('Error loading Montaje stats:', error)
+    console.error('Error loading Montaje stats:', error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const openMontaje = () => {
-  moduleManager.activateModule('montaje')
-  moduleManager.emitEvent('navigate', { module: 'montaje' })
-}
+  moduleManager.activateModule('montaje');
+  moduleManager.emitEvent('navigate', { module: 'montaje' });
+};
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('es-ES', {
@@ -106,11 +106,11 @@ const formatDate = (dateString: string) => {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
-  })
-}
+    minute: '2-digit',
+  });
+};
 
 onMounted(() => {
-  loadStats()
-})
+  loadStats();
+});
 </script>

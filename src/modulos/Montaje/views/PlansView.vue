@@ -97,106 +97,106 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import {useRouter} from "vue-router"
-import {useMontaje} from "../composables/useMontaje"
-import type {Plan} from "../types"
-import PlanCard from "../components/PlanCard.vue"
-import PlanFormModal from "../components/PlanFormModal.vue"
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useMontaje } from '../composables/useMontaje';
+import type { Plan } from '../types';
+import PlanCard from '../components/PlanCard.vue';
+import PlanFormModal from '../components/PlanFormModal.vue';
 
-const router = useRouter()
-const {plans, loading, createPlan, updatePlan, deletePlan: removePlan} = useMontaje()
+const router = useRouter();
+const { plans, loading, createPlan, updatePlan, deletePlan: removePlan } = useMontaje();
 
 // State
-const showCreateModal = ref(false)
-const showEditModal = ref(false)
-const showDeleteModal = ref(false)
-const selectedPlan = ref<Plan | null>(null)
-const planToDelete = ref<Plan | null>(null)
-const searchQuery = ref("")
+const showCreateModal = ref(false);
+const showEditModal = ref(false);
+const showDeleteModal = ref(false);
+const selectedPlan = ref<Plan | null>(null);
+const planToDelete = ref<Plan | null>(null);
+const searchQuery = ref('');
 
 // Filters
 const filters = ref({
-  status: "",
-  period: "",
-})
+  status: '',
+  period: '',
+});
 
 // Computed
 const filteredPlans = computed(() => {
-  let result = plans.value
+  let result = plans.value;
 
   if (filters.value.status) {
-    result = result.filter((plan) => plan.status === filters.value.status)
+    result = result.filter((plan) => plan.status === filters.value.status);
   }
 
   if (filters.value.period) {
-    result = result.filter((plan) => plan.period === filters.value.period)
+    result = result.filter((plan) => plan.period === filters.value.period);
   }
 
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
+    const query = searchQuery.value.toLowerCase();
     result = result.filter(
       (plan) =>
-        plan.title.toLowerCase().includes(query) || plan.description.toLowerCase().includes(query)
-    )
+        plan.title.toLowerCase().includes(query) || plan.description.toLowerCase().includes(query),
+    );
   }
 
-  return result.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-})
+  return result.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+});
 
 // Methods
 const editPlan = (plan: Plan) => {
-  selectedPlan.value = plan
-  showEditModal.value = true
-}
+  selectedPlan.value = plan;
+  showEditModal.value = true;
+};
 
 const viewPlan = (plan: Plan) => {
-  router.push(`/montaje/planes/${plan.id}`)
-}
+  router.push(`/montaje/planes/${plan.id}`);
+};
 
 const deletePlan = (plan: Plan) => {
-  planToDelete.value = plan
-  showDeleteModal.value = true
-}
+  planToDelete.value = plan;
+  showDeleteModal.value = true;
+};
 
 const handleSavePlan = async (planData: Partial<Plan>) => {
   try {
     if (selectedPlan.value) {
-      await updatePlan(selectedPlan.value.id, planData)
+      await updatePlan(selectedPlan.value.id, planData);
     } else {
-      await createPlan(planData)
+      await createPlan(planData);
     }
-    closeModal()
+    closeModal();
   } catch (error) {
-    console.error("Error saving plan:", error)
+    console.error('Error saving plan:', error);
   }
-}
+};
 
 const confirmDelete = async () => {
   if (planToDelete.value) {
     try {
-      await removePlan(planToDelete.value.id)
-      closeDeleteModal()
+      await removePlan(planToDelete.value.id);
+      closeDeleteModal();
     } catch (error) {
-      console.error("Error deleting plan:", error)
+      console.error('Error deleting plan:', error);
     }
   }
-}
+};
 
 const closeModal = () => {
-  showCreateModal.value = false
-  showEditModal.value = false
-  selectedPlan.value = null
-}
+  showCreateModal.value = false;
+  showEditModal.value = false;
+  selectedPlan.value = null;
+};
 
 const closeDeleteModal = () => {
-  showDeleteModal.value = false
-  planToDelete.value = null
-}
+  showDeleteModal.value = false;
+  planToDelete.value = null;
+};
 
 onMounted(() => {
   // Plans are loaded through the composable
-})
+});
 </script>
 
 <style scoped>

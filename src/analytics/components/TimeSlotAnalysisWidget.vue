@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed} from "vue"
+import { computed } from 'vue';
 
 interface TimeSlot {
   time: string
@@ -150,82 +150,82 @@ interface Props {
   loading?: boolean
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
 // Horarios más populares
 const popularSlots = computed(() => {
   return props.timeSlots
     .filter((slot) => slot.attendance >= 80)
     .sort((a, b) => b.attendance - a.attendance)
-    .slice(0, 4)
-})
+    .slice(0, 4);
+});
 
 // Horarios con baja asistencia
 const lowAttendanceSlots = computed(() => {
   return props.timeSlots
     .filter((slot) => slot.attendance < 60)
-    .sort((a, b) => a.attendance - b.attendance)
-})
+    .sort((a, b) => a.attendance - b.attendance);
+});
 
 // Distribución semanal simulada
 const weeklyDistribution = computed<WeekDay[]>(() => [
-  {name: "L", efficiency: 0.75},
-  {name: "M", efficiency: 0.85},
-  {name: "X", efficiency: 0.9},
-  {name: "J", efficiency: 0.82},
-  {name: "V", efficiency: 0.68},
-  {name: "S", efficiency: 0.55},
-  {name: "D", efficiency: 0.45},
-])
+  { name: 'L', efficiency: 0.75 },
+  { name: 'M', efficiency: 0.85 },
+  { name: 'X', efficiency: 0.9 },
+  { name: 'J', efficiency: 0.82 },
+  { name: 'V', efficiency: 0.68 },
+  { name: 'S', efficiency: 0.55 },
+  { name: 'D', efficiency: 0.45 },
+]);
 
 // Recomendaciones inteligentes
 const recommendations = computed<Recommendation[]>(() => [
   {
-    id: "1",
-    icon: "🕒",
-    title: "Consolidar horarios de baja demanda",
-    description: "Combinar clases de horarios con < 60% de asistencia",
-    impact: "Alto",
+    id: '1',
+    icon: '🕒',
+    title: 'Consolidar horarios de baja demanda',
+    description: 'Combinar clases de horarios con < 60% de asistencia',
+    impact: 'Alto',
   },
   {
-    id: "2",
-    icon: "📈",
-    title: "Promocionar horarios populares",
-    description: "Duplicar clases en horarios con > 90% de asistencia",
-    impact: "Medio",
+    id: '2',
+    icon: '📈',
+    title: 'Promocionar horarios populares',
+    description: 'Duplicar clases en horarios con > 90% de asistencia',
+    impact: 'Medio',
   },
   {
-    id: "3",
-    icon: "💡",
-    title: "Optimizar fines de semana",
-    description: "Crear actividades especiales para sábados y domingos",
-    impact: "Alto",
+    id: '3',
+    icon: '💡',
+    title: 'Optimizar fines de semana',
+    description: 'Crear actividades especiales para sábados y domingos',
+    impact: 'Alto',
   },
-])
+]);
 
 // Métricas calculadas
 const overallEfficiency = computed(() => {
-  if (props.timeSlots.length === 0) return 0
-  const total = props.timeSlots.reduce((sum, slot) => sum + slot.efficiency, 0)
-  return total / props.timeSlots.length
-})
+  if (props.timeSlots.length === 0) return 0;
+  const total = props.timeSlots.reduce((sum, slot) => sum + slot.efficiency, 0);
+  return total / props.timeSlots.length;
+});
 
 const optimalSlots = computed(() => {
-  return props.timeSlots.filter((slot) => slot.efficiency >= 0.8).length
-})
+  return props.timeSlots.filter((slot) => slot.efficiency >= 0.8).length;
+});
 
 const improvableSlots = computed(() => {
-  return props.timeSlots.filter((slot) => slot.efficiency < 0.6).length
-})
+  return props.timeSlots.filter((slot) => slot.efficiency < 0.6).length;
+});
 
 function getDayColor(efficiency: number): string {
-  if (efficiency >= 0.8) return "bg-green-500"
-  if (efficiency >= 0.6) return "bg-yellow-500"
-  return "bg-red-500"
+  if (efficiency >= 0.8) return 'bg-green-500';
+  if (efficiency >= 0.6) return 'bg-yellow-500';
+  return 'bg-red-500';
 }
 
 function suggestImprovement(slot: TimeSlot) {
-  console.log("Sugiriendo mejoras para:", slot.time)
+  console.log('Sugiriendo mejoras para:', slot.time);
   // Implementar lógica de mejoras específicas
 }
 </script>

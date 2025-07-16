@@ -72,11 +72,11 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted} from "vue"
-import ListComponent from "./ListComponent.vue"
-import {useTemplateStore} from "../store/templateStore"
-import {useTemplate} from "../composables/useTemplate"
-import type {TemplateItem} from "../types/template.types"
+import { ref, computed, onMounted } from 'vue';
+import ListComponent from './ListComponent.vue';
+import { useTemplateStore } from '../store/templateStore';
+import { useTemplate } from '../composables/useTemplate';
+import type { TemplateItem } from '../types/template.types';
 
 // Props
 interface Props {
@@ -86,55 +86,55 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: "Template Module",
-  description: "Ejemplo de componente principal del módulo",
+  title: 'Template Module',
+  description: 'Ejemplo de componente principal del módulo',
   showActions: true,
-})
+});
 
 // Emits
 const emit = defineEmits<{
-  "item-added": [item: TemplateItem]
-  "item-edited": [item: TemplateItem]
-  "item-deleted": [id: string]
-}>()
+  'item-added': [item: TemplateItem]
+  'item-edited': [item: TemplateItem]
+  'item-deleted': [id: string]
+}>();
 
 // Store y composables
-const templateStore = useTemplateStore()
-const {loading, error, refreshItems} = useTemplate()
+const templateStore = useTemplateStore();
+const { loading, error, refreshItems } = useTemplate();
 
 // Estado local
-const items = computed(() => templateStore.items)
+const items = computed(() => templateStore.items);
 
 // Métodos
 const handleAdd = () => {
   // Lógica para agregar nuevo elemento
-  console.log("Agregar nuevo elemento")
-  emit("item-added", {
+  console.log('Agregar nuevo elemento');
+  emit('item-added', {
     id: Date.now().toString(),
-    name: "Nuevo elemento",
-    description: "Descripción del elemento",
+    name: 'Nuevo elemento',
+    description: 'Descripción del elemento',
     createdAt: new Date(),
-  } as TemplateItem)
-}
+  } as TemplateItem);
+};
 
 const handleEdit = (item: TemplateItem) => {
-  console.log("Editar elemento:", item)
-  emit("item-edited", item)
-}
+  console.log('Editar elemento:', item);
+  emit('item-edited', item);
+};
 
 const handleDelete = (item: TemplateItem) => {
-  console.log("Eliminar elemento:", item)
-  emit("item-deleted", item.id)
-}
+  console.log('Eliminar elemento:', item);
+  emit('item-deleted', item.id);
+};
 
 const handleRefresh = async () => {
-  await refreshItems()
-}
+  await refreshItems();
+};
 
 // Lifecycle
 onMounted(() => {
-  templateStore.fetchItems()
-})
+  templateStore.fetchItems();
+});
 </script>
 
 <style scoped>

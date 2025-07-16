@@ -1,235 +1,3 @@
-<script setup lang="ts">
-import {ref, onMounted, watch, onUnmounted, shallowRef} from "vue"
-import {
-  getFirestore,
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  updateDoc,
-  onSnapshot,
-} from "firebase/firestore"
-import {useAuthStore} from "../stores/auth"
-import {
-  CheckIcon,
-  XMarkIcon,
-  UserIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  CalendarIcon,
-} from "@heroicons/vue/24/outline"
-import {safeGet, safeArrayLength} from "../utils/safeAccess"
-import {useAdminErrorHandling} from "../composables/useAdminErrorHandling"
-
-const authStore = useAuthStore()
-const db = getFirestore()
-const {handleError, logError} = useAdminErrorHandling()
-
-interface PendingUser {
-  id: string
-  uid: string
-  name: string
-  email: string
-  phone?: string
-  role: string
-  status: string
-  profileCompleted: boolean
-  createdAt: string
-  availability?: {
-    type: "complete" | "partial"
-    schedule: {day: string; startTime: string; endTime: string; enabled: boolean}[]
-  }
-}
-
-const pendingUsers = ref<PendingUser[]>([])
-const isLoading = ref(true)
-const error = ref("")
-const showApproveModal = ref(false)
-const showRejectModal = ref(false)
-const selectedUser = ref<PendingUser | null>(null)
-const rejectReason = ref("")
-const isProcessing = ref(false)
-const selectedRole = ref("") // New: Role to asign
-
-// Definir los eventos emitidos
-const emit = defineEmits(["request-processed", "pending-count-changed"])
-
-// Referencia para la suscripción
-const unsubscribeRef = shallowRef<(() => void) | null>(null)
-
-// Suscribir a cambios en tiempo real de manera eficiente
-const subscribeToPendingRequests = () => {
-  // Cancelar suscripción previa si existe
-  if (unsubscribeRef.value) {
-    unsubscribeRef.value()
-    unsubscribeRef.value = null
-  }
-
-  const usersRef = collection(db, "USERS")
-  const q = query(usersRef, where("status", "==", "pendiente"))
-
-  unsubscribeRef.value = onSnapshot(
-    q,
-    (snapshot) => {
-      pendingUsers.value = snapshot.docs
-        .map((doc) => {
-          const data = doc.data() as PendingUser
-          return {
-            ...data,
-            id: doc.id,
-            createdAt: data.createdAt || new Date().toISOString(),
-          }
-        })
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      // Emitir el número actual de solicitudes pendientes
-      emit("pending-count-changed", safeArrayLength(pendingUsers.value))
-      isLoading.value = false
-    },
-    (err) => {
-      logError("Error al obtener usuarios pendientes", err)
-      error.value = handleError(err, "Error al cargar las solicitudes")
-      isLoading.value = false
-    }
-  )
-
-  return unsubscribeRef.value
-}
-
-// Agregar validación para el rol
-const validateApproval = () => {
-  if (!selectedRole.value) {
-    error.value = "Por favor, selecciona un rol antes de aprobar la solicitud"
-    return false
-  }
-  error.value = ""
-  return true
-}
-
-// Actualizar la función de aprobación para validar el rol primero
-const approveUser = async () => {
-  if (!selectedUser.value) return
-
-  // Validar que se haya seleccionado un rol
-  if (!validateApproval()) return
-
-  isProcessing.value = true
-  try {
-    const userRef = doc(db, "USERS", selectedUser.value.id)
-    await updateDoc(userRef, {
-      status: "aprobado",
-      role: selectedRole.value, // asignar el rol seleccionado
-      updatedAt: new Date().toISOString(),
-    })
-
-    // La actualización en tiempo real manejará la eliminación de la lista
-    emit("request-processed")
-
-    // Cerrar modal y resetear el rol seleccionado
-    closeModals()
-  } catch (err) {
-    logError("Error al aprobar usuario", err)
-    error.value = handleError(err, "Error al aprobar la solicitud")
-  } finally {
-    isProcessing.value = false
-  }
-}
-
-// Rechazar un usuario
-const rejectUser = async () => {
-  if (!selectedUser.value) return
-
-  isProcessing.value = true
-  try {
-    const userRef = doc(db, "USERS", selectedUser.value.id)
-    await updateDoc(userRef, {
-      status: "rechazado",
-      rejectionReason: rejectReason.value,
-      updatedAt: new Date().toISOString(),
-    })
-
-    // La actualización en tiempo real manejará la eliminación de la lista
-    emit("request-processed")
-
-    // Cerrar modal
-    closeModals()
-  } catch (err) {
-    logError("Error al rechazar usuario", err)
-    error.value = handleError(err, "Error al rechazar la solicitud")
-  } finally {
-    isProcessing.value = false
-  }
-}
-
-// Actualizar la función para mostrar el modal de aprobación
-const showApproveConfirm = (user: PendingUser) => {
-  selectedUser.value = user
-  // Limpiar el rol seleccionado para obligar a elegir uno nuevo
-  selectedRole.value = ""
-  // Mostrar el modal
-  showApproveModal.value = true
-}
-
-// Gestión de modales
-const showRejectConfirm = (user: PendingUser) => {
-  selectedUser.value = user
-  rejectReason.value = ""
-  showRejectModal.value = true
-}
-
-// Actualizar la función de cerrar modales para resetear el rol
-const closeModals = () => {
-  showApproveModal.value = false
-  showRejectModal.value = false
-  selectedUser.value = null
-  selectedRole.value = ""
-  rejectReason.value = ""
-  error.value = ""
-}
-
-// Formatear fecha
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
-
-// Cargar solicitudes al montar el componente
-onMounted(() => {
-  if (!["Director", "Administrador"].includes(authStore.user?.role || "")) {
-    error.value = "No tienes permisos para ver esta sección"
-    isLoading.value = false
-    return
-  }
-
-  // Iniciar suscripción
-  subscribeToPendingRequests()
-})
-
-// Limpiar suscripción al desmontar
-onUnmounted(() => {
-  if (unsubscribeRef.value) {
-    unsubscribeRef.value()
-    unsubscribeRef.value = null
-  }
-})
-
-// Observar cambios en el estado de autenticación
-watch(
-  () => authStore.user,
-  (newValue) => {
-    if (newValue && ["Director", "Administrador"].includes(newValue.role || "")) {
-      subscribeToPendingRequests()
-    }
-  }
-)
-</script>
-
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
@@ -574,6 +342,238 @@ watch(
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, onMounted, watch, onUnmounted, shallowRef } from 'vue';
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+  onSnapshot,
+} from 'firebase/firestore';
+import { useAuthStore } from '../stores/auth';
+import {
+  CheckIcon,
+  XMarkIcon,
+  UserIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  CalendarIcon,
+} from '@heroicons/vue/24/outline';
+import { safeGet, safeArrayLength } from '../utils/safeAccess';
+import { useAdminErrorHandling } from '../composables/useAdminErrorHandling';
+
+const authStore = useAuthStore();
+const db = getFirestore();
+const { handleError, logError } = useAdminErrorHandling();
+
+interface PendingUser {
+  id: string
+  uid: string
+  name: string
+  email: string
+  phone?: string
+  role: string
+  status: string
+  profileCompleted: boolean
+  createdAt: string
+  availability?: {
+    type: 'complete' | 'partial'
+    schedule: {day: string; startTime: string; endTime: string; enabled: boolean}[]
+  }
+}
+
+const pendingUsers = ref<PendingUser[]>([]);
+const isLoading = ref(true);
+const error = ref('');
+const showApproveModal = ref(false);
+const showRejectModal = ref(false);
+const selectedUser = ref<PendingUser | null>(null);
+const rejectReason = ref('');
+const isProcessing = ref(false);
+const selectedRole = ref(''); // New: Role to asign
+
+// Definir los eventos emitidos
+const emit = defineEmits(['request-processed', 'pending-count-changed']);
+
+// Referencia para la suscripción
+const unsubscribeRef = shallowRef<(() => void) | null>(null);
+
+// Suscribir a cambios en tiempo real de manera eficiente
+const subscribeToPendingRequests = () => {
+  // Cancelar suscripción previa si existe
+  if (unsubscribeRef.value) {
+    unsubscribeRef.value();
+    unsubscribeRef.value = null;
+  }
+
+  const usersRef = collection(db, 'USERS');
+  const q = query(usersRef, where('status', '==', 'pendiente'));
+
+  unsubscribeRef.value = onSnapshot(
+    q,
+    (snapshot) => {
+      pendingUsers.value = snapshot.docs
+        .map((doc) => {
+          const data = doc.data() as PendingUser;
+          return {
+            ...data,
+            id: doc.id,
+            createdAt: data.createdAt || new Date().toISOString(),
+          };
+        })
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      // Emitir el número actual de solicitudes pendientes
+      emit('pending-count-changed', safeArrayLength(pendingUsers.value));
+      isLoading.value = false;
+    },
+    (err) => {
+      logError('Error al obtener usuarios pendientes', err);
+      error.value = handleError(err, 'Error al cargar las solicitudes');
+      isLoading.value = false;
+    },
+  );
+
+  return unsubscribeRef.value;
+};
+
+// Agregar validación para el rol
+const validateApproval = () => {
+  if (!selectedRole.value) {
+    error.value = 'Por favor, selecciona un rol antes de aprobar la solicitud';
+    return false;
+  }
+  error.value = '';
+  return true;
+};
+
+// Actualizar la función de aprobación para validar el rol primero
+const approveUser = async () => {
+  if (!selectedUser.value) return;
+
+  // Validar que se haya seleccionado un rol
+  if (!validateApproval()) return;
+
+  isProcessing.value = true;
+  try {
+    const userRef = doc(db, 'USERS', selectedUser.value.id);
+    await updateDoc(userRef, {
+      status: 'aprobado',
+      role: selectedRole.value, // asignar el rol seleccionado
+      updatedAt: new Date().toISOString(),
+    });
+
+    // La actualización en tiempo real manejará la eliminación de la lista
+    emit('request-processed');
+
+    // Cerrar modal y resetear el rol seleccionado
+    closeModals();
+  } catch (err) {
+    logError('Error al aprobar usuario', err);
+    error.value = handleError(err, 'Error al aprobar la solicitud');
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+// Rechazar un usuario
+const rejectUser = async () => {
+  if (!selectedUser.value) return;
+
+  isProcessing.value = true;
+  try {
+    const userRef = doc(db, 'USERS', selectedUser.value.id);
+    await updateDoc(userRef, {
+      status: 'rechazado',
+      rejectionReason: rejectReason.value,
+      updatedAt: new Date().toISOString(),
+    });
+
+    // La actualización en tiempo real manejará la eliminación de la lista
+    emit('request-processed');
+
+    // Cerrar modal
+    closeModals();
+  } catch (err) {
+    logError('Error al rechazar usuario', err);
+    error.value = handleError(err, 'Error al rechazar la solicitud');
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+// Actualizar la función para mostrar el modal de aprobación
+const showApproveConfirm = (user: PendingUser) => {
+  selectedUser.value = user;
+  // Limpiar el rol seleccionado para obligar a elegir uno nuevo
+  selectedRole.value = '';
+  // Mostrar el modal
+  showApproveModal.value = true;
+};
+
+// Gestión de modales
+const showRejectConfirm = (user: PendingUser) => {
+  selectedUser.value = user;
+  rejectReason.value = '';
+  showRejectModal.value = true;
+};
+
+// Actualizar la función de cerrar modales para resetear el rol
+const closeModals = () => {
+  showApproveModal.value = false;
+  showRejectModal.value = false;
+  selectedUser.value = null;
+  selectedRole.value = '';
+  rejectReason.value = '';
+  error.value = '';
+};
+
+// Formatear fecha
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+// Cargar solicitudes al montar el componente
+onMounted(() => {
+  if (!['Director', 'Administrador'].includes(authStore.user?.role || '')) {
+    error.value = 'No tienes permisos para ver esta sección';
+    isLoading.value = false;
+    return;
+  }
+
+  // Iniciar suscripción
+  subscribeToPendingRequests();
+});
+
+// Limpiar suscripción al desmontar
+onUnmounted(() => {
+  if (unsubscribeRef.value) {
+    unsubscribeRef.value();
+    unsubscribeRef.value = null;
+  }
+});
+
+// Observar cambios en el estado de autenticación
+watch(
+  () => authStore.user,
+  (newValue) => {
+    if (newValue && ['Director', 'Administrador'].includes(newValue.role || '')) {
+      subscribeToPendingRequests();
+    }
+  },
+);
+</script>
 
 <style lang="postcss">
 .btn-sm {

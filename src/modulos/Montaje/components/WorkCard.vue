@@ -181,8 +181,8 @@
 </template>
 
 <script setup lang="ts">
-import {ref, computed, onMounted, onUnmounted} from "vue"
-import type {Work, InstrumentType} from "../types"
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import type { Work, InstrumentType } from '../types';
 
 interface Props {
   work: Work
@@ -191,118 +191,118 @@ interface Props {
 }
 
 interface Emits {
-  (e: "view", work: Work): void
-  (e: "edit", work: Work): void
-  (e: "duplicate", work: Work): void
-  (e: "evaluate", work: Work): void
-  (e: "delete", work: Work): void
+  (e: 'view', work: Work): void
+  (e: 'edit', work: Work): void
+  (e: 'duplicate', work: Work): void
+  (e: 'evaluate', work: Work): void
+  (e: 'delete', work: Work): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   averageScore: 0,
   progressPercentage: undefined,
-})
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
-const showActions = ref(false)
+const showActions = ref(false);
 
 // Computed properties
 const statusClasses = computed(() => {
-  const baseClasses = "px-2 py-1 rounded-full text-xs font-medium"
+  const baseClasses = 'px-2 py-1 rounded-full text-xs font-medium';
   switch (props.work.status) {
-    case "active":
-      return `${baseClasses} bg-green-100 text-green-800`
-    case "inactive":
-      return `${baseClasses} bg-gray-100 text-gray-800`
-    case "completed":
-      return `${baseClasses} bg-blue-100 text-blue-800`
-    case "archived":
-      return `${baseClasses} bg-yellow-100 text-yellow-800`
-    default:
-      return `${baseClasses} bg-gray-100 text-gray-800`
+  case 'active':
+    return `${baseClasses} bg-green-100 text-green-800`;
+  case 'inactive':
+    return `${baseClasses} bg-gray-100 text-gray-800`;
+  case 'completed':
+    return `${baseClasses} bg-blue-100 text-blue-800`;
+  case 'archived':
+    return `${baseClasses} bg-yellow-100 text-yellow-800`;
+  default:
+    return `${baseClasses} bg-gray-100 text-gray-800`;
   }
-})
+});
 
 const statusText = computed(() => {
   const statusMap = {
-    active: "Activa",
-    inactive: "Inactiva",
-    completed: "Completada",
-    archived: "Archivada",
-  }
-  return statusMap[props.work.status] || props.work.status
-})
+    active: 'Activa',
+    inactive: 'Inactiva',
+    completed: 'Completada',
+    archived: 'Archivada',
+  };
+  return statusMap[props.work.status] || props.work.status;
+});
 
 const difficultyClasses = computed(() => {
-  const baseClasses = "px-2 py-1 rounded-full text-xs font-medium"
+  const baseClasses = 'px-2 py-1 rounded-full text-xs font-medium';
   switch (props.work.difficulty) {
-    case "beginner":
-      return `${baseClasses} bg-green-100 text-green-800`
-    case "intermediate":
-      return `${baseClasses} bg-yellow-100 text-yellow-800`
-    case "advanced":
-      return `${baseClasses} bg-orange-100 text-orange-800`
-    case "professional":
-      return `${baseClasses} bg-red-100 text-red-800`
-    default:
-      return `${baseClasses} bg-gray-100 text-gray-800`
+  case 'beginner':
+    return `${baseClasses} bg-green-100 text-green-800`;
+  case 'intermediate':
+    return `${baseClasses} bg-yellow-100 text-yellow-800`;
+  case 'advanced':
+    return `${baseClasses} bg-orange-100 text-orange-800`;
+  case 'professional':
+    return `${baseClasses} bg-red-100 text-red-800`;
+  default:
+    return `${baseClasses} bg-gray-100 text-gray-800`;
   }
-})
+});
 
 const progressBarClasses = computed(() => {
-  if (props.progressPercentage === undefined) return "bg-gray-300"
+  if (props.progressPercentage === undefined) return 'bg-gray-300';
 
-  if (props.progressPercentage >= 80) return "bg-green-500"
-  if (props.progressPercentage >= 60) return "bg-blue-500"
-  if (props.progressPercentage >= 40) return "bg-yellow-500"
-  return "bg-red-500"
-})
+  if (props.progressPercentage >= 80) return 'bg-green-500';
+  if (props.progressPercentage >= 60) return 'bg-blue-500';
+  if (props.progressPercentage >= 40) return 'bg-yellow-500';
+  return 'bg-red-500';
+});
 
 const instrumentLabels: Record<InstrumentType, string> = {
-  violin: "Violín",
-  viola: "Viola",
-  cello: "Violonchelo",
-  bass: "Contrabajo",
-  flute: "Flauta",
-  oboe: "Oboe",
-  clarinet: "Clarinete",
-  bassoon: "Fagot",
-  horn: "Trompa",
-  trumpet: "Trompeta",
-  trombone: "Trombón",
-  tuba: "Tuba",
-  timpani: "Timbales",
-  percussion: "Percusión",
-  piano: "Piano",
-  harp: "Arpa",
-}
+  violin: 'Violín',
+  viola: 'Viola',
+  cello: 'Violonchelo',
+  bass: 'Contrabajo',
+  flute: 'Flauta',
+  oboe: 'Oboe',
+  clarinet: 'Clarinete',
+  bassoon: 'Fagot',
+  horn: 'Trompa',
+  trumpet: 'Trompeta',
+  trombone: 'Trombón',
+  tuba: 'Tuba',
+  timpani: 'Timbales',
+  percussion: 'Percusión',
+  piano: 'Piano',
+  harp: 'Arpa',
+};
 
 // Methods
 const formatDate = (date: Date | string) => {
-  const d = typeof date === "string" ? new Date(date) : date
-  return d.toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  })
-}
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+};
 
 // Close actions dropdown when clicking outside
 const handleClickOutside = (event: Event) => {
-  const target = event.target as HTMLElement
-  if (!target.closest(".relative")) {
-    showActions.value = false
+  const target = event.target as HTMLElement;
+  if (!target.closest('.relative')) {
+    showActions.value = false;
   }
-}
+};
 
 onMounted(() => {
-  document.addEventListener("click", handleClickOutside)
-})
+  document.addEventListener('click', handleClickOutside);
+});
 
 onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside)
-})
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style scoped>
