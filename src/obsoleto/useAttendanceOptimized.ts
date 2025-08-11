@@ -36,6 +36,7 @@ export function useAttendanceOptimized() {
   // 🔄 Queue de actualizaciones pendientes
   const pendingUpdates = ref(new Set<string>());
   const updateQueue = ref<Array<{type: string; data: any; timestamp: number}>>([]);
+  const calendarIndicators = ref<string[]>([]);
 
   /**
    * 🧠 Sistema de cache inteligente
@@ -510,8 +511,19 @@ export function useAttendanceOptimized() {
   );
 
   // 🚀 Lifecycle
+  const loadCalendarIndicators = async () => {
+    try {
+      await attendanceStore.fetchRegisteredAttendanceDates();
+      calendarIndicators.value = attendanceStore.datesWithRecords;
+    } catch (err) {
+      console.error('❌ [AttendanceOptimized] Error loading calendar indicators:', err);
+      error.value = 'Error al cargar indicadores del calendario';
+    }
+  };
+
   onMounted(() => {
     preloadCriticalData();
+    loadCalendarIndicators();
 
     // Limpieza periódica cada 2 minutos
     const cleanupInterval = setInterval(cleanup, 2 * 60 * 1000);
@@ -550,5 +562,9 @@ export function useAttendanceOptimized() {
 
     // Métodos de limpieza
     cleanup,
+
+    // Indicadores de calendario
+    calendarIndicators,
+    loadCalendarIndicators,
   };
 }

@@ -10,8 +10,6 @@
       
     <!-- 📝 FORMULARIO DE ASISTENCIA -->
     <div v-if="!isInitializing && currentClass && students.length > 0" class="pb-20">
-      <!-- Grid de tarjetas de resumen -->
-
       <!-- Header responsivo -->
       <div class="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0 px-4 py-4">
         <!-- Buscador y acciones -->
@@ -29,21 +27,29 @@
           />
         </div>
   <!-- FAB: Botón guardar asistencia/observación flotante -->
-  <button
-    class="fixed z-40 right-6 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg p-4 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
-    style="box-shadow: 0 4px 16px rgba(0,0,0,0.18);"
-    :disabled="isSaving || !canSave"
-    :class="{'opacity-50 cursor-not-allowed': !canSave || isSaving}"
-    @click="handleManualSave"
-    title="Guardar asistencia y observación"
-    aria-label="Guardar asistencia y observación"
-  >
-    <!-- Material Design Save Icon -->
-    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10zm-5 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm5-9H7v4h10V7z" />
-    </svg>
-    <span class="sr-only">Guardar asistencia y observación</span>
-  </button>
+  <div class="fixed z-40 right-6 top-1/2 transform -translate-y-1/2" style="width:56px;height:56px;">
+    <button
+      class="w-full h-full bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg p-4 flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2"
+      style="box-shadow: 0 4px 16px rgba(0,0,0,0.18);"
+      :disabled="isSaving || !canSave"
+      :class="{'opacity-50 cursor-not-allowed': !canSave || isSaving}"
+      @click="handleManualSave"
+      title="Guardar asistencia y observación"
+      aria-label="Guardar asistencia y observación"
+    >
+      <!-- Material Design Save Icon -->
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h10zm-5 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm5-9H7v4h10V7z" />
+      </svg>
+      <span class="sr-only">Guardar asistencia y observación</span>
+    </button>
+    <div
+      v-if="isSaving || !canSave"
+      class="absolute inset-0 z-50 cursor-pointer"
+      style="background:transparent;"
+      @mousedown="handleSaveButtonPress"
+    ></div>
+  </div>
 
         <!-- Resumen de asistencia -->
         <div class="flex-shrink-0 w-full md:w-auto">
@@ -115,7 +121,7 @@
       </div>
 
       <!-- Observaciones de la clase -->
-      <div class="mx-4 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+  <div ref="observationSection" class="mx-4 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <ClassObservationInput
           v-model="classObservations"
           :class-id="selectedClass"
@@ -319,22 +325,11 @@
 </template>
 
 <script setup lang="ts">
-import { format, parseISO } from 'date-fns';
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import AttendanceExportService from '../../services/exportService';
-import { useToast } from 'vue-toast-notification';
-import 'vue-toast-notification/dist/theme-sugar.css';
-import { es } from 'date-fns/locale';
 
-// Inicializar el servicio de toast
-const toast = useToast();
-
-// Stores
-import { useClassesStore } from '../../../Classes/store/classes';
-import { useStudentsStore } from '../../../Students/store/students';
-import { useAttendanceStore } from '../../store/attendance';
-import { useAuthStore } from '../../../../stores/auth';
+// Composables
+import { useAttendanceFormLogic } from '../../composables/useAttendanceFormLogic';
 
 // Componentes
 import AttendanceHeader from '../../components/form/AttendanceHeader.vue';
@@ -344,665 +339,57 @@ import ClassObservationInput from '../../components/form/ClassObservationInput.v
 import AttendanceToolbar from '../../components/form/AttendanceToolbar.vue';
 import JustifiedAbsenceModal from '../../../../components/JustifiedAbsenceModal.vue';
 
-// Tipos
-type AttendanceStatus = 'Pendiente' | 'Presente' | 'Ausente' | 'Tardanza' | 'Justificado';
+// Usar el composable principal
+const {
+  students,
+  classInfo,
+  searchQuery,
+  classObservations,
+  hasUnsavedChanges,
+  isInitializing,
+  loading,
+  isSaving,
+  error,
+  lastSaved,
+  showUnsavedWarning,
+  showJustificationModal,
+  selectedStudentForJustification,
+  attendanceRecords,
+  selectedDate,
+  selectedClass,
+  observationSection,
+  canSave,
+  displayedStudents,
+  currentClass,
+  attendanceStats,
+  formattedDate,
+  updateStudentStatus,
+  handleAttendanceUpdate,
+  handleManualSave,
+  handleSaveButtonPress,
+  handleOpenJustificationModal,
+  handleSaveJustification,
+  handleCloseJustificationModal,
+  handleSearch,
+  clearSearch,
+  markAllPresent,
+  resetAllStatuses,
+  navigateBack,
+  exitWithoutSaving,
+  confirmExitWithoutSaving,
+  initializeForm,
+  updateAttendanceRecords,
+  convertToGridStatus,
+  convertToAttendanceRecords,
+  showExportModal,
+  closeExportModal,
+  handleExportPDF,
+  handleExportExcel,
+  handleExportHTML,
+  handleShareWhatsApp,
+} = useAttendanceFormLogic();
 
-interface Student {
-  id: string;
-  nombre: string;
-  apellido: string;
-  status?: AttendanceStatus; // 'Presente', 'Ausente', etc.
-  name?: string;
-  justification?: string;
-  isChanged?: boolean;
-}
-
-// Definimos los tipos de estado de asistencia que usa el componente hijo
-type AttendanceGridStatus = 'pending' | 'absent' | 'present' | 'late' | 'justified';
-
-interface IAttendanceRecord {
-  studentId: string;
-  status: AttendanceGridStatus; 
-  justification?: string;
-}
-
-// Router y Route
-const route = useRoute();
-const router = useRouter();
-
-// Stores
-const classesStore = useClassesStore();
-const studentsStore = useStudentsStore();
-const attendanceStore = useAttendanceStore();
-const attendanceRecords = ref<IAttendanceRecord[]>([]);
-const authStore = useAuthStore();
-
-// Estado del componente
-const students = ref<Student[]>([]);
-const classInfo = ref<any | null>(null);
-const searchQuery = ref('');
-const classObservations = ref('');
-const hasUnsavedChanges = ref(false);
-const isInitializing = ref(true);
-const loading = ref(false);
-const isSaving = ref(false);
-const error = ref<string | null>(null);
-const lastSaved = ref<Date | null>(null);
-const showUnsavedWarning = ref(false);
-const showJustificationModal = ref(false);
-const selectedStudentForJustification = ref<any | null>(null);
-const showExportModal = ref(false);
-const closeExportModal = () => {
-  showExportModal.value = false;
-};
-
-// Función para mapear estados de la UI a códigos de exportación
-const mapStatusToExport = (status: string) => {
-  const statusMap = {
-    'Presente': 'present',
-    'Ausente': 'absent',
-    'Tardanza': 'late',
-    'Justificado': 'justified',
-    'Pendiente': 'pending'
-  };
-  return statusMap[status] || 'pending';
-};
-
-// Funciones de manejo de exportación
-const handleExportPDF = async () => {
-  // La función exportAttendanceData ya maneja las notificaciones y cierre del modal
-  await exportAttendanceData('pdf');
-};
-
-const handleExportExcel = async () => {
-  // La función exportAttendanceData ya maneja las notificaciones y cierre del modal
-  await exportAttendanceData('excel');
-};
-
-const handleExportHTML = async () => {
-  // La función exportAttendanceData ya maneja las notificaciones y cierre del modal
-  await exportAttendanceData('html');
-};
-
-const handleShareWhatsApp = async () => {
-  // La función exportAttendanceData ya maneja las notificaciones y cierre del modal
-  await exportAttendanceData('whatsapp');
-};
-
-// Función común para preparar los datos de exportación
-const exportAttendanceData = async (format: 'pdf' | 'excel' | 'html' | 'whatsapp') => {
-  try {
-    // Importar dinámicamente el servicio de exportación
-    const { AttendanceExportService } = await import('../../services/exportService');
-    
-    // Preparar datos para exportación
-    const exportData = {
-      date: selectedDate.value, // Usar la fecha original sin formatear para que el servicio la procese correctamente
-      className: classInfo.value?.name || '',
-      students: students.value.map(s => ({
-        id: s.id,
-        name: s.name || `${s.nombre || ''} ${s.apellido || ''}`.trim(),
-        status: mapStatusToExport(s.status),
-        justification: s.justification
-      })),
-      observation: classObservations.value
-    };
-
-    // Calcular estadísticas para incluirlas en la exportación
-    const stats = {
-      total: students.value.length,
-      presente: students.value.filter(s => s.status === 'Presente').length,
-      ausente: students.value.filter(s => s.status === 'Ausente').length,
-      tardanza: students.value.filter(s => s.status === 'Tardanza').length,
-      justificado: students.value.filter(s => s.status === 'Justificado').length,
-      pendiente: students.value.filter(s => s.status === 'Pendiente').length,
-    };
-
-    // Añadir estadísticas al objeto de observación
-    const statsText = `\n\nRESUMEN:\n- Total estudiantes: ${stats.total}\n- Presentes: ${stats.presente} (${Math.round((stats.presente/stats.total || 0)*100)}%)\n- Ausentes: ${stats.ausente} (${Math.round((stats.ausente/stats.total || 0)*100)}%)\n- Tardanzas: ${stats.tardanza} (${Math.round((stats.tardanza/stats.total || 0)*100)}%)\n- Justificados: ${stats.justificado} (${Math.round((stats.justificado/stats.total || 0)*100)}%)\n`;
-    
-    exportData.observation = (exportData.observation || '') + statsText;
-
-    // Exportar según el formato seleccionado
-    switch (format) {
-      case 'pdf':
-        await AttendanceExportService.exportToPDF(exportData);
-        toast.success('PDF generado con éxito');
-        break;
-      case 'excel':
-        await AttendanceExportService.exportToExcel(exportData);
-        toast.success('Excel generado con éxito');
-        break;
-      case 'html':
-        AttendanceExportService.exportToHTML(exportData);
-        toast.success('HTML generado con éxito');
-        break;
-      case 'whatsapp':
-        AttendanceExportService.shareToWhatsApp(exportData);
-        toast.success('Mensaje de WhatsApp creado');
-        break;
-    }
-    
-    // Cerrar el modal de exportación
-    closeExportModal();
-    
-  } catch (error) {
-    console.error(`Error al exportar asistencia como ${format}:`, error);
-    toast.error(`Error al exportar: ${error.message || 'Error desconocido'}`);
-  }
-};
-
-// Esta función ya está definida anteriormente
-
-// Referencia a elementos del DOM
-const searchInput = ref<HTMLInputElement | null>(null);
-
-// Props de la ruta (manejados en onMounted)
-const selectedDate = ref('');
-const selectedClass = ref('');
-
-/**
- * COMPUTED PROPERTIES
- */
-
-// Verificar si hay datos válidos para guardar
-const canSave = computed(() => {
-  // Verificar si hay al menos un alumno con estado distinto a Pendiente
-  const hasNonPendingStudents = students.value.some(s => s.status !== 'Pendiente');
-  
-  // Verificar si hay alguna observación ingresada
-  const hasObservations = classObservations.value && classObservations.value.trim() !== '';
-  
-  // Se puede guardar solo si hay al menos un alumno con estado distinto a Pendiente Y hay observaciones escritas
-  return hasNonPendingStudents && hasObservations;
-});
-
-// Filtrar estudiantes según término de búsqueda
-const displayedStudents = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return students.value; // Si no hay búsqueda, mostrar todos
-  }
-  
-  const query = searchQuery.value.toLowerCase().trim();
-  return students.value.filter(student => {
-    // Buscar en nombre completo
-    const fullName = `${student.nombre || ''} ${student.apellido || ''}`.toLowerCase();
-    if (fullName.includes(query)) return true;
-    
-    // Buscar en otros campos
-    const fields = [student.id, student.grupo?.toString(), student.email];
-    return fields.some(field => field && field.toLowerCase().includes(query));
-  });
-});
-
-const currentClass = computed(() => classInfo.value);
-
-/**
- * Calcula las estadísticas de asistencia para mostrar en el encabezado
- */
-const attendanceStats = computed(() => {
-  // Si no hay estudiantes, devolver valores por defecto
-  if (!students.value || students.value.length === 0) {
-    return {
-      total: 0,
-      presente: 0,
-      ausente: 0,
-      tardanza: 0,
-      justificado: 0,
-      pendiente: 0,
-      attendanceRate: 0
-    };
-  }
-  
-  // Contar cada estado
-  const total = students.value.length;
-  const presente = students.value.filter(s => s.status === 'Presente').length;
-  const ausente = students.value.filter(s => s.status === 'Ausente').length;
-  const tardanza = students.value.filter(s => s.status === 'Tardanza').length;
-  const justificado = students.value.filter(s => s.status === 'Justificado').length;
-  const pendiente = students.value.filter(s => s.status === 'Pendiente').length;
-  
-  // Calcular tasa de asistencia (presentes + tardanzas) / total
-  const attendanceRate = total > 0 ? ((presente + tardanza) / total) * 100 : 0;
-  
-  return {
-    total,
-    presente,
-    ausente,
-    tardanza,
-    justificado,
-    pendiente,
-    attendanceRate
-  };
-});
-
-/**
- * Formatea la fecha para mostrarla de manera legible
- */
-const formattedDate = computed(() => {
-  if (!selectedDate.value) return '';
-  
-  try {
-    // Asegurarse de manejar la fecha correctamente sin ajustes de zona horaria no deseados
-    // Convertir la fecha ISO a sus partes (YYYY-MM-DD)
-    const [year, month, day] = selectedDate.value.split('-').map(Number);
-    
-    // Crear un objeto Date usando UTC para evitar ajustes automáticos de zona horaria
-    // Restamos 1 del mes porque en JS los meses son 0-indexados (enero = 0)
-    const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-    
-    // Verificar si es una fecha válida
-    if (isNaN(dateObj.getTime())) {
-      console.warn('Fecha inválida:', selectedDate.value);
-      return selectedDate.value; // Devolver el valor original si no es válido
-    }
-    
-    // Opciones para formatear la fecha
-    const options = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric', 
-    };
-    
-    // Formatear la fecha en español usando date-fns para mayor precisión
-    return format(dateObj, "EEEE d 'de' MMMM 'de' yyyy", { locale: es });
-  } catch (err) {
-    console.error('Error al formatear fecha:', err);
-    return selectedDate.value; // Devolver el valor original en caso de error
-  }
-});
-
-
-const updateStudentStatus = (studentId: string, status: AttendanceStatus) => {
-  const student = students.value.find(s => s.id === studentId);
-  if (!student) return;
-
-  student.status = status;
-  student.isChanged = true;
-  hasUnsavedChanges.value = true;
-};
-
-const handleAttendanceUpdate = (studentId: string, status: string) => {
-  if (!studentId) return;
-  
-  // Convertir el status recibido (que viene del componente hijo) a AttendanceStatus
-  // Los valores de StudentAttendanceGrid son: 'pending', 'present', 'absent', 'late', 'justified'
-  // Los valores de AttendanceStatus son: 'Pendiente', 'Presente', 'Ausente', 'Tardanza', 'Justificado'
-  const statusMap: Record<string, AttendanceStatus> = {
-    'pending': 'Pendiente',
-    'present': 'Presente', 
-    'absent': 'Ausente',
-    'late': 'Tardanza',
-    'justified': 'Justificado'
-  };
-  
-  // Convertir el status a los tipos correctos
-  const gridStatus = status as AttendanceGridStatus;
-  const mappedStatus = statusMap[status] || 'Pendiente';
-  
-  // Actualizar el estado local de attendanceRecords
-  const index = attendanceRecords.value.findIndex(record => record.studentId === studentId);
-  if (index !== -1) {
-    attendanceRecords.value[index].status = gridStatus;
-  } else {
-    // Si no existe, agregarlo
-    attendanceRecords.value.push({
-      studentId: studentId,
-      status: gridStatus
-    });
-  }
-  
-  // Actualizar también en students para mantener la sincronización
-  const studentIndex = students.value.findIndex(s => s.id === studentId);
-  if (studentIndex !== -1) {
-    students.value[studentIndex].status = mappedStatus;
-    students.value[studentIndex].isChanged = true;
-  }
-  
-  hasUnsavedChanges.value = true;
-};
-
-const handleManualSave = async () => {
-  isSaving.value = true;
-  error.value = null;
-  try {
-    const updateAttendanceDataFormat = () => {
-      const attendanceData = {};
-      
-      students.value.forEach((student) => {
-        if (student.isChanged || student.justification) {
-          attendanceData[student.id] = {
-            status: student.status || 'Ausente',
-            justification: student.justification || '',
-            studentName: student.name,
-          };
-        }
-      });
-
-      // Actualizar también el estado local de attendanceRecords para evitar errores de renderizado
-      attendanceRecords.value = convertToAttendanceRecords(students.value);
-      
-      return attendanceData;
-    };
-
-    const attendanceData = updateAttendanceDataFormat();
-
-    await attendanceStore.saveAttendance({
-      date: selectedDate.value,
-      classId: selectedClass.value,
-      attendance: attendanceData,
-      observation: classObservations.value,
-    });
-
-    students.value.forEach((s) => (s.isChanged = false));
-    hasUnsavedChanges.value = false;
-    lastSaved.value = new Date();
-    
-    // Mostrar modal de exportación
-    showExportModal.value = true;
-  } catch (err: any) {
-    error.value = 'Error al guardar la asistencia.';
-    console.error('❌ [AttendanceForm] Error en handleManualSave:', err);
-  } finally {
-    isSaving.value = false;
-  }
-};
-
-// --- Manejo de Justificaciones ---
-const handleOpenJustificationModal = (student: Student) => {
-  selectedStudentForJustification.value = student;
-  showJustificationModal.value = true;
-};
-
-// --- Manejo de Exportaciones ---
-const handleExport = async (format: 'pdf' | 'excel' | 'html' | 'whatsapp') => {
-  try {
-    // Usar la función exportAttendanceData para preparar los datos
-    await exportAttendanceData(format);
-    
-    // El cierre del modal y la notificación se manejan dentro de exportAttendanceData
-  } catch (err) {
-    console.error(`Error al exportar asistencia como ${format}:`, err);
-    toast.error(`Error al exportar asistencia: ${err.message || 'Error desconocido'}`);
-  }
-};
-
-const handleSaveJustification = ({ reason }: { reason: string }) => {
-  if (!selectedStudentForJustification.value) return;
-  const student = students.value.find(s => s.id === selectedStudentForJustification.value!.id);
-  if (student) {
-    student.justification = reason;
-    student.status = 'Justificado';
-    student.isChanged = true;
-    hasUnsavedChanges.value = true;
-  }
-  showJustificationModal.value = false;
-  selectedStudentForJustification.value = null;
-};
-
-const handleCloseJustificationModal = () => {
-  showJustificationModal.value = false;
-  selectedStudentForJustification.value = null;
-};
-
-// --- Acciones de la Toolbar ---
-const handleSearch = (query: string) => {
-  searchQuery.value = query;
-};
-
-const clearSearch = () => {
-  searchQuery.value = '';
-  // Ahora podemos usar el método focus expuesto por AttendanceToolbar
-  searchInput.value?.focus();
-};
-
-const markAllPresent = () => {
-  students.value.forEach((student) => {
-    if (student.status !== 'Presente') {
-      updateStudentStatus(student.id, 'Presente');
-    }
-  });
-};
-
-const resetAllStatuses = () => {
-  students.value.forEach((student) => {
-    updateStudentStatus(student.id, 'Ausente');
-  });
-};
-
-// --- Navegación ---
-const navigateBack = () => {
-  router.push({ name: 'ProfessionalCalendarView' }); // Asumiendo que esta es la ruta del calendario
-};
-
-const exitWithoutSaving = () => {
-  if (hasUnsavedChanges.value) {
-    showUnsavedWarning.value = true;
-  } else {
-    navigateBack();
-  }
-};
-
-const confirmExitWithoutSaving = () => {
-  hasUnsavedChanges.value = false;
-  showUnsavedWarning.value = false;
-  navigateBack();
-};
-
-/**
- * Inicializa el formulario de asistencia cargando los estudiantes y datos de la clase
- */
-const initializeForm = async () => {
-  loading.value = true;
-  isInitializing.value = true;
-  error.value = null;
-  
-  try {
-    // Obtener los parámetros de la ruta
-    const classId = route.params.classId as string;
-    const date = route.params.date as string;
-    
-    if (!classId || !date) {
-      throw new Error('Parámetros de clase o fecha no encontrados');
-    }
-    
-    selectedClass.value = classId;
-    selectedDate.value = date;
-    
-    console.log('📊 [AttendanceForm] Inicializando con classId:', classId, 'fecha:', date);
-    
-    // Cargar información de la clase
-    const classData = await classesStore.getClassById(classId);
-    if (!classData) throw new Error(`Clase con ID ${classId} no encontrada`);
-    classInfo.value = classData;
-    
-    // Cargar todos los estudiantes primero
-    await studentsStore.fetchStudents();
-    
-    // Obtener los estudiantes específicos de esta clase usando el getter
-    const classStudents = studentsStore.getStudentsByClass(classId);
-    
-    if (!classStudents || classStudents.length === 0) {
-      console.warn('⚠️ [AttendanceForm] No se encontraron estudiantes para esta clase');
-    }
-    
-    console.log('👥 [AttendanceForm] Estudiantes cargados:', classStudents.length);
-    
-    // Cargar registros de asistencia existentes para esta fecha y clase
-    // Usar fetchAttendanceDocument en lugar de getRecordsByDateAndClass
-    console.log('🔄 [AttendanceForm] Cargando documento de asistencia para fecha:', date, 'y clase:', classId);
-    await attendanceStore.fetchAttendanceDocument(date, classId);
-    
-    // Convertir el formato de documento a un formato utilizable para nuestros registros
-    const attendanceDoc = attendanceStore.currentAttendanceDoc.value;
-    console.log('📝 [AttendanceForm] Documento de asistencia cargado:', attendanceDoc);
-    
-    let existingRecords = {};
-    
-    if (attendanceDoc && attendanceDoc.data) {
-      console.log('📊 [AttendanceForm] Datos del documento de asistencia:', JSON.stringify(attendanceDoc.data));
-      // Combinar todos los estados en un solo objeto
-      const allStudentIds = [
-        ...(attendanceDoc.data.presentes || []),
-        ...(attendanceDoc.data.ausentes || []),
-        ...(attendanceDoc.data.tarde || []),
-        ...(attendanceDoc.data.justificacion || [])
-      ];
-      
-      console.log('🔍 [AttendanceForm] IDs de estudiantes encontrados:', allStudentIds);
-      
-      // Crear un mapa de estudiantes con sus estados
-      allStudentIds.forEach(studentId => {
-        let status = 'Pendiente';
-        let justification = '';
-        
-        // Loguear para depuración
-        console.log(`🔎 [AttendanceForm] Verificando estado del estudiante ${studentId}:`, {
-          enPresentes: attendanceDoc.data.presentes?.includes(studentId),
-          enAusentes: attendanceDoc.data.ausentes?.includes(studentId),
-          enTarde: attendanceDoc.data.tarde?.includes(studentId),
-          enJustificados: attendanceDoc.data.justificacion?.includes(studentId)
-        });
-        
-        if (attendanceDoc.data.presentes?.includes(studentId)) {
-          status = 'Presente';
-        } else if (attendanceDoc.data.ausentes?.includes(studentId)) {
-          status = 'Ausente';
-        } else if (attendanceDoc.data.tarde?.includes(studentId)) {
-          status = 'Tardanza';
-        } else if (attendanceDoc.data.justificacion?.includes(studentId)) {
-          status = 'Justificado';
-          // Buscar justificación si existe
-          // Esto es una simplificación, podrías necesitar obtener justificaciones por separado
-        }
-        
-        console.log(`⏩ [AttendanceForm] Estado asignado para estudiante ${studentId}:`, status);
-        
-        existingRecords[studentId] = {
-          status,
-          justification
-        };
-      });
-      
-      console.log('📚 [AttendanceForm] Registros de asistencia cargados:', Object.keys(existingRecords).length);
-    }
-    
-    // Inicializar el estado de los estudiantes
-    students.value = classStudents.map(student => ({
-      ...student,
-      id: student.id,
-      nombre: student.nombre || '',
-      apellido: student.apellido || '',
-      name: `${student.nombre || ''} ${student.apellido || ''}`.trim(),
-      status: 'Pendiente' as AttendanceStatus,
-      isChanged: false,
-    }));
-    
-    // Aplicar registros existentes si hay alguno
-    if (existingRecords && Object.keys(existingRecords).length > 0) {
-      console.log('📊 [AttendanceForm] Aplicando registros existentes a', Object.keys(existingRecords).length, 'estudiantes');
-      
-      // Primero asegurar que todos los estudiantes tienen IDs en formato string
-      const studentsWithStringIds = students.value.map(s => ({
-        ...s,
-        id: String(s.id) // Asegurar que el ID es string para evitar problemas de comparación
-      }));
-      students.value = studentsWithStringIds;
-      
-      // Ahora aplicar los estados a cada estudiante
-      for (const studentId in existingRecords) {
-        // Usar string para la comparación de IDs
-        const student = students.value.find(s => String(s.id) === String(studentId));
-        if (student) {
-          console.log(`🧩 [AttendanceForm] Aplicando estado '${existingRecords[studentId].status}' al estudiante:`, student.name);
-          student.status = existingRecords[studentId].status;
-          student.justification = existingRecords[studentId].justification || '';
-          // No marcar como cambiado porque son datos existentes
-          student.isChanged = false;
-        } else {
-          console.warn(`⚠️ [AttendanceForm] No se encontró estudiante con ID: ${studentId}`);
-        }
-      }
-    } else {
-      console.log('ℹ️ [AttendanceForm] No hay registros previos de asistencia para esta fecha/clase');
-    }
-    
-    // Cargar observaciones de clase si existen
-    // Ya tenemos el documento cargado anteriormente
-    
-    if (attendanceDoc && attendanceDoc.data && attendanceDoc.data.observación) {
-      // Si el documento tiene observaciones, las usamos
-      const observaciones = attendanceDoc.data.observación;
-      
-      // Manejar tanto string como array de observaciones
-      if (Array.isArray(observaciones)) {
-        classObservations.value = observaciones.join('\n');
-      } else {
-        classObservations.value = observaciones;
-      }
-    } else {
-      // Si no hay observaciones, inicializamos con cadena vacía
-      classObservations.value = '';
-    }
-    
-    console.log('📖 [AttendanceForm] Observaciones cargadas:', classObservations.value ? 'Sí' : 'No');
-    
-    // Actualizar registros para la tabla
-    updateAttendanceRecords();
-    
-    console.log('✅ [AttendanceForm] Formulario inicializado correctamente');
-    
-  } catch (err) {
-    console.error('❌ [AttendanceForm] Error al inicializar el formulario:', err);
-    error.value = 'Error al cargar los datos de asistencia. Intenta nuevamente.';
-  } finally {
-    loading.value = false;
-    isInitializing.value = false;
-  }
-};
-
-/**
- * Actualiza los registros de asistencia para el componente de tabla
- */
-const updateAttendanceRecords = () => {
-  attendanceRecords.value = students.value.map(student => ({
-    studentId: student.id,
-    status: convertToGridStatus(student.status),
-    justification: student.justification
-  }));
-};
-
-/**
- * Convierte el formato de estado de asistencia al formato que usa el grid
- */
-const convertToGridStatus = (status: AttendanceStatus): AttendanceGridStatus => {
-  const statusMap: Record<AttendanceStatus, AttendanceGridStatus> = {
-    'Pendiente': 'pending',
-    'Presente': 'present',
-    'Ausente': 'absent',
-    'Tardanza': 'late',
-    'Justificado': 'justified'
-  };
-  return statusMap[status] || 'pending';
-};
-
-/**
- * Convierte el listado de estudiantes al formato de registros de asistencia
- */
-const convertToAttendanceRecords = (students: Student[]): IAttendanceRecord[] => {
-  return students.map(student => ({
-    studentId: student.id,
-    status: convertToGridStatus(student.status || 'Pendiente'),
-    justification: student.justification
-  }));
-};
-
-// Las funciones handleSearch y clearSearch ya están definidas arriba
-
-/**
- * 🎬 LIFECYCLE & WATCHERS
- */
+// Lifecycle hook
 onMounted(() => {
   initializeForm();
 

@@ -64,16 +64,30 @@ export const useRBACStore = defineStore('rbac', () => {
   });
   // Acciones
   const initializeUserRBAC = async () => {
-    if (!authStore.user?.uid || initialized.value) {
+    console.log('🔄 [RBAC] Inicializando RBAC para el usuario');
+    
+    if (!authStore.user?.uid) {
+      console.warn('⚠️ [RBAC] No hay usuario autenticado');
+      return;
+    }
+    
+    if (initialized.value) {
+      console.log('ℹ️ [RBAC] RBAC ya inicializado para este usuario');
       return;
     }
 
     loading.value = true;
     try {
       const userRole = authStore.user.role || '';
+      console.log(`👤 [RBAC] Rol del usuario: ${userRole}`);
+
+      // Resetear valores previos
+      userRoles.value = [];
+      userPermissions.value = [];
 
       // Para maestros, asignar permisos basados en RBAC
-      if (userRole === 'Maestro' || userRole === 'maestro') {
+      if (userRole.toLowerCase() === 'maestro' || userRole.toLowerCase() === 'profesor') {
+        console.log('🎓 [RBAC] Configurando permisos para Maestro');
         userRoles.value = ['Maestro'];
         // Permisos por defecto para maestros (solo estudiantes de sus clases)
         userPermissions.value = [
@@ -82,22 +96,53 @@ export const useRBACStore = defineStore('rbac', () => {
           'Editar Asistencia',
           'Calendario Asistencia',
           'Ver Clases',
-          'Ver Estudiantes de Clases Propias', // Por defecto solo sus estudiantes
+          'Ver Estudiantes de Clases Propias',
           'Dashboard Maestro',
         ];
-      } else if (['Director', 'Admin', 'Superusuario'].includes(userRole)) {
+      } 
+      // Para roles administrativos
+      else if (['Director', 'Admin', 'Superusuario'].includes(userRole)) {
+        console.log('👔 [RBAC] Configurando permisos para rol administrativo:', userRole);
         userRoles.value = [userRole];
-        // Estos roles siempre pueden ver todos los estudiantes
-        userPermissions.value = [
+        
+        // Permisos para roles administrativos
+        const adminPermissions = [
+          // Permisos de asistencia
           'Ver Asistencia',
           'Crear Asistencia',
           'Editar Asistencia',
+          
+          // Permisos de estudiantes
           'Ver Todos los Estudiantes',
           'Gestionar Estudiantes',
+          
+          // Permisos de maestros
+          'teachers_view',
+          'teachers_edit',
+          'teachers_create',
+          'teachers_delete',
+          
+          // Permisos de clases
+          'Ver Clases',
+          'Gestionar Clases',
+          
+          // Permisos generales de administración
+          'admin_dashboard',
+          'manage_users',
+          'manage_roles',
+          'view_reports'
         ];
+        
+        userPermissions.value = adminPermissions;
+        console.log(`✅ [RBAC] Permisos asignados a ${userRole}:`, adminPermissions);
+      } else {
+        console.warn('⚠️ [RBAC] Rol no reconocido, sin permisos asignados:', userRole);
       }
 
       initialized.value = true;
+      console.log('✅ [RBAC] Inicialización completada');
+      console.log('📋 [RBAC] Roles asignados:', userRoles.value);
+      console.log('🔑 [RBAC] Permisos asignados:', userPermissions.value);
     } catch (error) {
       console.error('Error al inicializar RBAC:', error);
       // En caso de error, dar permisos básicos basados en el rol del usuario

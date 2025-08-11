@@ -60,4 +60,15 @@ export const attendanceRoutes: RouteRecordRaw[] = [
     props: true,
     meta: { requiresAuth: true, allowedRoles: ['Director', 'Admin'] },
   },
+  {
+    path: '/attendance/report',
+    name: 'AttendanceReport',
+    component: () => import('../views/admin/AttendanceReportView.vue'),
+    meta: { 
+      requiresAuth: true, 
+      allowedRoles: ['Director', 'Admin'],
+      title: 'Reporte de Asistencias',
+      description: 'Reporte detallado de asistencias de estudiantes'
+    },
+  },
 ];

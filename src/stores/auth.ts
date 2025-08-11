@@ -276,6 +276,17 @@ export const useAuthStore = defineStore('auth', {
                 const userData = userDoc.data();
                 if (userData.status === 'aprobado') {
                   this.user = { uid: user.uid, email: user.email, ...userData } as User;
+                  
+                  // Inicializar RBAC para el usuario
+                  try {
+                    const { useRBACStore } = await import('./rbacStore');
+                    const rbacStore = useRBACStore();
+                    await rbacStore.initializeUserRBAC();
+                    console.log('✅ [Auth] RBAC inicializado correctamente');
+                  } catch (error) {
+                    console.error('❌ [Auth] Error al inicializar RBAC:', error);
+                  }
+                  
                   // Cargar preferencia de tema del usuario
                   try {
                     const themePreference = await getThemePreference(user.uid);

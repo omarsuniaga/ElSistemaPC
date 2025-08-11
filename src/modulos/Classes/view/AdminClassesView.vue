@@ -77,6 +77,45 @@
           </div>
         </div>
 
+        <!-- Notificación de filtro activo por maestro -->
+        <div
+          v-if="selectedTeacher && route.query.teacherName"
+          class="mt-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Filtro activo
+                </h3>
+                <div class="mt-2 text-sm text-blue-700 dark:text-blue-300">
+                  <p>
+                    Mostrando solo las clases del maestro: 
+                    <span class="font-semibold">{{ route.query.teacherName }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="ml-auto pl-3">
+              <div class="-mx-1.5 -my-1.5">
+                <button
+                  type="button"
+                  class="inline-flex bg-blue-50 dark:bg-blue-900/30 rounded-md p-1.5 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-50 focus:ring-blue-600"
+                  @click="clearTeacherFilter"
+                >
+                  <span class="sr-only">Cerrar</span>
+                  <XMarkIcon class="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Filtros y pestañas mejorados -->
         <div class="space-y-4">
           <!-- Filtros (visible en mobile cuando se activa) -->
@@ -537,7 +576,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useClassesStore } from '../store/classes';
 import { useTeachersStore } from '../../Teachers/store/teachers';
@@ -588,6 +627,7 @@ const SharedClassesList = createAsyncComponent(() => import('../components/Share
 
 // Router y stores
 const router = useRouter();
+const route = useRoute();
 const classesStore = useClassesStore();
 const teachersStore = useTeachersStore();
 const studentsStore = useStudentsStore();
@@ -739,6 +779,12 @@ const clearAllFilters = () => {
   showFilters.value = false;
 };
 
+const clearTeacherFilter = () => {
+  selectedTeacher.value = '';
+  // Limpiar los parámetros de query de la URL
+  router.push({ path: '/admin/classes' });
+};
+
 // Cargar datos iniciales
 const loadInitialData = async () => {
   loading.value = true;
@@ -764,7 +810,21 @@ const loadInitialData = async () => {
 };
 
 // Lifecycle
-onMounted(loadInitialData);
+onMounted(async () => {
+  await loadInitialData();
+  
+  // Manejar parámetros de query para filtrar por maestro
+  if (route.query.teacherId) {
+    selectedTeacher.value = route.query.teacherId as string;
+    // También mostrar una notificación informativa si se proporcionó el nombre del maestro
+    if (route.query.teacherName) {
+      showNotification(
+        `Mostrando clases del maestro: ${route.query.teacherName}`,
+        'info',
+      );
+    }
+  }
+});
 
 // Métodos de la UI
 const editClass = (classItem: ClassData) => {

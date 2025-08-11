@@ -35,6 +35,9 @@ export function useAttendanceCalendar() {
   // 📅 Resultado de clases del día seleccionado
   const dayResult = ref<DayClassesResult | null>(null);
 
+  // 🗓️ Indicadores del calendario (fechas con actividad)
+  const calendarIndicators = ref<string[]>([]);
+
   // 👨‍🏫 ID del maestro actual
   const teacherId = computed(() => authStore.user?.uid || '');
 
@@ -159,8 +162,26 @@ export function useAttendanceCalendar() {
   /**
    * 🗓️ Cambia el mes actual
    */
+  /**
+   * 🔄 Carga los indicadores de actividad para un mes
+   */
+  const loadCalendarIndicators = async (year: number, month: number) => {
+    try {
+      // Aquí podrías optimizar para no recargar si ya tienes los datos
+      await attendanceStore.fetchRegisteredAttendanceDates();
+      // Esto es un ejemplo, la lógica real podría ser más compleja
+      calendarIndicators.value = attendanceStore.datesWithRecords;
+    } catch (error) {
+      console.error('Error loading calendar indicators:', error);
+    }
+  };
+
+  /**
+   * 🗓️ Cambia el mes actual y recarga los indicadores
+   */
   const changeMonth = (newMonth: Date) => {
     state.value.currentMonth = newMonth;
+    loadCalendarIndicators(newMonth.getFullYear(), newMonth.getMonth() + 1);
   };
 
   /**
@@ -208,6 +229,7 @@ export function useAttendanceCalendar() {
     // Datos computados
     dayClasses,
     dayStats,
+    calendarIndicators: readonly(calendarIndicators),
     
     // Métodos
     selectDate,
@@ -217,6 +239,7 @@ export function useAttendanceCalendar() {
     clearState,
     getClassById,
     filterClasses,
+    loadCalendarIndicators,
   };
 }
 

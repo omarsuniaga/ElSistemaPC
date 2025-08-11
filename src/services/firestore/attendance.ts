@@ -164,6 +164,7 @@ const createJustificationData = (
 export const getAttendanceDocumentFirebase = async (
   fecha: string,
   classId: string,
+  teacherId?: string,
 ): Promise<AttendanceDocument | null> => {
   try {
     // Validar parámetros de entrada
@@ -184,6 +185,15 @@ export const getAttendanceDocumentFirebase = async (
       console.log('📄 Documento encontrado');
       const rawData = docSnap.data();
       const data = normalizeAttendanceDocument(rawData);
+      
+      // Si se proporciona teacherId, verificar que coincida con el documento
+      if (teacherId && data.teacherId && data.teacherId !== teacherId) {
+        console.warn(
+          `Documento de asistencia pertenece a otro profesor: ${data.teacherId} vs ${teacherId}`
+        );
+        return null;
+      }
+      
       return data;
     } else {
       console.log('❓ No se encontró documento de asistencia');

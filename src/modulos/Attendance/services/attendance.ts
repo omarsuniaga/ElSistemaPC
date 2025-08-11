@@ -361,6 +361,37 @@ export const updateClassObservationFirebase = async (
 };
 
 /**
+ * Obtiene todas las fechas únicas que tienen registros de asistencia.
+ */
+export const getRegisteredAttendanceDates = async (): Promise<string[]> => {
+  try {
+    const db = getFirestore();
+    const attendancesCollection = collection(db, 'attendances');
+    const q = query(attendancesCollection);
+
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      console.log('No attendance records found.');
+      return [];
+    }
+
+    const dates = new Set<string>();
+    querySnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      if (data.fecha) {
+        dates.add(data.fecha);
+      }
+    });
+
+    return Array.from(dates);
+  } catch (error) {
+    console.error('Error in getRegisteredAttendanceDates:', error);
+    throw error;
+  }
+};
+
+/**
  * Elimina una observación de clase
  */
 export const deleteClassObservationFirebase = async (observationId: string): Promise<void> => {

@@ -64,101 +64,176 @@
 
     <!-- Main Content -->
     <main class="p-6">
-      <!-- Filters and Search -->
-      <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6"
-      >
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Search -->
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="Buscar estudiantes..."
-              class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          <!-- Status Filter -->
-          <select
-            v-model="statusFilter"
-            class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+      <!-- Filters Toggle Button -->
+      <div class="flex justify-between items-center mb-4">
+        <button
+          class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          @click="showFilters = !showFilters"
+        >
+          <FunnelIcon class="h-4 w-4 mr-2" />
+          {{ showFilters ? 'Ocultar filtros' : 'Mostrar filtros' }}
+        </button>
+        
+        <!-- View Toggle -->
+        <div class="flex items-center space-x-2">
+          <button
+            title="Vista de cuadrícula"
+            :class="[
+              'p-2 rounded-md',
+              viewMode === 'grid'
+                ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
+                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
+            ]"
+            @click="viewMode = 'grid'"
           >
-            <option value="">Todos los estados</option>
-            <option value="active">Activos</option>
-            <option value="inactive">Inactivos</option>
-            <option value="pending">Pendientes</option>
-          </select>
-
-          <!-- Grade Filter -->
-          <select
-            v-model="gradeFilter"
-            class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            <Squares2X2Icon class="w-5 h-5" />
+          </button>
+          <button
+            title="Vista de lista"
+            :class="[
+              'p-2 rounded-md',
+              viewMode === 'list'
+                ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
+                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
+            ]"
+            @click="viewMode = 'list'"
           >
-            <option value="">Todos los niveles</option>
-            <option value="beginner">Principiante</option>
-            <option value="intermediate">Intermedio</option>
-            <option value="advanced">Avanzado</option>
-          </select>
-
-          <!-- Instrument Filter -->
-          <select
-            v-model="instrumentFilter"
-            class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Todos los instrumentos</option>
-            <option value="piano">Piano</option>
-            <option value="guitar">Guitarra</option>
-            <option value="violin">Violín</option>
-            <option value="drums">Batería</option>
-            <option value="voice">Canto</option>
-          </select>
-        </div>
-
-        <!-- Clear filters -->
-        <div class="mt-4 flex justify-between items-center">
-          <div class="flex items-center space-x-2">
-            <button
-              class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              @click="clearFilters"
-            >
-              Limpiar filtros
-            </button>
-            <span v-if="hasActiveFilters" class="text-sm text-blue-600 dark:text-blue-400">
-              {{ filteredStudents.length }} resultados
-            </span>
-          </div>
-
-          <!-- View toggle -->
-          <div class="flex items-center space-x-2">
-            <button
-              :class="[
-                'p-2 rounded-md',
-                viewMode === 'grid'
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
-                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
-              ]"
-              @click="viewMode = 'grid'"
-            >
-              <Squares2X2Icon class="w-5 h-5" />
-            </button>
-            <button
-              :class="[
-                'p-2 rounded-md',
-                viewMode === 'list'
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
-                  : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
-              ]"
-              @click="viewMode = 'list'"
-            >
-              <ListBulletIcon class="w-5 h-5" />
-            </button>
-          </div>
+            <ListBulletIcon class="w-5 h-5" />
+          </button>
         </div>
       </div>
+
+      <!-- Filters Panel -->
+      <Transition
+        enter-active-class="transition ease-out duration-200"
+        enter-from-class="opacity-0 -translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition ease-in duration-150"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-2"
+      >
+        <div 
+          v-show="showFilters"
+          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6"
+        >
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Search -->
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                v-model.lazy="searchQuery"
+                type="text"
+                placeholder="Buscar estudiantes..."
+                class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                @keyup.enter="applyFilters()"
+              />
+            </div>
+
+            <!-- Status Filter -->
+            <div class="relative">
+              <select
+                v-model="statusFilter"
+                class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Todos los estados</option>
+                <option value="active">Activos</option>
+                <option value="inactive">Inactivos</option>
+                <option value="pending">Pendientes</option>
+              </select>
+            </div>
+
+            <!-- Grade Filter -->
+            <div class="relative">
+              <select
+                v-model="gradeFilter"
+                class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Todos los niveles</option>
+                <option value="beginner">Principiante</option>
+                <option value="intermediate">Intermedio</option>
+                <option value="advanced">Avanzado</option>
+              </select>
+            </div>
+
+            <!-- Instrument Filter -->
+            <div class="relative">
+              <select
+                v-model="instrumentFilter"
+                class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Todos los instrumentos</option>
+                <option value="piano">Piano</option>
+                <option value="guitar">Guitarra</option>
+                <option value="violin">Violín</option>
+                <option value="drums">Batería</option>
+                <option value="voice">Canto</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Clear filters and pagination controls -->
+          <div class="mt-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+              <button
+                class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                @click="clearFilters"
+              >
+                Limpiar filtros
+              </button>
+              <span v-if="hasActiveFilters" class="text-sm text-blue-600 dark:text-blue-400">
+                {{ filteredStudents.length }} resultados
+              </span>
+              
+              <!-- Items per page selector -->
+              <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-500 dark:text-gray-400">Mostrar:</span>
+                <select
+                  v-model="itemsPerPage"
+                  class="text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  @change="currentPage = 1"
+                >
+                  <option :value="25">25</option>
+                  <option :value="50">50</option>
+                  <option :value="100">100</option>
+                  <option :value="200">200</option>
+                  <option v-if="filteredStudents.length > 0" :value="filteredStudents.length">
+                    Todos ({{ filteredStudents.length }})
+                  </option>
+                </select>
+                <span class="text-sm text-gray-500 dark:text-gray-400">por página</span>
+              </div>
+            </div>
+
+            <!-- View toggle -->
+            <div class="flex items-center space-x-2">
+              <button
+                :class="[
+                  'p-2 rounded-md',
+                  viewMode === 'grid'
+                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
+                ]"
+                @click="viewMode = 'grid'"
+              >
+                <Squares2X2Icon class="w-5 h-5" />
+              </button>
+              <button
+                :class="[
+                  'p-2 rounded-md',
+                  viewMode === 'list'
+                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
+                ]"
+                @click="viewMode = 'list'"
+              >
+                <ListBulletIcon class="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
 
       <!-- Students Grid/List -->
       <div v-if="isLoading" class="flex justify-center py-12">
@@ -192,7 +267,7 @@
         v-else-if="viewMode === 'grid'"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
-        <StudentCard
+        <student-card
           v-for="student in paginatedStudents"
           :key="student.id"
           :student="student"
@@ -213,7 +288,7 @@
         v-else
         class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
-        <StudentsTable
+        <students-table
           :students="paginatedStudents"
           :sort-field="sortField"
           :sort-order="sortOrder"
@@ -236,8 +311,7 @@
           <button
             :disabled="currentPage === 1"
             class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="previousPage"
-          >
+            @click="previousPage">
             Anterior
           </button>
           <button
@@ -303,14 +377,14 @@
     </main>
 
     <!-- Create Student Modal -->
-    <StudentCreateModal
+    <student-create-modal
       v-if="showCreateModal"
       @close="showCreateModal = false"
       @created="handleStudentCreated"
     />
 
     <!-- Edit Student Modal -->
-    <StudentEditModal
+    <student-edit-modal
       v-if="showEditModal && selectedStudent"
       :student="selectedStudent"
       @close="showEditModal = false"
@@ -318,12 +392,12 @@
     />
 
     <!-- Delete Confirmation Modal -->
-    <ConfirmationModal
-      v-if="showDeleteModal"
+    <confirmation-modal
+      :is-visible="showDeleteModal"
       title="Eliminar Estudiante"
-      :message="`¿Estás seguro de que deseas eliminar al estudiante ${selectedStudent?.name}? Esta acción no se puede deshacer.`"
+      :message="`¿Estás seguro de que deseas eliminar al estudiante ${selectedStudent?.nombre} ${selectedStudent?.apellido}? Esta acción no se puede deshacer.`"
       confirm-text="Eliminar"
-      confirm-variant="danger"
+      type="danger"
       @confirm="confirmDelete"
       @cancel="showDeleteModal = false"
     />
@@ -331,10 +405,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+// Vue and Vue Router
+import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
-import { useRBACStore } from '../../../stores/rbacStore';
-import { useAdminStudentsStore } from '../store/adminStudents';
+// Icons
 import {
   HomeIcon,
   PlusIcon,
@@ -345,14 +419,39 @@ import {
   ListBulletIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  FunnelIcon,
 } from '@heroicons/vue/24/outline';
 
+// Stores
+import { useRBACStore } from '../../../stores/rbacStore';
+import { useAdminStudentsStore } from '../store/adminStudents';
+
+// Types
+interface IStudent {
+  id: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+  phone?: string;
+  activo: boolean;
+  clase?: string;
+  classId?: string;
+  grupo?: string[];
+  instrumento?: string;
+  nivel?: string;
+  [key: string]: unknown;
+}
+
 // Components
-import StudentCard from '../components/StudentCard.vue';
-import StudentsTable from '../components/StudentsTable.vue';
-import StudentCreateModal from '../components/StudentCreateModal.vue';
-import StudentEditModal from '../components/StudentEditModal.vue';
-import ConfirmationModal from '@/components/ConfirmationModal.vue';
+const studentCard = defineAsyncComponent(() => import('../components/StudentCard.vue'));
+
+const studentCreateModal = defineAsyncComponent(() => import('../components/StudentCreateModal.vue'));
+
+const studentEditModal = defineAsyncComponent(() => import('../components/StudentEditModal.vue'));
+
+const studentsTable = defineAsyncComponent(() => import('../components/StudentsTable.vue'));
+
+const confirmationModal = defineAsyncComponent(() => import('@/components/ConfirmationModal.vue'));
 
 // Stores
 const router = useRouter();
@@ -360,6 +459,7 @@ const rbacStore = useRBACStore();
 const studentsStore = useAdminStudentsStore();
 
 // State
+const showFilters = ref(false);
 const searchQuery = ref('');
 const statusFilter = ref('');
 const gradeFilter = ref('');
@@ -368,15 +468,29 @@ const viewMode = ref<'grid' | 'list'>('grid');
 const sortField = ref('name');
 const sortOrder = ref<'asc' | 'desc'>('asc');
 
+// Apply filters with debounce
+let filterTimeout: ReturnType<typeof setTimeout> | null = null;
+const applyFilters = () => {
+  if (filterTimeout) clearTimeout(filterTimeout);
+  filterTimeout = setTimeout(() => {
+    currentPage.value = 1;
+  }, 300);
+};
+
+// Watch for filter changes
+watch([searchQuery, statusFilter, gradeFilter, instrumentFilter], () => {
+  applyFilters();
+}, { deep: true });
+
 // Pagination
 const currentPage = ref(1);
-const itemsPerPage = ref(20);
+const itemsPerPage = ref(50); // Aumentamos a 50 por defecto para mostrar más estudiantes
 
 // Modals
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
-const selectedStudent = ref<any>(null);
+const selectedStudent = ref<IStudent | null>(null);
 
 // Computed
 const students = computed(() => studentsStore.students);
@@ -390,62 +504,74 @@ const newThisMonth = computed(() => {
 });
 
 // Permissions
-const canCreateStudent = computed(() => rbacStore.hasPermission('students', 'create'));
-const canViewStudent = computed(() => rbacStore.hasPermission('students', 'view'));
-const canEditStudent = computed(() => rbacStore.hasPermission('students', 'edit'));
-const canDeleteStudent = computed(() => rbacStore.hasPermission('students', 'delete'));
+const canCreateStudent = computed(() => rbacStore.hasPermission('students:create'));
+const canViewStudent = computed(() => rbacStore.hasPermission('students:view'));
+const canEditStudent = computed(() => rbacStore.hasPermission('students:edit'));
+const canDeleteStudent = computed(() => rbacStore.hasPermission('students:delete'));
 
 // Filters
-const hasActiveFilters = computed(
-  () => searchQuery.value || statusFilter.value || gradeFilter.value || instrumentFilter.value,
+const hasActiveFilters = computed(() => 
+  searchQuery.value || statusFilter.value || gradeFilter.value || instrumentFilter.value
 );
 
 const filteredStudents = computed(() => {
   let filtered = [...students.value];
 
-  // Search filter
+  // Search filter with safe property access
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(
-      (student) =>
-        student.name.toLowerCase().includes(query) ||
-        student.email.toLowerCase().includes(query) ||
-        student.phone.toLowerCase().includes(query),
-    );
+    const query = searchQuery.value.toLowerCase().trim();
+    filtered = filtered.filter((student) => {
+      const nombre = String(student?.nombre || '').toLowerCase();
+      const apellido = String(student?.apellido || '').toLowerCase();
+      const email = String(student?.email || '').toLowerCase();
+      const phone = String(student?.phone || '').toLowerCase();
+      
+      return nombre.includes(query) || 
+             apellido.includes(query) ||
+             email.includes(query) || 
+             phone.includes(query);
+    });
   }
 
-  // Status filter
+  // Status filter (activo/inactivo)
   if (statusFilter.value) {
-    filtered = filtered.filter((student) => student.status === statusFilter.value);
+    const isActive = statusFilter.value === 'active';
+    filtered = filtered.filter((student) => student.activo === isActive);
   }
 
-  // Grade filter
-  if (gradeFilter.value) {
-    filtered = filtered.filter((student) => student.grade === gradeFilter.value);
+  // Grade filter (nivel)
+  if (gradeFilter.value && gradeFilter.value !== 'all') {
+    filtered = filtered.filter((student) => {
+      const nivel = (student as IStudent).nivel?.toString().toLowerCase() || '';
+      return nivel === gradeFilter.value.toLowerCase();
+    });
   }
 
-  // Instrument filter
-  if (instrumentFilter.value) {
-    filtered = filtered.filter((student) => student.instruments?.includes(instrumentFilter.value));
+  // Instrument filter (instrumento)
+  if (instrumentFilter.value && instrumentFilter.value !== 'all') {
+    filtered = filtered.filter((student) => {
+      const instrumento = (student as IStudent).instrumento?.toString().toLowerCase() || '';
+      return instrumento === instrumentFilter.value.toLowerCase();
+    });
   }
 
   // Sorting
-  filtered.sort((a, b) => {
-    const aValue = a[sortField.value];
-    const bValue = b[sortField.value];
-
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortOrder.value === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-    }
-
-    return sortOrder.value === 'asc' ? aValue - bValue : bValue - aValue;
-  });
+  if (sortField.value) {
+    filtered.sort((a, b) => {
+      const aValue = String((a as IStudent)[sortField.value as keyof IStudent] || '');
+      const bValue = String((b as IStudent)[sortField.value as keyof IStudent] || '');
+      return sortOrder.value === 'asc' 
+        ? aValue.localeCompare(bValue) 
+        : bValue.localeCompare(aValue);
+    });
+  }
 
   return filtered;
 });
 
 // Pagination
-const totalPages = computed(() => Math.ceil(filteredStudents.value.length / itemsPerPage.value));
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredStudents.value.length / itemsPerPage.value)));
+
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
 const endIndex = computed(() => startIndex.value + itemsPerPage.value);
 
@@ -515,8 +641,8 @@ const editStudent = (student: any) => {
   showEditModal.value = true;
 };
 
-const deleteStudent = (student: any) => {
-  selectedStudent.value = student;
+const deleteStudent = (_student: any) => {
+  selectedStudent.value = _student;
   showDeleteModal.value = true;
 };
 
@@ -528,7 +654,7 @@ const confirmDelete = async () => {
   }
 };
 
-const toggleStudentStatus = async (student: any) => {
+const toggleStudentStatus = async (student: IStudent) => {
   const newStatus = student.status === 'active' ? 'inactive' : 'active';
   await studentsStore.updateStudentStatus(student.id, newStatus);
 };
@@ -538,7 +664,7 @@ const handleStudentCreated = (student: any) => {
   studentsStore.loadStudents(); // Refresh list
 };
 
-const handleStudentUpdated = (student: any) => {
+const handleStudentUpdated = (student: IStudent) => {
   showEditModal.value = false;
   selectedStudent.value = null;
   studentsStore.loadStudents(); // Refresh list
@@ -551,6 +677,7 @@ const exportStudents = () => {
 // Watch for filter changes to reset pagination
 watch([searchQuery, statusFilter, gradeFilter, instrumentFilter], () => {
   currentPage.value = 1;
+  applyFilters();
 });
 
 // Lifecycle

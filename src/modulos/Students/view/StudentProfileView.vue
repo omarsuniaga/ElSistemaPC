@@ -518,6 +518,7 @@ import { useStudentsStore } from '../store/students';
 import { useClassesStore } from '../../Classes/store/classes';
 import { useAttendanceStore } from '../../Attendance/store/attendance';
 import { useAttendance } from '../../Attendance/composables/useAttendance';
+import { useOptimizedAttendance } from '../../Attendance/composables/useOptimizedAttendance';
 import { useTeachersStore } from '../../Teachers/store/teachers';
 import PerformanceWidget from '../../Performance/components/PerformanceWidget.vue';
 import FileUpload from '../../../components/FileUpload.vue';
@@ -767,279 +768,173 @@ const attendanceData = computed(() => {
 
 // Obtener y procesar los datos de asistencia del estudiante
 const studentAttendance = computed(() => {
-  if (!student.value || !studentId)
-    return {
-      records: [],
-      summary: {
-        total: 0,
-        present: 0,
-        absent: 0,
-        justified: 0,
-        late: 0,
-        attendanceRate: 0,
-      },
-      classification: 'Sin datos',
-      monthlyData: {},
-      recentRecords: [],
-      classPerformance: [],
-    };
-  // Obtener los registros de asistencia del estudiante usando el composable optimizado
-  const attendanceRecords = getStudentRecords.value(studentId);
-
-  // Si no hay registros, devolvemos un objeto vacío
-  if (!attendanceRecords || attendanceRecords.length === 0) {
-    return {
-      records: [],
-      summary: {
-        total: 0,
-        present: 0,
-        absent: 0,
-        justified: 0,
-        late: 0,
-        attendanceRate: 0,
-      },
-      classification: 'Sin datos',
-      monthlyData: {},
-      recentRecords: [],
-      classPerformance: [],
-    };
-  }
-
-  // Resumen de asistencias (normalizar estados a minúsculas para consistencia)
-  const present = attendanceRecords.filter(
-    (record) =>
-      record.status?.toLowerCase() === 'presente' || record.status?.toLowerCase() === 'present',
-  ).length;
-
-  const absent = attendanceRecords.filter(
-    (record) =>
-      record.status?.toLowerCase() === 'ausente' || record.status?.toLowerCase() === 'absent',
-  ).length;
-
-  const justified = attendanceRecords.filter(
-    (record) =>
-      (record.status?.toLowerCase() === 'ausente' || record.status?.toLowerCase() === 'absent') &&
-      record.justification,
-  ).length;
-
-  const late = attendanceRecords.filter(
-    (record) =>
-      record.status?.toLowerCase() === 'tardanza' ||
-      record.status?.toLowerCase() === 'tarde' ||
-      record.status?.toLowerCase() === 'late',
-  ).length;
-
-  const total = attendanceRecords.length;
-
-  // Para el cálculo de tasa de asistencia, consideramos presentes + justificados + tarde como "asistencias"
-  const attendedClasses = present + late;
-  const attendanceRate = total > 0 ? Math.round((attendedClasses / total) * 100) : 0;
-
-  // Clasificación del estudiante según su tasa de asistencia
-  let classification = 'Sin datos';
-  if (total > 0) {
-    if (attendanceRate >= 70) {
-      classification = 'Responsable';
-    } else if (attendanceRate >= 40) {
-      classification = 'Irregular';
-    } else {
-      classification = 'Crítico';
-    }
-  }
-
-  // Obtener rendimiento por clase
-  const classPerformance = [];
-
-  // Definir tipo para resumen de clases
-  interface ClassSummary {
-    classId: string
-    className: string
-    total: number
-    present: number
-    absent: number
-    justified: number
-    late: number
-    rate: number
-  }
-
-  const classesSummary: Record<string, ClassSummary> = {};
-
-  // Agrupar registros por clase
-  attendanceRecords.forEach((record) => {
-    if (!record.classId) return;
-
-    if (!classesSummary[record.classId]) {
-      classesSummary[record.classId] = {
-        classId: record.classId,
-        className: '',
-        total: 0,
-        present: 0,
-        absent: 0,
-        justified: 0,
-        late: 0,
-        rate: 0,
-      };
-    }
-
-    // Obtener nombre de la clase
-    if (!classesSummary[record.classId].className) {
-      const classInfo = classesStore.getClassById
-        ? classesStore.getClassById(record.classId)
-        : classesStore.classes.find((c) => c.id === record.classId);
-
-      if (classInfo) {
-        classesSummary[record.classId].className = classInfo.name || 'Clase sin nombre';
-      }
-    }
-
-    classesSummary[record.classId].total++;
-
-    if (record.status?.toLowerCase() === 'presente' || record.status?.toLowerCase() === 'present') {
-      classesSummary[record.classId].present++;
-    } else if (
-      record.status?.toLowerCase() === 'ausente' ||
-      record.status?.toLowerCase() === 'absent'
-    ) {
-      classesSummary[record.classId].absent++;
-      if (record.justification) {
-        classesSummary[record.classId].justified++;
-      }
-    } else if (
-      record.status?.toLowerCase() === 'tardanza' ||
-      record.status?.toLowerCase() === 'tarde' ||
-      record.status?.toLowerCase() === 'late'
-    ) {
-      classesSummary[record.classId].late++;
-    }
+  // Estado inicial
+  const result = ref({
+    records: [],
+    summary: {
+      total: 0,
+      present: 0,
+      absent: 0,
+      justified: 0,
+      late: 0,
+      attendanceRate: 0,
+    },
+    classification: 'Cargando...',
+    monthlyData: {},
+    recentRecords: [],
+    classPerformance: [],
   });
 
-  // Calcular tasa de asistencia para cada clase
-  Object.values(classesSummary).forEach((classData) => {
-    const attended = classData.present + classData.late;
-    classData.rate = classData.total > 0 ? Math.round((attended / classData.total) * 100) : 0;
-    classPerformance.push(classData);
-  });
-
-  // Ordenar clases por tasa de asistencia (de menor a mayor para resaltar problemas)
-  classPerformance.sort((a, b) => a.rate - b.rate);
-
-  // Datos para la gráfica por mes
-  const monthlyData = attendanceRecords.reduce((acc, record) => {
-    if (!record.Fecha) return acc;
+  // Función para cargar los datos
+  const loadAttendanceData = async () => {
+    if (!student.value || !studentId) return;
 
     try {
-      // Extraer el mes de la fecha
-      const date = new Date(record.Fecha);
-      const monthYear = format(date, 'MMM yyyy', { locale: es });
+      // Obtener los registros de asistencia del estudiante usando el composable optimizado
+      const attendanceRecords = await getStudentRecords(studentId, {
+        startDate: dateRange.value.start,
+        endDate: dateRange.value.end
+      });
+      
+      if (!attendanceRecords || attendanceRecords.length === 0) {
+        result.value = {
+          records: [],
+          summary: {
+            total: 0,
+            present: 0,
+            absent: 0,
+            justified: 0,
+            late: 0,
+            attendanceRate: 0,
+          },
+          classification: 'Sin datos',
+          monthlyData: {},
+          recentRecords: [],
+          classPerformance: [],
+        };
+        return;
+      }
 
-      if (!acc[monthYear]) {
-        acc[monthYear] = {
+      // Procesar los registros de asistencia
+      const records = attendanceRecords.map(record => ({
+        ...record,
+        // Asegurar que las fechas sean objetos Date
+        Fecha: record.Fecha ? new Date(record.Fecha) : null,
+        // Asegurar que los campos de asistencia estén definidos
+        Asistencia: record.Asistencia || false,
+        Justificada: record.Justificada || false,
+        Tardanza: record.Tardanza || false,
+        classId: record.classId || 'sin-clase',
+      }));
+
+      // Calcular resumen
+      const summary = {
+        total: records.length,
+        present: records.filter(r => r.Asistencia).length,
+        absent: records.filter(r => !r.Asistencia && !r.Justificada).length,
+        justified: records.filter(r => r.Justificada).length,
+        late: records.filter(r => r.Tardanza).length,
+        attendanceRate: records.length > 0 
+          ? Math.round((records.filter(r => r.Asistencia).length / records.length) * 100) 
+          : 0,
+      };
+
+      // Clasificación basada en el porcentaje de asistencia
+      let classification = 'Excelente';
+      if (summary.attendanceRate < 50) classification = 'Crítico';
+      else if (summary.attendanceRate < 75) classification = 'Bajo';
+      else if (summary.attendanceRate < 90) classification = 'Regular';
+
+      // Datos mensuales
+      const monthlyData = records.reduce((acc, record) => {
+        if (!record.Fecha) return acc;
+        const monthYear = `${record.Fecha.getFullYear()}-${String(record.Fecha.getMonth() + 1).padStart(2, '0')}`;
+        if (!acc[monthYear]) {
+          acc[monthYear] = { present: 0, total: 0 };
+        }
+        acc[monthYear].total++;
+        if (record.Asistencia) acc[monthYear].present++;
+        return acc;
+      }, {} as Record<string, { present: number; total: number }>);
+
+      // Registros recientes (últimos 5)
+      const recentRecords = [...records]
+        .sort((a, b) => (b.Fecha?.getTime() || 0) - (a.Fecha?.getTime() || 0))
+        .slice(0, 5);
+
+      // Rendimiento por clase
+      const classPerformance = Object.entries(
+        records.reduce((acc, record) => {
+          const classId = record.classId || 'sin-clase';
+          if (!acc[classId]) {
+            acc[classId] = { present: 0, total: 0, name: classId };
+          }
+          acc[classId].total++;
+          if (record.Asistencia) acc[classId].present++;
+          return acc;
+        }, {} as Record<string, { present: number; total: number; name: string }>)
+      ).map(([classId, { present, total, name }]) => ({
+        classId,
+        className: name,
+        attendanceRate: total > 0 ? Math.round((present / total) * 100) : 0,
+        totalClasses: total,
+      }));
+
+      // Gráfica
+      const labels = Object.keys(monthlyData);
+      const presentData = labels.map(m => monthlyData[m].present);
+      const absentData = labels.map(m => monthlyData[m].total - monthlyData[m].present);
+      const justifiedData = labels.map(m => records.filter(r => r.Fecha && r.Fecha.getFullYear() === parseInt(m.split('-')[0]) && r.Fecha.getMonth() === parseInt(m.split('-')[1]) - 1 && r.Justificada).length);
+      const lateData = labels.map(m => records.filter(r => r.Fecha && r.Fecha.getFullYear() === parseInt(m.split('-')[0]) && r.Fecha.getMonth() === parseInt(m.split('-')[1]) - 1 && r.Tardanza).length);
+      const attendanceRateData = labels.map(m => Math.round((monthlyData[m].present / monthlyData[m].total) * 100));
+
+      // Actualizar el resultado
+      result.value = {
+        records,
+        summary,
+        classification,
+        monthlyData,
+        recentRecords,
+        classPerformance,
+        chartData: {
+          labels,
+          presentData,
+          absentData,
+          justifiedData,
+          lateData,
+          attendanceRateData,
+        },
+      };
+
+    } catch (error) {
+      console.error('Error al cargar los registros de asistencia:', error);
+      result.value = {
+        records: [],
+        summary: {
+          total: 0,
           present: 0,
           absent: 0,
           justified: 0,
           late: 0,
-          total: 0,
-        };
-      }
-
-      acc[monthYear].total++;
-
-      if (
-        record.status?.toLowerCase() === 'presente' ||
-        record.status?.toLowerCase() === 'present'
-      ) {
-        acc[monthYear].present++;
-      } else if (
-        record.status?.toLowerCase() === 'ausente' ||
-        record.status?.toLowerCase() === 'absent'
-      ) {
-        acc[monthYear].absent++;
-        if (record.justification) {
-          acc[monthYear].justified++;
-        }
-      } else if (
-        record.status?.toLowerCase() === 'tardanza' ||
-        record.status?.toLowerCase() === 'tarde' ||
-        record.status?.toLowerCase() === 'late'
-      ) {
-        acc[monthYear].late++;
-      }
-    } catch (error) {
-      console.error('Error al procesar fecha:', record.Fecha, error);
-    }
-
-    return acc;
-  }, {});
-
-  // Convertir los datos mensuales para la gráfica
-  const months = Object.keys(monthlyData).slice(-6); // Últimos 6 meses
-  const presentData = months.map((m) => monthlyData[m].present);
-  const absentData = months.map((m) => monthlyData[m].absent);
-  const justifiedData = months.map((m) => monthlyData[m].justified);
-  const lateData = months.map((m) => monthlyData[m].late);
-  const attendanceRateData = months.map((m) => {
-    const attended = monthlyData[m].present + monthlyData[m].late;
-    return monthlyData[m].total > 0 ? Math.round((attended / monthlyData[m].total) * 100) : 0;
-  });
-
-  // Obtener los últimos 10 registros ordenados por fecha
-  const recentRecords = [...attendanceRecords]
-    .sort((a, b) => {
-      if (!a.Fecha || !b.Fecha) return 0;
-      return new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime();
-    })
-    .slice(0, 10)
-    .map((record) => {
-      // Enriquecer los datos con información adicional
-      const classInfo = classesStore.getClassById
-        ? classesStore.getClassById(record.classId)
-        : classesStore.classes.find((c) => c.id === record.classId);
-
-      const teacherInfo =
-        classInfo?.teacherId && teachersStore.getTeacherById
-          ? teachersStore.getTeacherById(classInfo.teacherId)
-          : teachersStore.teachers?.find((t) => t.id === classInfo?.teacherId);
-
-      const recordDate = new Date(record.Fecha);
-      return {
-        ...record,
-        className: classInfo?.name || 'Clase desconocida',
-        teacherName: teacherInfo?.name || 'Profesor desconocido',
-        formattedDate: recordDate
-          ? format(recordDate, 'EEEE d \'de\' MMMM yyyy', { locale: es })
-          : 'Fecha desconocida',
-        // Format the date day with capitalization for better readability
-        formattedDateCapitalized: recordDate
-          ? format(recordDate, 'EEEE d \'de\' MMMM yyyy', { locale: es }).replace(/^\w/, (c) =>
-            c.toUpperCase(),
-          )
-          : 'Fecha desconocida',
+          attendanceRate: 0,
+        },
+        classification: 'Error al cargar',
+        monthlyData: {},
+        recentRecords: [],
+        classPerformance: [],
       };
-    });
-
-  return {
-    records: attendanceRecords,
-    summary: {
-      total,
-      present,
-      absent,
-      justified,
-      late,
-      attendanceRate,
-    },
-    classification,
-    chartData: {
-      labels: months,
-      presentData,
-      absentData,
-      justifiedData,
-      lateData,
-      attendanceRateData,
-    },
-    monthlyData,
-    recentRecords,
-    classPerformance,
+    }
   };
+
+  // Cargar los datos iniciales
+  loadAttendanceData();
+
+  // Observar cambios en el rango de fechas
+  watch(dateRange, () => {
+    loadAttendanceData();
+  }, { deep: true });
+
+  return result.value;
 });
 
 // Variables para actualización de datos

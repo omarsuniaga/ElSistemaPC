@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Asistencias - OSIJPC</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f7fa;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .summary {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .summary-item {
+            background: #f8f9fc;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+        
+        .summary-item strong {
+            display: block;
+            font-size: 18px;
+            color: #333;
+        }
+        
+        .controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .filter-button {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .filter-button:hover {
+            background: #5a6fd8;
+        }
+        
+        .status-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        th:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4c93 100%);
+        }
+        
+        th.sortable::after {
+            content: ' ↕️';
+            opacity: 0.7;
+        }
+        
+        th.sort-asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+        
+        th.sort-desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+        
+        td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #e1e5e9;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fc;
+        }
+        
+        .nombre {
+            text-align: left !important;
+            font-weight: 500;
+            color: #2d3748;
+            min-width: 200px;
+        }
+        
+        .presente { background-color: #d4edda; color: #155724; font-weight: bold; }
+        .ausente { background-color: #f8d7da; color: #721c24; font-weight: bold; }
+        .tarde { background-color: #fff3cd; color: #856404; font-weight: bold; }
+        .justificado { background-color: #cce5ff; color: #004085; font-weight: bold; }
+        .retirado { background-color: #e2e3e5; color: #383d41; font-weight: bold; }
+        
+        .asistencia-alta { background-color: #d4edda; color: #155724; font-weight: bold; }
+        .asistencia-media { background-color: #fff3cd; color: #856404; font-weight: bold; }
+        .asistencia-baja { background-color: #f8d7da; color: #721c24; font-weight: bold; }
+        
+        @media (max-width: 768px) {
+            table {
+                font-size: 10px;
+            }
+            
+            th, td {
+                padding: 6px 4px;
+            }
+            
+            .nombre {
+                min-width: 150px;
+            }
+            
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-input, .filter-button {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Reporte Completo de Asistencias</h1>
+        <h2>Omar Orquesta Infantil - Junio/Julio 2025</h2>
+        <p>Período: 17/06 - 08/07/2025 | 11 Fechas de Clase</p>
+    </div>
+
+    <div class="summary">
+        <h3>📈 Estadísticas Generales</h3>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <strong id="totalEstudiantes">115</strong>
+                <span>Estudiantes Total</span>
+            </div>
+            <div class="summary-item">
+                <strong>11</strong>
+                <span>Fechas de Clase</span>
+            </div>
+            <div class="summary-item">
+                <strong id="promedioAsistencia">79.1%</strong>
+                <span>Asistencia Promedio</span>
+            </div>
+            <div class="summary-item">
+                <strong id="estudiantesVisibles">115</strong>
+                <span>Estudiantes Mostrados</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="filters">
+            <input type="text" id="searchName" class="filter-input" placeholder="🔍 Buscar por nombre...">
+            <select id="filterAsistencia" class="filter-input">
+                <option value="">📊 Todos los niveles</option>
+                <option value="alta">🟢 Asistencia Alta (≥80%)</option>
+                <option value="media">🟡 Asistencia Media (50-79%)</option>
+                <option value="baja">🔴 Asistencia Baja (<50%)</option>
+            </select>
+            <button class="filter-button" onclick="clearFilters()">🗑️ Limpiar Filtros</button>
+        </div>
+        
+        <div class="status-info">
+            <span id="filterStatus">Mostrando todos los estudiantes</span>
+            <span>Haz clic en las columnas para ordenar ↕️</span>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="asistenciaTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th class="sortable" data-column="nombre">Nombre Completo</th>
+                    <th class="sortable" data-column="presente">Presente</th>
+                    <th class="sortable" data-column="ausente">Ausente</th>
+                    <th class="sortable" data-column="tarde">Tarde</th>
+                    <th class="sortable" data-column="justificado">Justificado</th>
+                    <th class="sortable" data-column="retirado">Retirado</th>
+                    <th class="sortable" data-column="totalClases">Total Clases</th>
+                    <th class="sortable" data-column="porcentajeAsistencia">% Asistencia</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Los datos se llenarán dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const estudiantesData = [
+  {
+    "nombre": "Aarón Di Lorenzo",
+    "presente": 3,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 8,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Agostina Celeste Nardelli",
+    "presente": 2,
+    "ausente": 7,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 36.4
+  },
+  {
+    "nombre": "Alanna Pilier",
+    "presente": 0,
+    "ausente": 7,
+    "tarde": 0,
+    "justificado": 4,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 36.4
+  },
+  {
+    "nombre": "Albert Isael Medina",
+    "presente": 1,
+    "ausente": 7,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 3,
+    "totalClases": 11,
+    "porcentajeAsistencia": 9.1
+  },
+  {
+    "nombre": "Alegna Cuello Medina",
+    "presente": 2,
+    "ausente": 7,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 36.4
+  },
+  {
+    "nombre": "Alina Marola Jimenez",
+    "presente": 7,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 4,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Alondra Lorenzo Ogando",
+    "presente": 7,
+    "ausente": 4,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 63.6
+  },
+  {
+    "nombre": "Amelia Marlin Gutierrez",
+    "presente": 9,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Amy Balbuena",
+    "presente": 4,
+    "ausente": 7,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 36.4
+  },
+  {
+    "nombre": "Ana Giselle Taveras",
+    "presente": 10,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Ange Berline Colastin",
+    "presente": 1,
+    "ausente": 4,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 5,
+    "porcentajeAsistencia": 20
+  },
+  {
+    "nombre": "Angelita St Juste",
+    "presente": 9,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Angenie St Juste",
+    "presente": 8,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Ansherlin Zoe Contreras",
+    "presente": 3,
+    "ausente": 8,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 27.3
+  },
+  {
+    "nombre": "Argeiris Pacheco",
+    "presente": 3,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 5,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Ashley Saint Philippe",
+    "presente": 7,
+    "ausente": 2,
+    "tarde": 2,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 81.8
+  },
+  {
+    "nombre": "Axel Meitslitzer",
+    "presente": 7,
+    "ausente": 2,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 81.8
+  },
+  {
+    "nombre": "Ayleen Joanny Ramos",
+    "presente": 8,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Branny Melani Peguero",
+    "presente": 7,
+    "ausente": 4,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 63.6
+  },
+  {
+    "nombre": "Branyan Francisco Peguero",
+    "presente": 6,
+    "ausente": 5,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 54.5
+  },
+  {
+    "nombre": "Bryan Agustin Peguero",
+    "presente": 5,
+    "ausente": 5,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 54.5
+  },
+  {
+    "nombre": "Camille Urbaez Brito",
+    "presente": 0,
+    "ausente": 11,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 0
+  },
+  {
+    "nombre": "Cesar Andres Mendoza",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Charlotte Taveras",
+    "presente": 9,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Cher Akemi Corredor",
+    "presente": 2,
+    "ausente": 5,
+    "tarde": 0,
+    "justificado": 4,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 54.5
+  },
+  {
+    "nombre": "Christina Pierre",
+    "presente": 9,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Clarilus Castillo Díaz",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Daniel Monfismon Peralte",
+    "presente": 4,
+    "ausente": 7,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 36.4
+  },
+  {
+    "nombre": "Daraling Peguero",
+    "presente": 10,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Dariel Aquino Mejia",
+    "presente": 8,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 72.7
+  },
+  {
+    "nombre": "Darwin Jonas Tavarez",
+    "presente": 6,
+    "ausente": 5,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 54.5
+  },
+  {
+    "nombre": "Debora Dumond",
+    "presente": 4,
+    "ausente": 7,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 36.4
+  },
+  {
+    "nombre": "Diafreisi Dumond",
+    "presente": 4,
+    "ausente": 6,
+    "tarde": 1,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 45.5
+  },
+  {
+    "nombre": "Dialisa Baltazar",
+    "presente": 6,
+    "ausente": 5,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 54.5
+  },
+  {
+    "nombre": "Diamilca Dumond",
+    "presente": 2,
+    "ausente": 9,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 18.2
+  },
+  {
+    "nombre": "Diarilin Canela Castillo",
+    "presente": 11,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Dinora Amanda Evangelista",
+    "presente": 7,
+    "ausente": 4,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 63.6
+  },
+  {
+    "nombre": "Dyakenson Lamerique",
+    "presente": 9,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Edelyn Abreu Mejia",
+    "presente": 7,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 3,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Elianny Mejia",
+    "presente": 7,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 4,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Eliauris Adel Vasquez García",
+    "presente": 0,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 11,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Elisha Sosa",
+    "presente": 8,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 72.7
+  },
+  {
+    "nombre": "Emmanuel De los Santos",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Escarlet Lisbeth Martinez",
+    "presente": 9,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Esther Simond Rodriguez",
+    "presente": 0,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 8,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 72.7
+  },
+  {
+    "nombre": "Eva Taveras",
+    "presente": 2,
+    "ausente": 9,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 18.2
+  },
+  {
+    "nombre": "Feder de los Santos",
+    "presente": 11,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Gabriela Jireh Marte",
+    "presente": 10,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Geily Yosairy Diviche",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Genesis Mariel Sosa Silverio",
+    "presente": 9,
+    "ausente": 2,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 81.8
+  },
+  {
+    "nombre": "Helen Sofia Alvarado Pérez",
+    "presente": 9,
+    "ausente": 2,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 81.8
+  },
+  {
+    "nombre": "Isabella Alejandra Delgadillo",
+    "presente": 10,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Isabella Anthonieta Salazar",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Jacob David Rojas Arellán",
+    "presente": 11,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Jaime De La Cruz",
+    "presente": 9,
+    "ausente": 0,
+    "tarde": 1,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Jazlin Gomez Burgos",
+    "presente": 0,
+    "ausente": 11,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 0
+  },
+  {
+    "nombre": "Jeydhen Andres Peguero",
+    "presente": 4,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 4,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 72.7
+  },
+  {
+    "nombre": "Jhoennsy Sariel Castillo",
+    "presente": 9,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Jhouse Manuel Lacen",
+    "presente": 9,
+    "ausente": 2,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 81.8
+  },
+  {
+    "nombre": "Jose Angel Lopez Matos",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Jose Tomás Lorenzo",
+    "presente": 10,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Josias Alejandro Fariñas",
+    "presente": 2,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 6,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 72.7
+  },
+  {
+    "nombre": "Julianny Dalexa Mendez",
+    "presente": 0,
+    "ausente": 9,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 18.2
+  },
+  {
+    "nombre": "Kenia Pilier",
+    "presente": 0,
+    "ausente": 7,
+    "tarde": 0,
+    "justificado": 4,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 36.4
+  },
+  {
+    "nombre": "Laura Gil Santana",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Lewis Rhayniel Novas",
+    "presente": 5,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 6,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Lia Annelise Lopez",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Lia Bonilla Santana",
+    "presente": 6,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 4,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Liam Rhaylin Novas",
+    "presente": 6,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 5,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Lucas Gutierrez",
+    "presente": 7,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 8,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Mabel Schlenker",
+    "presente": 1,
+    "ausente": 4,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 5,
+    "porcentajeAsistencia": 20
+  },
+  {
+    "nombre": "Maia Santana Aracena",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Marcos David Mejia",
+    "presente": 6,
+    "ausente": 4,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 63.6
+  },
+  {
+    "nombre": "Maria Elizabeth Leonardo",
+    "presente": 4,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 4,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 72.7
+  },
+  {
+    "nombre": "María Naroldy Hilario",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "María Victoria Albornoz",
+    "presente": 6,
+    "ausente": 4,
+    "tarde": 1,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 63.6
+  },
+  {
+    "nombre": "Marthin Alejandro Ramos",
+    "presente": 11,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Mathias Alejandro Ramos",
+    "presente": 11,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Mauricio José Urquia",
+    "presente": 2,
+    "ausente": 8,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 27.3
+  },
+  {
+    "nombre": "Micka Edouard La Foret",
+    "presente": 0,
+    "ausente": 11,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 0
+  },
+  {
+    "nombre": "Nairoby Jean",
+    "presente": 6,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 4,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Nathan Rhayluis Novas",
+    "presente": 5,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 6,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Nathanael T. Minyetty",
+    "presente": 8,
+    "ausente": 2,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 81.8
+  },
+  {
+    "nombre": "Nelyery Hernández",
+    "presente": 2,
+    "ausente": 2,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 5,
+    "porcentajeAsistencia": 60
+  },
+  {
+    "nombre": "Nicole Castillo Díaz",
+    "presente": 9,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Nissi Rosibel Peguero",
+    "presente": 1,
+    "ausente": 10,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 9.1
+  },
+  {
+    "nombre": "Noah Bismar Peralta",
+    "presente": 2,
+    "ausente": 8,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 27.3
+  },
+  {
+    "nombre": "Nolberto Enriquez Brito",
+    "presente": 1,
+    "ausente": 6,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 3,
+    "totalClases": 11,
+    "porcentajeAsistencia": 18.2
+  },
+  {
+    "nombre": "Orlando Sebastian Castro",
+    "presente": 3,
+    "ausente": 4,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 8,
+    "porcentajeAsistencia": 50
+  },
+  {
+    "nombre": "Rafreisis Marte Mateo",
+    "presente": 7,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 72.7
+  },
+  {
+    "nombre": "Rebecca Jeanpierre",
+    "presente": 4,
+    "ausente": 7,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 36.4
+  },
+  {
+    "nombre": "Robner Allan García",
+    "presente": 8,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 72.7
+  },
+  {
+    "nombre": "Rosyairy Gabriel Reyes",
+    "presente": 10,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 90.9
+  },
+  {
+    "nombre": "Rousse Angelina Martinez",
+    "presente": 8,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 11,
+    "porcentajeAsistencia": 72.7
+  },
+  {
+    "nombre": "Ruth Esther Camille",
+    "presente": 5,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 9,
+    "porcentajeAsistencia": 66.7
+  },
+  {
+    "nombre": "Samuel Eliezer Vasquez",
+    "presente": 0,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 9,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 90
+  },
+  {
+    "nombre": "Sandel Aquino Garcia",
+    "presente": 1,
+    "ausente": 6,
+    "tarde": 0,
+    "justificado": 3,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 40
+  },
+  {
+    "nombre": "Santa Isaura Castillo Díaz",
+    "presente": 9,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 90
+  },
+  {
+    "nombre": "Sebastian Santana",
+    "presente": 1,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 3,
+    "totalClases": 7,
+    "porcentajeAsistencia": 14.3
+  },
+  {
+    "nombre": "Sol Marte",
+    "presente": 3,
+    "ausente": 3,
+    "tarde": 0,
+    "justificado": 3,
+    "retirado": 1,
+    "totalClases": 10,
+    "porcentajeAsistencia": 60
+  },
+  {
+    "nombre": "Williams Abraham Fariñas",
+    "presente": 6,
+    "ausente": 2,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 80
+  },
+  {
+    "nombre": "Yangel Jair Medina",
+    "presente": 9,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Yarolin Jimenez",
+    "presente": 1,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 2,
+    "totalClases": 4,
+    "porcentajeAsistencia": 25
+  },
+  {
+    "nombre": "Yeiri Alexandra Michel",
+    "presente": 7,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 3,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Yereni Esther Michel",
+    "presente": 9,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Yeseña Joseph Bless",
+    "presente": 6,
+    "ausente": 2,
+    "tarde": 1,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 80
+  },
+  {
+    "nombre": "Yorgelis Adalgisa Ballestero",
+    "presente": 1,
+    "ausente": 9,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 10
+  },
+  {
+    "nombre": "Yorgelis Antonella Caricote",
+    "presente": 4,
+    "ausente": 3,
+    "tarde": 1,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 70
+  },
+  {
+    "nombre": "Ysabella Valentina Brito",
+    "presente": 10,
+    "ausente": 0,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 100
+  },
+  {
+    "nombre": "Ysmel Viola",
+    "presente": 7,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 90
+  },
+  {
+    "nombre": "Yurma Stjuste Philogene",
+    "presente": 6,
+    "ausente": 2,
+    "tarde": 1,
+    "justificado": 1,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 80
+  },
+  {
+    "nombre": "Yvelande Achemetre",
+    "presente": 0,
+    "ausente": 2,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 2,
+    "totalClases": 4,
+    "porcentajeAsistencia": 0
+  },
+  {
+    "nombre": "Zara Isabella Diaz Bodre",
+    "presente": 9,
+    "ausente": 1,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 90
+  },
+  {
+    "nombre": "Zoe García Acevedo",
+    "presente": 4,
+    "ausente": 6,
+    "tarde": 0,
+    "justificado": 0,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 40
+  },
+  {
+    "nombre": "Zoe Marte Mateo",
+    "presente": 6,
+    "ausente": 2,
+    "tarde": 0,
+    "justificado": 2,
+    "retirado": 0,
+    "totalClases": 10,
+    "porcentajeAsistencia": 80
+  }
+];
+
+        let currentData = [...estudiantesData];
+        let currentSort = { column: null, direction: null };
+
+        function getAsistenciaClass(asistencia) {
+            if (asistencia >= 80) return 'asistencia-alta';
+            if (asistencia >= 50) return 'asistencia-media';
+            return 'asistencia-baja';
+        }
+
+        function renderTable(data = currentData) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach((estudiante, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td class="nombre">${estudiante.nombre}</td>
+                    <td class="presente">${estudiante.presente}</td>
+                    <td class="ausente">${estudiante.ausente}</td>
+                    <td class="tarde">${estudiante.tarde}</td>
+                    <td class="justificado">${estudiante.justificado}</td>
+                    <td class="retirado">${estudiante.retirado}</td>
+                    <td>${estudiante.totalClases}</td>
+                    <td class="${getAsistenciaClass(estudiante.porcentajeAsistencia)}">${estudiante.porcentajeAsistencia}%</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Actualizar estadísticas
+            updateStats(data);
+        }
+
+        function updateStats(data) {
+            const promedio = data.reduce((sum, est) => sum + est.porcentajeAsistencia, 0) / data.length;
+            document.getElementById('estudiantesVisibles').textContent = data.length;
+            document.getElementById('promedioAsistencia').textContent = promedio.toFixed(1) + '%';
+        }
+
+        function sortTable(column) {
+            let direction = 'asc';
+            
+            // Si ya está ordenado por esta columna, cambiar dirección
+            if (currentSort.column === column && currentSort.direction === 'asc') {
+                direction = 'desc';
+            }
+            
+            currentSort = { column, direction };
+            
+            // Remover clases de ordenamiento de todos los headers
+            document.querySelectorAll('th').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+            });
+            
+            // Agregar clase al header actual
+            const header = document.querySelector(`th[data-column="${column}"]`);
+            header.classList.add(direction === 'asc' ? 'sort-asc' : 'sort-desc');
+            
+            // Ordenar datos
+            currentData.sort((a, b) => {
+                let valueA = a[column];
+                let valueB = b[column];
+                
+                // Para strings, hacer comparación insensible a mayúsculas
+                if (typeof valueA === 'string') {
+                    valueA = valueA.toLowerCase();
+                    valueB = valueB.toLowerCase();
+                }
+                
+                if (direction === 'asc') {
+                    return valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+                } else {
+                    return valueA > valueB ? -1 : valueA < valueB ? 1 : 0;
+                }
+            });
+            
+            renderTable(currentData);
+        }
+
+        function filterData() {
+            const searchTerm = document.getElementById('searchName').value.toLowerCase();
+            const asistenciaFilter = document.getElementById('filterAsistencia').value;
+            
+            let filteredData = estudiantesData.filter(estudiante => {
+                const nameMatch = estudiante.nombre.toLowerCase().includes(searchTerm);
+                let asistenciaMatch = true;
+                
+                if (asistenciaFilter === 'alta') {
+                    asistenciaMatch = estudiante.porcentajeAsistencia >= 80;
+                } else if (asistenciaFilter === 'media') {
+                    asistenciaMatch = estudiante.porcentajeAsistencia >= 50 && estudiante.porcentajeAsistencia < 80;
+                } else if (asistenciaFilter === 'baja') {
+                    asistenciaMatch = estudiante.porcentajeAsistencia < 50;
+                }
+                
+                return nameMatch && asistenciaMatch;
+            });
+            
+            currentData = filteredData;
+            
+            // Mantener el ordenamiento actual si existe
+            if (currentSort.column) {
+                sortTable(currentSort.column);
+            } else {
+                renderTable(filteredData);
+            }
+            
+            updateFilterStatus(filteredData.length, searchTerm, asistenciaFilter);
+        }
+
+        function updateFilterStatus(count, searchTerm, asistenciaFilter) {
+            let status = `Mostrando ${count} de ${estudiantesData.length} estudiantes`;
+            
+            if (searchTerm || asistenciaFilter) {
+                status += ' (filtrado';
+                if (searchTerm) status += ` por "${searchTerm}"`;
+                if (asistenciaFilter) status += ` por ${asistenciaFilter} asistencia`;
+                status += ')';
+            }
+            
+            document.getElementById('filterStatus').textContent = status;
+        }
+
+        function clearFilters() {
+            document.getElementById('searchName').value = '';
+            document.getElementById('filterAsistencia').value = '';
+            currentData = [...estudiantesData];
+            renderTable();
+            updateFilterStatus(estudiantesData.length, '', '');
+        }
+
+        // Event listeners
+        document.getElementById('searchName').addEventListener('input', filterData);
+        document.getElementById('filterAsistencia').addEventListener('change', filterData);
+
+        // Event listeners para ordenamiento
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const column = th.dataset.column;
+                sortTable(column);
+            });
+        });
+
+        // Inicializar tabla
+        renderTable();
+        updateFilterStatus(estudiantesData.length, '', '');
+    </script>
+</body>
+</html>

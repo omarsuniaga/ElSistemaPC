@@ -72,6 +72,9 @@ export function useAttendance() {
   const currentMonth = ref(new Date());
   const selectedDate = ref<Date | null>(null);
   const isModalOpen = ref(false);
+  
+  // ID de la clase actual (desde la ruta)
+  const classId = computed(() => route.params.classId as string);
 
   // 3. ESTADO COMPUTADO (VISTAS DERIVADAS DEL ESTADO)
 
@@ -324,6 +327,15 @@ export function useAttendance() {
     isModalOpen,
     classesForSelectedDay,
     attendanceList,
+    classId,
+    // Formato de fecha para el componente ClassObservationsManager (YYYY-MM-DD)
+    selectedDate: computed(() => {
+      const dateParam = route.params.date as string;
+      if (dateParam) {
+        return dateParam; // Ya está en formato YYYY-MM-DD desde la ruta
+      }
+      return selectedDate.value ? format(selectedDate.value, 'yyyy-MM-dd') : '';
+    }),
 
     // Funciones
     changeMonth,

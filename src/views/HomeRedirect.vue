@@ -10,6 +10,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
@@ -35,7 +36,7 @@ onMounted(async () => {
     if (normalizedRole.includes('maestro') || normalizedRole.includes('teacher')) {
       router.replace('/teacher');
     } else if (normalizedRole.includes('director') || normalizedRole.includes('admin')) {
-      router.replace('/dashboard');
+      router.replace('/admin');
     } else if (normalizedRole.includes('superusuario')) {
       router.replace('/superusuario');
     } else {

@@ -64,18 +64,24 @@ export const AttendanceExportService = {
         const justified = data.students.filter(s => s.status === 'justified').length;
         const total = data.students.length;
         
+        // Definir startY con un valor predeterminado seguro
+        const startY = 40;
+        
         // Añadir tabla usando jspdf-autotable
         (doc as any).autoTable({
           head: [['Estudiante', 'Estado', 'Justificación']],
           body: tableData,
-          startY: 40,
+          startY: startY, // Usar el valor seguro
           theme: 'grid',
           styles: { fontSize: 10 },
           headStyles: { fillColor: [41, 128, 185] }
         });
         
-        // Obtener posición final de la tabla
-        let finalY = (doc as any).lastAutoTable.finalY + 10;
+        // Verificar si lastAutoTable existe antes de acceder a finalY
+        let finalY = startY + 10; // Valor predeterminado en caso de error
+        if ((doc as any).lastAutoTable && (doc as any).lastAutoTable.finalY !== undefined) {
+          finalY = (doc as any).lastAutoTable.finalY + 10;
+        }
         
         // Añadir resumen de estadísticas
         doc.setFontSize(12);

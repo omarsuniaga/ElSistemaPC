@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue';
-import { defineProps, defineEmits, defineExpose } from 'vue';
+import { defineProps, defineExpose } from 'vue';
 
 const props = defineProps({
   searchQuery: String,

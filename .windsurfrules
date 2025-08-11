@@ -1,0 +1,25 @@
+<code_style>
+1. Responder SIEMPRE en ESPAÑOL.
+2. Máx. 600 líneas por archivo.
+; 3. Usar <script setup> en todos los SFC.
+4. Tailwind para estilos; evitar CSS “a pelo”.
+</code_style>
+
+<architecture>
+1. Arquitectura Limpia + MVC + flujo: View↔Component↔Composable↔Store↔Service↔Firebase.
+2. Modularidad obligatoria; sin lógica de negocio en la vista.
+; 3. Composition API sobre Options API.
+</architecture>
+
+<tech_stack>
+; Vue 3 • Vue Router • Pinia • Firebase/Firestore • Tailwind CSS • TypeScript
+</tech_stack>
+
+<process>
+1. Entregar plan estructurado en cada solicitud.
+2. Reglas concisas (≤ 1 línea); evita ensayos largos.
+3. Prioriza lo inesperado; no repetir obviedades de stack.
+4. Actualiza Memories o .windsurfrules cuando cambien normas.
+5. Tests/linting automáticos + Auto‑fix activado; pipeline bloquea violaciones.
+6. Arquitecto Principal revisa y aprueba PR.
+</process>

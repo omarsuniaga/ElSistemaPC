@@ -132,22 +132,31 @@ export const useTeachersStore = defineStore('teachers', () => {
   /**
    * Verifica si el usuario puede crear maestros
    */
-  const canCreate = computed(() => rbacStore.hasPermission('teachers_create'));
+  const isAdminRole = computed(() => {
+    const role = (authStore.user?.role || '').toLowerCase();
+    return role === 'director' || role === 'admin' || role === 'superusuario';
+  });
+
+  const canCreate = computed(
+    () => isAdminRole.value || rbacStore.hasPermission('teachers_create'),
+  );
 
   /**
    * Verifica si el usuario puede ver maestros
    */
-  const canView = computed(() => rbacStore.hasPermission('teachers_view'));
+  const canView = computed(() => isAdminRole.value || rbacStore.hasPermission('teachers_view'));
 
   /**
    * Verifica si el usuario puede editar maestros
    */
-  const canEdit = computed(() => rbacStore.hasPermission('teachers_edit'));
+  const canEdit = computed(() => isAdminRole.value || rbacStore.hasPermission('teachers_edit'));
 
   /**
    * Verifica si el usuario puede eliminar maestros
    */
-  const canDelete = computed(() => rbacStore.hasPermission('teachers_delete'));
+  const canDelete = computed(
+    () => isAdminRole.value || rbacStore.hasPermission('teachers_delete'),
+  );
 
   // ==================== ACTIONS ====================
 

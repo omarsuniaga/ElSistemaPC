@@ -365,6 +365,8 @@ const {
   getActivityCountForDate,
   getTeacherClassesForDate,
   preloadCriticalData,
+  calendarIndicators: importedCalendarIndicators, // Renombrado para evitar conflicto
+  loadCalendarIndicators,
 } = useAttendanceOptimized();
 
 // 🎯 Estado del dashboard
@@ -433,40 +435,8 @@ const selectedDayStatus = computed(() => {
   }
 });
 
-// Indicadores de calendario para el mes actual
-const calendarIndicators = computed(() => {
-  const start = startOfMonth(currentMonth.value);
-  const end = endOfMonth(currentMonth.value);
-  const days = eachDayOfInterval({ start, end });
-
-  const indicators = days.reduce(
-    (acc, day) => {
-      const dateStr = format(day, 'yyyy-MM-dd');
-      const hasActivity = hasActivityOnDate(dateStr);
-      const activityCount = getActivityCountForDate(dateStr);
-
-      if (hasActivity) {
-        acc[dateStr] = {
-          hasActivity: true,
-          count: activityCount,
-          status: 'completed', // TODO: calcular estado real basado en clases completadas vs pendientes
-        };
-      }
-
-      return acc;
-    },
-    {} as Record<string, any>,
-  );
-
-  // Debug log para ver los indicadores generados
-  console.log('📊 [AttendanceDashboard] Calendar indicators computed:', {
-    totalDays: days.length,
-    activeDays: Object.keys(indicators).length,
-    indicators,
-    attendanceDocuments: attendanceStore.attendanceDocuments.length,
-  });
-
-  return indicators;
+// Usar los indicadores importados del composable
+const calendarIndicators = computed(() => importedCalendarIndicators.value);
 });
 
 /**
@@ -757,21 +727,16 @@ onMounted(async () => {
     // 1. Precargar datos críticos
     await preloadCriticalData();
 
-    // 2. Cargar documentos de asistencia para el período actual
-    const start = format(startOfMonth(currentMonth.value), 'yyyy-MM-dd');
-    const end = format(endOfMonth(currentMonth.value), 'yyyy-MM-dd');
-    
-    console.log('📄 [AttendanceDashboard] Loading attendance documents for:', { start, end });
-    await attendanceStore.fetchAttendanceDocuments(start, end);
+    // 2. Cargar indicadores y datos del mes simultáneamente
+    await Promise.all([
+      loadMonthData(currentMonth.value),
+      loadCalendarIndicators(),
+    ]);
 
-    // 3. Cargar datos del calendario
-    await loadMonthData(currentMonth.value);
-
-    // 4. Cargar clases para hoy
+    // 3. Cargar clases para hoy
     await loadClassesForSelectedDay(selectedDay.value);
 
     console.log('✅ [AttendanceDashboard] Dashboard initialized successfully');
-    console.log('📊 [AttendanceDashboard] Calendar indicators:', calendarIndicators.value);
   } catch (err) {
     console.error('❌ [AttendanceDashboard] Error initializing dashboard:', err);
   }

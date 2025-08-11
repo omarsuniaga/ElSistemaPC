@@ -13,6 +13,16 @@
       @emergency="modal.open('emergency')"
       @change-view="state.view = $event"
     />
+<!-- Botón para ver el reporte de asistencias -->
+    <div class="flex justify-center mt-4">
+      <router-link 
+        to="/attendance/report"
+        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+      >
+        <span>Ver Reporte de Asistencias</span>
+        📊
+      </router-link>
+    </div>
 
     <!-- Body depending on view -->
     <Calendar
@@ -93,6 +103,8 @@ onMounted(() => state.init());
 function handleSaved() {
   toast.success('Asistencia guardada');
 }
+
+
 </script>
 
 <style scoped>

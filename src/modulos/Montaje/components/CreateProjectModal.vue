@@ -72,7 +72,7 @@ type="submit"
 </template>
 
 <script setup lang="ts">
-import { ref, defineEmits } from 'vue';
+import { ref } from 'vue';
 import { useMontaje } from '../composables/useMontaje';
 
 const emit = defineEmits(['close', 'projectCreated']);

@@ -278,7 +278,7 @@ class="bg-blue-500 h-1 rounded-full transition-all duration-300"
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineEmits, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import type { MusicalWork } from '../types';
 import ScheduleSessionModal from './ScheduleSessionModal.vue';

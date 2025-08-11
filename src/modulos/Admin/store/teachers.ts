@@ -1,5 +1,3 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
 import {
   collection,
   query,
@@ -11,22 +9,14 @@ import {
   deleteDoc,
   orderBy,
 } from 'firebase/firestore';
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+
+import { Teacher } from '../../Teachers/types/teachers';
 import { db } from '@/firebase';
 
-interface Teacher {
-  id: string
-  name: string
-  email: string
-  phone?: string
-  specialty: string[]
-  experience: number
-  status: 'active' | 'inactive'
-  bio?: string
-  profileImage?: string
+interface IAdminTeacher extends Teacher {
   assignedClasses?: string[]
-  availableHours?: string[]
-  createdAt: Date
-  updatedAt: Date
 }
 
 export const useAdminTeachersStore = defineStore('adminTeachers', () => {

@@ -127,31 +127,48 @@ Editor optimizado para observaciones de clase con funciones inteligentes
           class="w-full min-h-24 max-h-40 resize-none border-0 focus:ring-0 text-sm text-gray-900 dark:text-white bg-transparent placeholder-gray-500 dark:placeholder-gray-400"
           @focus="handleFocus"
           @blur="handleBlur"
+          @input="handleInput"
         />
+
+        <!-- Autocompletado inteligente -->
+        <div v-if="showSuggestions && filteredSuggestions.length > 0" class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded shadow-lg">
+          <ul>
+            <li
+              v-for="(suggestion, idx) in filteredSuggestions"
+              :key="suggestion"
+              :class="['px-3 py-2 text-sm cursor-pointer', idx === suggestionIndex ? 'bg-blue-100 dark:bg-blue-900' : 'hover:bg-gray-100 dark:hover:bg-gray-700']"
+              @mousedown.prevent="selectSuggestion(suggestion)"
+            >
+              {{ suggestion }}
+            </li>
+          </ul>
+        </div>
 
         <!-- Acciones rápidas -->
         <div v-if="localValue" class="mt-2 flex items-center justify-between">
           <div class="flex space-x-2">
+              <button
+                type="button"
+                class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                @click="insertQuickText('Hoy se trabajó con:\n- '); focusTextarea();"
+              >
+                + Hoy se trabajó con:
+              </button>
+              <button
+                type="button"
+                class="text-xs text-indigo-600 hover:text-indigo-800 font-medium border border-indigo-200 rounded px-2"
+                @click="emit('manage-criteria')"
+              >
+                Gestionar criterios
+              </button>
             <button
+              v-for="phrase in frequentPhrases"
+              :key="phrase"
               type="button"
               class="text-xs text-blue-600 hover:text-blue-800 font-medium"
-              @click="insertQuickText('Excelente participación. ')"
+              @click="insertQuickText(phrase + ' '); focusTextarea();"
             >
-              + Participación
-            </button>
-            <button
-              type="button"
-              class="text-xs text-blue-600 hover:text-blue-800 font-medium"
-              @click="insertQuickText('Necesita mejorar atención. ')"
-            >
-              + Atención
-            </button>
-            <button
-              type="button"
-              class="text-xs text-blue-600 hover:text-blue-800 font-medium"
-              @click="insertQuickText('Progreso notable. ')"
-            >
-              + Progreso
+              {{ phrase.length > 30 ? phrase.slice(0, 30) + '…' : phrase }}
             </button>
           </div>
 
@@ -162,6 +179,9 @@ Editor optimizado para observaciones de clase con funciones inteligentes
           >
             Limpiar
           </button>
+        </div>
+        <div v-if="localValue.includes('-')" class="text-xs text-gray-400 mt-1">
+          <span>Las líneas que comienzan con '-' se mostrarán como viñetas (•) al guardar o exportar.</span>
         </div>
       </div>
 
@@ -215,6 +235,8 @@ Editor optimizado para observaciones de clase con funciones inteligentes
 </template>
 
 <script setup lang="ts">
+// Autocompletado
+import { onMounted, onBeforeUnmount } from 'vue';
 import { debounce } from 'lodash-es';
 import { ref, computed, watch, nextTick } from 'vue';
 import { PencilIcon, BookmarkIcon } from '@heroicons/vue/24/outline';
@@ -246,6 +268,7 @@ const props = defineProps<{
   disabled?: boolean;
   showTemplates?: boolean;
   templates?: IObservationTemplate[];
+  criteria?: string[];
 }>();
 
 // Emits
@@ -253,8 +276,9 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
   'update:category': [category: 'positive' | 'attention' | 'behavior' | 'academic' | 'general']
   'update:isPrivate': [isPrivate: boolean]
-  save: [observation: ClassObservation]
-  'template-selected': [template: ObservationTemplate]
+  save: [observation: IClassObservation]
+  'template-selected': [template: IObservationTemplate]
+  'manage-criteria': []
 }>();
 
 // Estado local
@@ -265,6 +289,95 @@ const localIsPrivate = ref(props.isPrivate || false);
 const showTemplateList = ref(false);
 const isFocused = ref(false);
 const isExpanded = ref(false);
+
+// Autocompletado
+const showSuggestions = ref(false);
+const suggestionIndex = ref(0);
+const filteredSuggestions = ref<string[]>([]);
+let lastInputValue = '';
+
+// Frases frecuentes (simples, por ahora solo en la sesión)
+const phraseStats = ref<Record<string, number>>({});
+const frequentPhrases = computed(() => {
+  // Extraer frases del historial del campo localValue
+  // Solo contar frases que sean mayores a 10 caracteres y terminen en punto
+  const matches = localValue.value.match(/[^.]+\./g) || [];
+  matches.forEach((phrase) => {
+    const clean = phrase.trim();
+    if (clean.length > 10) {
+      phraseStats.value[clean] = (phraseStats.value[clean] || 0) + 1;
+    }
+  });
+  // Ordenar por frecuencia y devolver las 3-4 más usadas
+  return Object.entries(phraseStats.value)
+    .sort((a, b) => b[1] - a[1])
+    .map(([phrase]) => phrase)
+    .slice(0, 4);
+});
+
+// Sugerencias: frases frecuentes + plantillas + criterios personalizados (sin 'Hoy se trabajó con:')
+const allSuggestions = computed(() => {
+  const phrases = frequentPhrases.value.filter(p => p !== 'Hoy se trabajó con:\n- ');
+  const templates = filteredTemplates.value.map(t => t.content).filter(t => t !== 'Hoy se trabajó con:\n- ');
+  const criteria = (props.criteria || []).filter(c => c !== 'Hoy se trabajó con:\n- ');
+  return Array.from(new Set([...criteria, ...phrases, ...templates]));
+});
+
+const handleInput = (e: Event) => {
+  const value = (e.target as HTMLTextAreaElement).value;
+  lastInputValue = value;
+  // Mostrar sugerencias si hay texto y el usuario está escribiendo
+  if (value.length > 2) {
+    const lower = value.toLowerCase();
+    filteredSuggestions.value = allSuggestions.value.filter(s => s.toLowerCase().includes(lower) && s.toLowerCase() !== lower);
+    showSuggestions.value = filteredSuggestions.value.length > 0;
+    suggestionIndex.value = 0;
+  } else {
+    showSuggestions.value = false;
+    filteredSuggestions.value = [];
+  }
+};
+
+const selectSuggestion = (suggestion: string) => {
+  localValue.value = suggestion;
+  showSuggestions.value = false;
+  filteredSuggestions.value = [];
+  updateValue();
+  focusTextarea();
+};
+
+// Navegación con teclado para sugerencias
+const handleKeydown = (e: KeyboardEvent) => {
+  if (!showSuggestions.value || filteredSuggestions.value.length === 0) return;
+  if (e.key === 'ArrowDown') {
+    suggestionIndex.value = (suggestionIndex.value + 1) % filteredSuggestions.value.length;
+    e.preventDefault();
+  } else if (e.key === 'ArrowUp') {
+    suggestionIndex.value = (suggestionIndex.value - 1 + filteredSuggestions.value.length) % filteredSuggestions.value.length;
+    e.preventDefault();
+  } else if (e.key === 'Enter') {
+    selectSuggestion(filteredSuggestions.value[suggestionIndex.value]);
+    e.preventDefault();
+  } else if (e.key === 'Escape') {
+    showSuggestions.value = false;
+    filteredSuggestions.value = [];
+    e.preventDefault();
+  }
+};
+
+onMounted(() => {
+  const textarea = textareaRef.value;
+  if (textarea) {
+    textarea.addEventListener('keydown', handleKeydown);
+  }
+});
+
+onBeforeUnmount(() => {
+  const textarea = textareaRef.value;
+  if (textarea) {
+    textarea.removeEventListener('keydown', handleKeydown);
+  }
+});
 
 // Computed properties
 const characterCount = computed(() => localValue.value.length);

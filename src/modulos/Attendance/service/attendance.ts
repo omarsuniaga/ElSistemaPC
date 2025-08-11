@@ -45,10 +45,14 @@ const getAttendanceDocId = (fecha: string, classId: string): string => `${fecha}
 
 /**
  * Obtiene un documento de asistencia por date y clase
+ * @param fecha - La fecha del documento
+ * @param classId - El ID de la clase
+ * @param teacherId - El ID del profesor (opcional, para verificar permisos)
  */
 export const getAttendanceDocumentFirebase = async (
   fecha: string,
   classId: string,
+  teacherId?: string,
 ): Promise<AttendanceDocument | null> => {
   try {
     const docId = getAttendanceDocId(fecha, classId);
@@ -57,10 +61,20 @@ export const getAttendanceDocumentFirebase = async (
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      return {
+      const document = {
         id: docSnap.id,
         ...data,
       } as AttendanceDocument;
+      
+      // Si se proporciona teacherId, verificar que coincida con el documento
+      if (teacherId && document.teacherId && document.teacherId !== teacherId) {
+        console.warn(
+          `Documento de asistencia pertenece a otro profesor: ${document.teacherId} vs ${teacherId}`
+        );
+        return null;
+      }
+      
+      return document;
     }
     return null;
   } catch (error) {

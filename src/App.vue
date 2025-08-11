@@ -76,13 +76,21 @@ const hasActiveNotifications = ref(false);
 const pendingOperations = ref(0);
 const cleanupSyncManager: (() => void) | null = null;
 
-// Fallback timer to prevent infinite loading
-setTimeout(() => {
+// Fallback timer to prevent infinite loading - increased timeout
+const initTimeout = setTimeout(() => {
   if (!isAppInitialized.value) {
-    console.warn('⚠️ [App] Timeout alcanzado, forzando inicialización');
+    console.warn('⚠️ [App] Timeout alcanzado (10s), forzando inicialización');
+    console.warn('⚠️ [App] Esto puede indicar problemas de conectividad o configuración');
     isAppInitialized.value = true;
   }
-}, 5000); // 5 seconds fallback
+}, 10000); // Increased to 10 seconds
+
+// Clear timeout if initialization completes successfully
+const clearInitTimeout = () => {
+  if (initTimeout) {
+    clearTimeout(initTimeout);
+  }
+};
 
 // Computed properties
 const shouldShowInvitationManager = computed(() => {
@@ -212,6 +220,7 @@ onMounted(async () => {
     // Mark app as initialized
     console.log('✅ [App] Marcando aplicación como inicializada');
     isAppInitialized.value = true;
+    clearInitTimeout(); // Clear the timeout since we initialized successfully
     console.log('🎉 [App] Aplicación completamente inicializada');
   } catch (error) {
     console.error('❌ [App] Error inicializando aplicación:', error);
@@ -219,6 +228,7 @@ onMounted(async () => {
     // Even on error, show the app to prevent infinite loading
     console.log('🔧 [App] Forzando inicialización para prevenir pantalla de carga infinita');
     isAppInitialized.value = true;
+    clearInitTimeout(); // Clear timeout even on error
   }
 });
 

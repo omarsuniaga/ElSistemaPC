@@ -247,11 +247,11 @@
             </div>
           </div>
 
-          <!-- Grupo "Llegadas Tarde" -->
+          <!-- Grupo "Llegadas Tarde" - MEJORADO -->
           <div
-            class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+            class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-yellow-200 dark:border-yellow-700"
           >
-            <div class="p-6 border-b border-200 dark:border-gray-700">
+            <div class="p-6 border-b border-yellow-200 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20">
               <h3 class="text-lg font-medium text-gray-900 dark:text-white flex items-center">
                 <span class="text-yellow-500 mr-2">⏰</span>
                 Estudiantes con Tardanza
@@ -261,30 +261,67 @@
                   {{ lateStudents.length }}
                 </span>
               </h3>
+              <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                Notificaciones inteligentes según historial de tardanzas
+              </p>
             </div>
             <div class="p-6">
               <div
                 v-if="lateStudents.length === 0"
                 class="text-center py-8 text-gray-500 dark:text-gray-400"
               >
-                <ClockIcon class="h-8 w-8 mx-auto mb-2" />
+                <ClockIcon class="h-8 w-8 mx-auto mb-2 text-green-500" />
                 <p>No hay tardanzas registradas hoy</p>
+                <p class="text-xs mt-1">¡Excelente puntualidad!</p>
               </div>
               <div v-else>
-                <!-- Lista de estudiantes tardíos -->
-                <div class="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                <!-- Lista de estudiantes tardíos con checkboxes -->
+                <div class="space-y-3 mb-6 max-h-64 overflow-y-auto">
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Seleccionar estudiantes para notificar:
+                    </span>
+                    <div class="flex items-center space-x-2">
+                      <button
+                        @click="selectAllLateStudents"
+                        class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Todos
+                      </button>
+                      <span class="text-gray-300">|</span>
+                      <button
+                        @click="deselectAllLateStudents"
+                        class="text-xs text-gray-600 dark:text-gray-400 hover:underline"
+                      >
+                        Ninguno
+                      </button>
+                    </div>
+                  </div>
+
                   <div
                     v-for="student in lateStudents"
                     :key="student.id"
-                    class="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg"
+                    class="flex items-center justify-between p-3 rounded-lg border transition-all duration-200"
+                    :class="{
+                      'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-600': selectedLateStudents.includes(student.id),
+                      'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700': !selectedLateStudents.includes(student.id)
+                    }"
                   >
                     <div class="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        :value="student.id"
+                        v-model="selectedLateStudents"
+                        class="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                      />
+                      
                       <div
                         class="w-8 h-8 bg-yellow-100 dark:bg-yellow-800 rounded-full flex items-center justify-center"
                       >
                         <span class="text-yellow-600 dark:text-yellow-400 text-sm">⏰</span>
                       </div>
-                      <div>
+                      
+                      <div class="flex-1">
                         <p class="font-medium text-gray-900 dark:text-white">
                           {{ student.name }}
                         </p>
@@ -293,26 +330,72 @@
                         </p>
                       </div>
                     </div>
-                    <span class="text-xs text-yellow-600 dark:text-yellow-400">
-                      {{ formatTime(student.time) }}
-                    </span>
+                    
+                    <div class="flex items-center space-x-3">
+                      <div class="text-right">
+                        <span class="text-xs text-yellow-600 dark:text-yellow-400 font-medium">
+                          {{ formatTime(student.time) }}
+                        </span>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                          Llegada tardía
+                        </p>
+                      </div>
+                      
+                      <!-- Preview badge for recurrence level -->
+                      <div
+                        class="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200"
+                      >
+                        Ver historial
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Botón de acción -->
-                <button
-                  :disabled="sendingNotifications"
-                  class="w-full bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-white px-4 py-3 rounded-lg font-medium transition-colors"
-                  @click="notifyLateStudents"
+                <!-- Counter and notification info -->
+                <div class="bg-gradient-to-r from-yellow-500 to-orange-500 p-4 rounded-lg mb-4">
+                  <div class="text-center mb-3">
+                    <h4 class="text-white font-semibold text-sm">📱 Notificación Inteligente por Tardanzas</h4>
+                    <p class="text-yellow-100 text-xs">
+                      {{ selectedLateStudents.length }} de {{ lateStudents.length }} estudiantes seleccionados
+                    </p>
+                  </div>
+
+                  <button
+                    :disabled="selectedLateStudents.length === 0 || sendingNotifications"
+                    class="w-full bg-white hover:bg-gray-50 disabled:opacity-50 text-yellow-600 px-4 py-3 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+                    @click="openLateStudentsModal"
+                  >
+                    <span v-if="sendingNotifications" class="flex items-center justify-center">
+                      <ArrowPathIcon class="h-4 w-4 animate-spin mr-2" />
+                      Configurando...
+                    </span>
+                    <span v-else class="flex items-center justify-center">
+                      <span class="text-lg mr-2">📱</span>
+                      Configurar Notificaciones por Tardanza
+                      <span class="text-xs ml-2 bg-yellow-100 text-yellow-700 px-2 py-1 rounded"
+                        >MEJORADO</span
+                      >
+                    </span>
+                  </button>
+                </div>
+
+                <!-- Información del sistema de escalación para tardanzas -->
+                <div
+                  class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800"
                 >
-                  <span v-if="sendingNotifications" class="flex items-center justify-center">
-                    <ArrowPathIcon class="h-4 w-4 animate-spin mr-2" />
-                    Enviando notificaciones...
-                  </span>
-                  <span v-else class="flex items-center justify-center">
-                    📱 Notificar a Padres por Tardanza
-                  </span>
-                </button>
+                  <div class="flex items-start space-x-2">
+                    <span class="text-blue-500 text-sm">ℹ️</span>
+                    <div class="text-xs text-blue-700 dark:text-blue-300">
+                      <p class="font-medium mb-1">Sistema de Escalación por Tardanzas:</p>
+                      <ul class="space-y-1 text-blue-600 dark:text-blue-400">
+                        <li>• 1ª tardanza semanal: Recordatorio amable</li>
+                        <li>• 2ª tardanza: Solicitud de puntualidad</li>
+                        <li>• 3ª tardanza: Advertencia seria</li>
+                        <li>• 4+ tardanzas: Citación obligatoria</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -516,6 +599,14 @@
       @close="showWhatsAppModal = false"
       @messages-sent="handleWhatsAppMessagesSent"
     />
+
+    <!-- Modal de notificaciones para estudiantes tardíos -->
+    <LateStudentsNotificationModal
+      :is-visible="showLateStudentsModal"
+      :students="selectedLateStudentsData"
+      @close="showLateStudentsModal = false"
+      @notifications-sent="handleLateStudentsNotificationsSent"
+    />
   </div>
 </template>
 
@@ -533,6 +624,7 @@ import {
 
 // Componentes
 import WhatsAppNotificacionesModal from '../../../components/WhatsAppNotificacionesModal.vue';
+import LateStudentsNotificationModal from '../../../components/LateStudentsNotificationModal.vue';
 
 // Servicios
 import { getDailyAttendanceReport } from '../../../services/dailyAttendanceService';
@@ -585,6 +677,10 @@ const showWhatsAppModal = ref(false);
 // 📊 Estados para el modal de WhatsApp
 const modalInitialTab = ref<'ausentes' | 'tarde' | 'justificado'>('ausentes');
 const reportDataForModal = ref<any>(null);
+
+// 📱 Estados para el modal de tardanzas
+const showLateStudentsModal = ref(false);
+const selectedLateStudents = ref<string[]>([]);
 
 // Datos de asistencia
 const attendanceData = ref<AttendanceRecord[]>([]);
@@ -651,6 +747,13 @@ const filteredAttendanceRecords = computed(() => {
   }
 
   return filtered;
+});
+
+// 📱 Computed para el modal de tardanzas
+const selectedLateStudentsData = computed(() => {
+  return lateStudents.value.filter(student => 
+    selectedLateStudents.value.includes(student.id)
+  );
 });
 
 // Métodos
@@ -721,6 +824,11 @@ const loadAttendanceData = async (): Promise<void> => {
     if (report.success) {
       attendanceData.value = report.records;
       attendanceSummary.value = report.summary;
+      
+      // 📱 Auto-seleccionar todos los estudiantes tardíos por defecto
+      setTimeout(() => {
+        selectedLateStudents.value = lateStudents.value.map(s => s.id);
+      }, 100);
 
       console.log(`✅ Datos cargados: ${report.records.length} registros`);
     } else {
@@ -899,6 +1007,47 @@ const notifyAbsentStudentsWithEscalation = async (): Promise<void> => {
     );
   } finally {
     sendingNotifications.value = false;
+  }
+};
+
+// 📱 Métodos para el modal de tardanzas
+const selectAllLateStudents = (): void => {
+  selectedLateStudents.value = lateStudents.value.map(s => s.id);
+};
+
+const deselectAllLateStudents = (): void => {
+  selectedLateStudents.value = [];
+};
+
+const openLateStudentsModal = (): void => {
+  if (selectedLateStudents.value.length === 0) {
+    alert('⚠️ Por favor, seleccione al menos un estudiante para notificar.');
+    return;
+  }
+  
+  console.log('📱 [Reporte Diario] Abriendo modal para tardanzas:', selectedLateStudentsData.value);
+  showLateStudentsModal.value = true;
+};
+
+const handleLateStudentsNotificationsSent = (result: {
+  success: number
+  failed: number
+  messages: any[]
+}): void => {
+  console.log('📱 Notificaciones de tardanzas enviadas:', result);
+  
+  // Mostrar notificación de éxito
+  alert(`✅ Notificaciones de tardanza enviadas!\n\nExitosos: ${result.success}\nFallidos: ${result.failed}`);
+  
+  // Cerrar modal
+  showLateStudentsModal.value = false;
+  
+  // Limpiar selección
+  selectedLateStudents.value = [];
+  
+  // Opcionalmente recargar datos
+  if (result.success > 0) {
+    loadAttendanceData();
   }
 };
 

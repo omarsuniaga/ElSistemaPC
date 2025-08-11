@@ -187,7 +187,7 @@ type="submit"
 </template>
 
 <script setup lang="ts">
-import { ref, defineEmits, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import InstrumentsModal from './InstrumentsModal.vue';
 import { useMusicalWorks } from '../composables/useHeatMapProjects';
 import type { MusicalWork, Instrument, LevelConfig } from '../type/heatmap';

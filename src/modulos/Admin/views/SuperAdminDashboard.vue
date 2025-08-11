@@ -262,6 +262,14 @@
             gradient="from-green-500 to-green-600"
             @click="handleWhatsAppPanel"
           />
+
+          <SuperActionCard
+            title="Reporte Asistencias"
+            description="Ver reporte completo"
+            icon="DocumentChartBarIcon"
+            gradient="from-indigo-500 to-indigo-600"
+            @click="handleAttendanceReport"
+          />
         </div>
       </section>
 
@@ -853,7 +861,13 @@ const handleSystemConfigUpdated = (config: any) => {
 };
 
 const handlePDFGeneration = (options: any) => {
-  console.log('Generating PDF with options:', options);
+  console.log('Generando PDF con opciones:', options);
+};
+
+// Manejador para el botón de reporte de asistencias
+const handleAttendanceReport = () => {
+  // Navegar a la ruta del componente de reporte de asistencias
+  router.push('/attendance/report');
 };
 
 // Notification Methods
