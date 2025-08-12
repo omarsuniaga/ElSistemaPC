@@ -132,15 +132,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Panel lateral de clases -->
-    <ClassListDrawer
-      :is-open="showDrawer"
-      :classes="classesForSelectedDate"
-      :selected-date="selectedDate"
-      @close="closeDrawer"
-      @class-selected="goToAttendance"
-    />
   </div>
 </template>
 
@@ -284,6 +275,44 @@ const goToAttendance = (classItem: any): void => {
     params: { classId: classItem.id },
     query: { date: selectedDate.value?.toISOString().split('T')[0] }
   })
+}
+
+// Funciones adicionales necesarias para el template
+const getDayClasses = (day: any) => {
+  return {
+    'has-events': day.classCount > 0,
+    [`status-${day.status}`]: day.status !== 'none'
+  }
+}
+
+const getDayIndicatorColor = (day: any) => {
+  return `status-${day.status}`
+}
+
+const getAttendanceStatusText = (day: any) => {
+  const statusText = {
+    complete: 'Asistencia completa',
+    partial: 'Asistencia parcial', 
+    scheduled: 'Clase programada',
+    none: 'Sin asistencia registrada'
+  }
+  return statusText[day.status] || ''
+}
+
+const getAttendanceStatusIcon = (day: any) => {
+  const statusIcons = {
+    complete: '✓',
+    partial: '◗',
+    scheduled: '○',
+    none: ''
+  }
+  return statusIcons[day.status] || ''
+}
+
+const getClassesForDate = (date: Date) => {
+  // Retornar clases para la fecha específica
+  // Por ahora retornamos un array vacío hasta que se implemente la lógica
+  return []
 }
 </script>
 

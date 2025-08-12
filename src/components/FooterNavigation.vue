@@ -176,8 +176,14 @@ const navigationItems = computed(() => {
 
   // Para directores o administradores
   else if (authStore.isDirector || authStore.isAdmin) {
-    // Mostrar hasta 5 elementos del menú de admin
-    return adminMenuItems.slice(0, 5);
+    // Mostrar los elementos más importantes para administradores
+    return [
+      adminMenuItems[0], // Inicio (/admin)
+      adminMenuItems[1], // Alumnos (/admin/students) -> AdminStudentsView.vue
+      adminMenuItems[2], // Maestros (/admin/teachers) -> AdminTeachersView.vue con TeachersManagementPanel
+      adminMenuItems[3], // Instrumentos (/admin/instruments)
+      adminMenuItems[6], // Attendance (/admin/reporteAsistenciaDiaria) -> ReporteAsistenciaDiaria.vue
+    ];
   }
 
   // Para maestros

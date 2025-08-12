@@ -33,6 +33,19 @@
               <ArrowPathIcon v-if="loading" class="h-4 w-4 animate-spin" />
               <span v-else>🔄 Actualizar</span>
             </button>
+            <button
+              class="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+              @click="testConnection"
+            >
+              🔧 Probar Firebase
+            </button>
+            <button
+              class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+              @click="clearCacheAndReload"
+              title="Limpiar cache y recargar datos"
+            >
+              🧹 Limpiar Cache
+            </button>
           </div>
         </div>
       </div>
@@ -627,7 +640,7 @@ import WhatsAppNotificacionesModal from '../../../components/WhatsAppNotificacio
 import LateStudentsNotificationModal from '../../../components/LateStudentsNotificationModal.vue';
 
 // Servicios
-import { getDailyAttendanceReport } from '../../../services/dailyAttendanceService';
+import { getDailyAttendanceReport, testFirebaseConnection, getCacheStats, clearCache } from '../../../services/dailyAttendanceService';
 import {
   notifyLateStudents as sendLateNotifications,
   notifyJustifiedAbsences as sendJustifiedNotifications,
@@ -814,12 +827,62 @@ const getStatusBadgeClasses = (status: string): string => {
   }
 };
 
+// 🔧 Función de prueba para verificar conectividad con Firebase
+const testConnection = async () => {
+  try {
+    console.log('🔧 Probando conexión a Firebase...');
+    await testFirebaseConnection();
+  } catch (error) {
+    console.error('❌ Error probando Firebase:', error);
+    alert(`❌ Error de conexión: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  }
+};
+
+// 🧹 Función para limpiar cache y recargar datos
+const clearCacheAndReload = async () => {
+  try {
+    console.log('🧹 Limpiando cache y recargando datos...');
+    
+    // Mostrar estadísticas antes de limpiar
+    const statsBeforeClear = getCacheStats();
+    console.log('📊 Estadísticas del cache antes de limpiar:', statsBeforeClear);
+    
+    // Limpiar cache
+    clearCache();
+    
+    // Mostrar mensaje informativo
+    alert(
+      `🧹 Cache limpiado exitosamente!\n\n` +
+      `📊 Datos limpiados:\n` +
+      `• Estudiantes: ${statsBeforeClear.students}\n` +
+      `• Clases: ${statsBeforeClear.classes}\n` +
+      `• Maestros: ${statsBeforeClear.teachers}\n\n` +
+      `🔄 Recargando datos...`
+    );
+    
+    // Recargar datos
+    await loadAttendanceData();
+    
+  } catch (error) {
+    console.error('❌ Error limpiando cache:', error);
+    alert(`❌ Error limpiando cache: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  }
+};
+
 const loadAttendanceData = async (): Promise<void> => {
   loading.value = true;
   try {
-    console.log(`📊 Cargando datos de asistencia para ${selectedDate.value}`);
+    console.log(`📊 Iniciando carga optimizada de datos para ${selectedDate.value}`);
+    const startTime = performance.now();
 
-    const report = await getDailyAttendanceReport(selectedDate.value);
+    // Agregar timeout para evitar que se quede cargando indefinidamente
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout: La consulta tardó demasiado (30s)')), 30000);
+    });
+
+    const reportPromise = getDailyAttendanceReport(selectedDate.value);
+    
+    const report = await Promise.race([reportPromise, timeoutPromise]) as any;
 
     if (report.success) {
       attendanceData.value = report.records;
@@ -830,7 +893,15 @@ const loadAttendanceData = async (): Promise<void> => {
         selectedLateStudents.value = lateStudents.value.map(s => s.id);
       }, 100);
 
-      console.log(`✅ Datos cargados: ${report.records.length} registros`);
+      const loadTime = performance.now() - startTime;
+      console.log(`✅ Datos cargados exitosamente en ${loadTime.toFixed(2)}ms`);
+      console.log(`📊 Total de registros: ${report.records.length}`);
+      console.log(`📈 Resumen:`, report.summary);
+      
+      // Mostrar estadísticas del cache en desarrollo
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`🧹 Estado del cache:`, getCacheStats());
+      }
     } else {
       console.error('❌ Error obteniendo reporte:', report.error);
       attendanceData.value = [];
@@ -843,7 +914,28 @@ const loadAttendanceData = async (): Promise<void> => {
       };
     }
   } catch (error) {
-    console.error('Error cargando datos de asistencia:', error);
+    console.error('❌ Error cargando datos de asistencia:', error);
+    
+    // Mostrar error al usuario con información más específica
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    if (errorMessage.includes('Timeout')) {
+      alert(
+        `⏱️ Tiempo de espera agotado\n\n` +
+        `La consulta tardó más de 30 segundos en completarse.\n` +
+        `Esto puede deberse a:\n\n` +
+        `• Conexión lenta a Internet\n` +
+        `• Gran cantidad de datos para procesar\n` +
+        `• Problemas temporales con Firebase\n\n` +
+        `💡 Sugerencias:\n` +
+        `• Verificar conexión a Internet\n` +
+        `• Intentar con una fecha diferente\n` +
+        `• Usar el botón "🔧 Probar Firebase"`
+      );
+    } else {
+      alert(`❌ Error cargando datos: ${errorMessage}`);
+    }
+    
     attendanceData.value = [];
     attendanceSummary.value = {
       total: 0,

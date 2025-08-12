@@ -62,25 +62,25 @@ export const adminMenuItems = [
   {
     name: 'Inicio',
     icon: HomeIcon,
-    to: '/',
-    ariaLabel: 'Panel de control',
+    to: '/admin',
+    ariaLabel: 'Panel de control administrativo',
   },
   {
     name: 'Alumnos',
     icon: UserGroupIcon,
-    to: '/students',
+    to: '/admin/students',
     ariaLabel: 'Gestionar alumnos',
   },
   {
     name: 'Maestros',
     icon: AcademicCapIcon,
-    to: '/teachers',
+    to: '/admin/teachers',
     ariaLabel: 'Gestionar maestros',
   },
   {
     name: 'Instrumentos',
     icon: MusicalNoteIcon,
-    to: '/instrumentos',
+    to: '/admin/instruments',
     ariaLabel: 'Gestionar instrumentos',
   },
   {
@@ -92,13 +92,13 @@ export const adminMenuItems = [
   {
     name: 'Analytics',
     icon: ChartBarIcon,
-    to: '/analytics',
+    to: '/admin/analytics',
     ariaLabel: 'Ver análisis',
   },
   {
     name: 'Attendance',
     icon: ClipboardDocumentCheckIcon,
-    to: '/teacher/attendance',
+    to: '/admin/reporteAsistenciaDiaria',
     ariaLabel: 'Gestionar asistencias',
   },
   {
@@ -110,13 +110,13 @@ export const adminMenuItems = [
   {
     name: 'Clases',
     icon: BookOpenIcon,
-    to: '/classes',
+    to: '/admin/classes',
     ariaLabel: 'Gestionar clases',
   },
   {
     name: 'Horarios',
     icon: CalendarDaysIcon,
-    to: '/schedule',
+    to: '/admin/schedules',
     ariaLabel: 'Gestionar horarios',
   },
   {
