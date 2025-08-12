@@ -17,7 +17,7 @@ const attendanceRoutes: Array<RouteRecordRaw> = [
   {
     path: '/calendar',
     name: 'TeacherAttendanceCalendar',
-    component: () => import('./views/professionalCalendarView.vue'),
+    component: () => import('./views/ProfessionalCalendarView.vue'),
     props: { mode: 'calendar' },
     meta: {
       requiresAuth: true,
