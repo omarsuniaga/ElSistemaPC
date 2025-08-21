@@ -9,19 +9,23 @@ import {
   QueryDocumentSnapshot,
   DocumentData,
 } from 'firebase/firestore';
-import { db } from '@/firebase';
+
 import type { AttendanceDocument } from '../types';
+
+import { db } from '@/firebase';
 
 /**
  * Servicio optimizado para consultas de asistencia con paginación y caching
  */
 class OptimizedAttendanceQueries {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private cache = new Map<string, {data: any; timestamp: number}>();
   private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
   /**
    * Obtiene un valor del cache si existe y no ha expirado
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getFromCache(key: string): any {
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
@@ -36,6 +40,7 @@ class OptimizedAttendanceQueries {
   /**
    * Establece un valor en el cache
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private setCache(key: string, data: any): void {
     this.cache.set(key, {
       data,
@@ -258,6 +263,161 @@ class OptimizedAttendanceQueries {
         .sort((a, b) => b.absences - a.absences);
     } catch (error) {
       console.error('Error in findHighAbsenteeStudents:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca registros de asistencia por múltiples criterios
+   */
+  async searchAttendance(criteria: Record<string, unknown>): Promise<AttendanceDocument[]> {
+    try {
+      console.log('[OptimizedQueries] Searching attendance with criteria:', criteria);
+
+      const cacheKey = `search_${JSON.stringify(criteria)}`;
+      const cached = this.getFromCache(cacheKey);
+      if (cached) {
+        console.log('[OptimizedQueries] Cache hit for search criteria');
+        return cached;
+      }
+
+      let q = query(collection(db, 'ASISTENCIAS'));
+
+      // Aplicar filtros basados en los criterios
+      if (criteria.startDate) {
+        q = query(q, where('fecha', '>=', criteria.startDate as string));
+      }
+      if (criteria.endDate) {
+        q = query(q, where('fecha', '<=', criteria.endDate as string));
+      }
+      if (criteria.classId) {
+        q = query(q, where('classId', '==', criteria.classId as string));
+      }
+      if (criteria.teacherId) {
+        q = query(q, where('teacherId', '==', criteria.teacherId as string));
+      }
+
+      // Ordenar por fecha descendente
+      q = query(q, orderBy('fecha', 'desc'));
+
+      // Aplicar límite si se especifica
+      if (criteria.limit) {
+        q = query(q, firestoreLimit(criteria.limit as number));
+      }
+
+      const querySnapshot = await getDocs(q);
+      console.log('[OptimizedQueries] Search returned docs:', querySnapshot.docs.length);
+
+      const attendanceDocs: AttendanceDocument[] = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        fecha: doc.data().fecha,
+        classId: doc.data().classId,
+        data: {
+          presentes: doc.data().data?.presentes || [],
+          ausentes: doc.data().data?.ausentes || [],
+          tarde: doc.data().data?.tarde || [],
+          justificacion: doc.data().data?.justificacion || [],
+        },
+        observations: doc.data().observations || [],
+      }));
+
+      console.log('[OptimizedQueries] Processed search results:', attendanceDocs.length);
+
+      // Cache el resultado
+      this.setCache(cacheKey, attendanceDocs);
+
+      return attendanceDocs;
+    } catch (error) {
+      console.error('[OptimizedQueries] Error searching attendance:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene registros de asistencia para un estudiante específico
+   */
+  async getStudentAttendance(
+    studentId: string,
+    startDate?: string,
+    endDate?: string,
+    limit?: number,
+  ): Promise<AttendanceDocument[]> {
+    try {
+      console.log('[OptimizedQueries] Getting student attendance:', {
+        studentId,
+        startDate,
+        endDate,
+        limit,
+      });
+
+      const cacheKey = `student_${studentId}_${startDate || ''}_${endDate || ''}_${limit || ''}`;
+      const cached = this.getFromCache(cacheKey);
+      if (cached) {
+        console.log('[OptimizedQueries] Cache hit for student attendance');
+        return cached;
+      }
+
+      let q = query(collection(db, 'ASISTENCIAS'));
+
+      // Agregar filtros de fecha si se proporcionan
+      if (startDate) {
+        q = query(q, where('fecha', '>=', startDate));
+      }
+      if (endDate) {
+        q = query(q, where('fecha', '<=', endDate));
+      }
+
+      // Ordenar por fecha descendente
+      q = query(q, orderBy('fecha', 'desc'));
+
+      // Agregar límite si se proporciona
+      if (limit) {
+        q = query(q, firestoreLimit(limit));
+      }
+
+      const querySnapshot = await getDocs(q);
+      console.log('[OptimizedQueries] Firestore returned docs for student:', querySnapshot.docs.length);
+
+      // Filtrar documentos que contengan al estudiante
+      const attendanceDocs: AttendanceDocument[] = [];
+      
+      querySnapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        const presentes = data.data?.presentes || [];
+        const ausentes = data.data?.ausentes || [];
+        const tarde = data.data?.tarde || [];
+        const justificacion = data.data?.justificacion || [];
+
+        // Verificar si el estudiante está en alguna de las listas
+        if (
+          presentes.includes(studentId) ||
+          ausentes.includes(studentId) ||
+          tarde.includes(studentId) ||
+          justificacion.includes(studentId)
+        ) {
+          attendanceDocs.push({
+            id: doc.id,
+            fecha: data.fecha,
+            classId: data.classId,
+            data: {
+              presentes: presentes,
+              ausentes: ausentes,
+              tarde: tarde,
+              justificacion: justificacion,
+            },
+            observations: data.observations || [],
+          });
+        }
+      });
+
+      console.log('[OptimizedQueries] Processed student attendance docs:', attendanceDocs.length);
+
+      // Cache el resultado
+      this.setCache(cacheKey, attendanceDocs);
+
+      return attendanceDocs;
+    } catch (error) {
+      console.error('[OptimizedQueries] Error fetching student attendance:', error);
       throw error;
     }
   }
