@@ -199,32 +199,109 @@ export const useClassesStore = defineStore('classes', {
      * Normaliza la data de una clase para asegurar que el campo "schedule" tenga la estructura esperada.
      */
     normalizeClassData(classItem: any): ClassData {
-      let normalizedSchedule;
-      if (classItem.schedule && Array.isArray(classItem.schedule.slots)) {
-        normalizedSchedule = { slots: classItem.schedule.slots };
-      } else if (classItem.schedule && classItem.schedule.day) {
-        normalizedSchedule = {
-          slots: [
-            {
-              day: classItem.schedule.day,
-              startTime: classItem.schedule.startTime || '',
-              endTime: classItem.schedule.endTime || '',
-            },
-          ],
+      // Helpers localized to this function to avoid changing module-level API
+      const pad = (n: number) => `${n}`.padStart(2, '0');
+      const toHHMM = (val: any): string => {
+        if (!val && val !== 0) return '';
+        // If already a string like "HH:MM"
+        if (typeof val === 'string') {
+          const m = val.match(/^(\d{1,2}):(\d{2})/);
+          if (m) return `${pad(Number(m[1]))}:${pad(Number(m[2]))}`;
+          // Try parseable date strings (ISO, etc.)
+          const d = new Date(val);
+          if (!isNaN(d.getTime())) return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          // Fallback: return original string (best-effort)
+          return val;
+        }
+        if (typeof val === 'number') {
+          const d = new Date(val);
+          if (!isNaN(d.getTime())) return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          return '';
+        }
+        if (val instanceof Date) {
+          return `${pad(val.getHours())}:${pad(val.getMinutes())}`;
+        }
+        // Firestore Timestamp-like objects
+        if (val && typeof val.toDate === 'function') {
+          const d = val.toDate();
+          return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+        return '';
+      };
+
+      const makeSlot = (raw: any, idx = 0) => {
+        const day = raw?.day ?? raw?.dayOfWeek ?? raw?.weekday ?? raw?.dia ?? '';
+        const startTime = toHHMM(raw?.startTime ?? raw?.start ?? raw?.horaInicio ?? raw?.hora ?? '');
+        const endTime = toHHMM(raw?.endTime ?? raw?.end ?? raw?.horaFin ?? raw?.fin ?? '');
+        const id = raw?.id ?? `${classItem?.id ?? 'c'}-slot-${idx}-${Math.random().toString(36).slice(2, 8)}`;
+        // Preserve other slot properties (location, room, etc.) but ensure core fields exist
+        return {
+          id,
+          day,
+          startTime,
+          endTime,
+          ...raw,
         };
-      } else {
-        normalizedSchedule = { slots: [] };
+      };
+
+      // Build slots from many possible legacy shapes
+      let slots: any[] = [];
+
+      try {
+        if (classItem && classItem.schedule) {
+          const s = classItem.schedule;
+          if (Array.isArray(s.slots)) {
+            slots = s.slots.map((r: any, i: number) => makeSlot(r, i));
+          } else if (Array.isArray(s)) {
+            // schedule was stored as array directly
+            slots = s.map((r: any, i: number) => makeSlot(r, i));
+          } else if (s && (s.day || s.startTime || s.endTime || s.dayOfWeek)) {
+            slots = [makeSlot(s, 0)];
+          }
+        }
+
+        // Legacy/alternative fields: horarios, horario, dia, startTime/endTime at root
+        if (slots.length === 0) {
+          if (Array.isArray(classItem.horarios)) {
+            slots = classItem.horarios.map((r: any, i: number) => makeSlot(r, i));
+          } else if (Array.isArray(classItem.horario)) {
+            slots = classItem.horario.map((r: any, i: number) => makeSlot(r, i));
+          } else if (classItem.horario && typeof classItem.horario === 'object') {
+            slots = [makeSlot(classItem.horario, 0)];
+          } else if (classItem.day || classItem.startTime || classItem.endTime) {
+            slots = [
+              makeSlot(
+                {
+                  day: classItem.day,
+                  startTime: classItem.startTime,
+                  endTime: classItem.endTime,
+                },
+                0,
+              ),
+            ];
+          }
+        }
+      } catch (err) {
+        // Defensive: if something unexpected happens, fallback to empty slots
+        console.warn('[ClassStore] normalizeClassData: error normalizing schedule', err);
+        slots = [];
       }
+
+      // Ensure slots is an array
+      if (!Array.isArray(slots)) slots = [];
+
+      const normalizedSchedule = { slots };
+
       return {
         ...classItem,
         id: String(classItem.id),
         studentIds: Array.isArray(classItem.studentIds)
           ? classItem.studentIds
           : classItem.studentIds
-            ? [classItem.studentIds]
-            : [],
+          ? [classItem.studentIds]
+          : [],
         schedule: normalizedSchedule,
-      };
+      } as ClassData;
     },
 
     /**

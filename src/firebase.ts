@@ -1,19 +1,17 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import {
-  connectFirestoreEmulator,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
 } from 'firebase/firestore';
 import {
   getStorage,
-  connectStorageEmulator,
   uploadBytesResumable,
   getDownloadURL,
   ref,
 } from 'firebase/storage';
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { getFunctions } from 'firebase/functions';
 
 // Validar variables de entorno de Firebase
 const validateFirebaseConfig = () => {
@@ -74,49 +72,22 @@ if (isConfigValid) {
 // Conectar a emuladores solo en desarrollo y solo si no se ha conectado antes
 let emulatorsConnected = false;
 
+// 🏭 CONFIGURACIÓN FIREBASE PARA PRODUCCIÓN
 const connectToEmulators = () => {
-  // Evitar conectar múltiples veces
-  if (emulatorsConnected) return;
-
-  try {
-    // Verificar si estamos en desarrollo y usar emuladores
-    if (import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS === 'true') {
-      const host = 'localhost';
-      
-      try {
-        // Solo conectar si los servicios están disponibles
-        if (auth && !auth._delegate?._emulator) {
-          connectAuthEmulator(auth, `http://${host}:9099`, { disableWarnings: true });
-        }
-        
-        if (db && !db._delegate?._databaseId?.database?.includes('emulator')) {
-          connectFirestoreEmulator(db, host, 8080);
-        }
-        
-        if (storage) {
-          connectStorageEmulator(storage, host, 9199);
-        }
-        
-        if (functions) {
-          connectFunctionsEmulator(functions, host, 5001);
-        }
-        
-        console.log('✅ Conectado a emuladores de Firebase');
-        emulatorsConnected = true;
-      } catch (emulatorError) {
-        console.warn(
-          '⚠️ No se pudieron conectar los emuladores, usando servicios de producción:',
-          emulatorError,
-        );
-        // Continuar con servicios de producción sin error
-      }
-    } else {
-      console.log('✅ Usando servicios de Firebase en producción');
-    }
-  } catch (error) {
-    console.warn('⚠️ Error configurando emuladores, continuando con producción:', error);
-    // No es un error crítico, continuar con servicios de producción
+  // 🚫 MODO PRODUCCIÓN - EMULATORS DESHABILITADOS
+  console.log('🏭 Modo Producción: Conectando directamente a Firebase Cloud Services');
+  
+  // Solo mostrar información de diagnóstico en desarrollo
+  if (import.meta.env.DEV && import.meta.env.VITE_DEBUG_MODE === 'true') {
+    console.log('🔍 Firebase Connection Mode:', {
+      mode: 'PRODUCTION',
+      emulators: 'DISABLED',
+      environment: import.meta.env.VITE_FIREBASE_ENV || 'production'
+    });
   }
+  
+  // Marcar como conectado para evitar múltiples intentos
+  emulatorsConnected = true;
 };
 
 // Inicializar servicios con persistencia moderna

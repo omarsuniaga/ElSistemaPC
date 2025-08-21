@@ -1,16 +1,19 @@
 <template>
   <div
     v-if="isVisible"
-    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+    class="fixed inset-0 bg-gray-900/75 transition-opacity duration-300 ease-in-out overflow-y-auto h-full w-full z-50"
   >
     <div
-      class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white"
+      class="relative top-1/2 -translate-y-1/2 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-2xl rounded-lg bg-white dark:bg-gray-800 transition-all duration-300 ease-in-out"
     >
       <div class="mt-3">
         <!-- Header -->
-        <div class="flex items-center justify-between pb-4 border-b">
-          <h3 class="text-lg font-medium text-gray-900">Crear Nuevo Maestro</h3>
-          <button class="text-gray-400 hover:text-gray-600" @click="$emit('close')">
+        <div class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Crear Nuevo Maestro</h3>
+          <button
+            class="text-gray-400 hover:text-gray-500 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
+            @click="$emit('close')"
+          >
             <XMarkIcon class="w-6 h-6" />
           </button>
         </div>
@@ -20,22 +23,22 @@
           <!-- Basic Information -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700"> Nombre * </label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Nombre * </label>
               <input
                 v-model="form.nombre"
                 type="text"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700"> Apellido * </label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Apellido * </label>
               <input
                 v-model="form.apellido"
                 type="text"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500"
               />
             </div>
           </div>
@@ -43,34 +46,46 @@
           <!-- Contact Information -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-medium text-gray-700"> Email * </label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Email * </label>
               <input
                 v-model="form.email"
                 type="email"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700"> Teléfono </label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Contraseña * </label>
               <input
-                v-model="form.telefono"
-                type="tel"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                v-model="form.password"
+                type="password"
+                required
+                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500"
               />
             </div>
           </div>
 
-          <!-- Specialties -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700"> Especialidades </label>
-            <textarea
-              v-model="form.especialidades"
-              rows="2"
-              placeholder="Ingresa las especialidades separadas por comas"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Teléfono </label>
+              <input
+                v-model="form.telefono"
+                type="tel"
+                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500"
+              />
+            </div>
+
+            <!-- Specialties -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"> Especialidades </label>
+              <textarea
+                v-model="form.especialidades"
+                rows="2"
+                placeholder="Ingresa las especialidades separadas por comas"
+                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-500"
+              />
+            </div>
           </div>
 
           <!-- Status -->
@@ -79,17 +94,17 @@
               <input
                 v-model="form.activo"
                 type="checkbox"
-                class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="rounded border-gray-300 dark:border-gray-600 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-              <span class="ml-2 text-sm text-gray-700">Maestro activo</span>
+              <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Maestro activo</span>
             </label>
           </div>
 
           <!-- Actions -->
-          <div class="flex items-center justify-end space-x-3 pt-6 border-t">
+          <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
               @click="$emit('close')"
             >
               Cancelar
@@ -97,7 +112,7 @@
             <button
               type="submit"
               :disabled="loading"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
             >
               {{ loading ? "Creando..." : "Crear Maestro" }}
             </button>
@@ -129,6 +144,7 @@ const form = ref({
   nombre: '',
   apellido: '',
   email: '',
+  password: '',
   telefono: '',
   especialidades: '',
   activo: true,
@@ -165,6 +181,7 @@ const handleSubmit = async () => {
     const teacherData = {
       ...form.value,
       especialidades: especialidadesArray,
+      password: form.value.password, // Asegúrate de incluir la contraseña
     };
 
     emit('create', teacherData);

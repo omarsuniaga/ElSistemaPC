@@ -5,24 +5,33 @@
 [build.environment]
   NODE_VERSION = "20"
   NETLIFY_SKIP_MIGRATIONS = "true"
-  # Variables para integración con Firebase Functions
+  # 🏭 VARIABLES DE PRODUCCIÓN OPTIMIZADAS
+  VITE_USE_EMULATORS = "false"
+  VITE_FIREBASE_ENV = "production"
+  VITE_DEBUG_MODE = "false"
+  VITE_ENABLE_LOGGING = "false"
   VITE_FIREBASE_FUNCTIONS_URL = "https://us-central1-orquestapuntacana.cloudfunctions.net"
   VITE_WHATSAPP_API_URL = "https://us-central1-orquestapuntacana.cloudfunctions.net/whatsappApi"
   VITE_ENVIRONMENT = "production"
 
-# Configuración de build específica para diferentes contextos
+# 🏭 Configuración específica para producción
 [context.production.environment]
   VITE_ENVIRONMENT = "production"
   VITE_DEBUG_MODE = "false"
+  VITE_USE_EMULATORS = "false"
+  VITE_ENABLE_LOGGING = "false"
 
 [context.deploy-preview.environment]
   VITE_ENVIRONMENT = "preview"
-  VITE_DEBUG_MODE = "true"
+  VITE_DEBUG_MODE = "false"
+  VITE_USE_EMULATORS = "false"
 
 [context.branch-deploy.environment]
   VITE_ENVIRONMENT = "development"
-  VITE_DEBUG_MODE = "true"
+  VITE_DEBUG_MODE = "false"
+  VITE_USE_EMULATORS = "false"
 
+# 🚀 OPTIMIZACIONES DE PROCESAMIENTO
 [build.processing]
   skip_processing = false
 
@@ -40,42 +49,59 @@
 [build.processing.images]
   compress = true
 
-# IMPORTANT: These headers ensure the correct MIME types are sent
+# 🔒 HEADERS DE SEGURIDAD Y OPTIMIZACIÓN
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
 [[headers]]
   for = "/*.js"
   [headers.values]
     Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/*.mjs"
   [headers.values]
     Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/assets/*.js"
   [headers.values]
     Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/assets/**/*.js"
   [headers.values]
     Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/assets/*.mjs"
   [headers.values]
     Content-Type = "application/javascript"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/*.css"
   [headers.values]
     Content-Type = "text/css"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/assets/*.css"
   [headers.values]
     Content-Type = "text/css"
+    Cache-Control = "public, max-age=31536000, immutable"
 
+# 🎯 CONFIGURACIÓN SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"

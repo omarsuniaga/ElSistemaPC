@@ -2,16 +2,15 @@ import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'url';
-import vuetify from 'vite-plugin-vuetify';
 
-// https://vitejs.dev/config/
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // Cargar variables de entorno según el modo (development, production)
+  // Cargar variables de entorno según el modo
   const env = loadEnv(mode, process.cwd(), '');
+  const isProduction = mode === 'production';
 
-  // Función para mostrar advertencia si hay variables faltantes
-  const checkFirebaseConfig = () => {
+  // Solo verificar configuración en desarrollo
+  if (!isProduction) {
     const requiredVars = [
       'VITE_APP_API_KEY',
       'VITE_APP_AUTH_DOMAIN',
@@ -26,12 +25,8 @@ export default defineConfig(({ mode }) => {
         console.warn(`⚠️ Variable de entorno faltante: ${key}`);
       }
     }
-  };
+  }
 
-  // Ejecutar comprobación
-  checkFirebaseConfig();
-
-  // Configuración de Vite
   return {
     plugins: [
       vue({
@@ -43,8 +38,8 @@ export default defineConfig(({ mode }) => {
       }),
       VitePWA({
         registerType: 'autoUpdate',
-        injectRegister: false, // Deshabilitar registro automático temporalmente
-        strategies: 'injectManifest', // Usar el SW manual en lugar del generado
+        injectRegister: isProduction,
+        strategies: 'injectManifest',
         srcDir: 'public',
         filename: 'sw.js',
         manifest: {
@@ -88,9 +83,6 @@ export default defineConfig(({ mode }) => {
                   maxEntries: 100,
                   maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
                 },
-                cacheKeyWillBeUsed: async ({ request }) => {
-                  return request.url + '?v=' + Date.now();
-                },
               },
             },
             {
@@ -116,14 +108,14 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'images',
                 expiration: {
                   maxEntries: 100,
-                  maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+                  maxAgeSeconds: 60 * 60 * 24 * 30,
                 },
               },
             },
           ],
         },
         devOptions: {
-          enabled: false, // Deshabilitar PWA en desarrollo
+          enabled: false,
           type: 'module',
         },
       }),
@@ -134,57 +126,23 @@ export default defineConfig(({ mode }) => {
         vue: 'vue/dist/vue.esm-bundler.js',
       },
     },
-    css: {
-      preprocessorOptions: {
-        scss: {
-          additionalData: `
-            @use 'sass:math';
-            @use 'sass:color';
-            @import './src/styles/vuetify/settings.scss';
-          `,
-        },
-      },
-    },
     define: {
-      // Definir explícitamente las variables de entorno de Firebase
-      'process.env.VITE_APP_API_KEY': JSON.stringify(env.VITE_APP_API_KEY),
-      'process.env.VITE_APP_AUTH_DOMAIN': JSON.stringify(env.VITE_APP_AUTH_DOMAIN),
-      'process.env.VITE_APP_PROJECT_ID': JSON.stringify(env.VITE_APP_PROJECT_ID),
-      'process.env.VITE_APP_STORAGE_BUCKET': JSON.stringify(env.VITE_APP_STORAGE_BUCKET),
-      'process.env.VITE_APP_MESSAGING_SENDER_ID': JSON.stringify(env.VITE_APP_MESSAGING_SENDER_ID),
-      'process.env.VITE_APP_APP_ID': JSON.stringify(env.VITE_APP_APP_ID),
-      'process.env.VITE_APP_MEASUREMENT_ID': JSON.stringify(env.VITE_APP_MEASUREMENT_ID),
-      'process.env.VITE_APP_DATABASE_URL': JSON.stringify(env.VITE_APP_DATABASE_URL),
-      'process.env.VITE_USE_EMULATORS': JSON.stringify(env.VITE_USE_EMULATORS),
+      // 🏭 PRODUCTION MODE - Definir variables de entorno
+      __VUE_OPTIONS_API__: false,
+      __VUE_PROD_DEVTOOLS__: false,
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false,
     },
     server: {
-      port: 3002, // Puerto fijo para desarrollo
+      port: 3002,
       host: true,
-      strictPort: true, // Ensure exact port is used
+      strictPort: true,
       cors: true,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-        'Access-Control-Allow-Headers': 'X-Requested-With, Content-Type, Authorization',
-      },
-      watch: {
-        usePolling: false,
-        interval: 1000,
-      },
-      hmr: {
-        port: 3002, // Puerto HMR también fijo
-        overlay: true,
-        timeout: 30000,
-      },
-      proxy: {
-        '/sentry-api': {
-          target: 'https://lucid.thereadme.com',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/sentry-api/, '/api/39/envelope'),
-        },
-      },
     },
     build: {
+      // 🏭 OPTIMIZACIONES PARA PRODUCCIÓN
+      minify: isProduction ? 'terser' : false,
+      sourcemap: !isProduction,
+      cssCodeSplit: true,
       rollupOptions: {
         output: {
           manualChunks: (id) => {
@@ -199,7 +157,7 @@ export default defineConfig(({ mode }) => {
             }
 
             // UI Libraries
-            if (id.includes('@headlessui') || id.includes('@heroicons') || id.includes('vuetify')) {
+            if (id.includes('@headlessui') || id.includes('@heroicons')) {
               return 'vendor-ui';
             }
 
@@ -256,7 +214,13 @@ export default defineConfig(({ mode }) => {
         },
       },
       chunkSizeWarningLimit: 600,
-      sourcemap: mode === 'development',
+      // 🏭 OPTIMIZACIONES ADICIONALES PARA PRODUCCIÓN
+      terserOptions: isProduction ? {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+        },
+      } : undefined,
     },
   };
 });

@@ -238,6 +238,11 @@
       @confirm="confirmDelete"
       @cancel="showDeleteModal = false"
     />
+    <TeacherCreateModal
+      :is-visible="showCreateModal"
+      @close="showCreateModal = false"
+      @create="handleCreateTeacher"
+    />
   </div>
 </template>
 
@@ -257,6 +262,7 @@ import { useRouter } from 'vue-router';
 import { useRBACStore } from '../../../stores/rbacStore';
 import { useClassesStore } from '../../Classes/store/classes';
 import AdminTeacherCard from '../components/AdminTeacherCard.vue';
+import TeacherCreateModal from '../components/TeacherCreateModal.vue';
 import { useAdminTeachersStore } from '../store/teachers';
 
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
@@ -473,6 +479,17 @@ const confirmDelete = async () => {
     await teachersStore.deleteTeacher(selectedTeacher.value.id);
     showDeleteModal.value = false;
     selectedTeacher.value = null;
+  }
+};
+
+const handleCreateTeacher = async (teacherData: any) => {
+  try {
+    await teachersStore.addTeacher(teacherData);
+    showCreateModal.value = false;
+    // Aquí podrías añadir una notificación de éxito (toast)
+  } catch (error) {
+    console.error("Error creating teacher:", error);
+    // Aquí podrías añadir una notificación de error
   }
 };
 

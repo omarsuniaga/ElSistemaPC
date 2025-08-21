@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 Firebase Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 5px solid #4CAF50;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .error {
+            border-left-color: #f44336;
+            background: rgba(244, 67, 54, 0.2);
+        }
+        .warning {
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.2);
+        }
+        .code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .production {
+            background: #2196F3;
+        }
+        .production:hover {
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Firebase Connection Diagnostic</h1>
+        <p>Esta herramienta diagnostica problemas de conexión con Firebase.</p>
+
+        <div id="environmentInfo" class="status">
+            <h3>📋 Variables de Entorno</h3>
+            <div class="code" id="envVariables">Cargando...</div>
+        </div>
+
+        <div id="connectionStatus" class="status">
+            <h3>🔌 Estado de Conexión</h3>
+            <div id="connectionInfo">Verificando...</div>
+        </div>
+
+        <div id="recommendations" class="status warning">
+            <h3>💡 Recomendaciones</h3>
+            <div id="recommendationsList">
+                <ul>
+                    <li><strong>✅ Verificar:</strong> Que VITE_USE_EMULATORS=false</li>
+                    <li><strong>🔄 Reiniciar:</strong> El servidor de desarrollo después de cambios</li>
+                    <li><strong>🧹 Limpiar:</strong> Cache del navegador (Ctrl+Shift+R)</li>
+                    <li><strong>🔍 Revisar:</strong> Console del navegador para errores específicos</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="status">
+            <h3>🛠️ Acciones Rápidas</h3>
+            <button onclick="testNetworkConnection()">🌐 Probar Conectividad</button>
+            <button onclick="clearCache()" class="production">🧹 Limpiar Cache</button>
+            <button onclick="showFirebaseConfig()">🔍 Ver Configuración</button>
+        </div>
+
+        <div id="testResults" class="status" style="display:none;">
+            <h3>📊 Resultados de Pruebas</h3>
+            <div id="testOutput"></div>
+        </div>
+    </div>
+
+    <script>
+        // Mostrar información del entorno
+        function loadEnvironmentInfo() {
+            const envInfo = {
+                userAgent: navigator.userAgent,
+                location: window.location.href,
+                protocol: window.location.protocol,
+                timestamp: new Date().toISOString()
+            };
+
+            document.getElementById('envVariables').innerHTML = `
+                <strong>URL Actual:</strong> ${envInfo.location}<br>
+                <strong>Protocolo:</strong> ${envInfo.protocol}<br>
+                <strong>Navegador:</strong> ${envInfo.userAgent.split(' ').slice(-2).join(' ')}<br>
+                <strong>Timestamp:</strong> ${envInfo.timestamp}
+            `;
+        }
+
+        // Verificar estado de conexión
+        function checkConnectionStatus() {
+            const issues = [];
+            
+            // Verificar protocolo
+            if (window.location.protocol === 'file:') {
+                issues.push('❌ Protocolo file:// detectado - usar servidor HTTP');
+            }
+            
+            // Verificar puerto
+            const port = window.location.port;
+            if (port && (port === '8080' || port === '9099')) {
+                issues.push('⚠️ Puerto de emulador detectado - verificar configuración');
+            }
+
+            if (issues.length === 0) {
+                document.getElementById('connectionInfo').innerHTML = '✅ Configuración aparenta estar correcta';
+                document.getElementById('connectionStatus').className = 'status';
+            } else {
+                document.getElementById('connectionInfo').innerHTML = issues.join('<br>');
+                document.getElementById('connectionStatus').className = 'status error';
+            }
+        }
+
+        // Probar conectividad de red
+        async function testNetworkConnection() {
+            const testResults = document.getElementById('testResults');
+            const testOutput = document.getElementById('testOutput');
+            testResults.style.display = 'block';
+            testOutput.innerHTML = '🔄 Probando conectividad...';
+
+            try {
+                // Test Google (conexión básica)
+                const googleTest = await fetch('https://www.google.com', { 
+                    method: 'HEAD', 
+                    mode: 'no-cors'
+                });
+                
+                // Test Firebase (simulado)
+                const firebaseTest = await fetch('https://firebase.google.com', { 
+                    method: 'HEAD', 
+                    mode: 'no-cors'
+                });
+
+                testOutput.innerHTML = `
+                    ✅ <strong>Conectividad básica:</strong> OK<br>
+                    ✅ <strong>Firebase.com accesible:</strong> OK<br>
+                    💡 <strong>Recomendación:</strong> Tu conexión a Internet funciona correctamente.
+                `;
+            } catch (error) {
+                testOutput.innerHTML = `
+                    ❌ <strong>Error de conectividad:</strong> ${error.message}<br>
+                    💡 <strong>Recomendación:</strong> Verificar conexión a Internet.
+                `;
+            }
+        }
+
+        // Limpiar cache
+        function clearCache() {
+            localStorage.clear();
+            sessionStorage.clear();
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            alert('🧹 Cache limpiado. Presiona Ctrl+Shift+R para recargar completamente.');
+        }
+
+        // Mostrar configuración de Firebase
+        function showFirebaseConfig() {
+            alert(`
+🔥 Configuración Esperada de Firebase:
+
+En tu archivo .env debe estar:
+VITE_USE_EMULATORS=false
+VITE_FIREBASE_ENV=production
+
+En src/firebase.ts debe conectarse a:
+✅ Producción (firebase.google.com)
+❌ NO localhost:8080 (emulador)
+            `);
+        }
+
+        // Inicializar al cargar
+        window.onload = function() {
+            loadEnvironmentInfo();
+            checkConnectionStatus();
+        };
+    </script>
+</body>
+</html>

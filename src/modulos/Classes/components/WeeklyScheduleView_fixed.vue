@@ -44,7 +44,7 @@
         </div>
       </div>
 
-        <!-- Filters -->
+      <!-- Filters -->
       <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
         <!-- Search -->
         <div>
@@ -55,11 +55,11 @@
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
-  <div class="flex space-x-2">
-            <button
-              class="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-              @click="refreshData"
-            >
+        <div class="flex space-x-2">
+          <button
+            class="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            @click="refreshData"
+          >
             <svg
               v-if="isLoading"
               class="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500"
@@ -90,7 +90,6 @@
           >
             🧹 Limpiar
           </button>
-        </div>
         </div>
       </div>
 
@@ -162,6 +161,7 @@
         </div>
       </div>
     </div>
+
     <!-- Content -->
     <div class="p-6">
       <!-- Loading Spinner -->
@@ -202,6 +202,7 @@
           :on-reset-filters="resetAllFilters"
           :on-show-all-day="showAllDay"
         />
+
         <!-- Week View -->
         <div v-if="viewMode === 'week'" class="space-y-6">
           <!-- Week Navigation -->
@@ -224,6 +225,7 @@
               Semana Siguiente →
             </button>
           </div>
+
           <!-- Calendar Grid -->
           <div
             class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-lg mb-8"
@@ -450,6 +452,7 @@
         </div>
       </div>
 
+      <!-- Class Details Modal -->
       <ClassDetailsModal
         v-if="selectedClass"
         :class-item="selectedClass"
@@ -551,17 +554,16 @@
       </div>
     </div>
   </div>
-  <!-- inline edit form component removed to reduce SFC size; use the modal above for edits -->
 </template>
 
 <script setup lang="ts">
 import type { ClassData } from '../types/class';
 
-
 import ClassDetailsModal from './ClassDetailsModal.vue';
 import ClassEditModal from './ClassEditModal.vue';
 import ScheduleStatsBar from './ScheduleStatsBar.vue';
 import { useWeeklySchedule } from './WeeklyScheduleView';
+
 const props = defineProps<{ classes?: ClassData[] }>();
 
 const {
@@ -622,7 +624,6 @@ const {
   savePermissions,
   closePermissionsModal,
 } = useWeeklySchedule(props as unknown as Record<string, unknown>);
-
 </script>
 
 <style scoped src="./WeeklyScheduleView.css"></style>

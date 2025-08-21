@@ -765,7 +765,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, inject } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useTeachersStore } from '../../Teachers/store/teachers';
 import { useStudentsStore } from '../../Students/store/students';
 import { useClassesStore } from '../store/classes';
@@ -792,8 +792,8 @@ const studentsStore = useStudentsStore();
 const classesStore = useClassesStore();
 const authStore = useAuthStore();
 
-// Get current teacher ID from injection or auth
-const currentTeacherId = inject<string>('currentTeacherId') || authStore.user?.uid || '';
+// Get current teacher ID from auth store
+const currentTeacherId = computed(() => authStore.user?.uid || '');
 
 // Reactive data
 const viewMode = ref<'week' | 'list'>('week');
@@ -876,7 +876,7 @@ const filteredClasses = computed(() => {
   if (filterType.value !== 'all') {
     switch (filterType.value) {
     case 'owned':
-      classes = classes.filter((classItem) => classItem.teacherId === currentTeacherId);
+      classes = classes.filter((classItem) => classItem.teacherId === currentTeacherId.value);
       break;
     case 'shared-with-me':
       classes = classes.filter((classItem) => isSharedWithMe(classItem));
@@ -1005,25 +1005,25 @@ const isSharedWithMe = (classItem: ClassData): boolean => {
 
   const isInTeachers = classItem.teachers.some((teacherItem) => {
     if (typeof teacherItem === 'string') {
-      return teacherItem === currentTeacherId;
+      return teacherItem === currentTeacherId.value;
     } else if (typeof teacherItem === 'object' && teacherItem.teacherId) {
-      return teacherItem.teacherId === currentTeacherId;
+      return teacherItem.teacherId === currentTeacherId.value;
     }
     return false;
   });
 
-  return isInTeachers && classItem.teacherId !== currentTeacherId;
+  return isInTeachers && classItem.teacherId !== currentTeacherId.value;
 };
 
 const isMySharedClass = (classItem: ClassData): boolean => {
   if (!classItem.teachers || !Array.isArray(classItem.teachers)) return false;
 
-  return classItem.teacherId === currentTeacherId && classItem.teachers.length > 1;
+  return classItem.teacherId === currentTeacherId.value && classItem.teachers.length > 1;
 };
 
 const canManagePermissions = (classItem: ClassData): boolean => {
   // Only the owner can manage permissions, or users with 'manage' permission
-  if (classItem.teacherId === currentTeacherId) return true;
+  if (classItem.teacherId === currentTeacherId.value) return true;
 
   const myPermissions = getMyPermissions(classItem);
   return myPermissions.includes('manage');
@@ -1032,7 +1032,7 @@ const canManagePermissions = (classItem: ClassData): boolean => {
 const getMyPermissions = (classItem: ClassData): string[] => {
   if (!classItem.permissions || typeof classItem.permissions !== 'object') return ['read'];
 
-  return classItem.permissions[currentTeacherId] || ['read'];
+  return classItem.permissions[currentTeacherId.value] || ['read'];
 };
 
 const getTeacherPermissions = (classItem: ClassData | null, teacherId: string): string[] => {
@@ -1483,7 +1483,7 @@ onMounted(async () => {
     await Promise.all([teachersStore.fetchTeachers(), studentsStore.fetchStudents()]);
 
     console.log('WeeklyScheduleView mounted with', allClasses.value.length, 'classes');
-    console.log('Current teacher ID:', currentTeacherId);
+    console.log('Current teacher ID:', currentTeacherId.value);
 
     // Debug en desarrollo
     if (process.env.NODE_ENV === 'development') {

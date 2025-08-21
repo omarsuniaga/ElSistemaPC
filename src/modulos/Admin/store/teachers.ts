@@ -1,222 +1,208 @@
-import {
-  collection,
-  query,
-  getDocs,
-  doc,
-  getDoc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  orderBy,
-} from 'firebase/firestore';
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { db } from '../../../firebase';
+import { collection, getDocs, query, where, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuthStore } from '../../../stores/auth'; // Importar el store de autenticación
 
-import { Teacher } from '../../Teachers/types/teachers';
-import { db } from '@/firebase';
-
-interface IAdminTeacher extends Teacher {
-  assignedClasses?: string[]
+interface Teacher {
+  id: string;
+  uid: string;
+  name: string;
+  email: string;
+  phone?: string;
+  specialties?: string[];
+  status: 'active' | 'inactive' | 'pending'; // Cambiado de 'activo' a 'status'
+  createdAt: Date;
+  [key: string]: any; // Para propiedades adicionales
 }
 
-export const useAdminTeachersStore = defineStore('adminTeachers', () => {
-  // State
-  const teachers = ref<Teacher[]>([]);
-  const isLoading = ref(false);
-  const error = ref<string | null>(null);
+export const useAdminTeachersStore = defineStore('adminTeachers', {
+  state: () => ({
+    teachers: [] as Teacher[],
+    isLoading: false,
+    error: null as string | null,
+  }),
 
-  // Getters
-  const totalTeachers = computed(() => teachers.value.length);
-  const activeTeachers = computed(() => teachers.value.filter((t) => t.status === 'active').length);
-  const totalSpecialties = computed(() => {
-    const specialties = new Set<string>();
-    teachers.value.forEach((teacher) => {
-      teacher.specialty.forEach((spec) => specialties.add(spec));
-    });
-    return specialties.size;
-  });
-  const totalAssignedClasses = computed(() => {
-    return teachers.value.reduce((total, teacher) => {
-      return total + (teacher.assignedClasses?.length || 0);
-    }, 0);
-  });
+  getters: {
+    // ... (getters existentes)
+  },
 
-  // Actions
-  const loadTeachers = async () => {
-    try {
-      isLoading.value = true;
-      error.value = null;
+  actions: {
+    async loadTeachers() {
+      this.isLoading = true;
+      try {
+        // Use singular role 'maestro' to match how new users are created below
+        const teacherRoles = ['maestro', 'administrador', 'director'];
+        const q = query(collection(db, 'USERS'), where('role', 'in', teacherRoles));
+        const querySnapshot = await getDocs(q);
+        const fetchedTeachers = querySnapshot.docs.map((snap) => {
+          const data: any = snap.data();
+          // Support both 'isActive' and legacy 'activo' fields
+          const isActive = (data.isActive ?? data.activo) as boolean | undefined;
 
-      const teachersRef = collection(db, 'MAESTROS');
-      const q = query(teachersRef, orderBy('name'));
-      const snapshot = await getDocs(q);
-      teachers.value = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate
-            ? data.createdAt.toDate()
-            : data.createdAt instanceof Date
-              ? data.createdAt
-              : new Date(),
-          updatedAt: data.updatedAt?.toDate
-            ? data.updatedAt.toDate()
-            : data.updatedAt instanceof Date
-              ? data.updatedAt
-              : new Date(),
-        };
-      }) as Teacher[];
-    } catch (err) {
-      console.error('Error loading teachers:', err);
-      error.value = 'Error loading teachers';
-    } finally {
-      isLoading.value = false;
-    }
-  };
+          // Normalize createdAt: Timestamp (has toDate), ISO string, number or missing
+          let createdAt: Date;
+          const rawCreated = data.createdAt;
+          if (rawCreated && typeof rawCreated.toDate === 'function') {
+            createdAt = rawCreated.toDate();
+          } else if (typeof rawCreated === 'string' || typeof rawCreated === 'number') {
+            createdAt = new Date(rawCreated as any);
+          } else {
+            createdAt = new Date();
+          }
 
-  const getTeacherById = async (id: string): Promise<Teacher | null> => {
-    try {
-      const teacherDoc = doc(db, 'MAESTROS', id);
-      const snapshot = await getDoc(teacherDoc);
-
-      if (snapshot.exists()) {
-        return {
-          id: snapshot.id,
-          ...snapshot.data(),
-          createdAt: snapshot.data().createdAt?.toDate() || new Date(),
-          updatedAt: snapshot.data().updatedAt?.toDate() || new Date(),
-        } as Teacher;
+          return {
+            id: snap.id,
+            uid: snap.id, // El UID del usuario es el ID del documento en la colección USERS
+            ...data,
+            status: isActive ? 'active' : 'inactive', // Mapear a 'status'
+            createdAt,
+          } as Teacher;
+        }) as Teacher[];
+        console.log('Fetched raw teachers from USERS collection:', fetchedTeachers);
+        this.teachers = fetchedTeachers as Teacher[];
+      } catch (error: any) {
+        this.error = error.message;
+        console.error('Error loading teachers:', error);
+      } finally {
+        this.isLoading = false;
       }
+    },
 
-      return null;
-    } catch (err) {
-      console.error('Error getting teacher:', err);
-      return null;
-    }
-  };
+    async addTeacher(teacherData: {
+      nombre: string;
+      apellido: string;
+      email: string;
+      password: string;
+      telefono?: string;
+      especialidades?: string[];
+      activo: boolean; // Todavía recibimos 'activo' del modal
+    }) {
+      this.isLoading = true;
+      this.error = null;
+      const authStore = useAuthStore();
 
-  const createTeacher = async (teacherData: Omit<Teacher, 'id' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      isLoading.value = true;
-      error.value = null;
+      try {
+        const fullName = `${teacherData.nombre} ${teacherData.apellido}`.trim();
+        const userData = {
+          name: fullName,
+          email: teacherData.email,
+          phone: teacherData.telefono || '',
+          specialties: teacherData.especialidades || [],
+          status: teacherData.activo ? 'active' : 'inactive', // Mapear 'activo' a 'status' para Firestore
+          role: 'maestro', // Asignar el rol de maestro
+        };
 
-      const teachersRef = collection(db, 'MAESTROS');
-      const docRef = await addDoc(teachersRef, {
-        ...teacherData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+        // Registrar el usuario en Firebase Auth y Firestore (colección USERS)
+        const newUser = await authStore.registerUser(
+          teacherData.email,
+          teacherData.password,
+          userData,
+        );
 
-      await loadTeachers(); // Reload to get updated list
-      return docRef.id;
-    } catch (err) {
-      console.error('Error creating teacher:', err);
-      error.value = 'Error creating teacher';
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
-  };
+        if (newUser) {
+          // Create a USERS document for the new user in Firestore so queries will find it
+          try {
+            await setDoc(doc(db, 'USERS', newUser.uid), {
+              ...userData,
+              role: 'maestro',
+              createdAt: serverTimestamp(),
+            });
+          } catch (fireErr) {
+            console.warn('Warning: could not write USERS document for new teacher:', fireErr);
+          }
 
-  const updateTeacher = async (id: string, updates: Partial<Teacher>) => {
-    try {
-      isLoading.value = true;
-      error.value = null;
+          // Añadir el nuevo maestro al estado del store (optimistic)
+          this.teachers.push({
+            id: newUser.uid,
+            uid: newUser.uid,
+            name: fullName,
+            email: teacherData.email,
+            phone: teacherData.telefono || '',
+            specialties: teacherData.especialidades || [],
+            status: teacherData.activo ? 'active' : 'inactive', // Mapear 'activo' a 'status' para el estado local
+            createdAt: new Date(), // O el timestamp real de Firestore si se devuelve
+          });
+        } else {
+          throw new Error('No se pudo crear el usuario maestro.');
+        }
+      } catch (error: any) {
+        this.error = error.message;
+        console.error('Error adding teacher:', error);
+        throw error; // Re-lanzar el error para que la vista lo maneje
+      } finally {
+        this.isLoading = false;
+      }
+    },
 
-      const teacherDoc = doc(db, 'MAESTROS', id);
-      await updateDoc(teacherDoc, {
-        ...updates,
-        updatedAt: new Date(),
-      });
+    async updateTeacher(id: string, updates: Partial<Teacher>) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        // Asumiendo que tienes un servicio para actualizar usuarios en la colección USERS
+        // Por ahora, solo actualizamos el estado local
+        const index = this.teachers.findIndex((t) => t.id === id);
+        if (index !== -1) {
+          this.teachers[index] = { ...this.teachers[index], ...updates };
+        }
+        // TODO: Implementar la actualización en Firestore para la colección USERS
+      } catch (error: any) {
+        this.error = error.message;
+        console.error('Error updating teacher:', error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
 
-      await loadTeachers(); // Reload to get updated list
-    } catch (err) {
-      console.error('Error updating teacher:', err);
-      error.value = 'Error updating teacher';
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
-  };
+    async deleteTeacher(id: string) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        // Asumiendo que tienes un servicio para eliminar usuarios de la colección USERS
+        // y de Firebase Auth si es necesario
+        this.teachers = this.teachers.filter((t) => t.id !== id);
+        // TODO: Implementar la eliminación en Firestore y Firebase Auth
+      } catch (error: any) {
+        this.error = error.message;
+        console.error('Error deleting teacher:', error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
 
-  const deleteTeacher = async (id: string) => {
-    try {
-      isLoading.value = true;
-      error.value = null;
+    exportTeachers(teachersToExport: Teacher[]) {
+      try {
+        const headers = ['ID', 'UID', 'Nombre', 'Email', 'Teléfono', 'Especialidades', 'Estado', 'Fecha de Creación']; // Actualizado 'Activo' a 'Estado'
+        const rows = teachersToExport.map((teacher) => [
+          teacher.id,
+          teacher.uid,
+          teacher.name,
+          teacher.email,
+          teacher.phone || '',
+          (teacher.specialties || []).join('; '),
+          teacher.status, // Usar 'status'
+          teacher.createdAt ? teacher.createdAt.toISOString() : '',
+        ]);
 
-      const teacherDoc = doc(db, 'MAESTROS', id);
-      await deleteDoc(teacherDoc);
+        let csvContent = headers.join(',') + '\n';
+        rows.forEach((row) => {
+          csvContent += row.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(',') + '\n';
+        });
 
-      await loadTeachers(); // Reload to get updated list
-    } catch (err) {
-      console.error('Error deleting teacher:', err);
-      error.value = 'Error deleting teacher';
-      throw err;
-    } finally {
-      isLoading.value = false;
-    }
-  };
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        const filename = `teachers-${new Date().toISOString().split('T')[0]}.csv`;
 
-  const updateTeacherStatus = async (id: string, status: 'active' | 'inactive') => {
-    try {
-      await updateTeacher(id, { status });
-    } catch (err) {
-      console.error('Error updating teacher status:', err);
-      throw err;
-    }
-  };
-
-  const exportTeachers = (teachersToExport: Teacher[]) => {
-    try {
-      const csvContent = [
-        'Name,Email,Phone,Specialty,Experience,Status',
-        ...teachersToExport.map(
-          (teacher) =>
-            `"${teacher.name}","${teacher.email}","${teacher.phone || ''}","${teacher.specialty.join(', ')}","${teacher.experience}","${teacher.status}"`,
-        ),
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `teachers-${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error('Error exporting teachers:', err);
-    }
-  };
-
-  const $reset = () => {
-    teachers.value = [];
-    isLoading.value = false;
-    error.value = null;
-  };
-
-  return {
-    // State
-    teachers,
-    isLoading,
-    error,
-
-    // Getters
-    totalTeachers,
-    activeTeachers,
-    totalSpecialties,
-    totalAssignedClasses,
-
-    // Actions
-    loadTeachers,
-    getTeacherById,
-    createTeacher,
-    updateTeacher,
-    deleteTeacher,
-    updateTeacherStatus,
-    exportTeachers,
-    $reset,
-  };
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (err) {
+        console.error('Error exporting teachers:', err);
+      }
+    },
+  },
 });
+

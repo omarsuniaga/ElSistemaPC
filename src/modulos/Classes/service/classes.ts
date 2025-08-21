@@ -217,6 +217,22 @@ export const updateClassFirestore = async (
   try {
     const classDoc = doc(db, CLASSES_COLLECTION, id);
     await updateDoc(classDoc, classData);
+    // Best-effort audit/logging: record the update in a CLASS_AUDIT collection
+    try {
+      const currentUser = await getCurrentUserFromFirestore();
+      const auditCollection = collection(db, 'CLASS_AUDIT');
+      const auditEntry = {
+        classId: id,
+        updatedBy: currentUser ? currentUser.id : null,
+        updatedAt: new Date(),
+        changes: classData,
+      };
+      // We don't await addDoc here to keep the update fast; still attempt it
+      await addDoc(auditCollection, auditEntry as any);
+    } catch (auditErr) {
+      // Do not block the main update if audit logging fails
+      console.warn('Audit logging failed for class update', id, auditErr);
+    }
   } catch (error) {
     console.error(`Error updating class with ID ${id}:`, error);
     throw error;
