@@ -10,13 +10,12 @@
             <!-- Breadcrumb -->
             <nav class="flex" aria-label="Breadcrumb">
               <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                <li class="inline-flex items-center">
+                <li class="items-center">
                   <router-link
                     to="/admin"
                     class="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
                   >
                     <HomeIcon class="w-4 h-4 mr-2" />
-                    Admin
                   </router-link>
                 </li>
                 <li>
@@ -36,16 +35,32 @@
               @click="exportStudents"
             >
               <ArrowDownTrayIcon class="w-4 h-4 mr-2" />
-              Exportar
+              Export
             </button>
-
+            <!-- boton para abrir /admin/student/new -->
+            <router-link
+              to="/admin/students/new"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 ml-2"
+            >
+              <PlusIcon class="w-4 h-4 mr-2" />
+              Nuevo Estudiante
+            </router-link>
             <button
               v-if="canCreateStudent"
               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               @click="showCreateModal = true"
             >
               <PlusIcon class="w-4 h-4 mr-2" />
-              Nuevo Estudiante
+              Nuevo Estudiante (Modal)
+            </button>
+            
+            <button
+              v-if="canCreateStudent"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              @click="navigateToNewStudentForm"
+            >
+              <DocumentPlusIcon class="w-4 h-4 mr-2" />
+              Nuevo Estudiante (Formulario)
             </button>
           </div>
         </div>
@@ -127,53 +142,11 @@
                 type="text"
                 placeholder="Buscar estudiantes..."
                 class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                @keyup.enter="applyFilters()"
               />
-            </div>
-
-            <!-- Status Filter -->
-            <div class="relative">
-              <select
-                v-model="statusFilter"
-                class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Todos los estados</option>
-                <option value="active">Activos</option>
-                <option value="inactive">Inactivos</option>
-                <option value="pending">Pendientes</option>
-              </select>
-            </div>
-
-            <!-- Grade Filter -->
-            <div class="relative">
-              <select
-                v-model="gradeFilter"
-                class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Todos los niveles</option>
-                <option value="beginner">Principiante</option>
-                <option value="intermediate">Intermedio</option>
-                <option value="advanced">Avanzado</option>
-              </select>
-            </div>
-
-            <!-- Instrument Filter -->
-            <div class="relative">
-              <select
-                v-model="instrumentFilter"
-                class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Todos los instrumentos</option>
-                <option value="piano">Piano</option>
-                <option value="guitar">Guitarra</option>
-                <option value="violin">Violín</option>
-                <option value="drums">Batería</option>
-                <option value="voice">Canto</option>
-              </select>
             </div>
           </div>
 
-          <!-- Clear filters and pagination controls -->
+          <!-- Clear filters -->
           <div class="mt-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
               <button
@@ -185,51 +158,6 @@
               <span v-if="hasActiveFilters" class="text-sm text-blue-600 dark:text-blue-400">
                 {{ filteredStudents.length }} resultados
               </span>
-              
-              <!-- Items per page selector -->
-              <div class="flex items-center space-x-2">
-                <span class="text-sm text-gray-500 dark:text-gray-400">Mostrar:</span>
-                <select
-                  v-model="itemsPerPage"
-                  class="text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  @change="currentPage = 1"
-                >
-                  <option :value="25">25</option>
-                  <option :value="50">50</option>
-                  <option :value="100">100</option>
-                  <option :value="200">200</option>
-                  <option v-if="filteredStudents.length > 0" :value="filteredStudents.length">
-                    Todos ({{ filteredStudents.length }})
-                  </option>
-                </select>
-                <span class="text-sm text-gray-500 dark:text-gray-400">por página</span>
-              </div>
-            </div>
-
-            <!-- View toggle -->
-            <div class="flex items-center space-x-2">
-              <button
-                :class="[
-                  'p-2 rounded-md',
-                  viewMode === 'grid'
-                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
-                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
-                ]"
-                @click="viewMode = 'grid'"
-              >
-                <Squares2X2Icon class="w-5 h-5" />
-              </button>
-              <button
-                :class="[
-                  'p-2 rounded-md',
-                  viewMode === 'list'
-                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
-                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300',
-                ]"
-                @click="viewMode = 'list'"
-              >
-                <ListBulletIcon class="w-5 h-5" />
-              </button>
             </div>
           </div>
         </div>
@@ -268,7 +196,7 @@
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
       >
         <student-card
-          v-for="student in paginatedStudents"
+          v-for="student in filteredStudents"
           :key="student.id"
           :student="student"
           :permissions="{
@@ -289,7 +217,7 @@
         class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
         <students-table
-          :students="paginatedStudents"
+          :students="filteredStudents"
           :sort-field="sortField"
           :sort-order="sortOrder"
           :permissions="{
@@ -303,76 +231,6 @@
           @toggle-status="toggleStudentStatus"
           @sort="handleSort"
         />
-      </div>
-
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="mt-6 flex items-center justify-between">
-        <div class="flex-1 flex justify-between sm:hidden">
-          <button
-            :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="previousPage">
-            Anterior
-          </button>
-          <button
-            :disabled="currentPage === totalPages"
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            @click="nextPage"
-          >
-            Siguiente
-          </button>
-        </div>
-
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p class="text-sm text-gray-700 dark:text-gray-300">
-              Mostrando
-              <span class="font-medium">{{ startIndex + 1 }}</span>
-              a
-              <span class="font-medium">{{ Math.min(endIndex, filteredStudents.length) }}</span>
-              de
-              <span class="font-medium">{{ filteredStudents.length }}</span>
-              resultados
-            </p>
-          </div>
-
-          <div>
-            <nav
-              class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-              aria-label="Pagination"
-            >
-              <button
-                :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                @click="previousPage"
-              >
-                <ChevronLeftIcon class="h-5 w-5" />
-              </button>
-
-              <button
-                v-for="page in visiblePages"
-                :key="page"
-                :class="[
-                  'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
-                  page === currentPage
-                    ? 'z-10 bg-blue-50 dark:bg-blue-900 border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600',
-                ]"
-                @click="goToPage(page)"
-              >
-                {{ page }}
-              </button>
-
-              <button
-                :disabled="currentPage === totalPages"
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                @click="nextPage"
-              >
-                <ChevronRightIcon class="h-5 w-5" />
-              </button>
-            </nav>
-          </div>
-        </div>
       </div>
     </main>
 
@@ -405,8 +263,7 @@
 </template>
 
 <script setup lang="ts">
-// Vue and Vue Router
-import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue';
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue';
 import { useRouter } from 'vue-router';
 // Icons
 import {
@@ -417,9 +274,9 @@ import {
   UserGroupIcon,
   Squares2X2Icon,
   ListBulletIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   FunnelIcon,
+  DocumentPlusIcon,
+  ChevronRightIcon,
 } from '@heroicons/vue/24/outline';
 
 // Stores
@@ -439,64 +296,49 @@ interface IStudent {
   grupo?: string[];
   instrumento?: string;
   nivel?: string;
+  status?: 'active' | 'inactive';
+  createdAt: string; // Assuming createdAt is a string like an ISO date
   [key: string]: unknown;
 }
 
 // Components
-const studentCard = defineAsyncComponent(() => import('../components/StudentCard.vue'));
-
-const studentCreateModal = defineAsyncComponent(() => import('../components/StudentCreateModal.vue'));
-
-const studentEditModal = defineAsyncComponent(() => import('../components/StudentEditModal.vue'));
-
-const studentsTable = defineAsyncComponent(() => import('../components/StudentsTable.vue'));
-
-const confirmationModal = defineAsyncComponent(() => import('@/components/ConfirmationModal.vue'));
+const studentCard = defineAsyncComponent(() => import(/* webpackChunkName: "student-card" */ '../components/StudentCard.vue'));
+const studentCreateModal = defineAsyncComponent(() => import(/* webpackChunkName: "student-create-modal" */ '../components/StudentCreateModal.vue'));
+const studentEditModal = defineAsyncComponent(() => import(/* webpackChunkName: "student-edit-modal" */ '../components/StudentEditModal.vue'));
+const studentsTable = defineAsyncComponent(() => import(/* webpackChunkName: "students-table" */ '../components/StudentsTable.vue'));
+const confirmationModal = defineAsyncComponent(() => import(/* webpackChunkName: "confirmation-modal" */ '@/components/ConfirmationModal.vue'));
 
 // Stores
 const router = useRouter();
 const rbacStore = useRBACStore();
 const studentsStore = useAdminStudentsStore();
 
-// State
+// --- State ---
 const showFilters = ref(false);
-const searchQuery = ref('');
-const statusFilter = ref('');
-const gradeFilter = ref('');
-const instrumentFilter = ref('');
 const viewMode = ref<'grid' | 'list'>('grid');
-const sortField = ref('name');
-const sortOrder = ref<'asc' | 'desc'>('asc');
-
-// Apply filters with debounce
-let filterTimeout: ReturnType<typeof setTimeout> | null = null;
-const applyFilters = () => {
-  if (filterTimeout) clearTimeout(filterTimeout);
-  filterTimeout = setTimeout(() => {
-    currentPage.value = 1;
-  }, 300);
-};
-
-// Watch for filter changes
-watch([searchQuery, statusFilter, gradeFilter, instrumentFilter], () => {
-  applyFilters();
-}, { deep: true });
-
-// Pagination
-const currentPage = ref(1);
-const itemsPerPage = ref(50); // Aumentamos a 50 por defecto para mostrar más estudiantes
-
-// Modals
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
 const selectedStudent = ref<IStudent | null>(null);
 
-// Computed
-const students = computed(() => studentsStore.students);
+// --- Filtering State ---
+const searchQuery = ref('');
+const statusFilter = ref('');
+const gradeFilter = ref('');
+const instrumentFilter = ref('');
+
+// --- Sorting State ---
+const sortField = ref('nombre'); // Default sort field
+const sortOrder = ref<'asc' | 'desc'>('asc');
+
+// --- Computed Properties ---
+
+const students = computed(() => studentsStore.students as IStudent[]);
 const isLoading = computed(() => studentsStore.isLoading);
+
+// Stats
 const totalStudents = computed(() => students.value.length);
-const activeStudents = computed(() => students.value.filter((s) => s.status === 'active').length);
+const activeStudents = computed(() => students.value.filter((s) => s.activo).length);
 const newThisMonth = computed(() => {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -509,7 +351,7 @@ const canViewStudent = computed(() => rbacStore.hasPermission('students:view'));
 const canEditStudent = computed(() => rbacStore.hasPermission('students:edit'));
 const canDeleteStudent = computed(() => rbacStore.hasPermission('students:delete'));
 
-// Filters
+// Filtering Logic
 const hasActiveFilters = computed(() => 
   searchQuery.value || statusFilter.value || gradeFilter.value || instrumentFilter.value
 );
@@ -517,7 +359,6 @@ const hasActiveFilters = computed(() =>
 const filteredStudents = computed(() => {
   let filtered = [...students.value];
 
-  // Search filter with safe property access
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase().trim();
     filtered = filtered.filter((student) => {
@@ -525,86 +366,42 @@ const filteredStudents = computed(() => {
       const apellido = String(student?.apellido || '').toLowerCase();
       const email = String(student?.email || '').toLowerCase();
       const phone = String(student?.phone || '').toLowerCase();
-      
-      return nombre.includes(query) || 
-             apellido.includes(query) ||
-             email.includes(query) || 
-             phone.includes(query);
+      return nombre.includes(query) || apellido.includes(query) || email.includes(query) || phone.includes(query);
     });
   }
 
-  // Status filter (activo/inactivo)
   if (statusFilter.value) {
     const isActive = statusFilter.value === 'active';
     filtered = filtered.filter((student) => student.activo === isActive);
   }
 
-  // Grade filter (nivel)
   if (gradeFilter.value && gradeFilter.value !== 'all') {
-    filtered = filtered.filter((student) => {
-      const nivel = (student as IStudent).nivel?.toString().toLowerCase() || '';
-      return nivel === gradeFilter.value.toLowerCase();
-    });
+    filtered = filtered.filter((student) => (student.nivel?.toString().toLowerCase() || '') === gradeFilter.value.toLowerCase());
   }
 
-  // Instrument filter (instrumento)
   if (instrumentFilter.value && instrumentFilter.value !== 'all') {
-    filtered = filtered.filter((student) => {
-      const instrumento = (student as IStudent).instrumento?.toString().toLowerCase() || '';
-      return instrumento === instrumentFilter.value.toLowerCase();
-    });
+    filtered = filtered.filter((student) => (student.instrumento?.toString().toLowerCase() || '') === instrumentFilter.value.toLowerCase());
   }
 
   // Sorting
   if (sortField.value) {
     filtered.sort((a, b) => {
-      const aValue = String((a as IStudent)[sortField.value as keyof IStudent] || '');
-      const bValue = String((b as IStudent)[sortField.value as keyof IStudent] || '');
-      return sortOrder.value === 'asc' 
-        ? aValue.localeCompare(bValue) 
-        : bValue.localeCompare(aValue);
+      const aValue = String(a[sortField.value as keyof IStudent] || '');
+      const bValue = String(b[sortField.value as keyof IStudent] || '');
+      return sortOrder.value === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
     });
   }
 
   return filtered;
 });
 
-// Pagination
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredStudents.value.length / itemsPerPage.value)));
+// --- Methods ---
 
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
-const endIndex = computed(() => startIndex.value + itemsPerPage.value);
-
-const paginatedStudents = computed(() =>
-  filteredStudents.value.slice(startIndex.value, endIndex.value),
-);
-
-const visiblePages = computed(() => {
-  const pages = [];
-  const maxVisible = 7;
-  const half = Math.floor(maxVisible / 2);
-
-  let start = Math.max(1, currentPage.value - half);
-  const end = Math.min(totalPages.value, start + maxVisible - 1);
-
-  if (end - start + 1 < maxVisible) {
-    start = Math.max(1, end - maxVisible + 1);
-  }
-
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-
-  return pages;
-});
-
-// Methods
 const clearFilters = () => {
   searchQuery.value = '';
   statusFilter.value = '';
   gradeFilter.value = '';
   instrumentFilter.value = '';
-  currentPage.value = 1;
 };
 
 const handleSort = (field: string) => {
@@ -616,33 +413,22 @@ const handleSort = (field: string) => {
   }
 };
 
-const previousPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--;
-  }
-};
-
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++;
-  }
-};
-
-const goToPage = (page: number) => {
-  currentPage.value = page;
-};
-
-const viewStudent = (student: any) => {
+// Navigation and Modal Handlers
+const viewStudent = (student: IStudent) => {
   router.push(`/admin/students/${student.id}`);
 };
 
-const editStudent = (student: any) => {
+const navigateToNewStudentForm = () => {
+  router.push('/admin/students/new');
+};
+
+const editStudent = (student: IStudent) => {
   selectedStudent.value = student;
   showEditModal.value = true;
 };
 
-const deleteStudent = (_student: any) => {
-  selectedStudent.value = _student;
+const deleteStudent = (student: IStudent) => {
+  selectedStudent.value = student;
   showDeleteModal.value = true;
 };
 
@@ -651,36 +437,33 @@ const confirmDelete = async () => {
     await studentsStore.deleteStudent(selectedStudent.value.id);
     showDeleteModal.value = false;
     selectedStudent.value = null;
+    await studentsStore.loadStudents();
   }
 };
 
 const toggleStudentStatus = async (student: IStudent) => {
-  const newStatus = student.status === 'active' ? 'inactive' : 'active';
+  const newStatus = student.activo ? 'inactive' : 'active';
   await studentsStore.updateStudentStatus(student.id, newStatus);
+  await studentsStore.loadStudents();
 };
 
-const handleStudentCreated = (student: any) => {
+const handleStudentCreated = () => {
   showCreateModal.value = false;
-  studentsStore.loadStudents(); // Refresh list
+  studentsStore.loadStudents();
 };
 
-const handleStudentUpdated = (student: IStudent) => {
+const handleStudentUpdated = () => {
   showEditModal.value = false;
   selectedStudent.value = null;
-  studentsStore.loadStudents(); // Refresh list
+  studentsStore.loadStudents();
 };
 
 const exportStudents = () => {
   studentsStore.exportStudents(filteredStudents.value);
 };
 
-// Watch for filter changes to reset pagination
-watch([searchQuery, statusFilter, gradeFilter, instrumentFilter], () => {
-  currentPage.value = 1;
-  applyFilters();
-});
+// --- Lifecycle Hooks ---
 
-// Lifecycle
 onMounted(() => {
   studentsStore.loadStudents();
 });

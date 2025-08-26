@@ -328,6 +328,9 @@
 import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+// Router
+const router = useRouter();
+
 // Composables
 import { useAttendanceFormLogic } from '../../composables/useAttendanceFormLogic';
 

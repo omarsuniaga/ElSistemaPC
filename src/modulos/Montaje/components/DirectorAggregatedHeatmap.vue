@@ -149,19 +149,19 @@
         <div v-if="estadisticasPorInstrumento[selectedInstrument]" class="stats-detail">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div 
-              v-for="(estado, i) in Object.values(EstadoCompass)" 
-              :key="`estado-${i}`"
+              v-for="estadoKey in Object.keys(PROGRESO_COMPAS_INFO)" 
+              :key="`estado-${estadoKey}`"
               class="estado-card p-3 border rounded-lg"
             >
               <div class="flex items-center gap-2">
                 <div 
                   class="color-box w-4 h-4 rounded" 
-                  :style="{ backgroundColor: colors[estado].hex }"
+                  :style="{ backgroundColor: PROGRESO_COMPAS_INFO[parseInt(estadoKey) as ProgresoCompasEstado].hex }"
                 ></div>
-                <div class="text-sm">{{ formatEstado(estado) }}</div>
+                <div class="text-sm">{{ PROGRESO_COMPAS_INFO[parseInt(estadoKey) as ProgresoCompasEstado].label }}</div>
               </div>
               <div class="text-xl font-bold mt-1">
-                {{ estadisticasPorInstrumento[selectedInstrument][estado.toLowerCase()] || 0 }}
+                {{ estadisticasPorInstrumento[selectedInstrument][PROGRESO_COMPAS_INFO[parseInt(estadoKey) as ProgresoCompasEstado].label.toLowerCase().replace(/ /g, '')] || 0 }}
               </div>
               <div class="text-xs text-gray-500">compases</div>
             </div>
@@ -230,7 +230,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useMontajeStore } from '../store/montaje';
-import { TipoInstrumento, EstadoCompass, COLOR_ESTADOS_COMPASS } from '../types';
+import { TipoInstrumento } from '../types';
+import { ProgresoCompasEstado, PROGRESO_COMPAS_INFO } from '../types/instrumentProgress';
 import { permissionsService } from '../service/permissionsService';
 import { MontajePermission } from '../types/permissions';
 import { compassStateService } from '../service/compassStateService';
@@ -253,7 +254,7 @@ const selectedInstrument = ref<TipoInstrumento | null>(null);
 const error = ref<string | null>(null);
 
 // Colores para estados
-const colors = COLOR_ESTADOS_COMPASS;
+const colors = PROGRESO_COMPAS_INFO;
 
 // Verificar permisos para ver reportes agregados
 async function checkPermissions() {
@@ -359,8 +360,8 @@ const instrumentosConMasDificultades = computed(() => {
 });
 
 // Formatear estado para mostrar
-function formatEstado(estado: EstadoCompass): string {
-  return estado.replace(/_/g, ' ').toLowerCase();
+function formatEstado(estado: ProgresoCompasEstado): string {
+  return PROGRESO_COMPAS_INFO[estado].label;
 }
 
 // Determinar clase de color según porcentaje de progreso

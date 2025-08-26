@@ -349,11 +349,19 @@ export function useAttendanceFormLogic() {
     error.value = null;
     
     try {
-      const classId = route.params.classId as string;
-      const date = route.params.date as string;
+      // Better parameter validation with fallbacks
+      const classId = route.params.classId as string || route.query.classId as string;
+      const date = route.params.date as string || route.query.date as string;
+      
+      console.log('🔍 [AttendanceForm] Route params:', { 
+        classId: route.params.classId, 
+        date: route.params.date,
+        query: route.query 
+      });
       
       if (!classId || !date) {
-        throw new Error('Parámetros de clase o fecha no encontrados');
+        console.error('❌ [AttendanceForm] Missing parameters:', { classId, date, route: route.path });
+        throw new Error(`Parámetros requeridos no encontrados. Clase: ${classId || 'undefined'}, Fecha: ${date || 'undefined'}`);
       }
       
       selectedClass.value = classId;

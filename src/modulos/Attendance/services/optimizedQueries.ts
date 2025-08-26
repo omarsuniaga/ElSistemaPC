@@ -277,7 +277,7 @@ class OptimizedAttendanceQueries {
       const cacheKey = `search_${JSON.stringify(criteria)}`;
       const cached = this.getFromCache(cacheKey);
       if (cached) {
-        console.log('[OptimizedQueries] Cache hit for search criteria');
+        // console.log('[OptimizedQueries] Cache hit for search criteria');
         return cached;
       }
 
@@ -343,17 +343,18 @@ class OptimizedAttendanceQueries {
     limit?: number,
   ): Promise<AttendanceDocument[]> {
     try {
-      console.log('[OptimizedQueries] Getting student attendance:', {
-        studentId,
-        startDate,
-        endDate,
-        limit,
-      });
+      // Console log disabled to prevent infinite logging
+      // console.log('[OptimizedQueries] Getting student attendance:', {
+      //   studentId,
+      //   startDate,
+      //   endDate,
+      //   limit,
+      // });
 
       const cacheKey = `student_${studentId}_${startDate || ''}_${endDate || ''}_${limit || ''}`;
       const cached = this.getFromCache(cacheKey);
       if (cached) {
-        console.log('[OptimizedQueries] Cache hit for student attendance');
+        // console.log('[OptimizedQueries] Cache hit for student attendance');
         return cached;
       }
 
@@ -376,7 +377,7 @@ class OptimizedAttendanceQueries {
       }
 
       const querySnapshot = await getDocs(q);
-      console.log('[OptimizedQueries] Firestore returned docs for student:', querySnapshot.docs.length);
+      // console.log('[OptimizedQueries] Firestore returned docs for student:', querySnapshot.docs.length);
 
       // Filtrar documentos que contengan al estudiante
       const attendanceDocs: AttendanceDocument[] = [];
@@ -410,7 +411,7 @@ class OptimizedAttendanceQueries {
         }
       });
 
-      console.log('[OptimizedQueries] Processed student attendance docs:', attendanceDocs.length);
+      // console.log('[OptimizedQueries] Processed student attendance docs:', attendanceDocs.length);
 
       // Cache el resultado
       this.setCache(cacheKey, attendanceDocs);
@@ -432,7 +433,7 @@ class OptimizedAttendanceQueries {
       const cacheKey = `exists_${classId}_${date}`;
       const cached = this.getFromCache(cacheKey);
       if (cached !== null) {
-        console.log('[OptimizedQueries] Cache hit for exists check');
+        // console.log('[OptimizedQueries] Cache hit for exists check');
         return cached;
       }
 

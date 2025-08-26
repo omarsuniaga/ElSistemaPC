@@ -1496,7 +1496,7 @@ const handleTakeAttendance = () => {
   const dateString = format(today, 'yyyyMMdd');
 
   router.push({
-    name: 'attendance',
+    name: 'TeacherAttendanceDetail',
     params: {
       classId: props.classData.id,
       date: dateString,

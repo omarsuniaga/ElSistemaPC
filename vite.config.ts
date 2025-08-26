@@ -121,10 +121,24 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     resolve: {
-      alias: {
-        '@': fileURLToPath(new URL('./src', import.meta.url)),
-        vue: 'vue/dist/vue.esm-bundler.js',
-      },
+      alias: [
+        {
+          find: '@',
+          replacement: fileURLToPath(new URL('./src', import.meta.url)),
+        },
+        {
+          find: /^~(.+)/,
+          replacement: '$1',
+        },
+        {
+          find: /^src\/(.*)/,
+          replacement: fileURLToPath(new URL('./src/$1', import.meta.url)),
+        },
+        {
+          find: /^@\/modulos\/(.*)/,
+          replacement: fileURLToPath(new URL('./src/modulos/$1', import.meta.url)),
+        },
+      ],
     },
     define: {
       // 🏭 PRODUCTION MODE - Definir variables de entorno

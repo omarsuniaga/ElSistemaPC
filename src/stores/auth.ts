@@ -151,8 +151,10 @@ export const useAuthStore = defineStore('auth', {
             this.createTeacherLoginNotification(userCredential.user.uid);
           }
 
-          // Inicializar datos de otros módulos
-          await this.initializeData();
+          // Inicializar datos de otros módulos de forma no bloqueante
+          this.initializeData().catch(error => {
+            console.error('❌ [Auth] Error no crítico durante login:', error);
+          });
 
           // Inicializar sistema de notificaciones para roles administrativos
           if (['Director', 'Admin', 'Superusuario'].includes(userData.role)) {
@@ -323,7 +325,12 @@ export const useAuthStore = defineStore('auth', {
       // ✅ OPTIMIZACIÓN: Solo inicializar datos si hay usuario autenticado
       if (this.user && !this.dataInitialized) {
         console.log('🔄 [Auth] Usuario autenticado detectado, inicializando datos...');
-        await this.initializeData();
+        // Make data initialization non-blocking to prevent app timeout
+        this.initializeData().catch(error => {
+          console.error('❌ [Auth] Error no crítico en inicialización de datos:', error);
+          // Mark as initialized even if some data failed to load
+          this.dataInitialized = true;
+        });
       } else if (!this.user) {
         console.log('🔍 [Auth] No hay usuario autenticado, saltando inicialización de datos');
       }
@@ -375,13 +382,20 @@ export const useAuthStore = defineStore('auth', {
         console.log('🔄 [Auth] Cargando datos desde Firestore...');
         const startTime = Date.now();
         
-        await Promise.all([
+        // Add timeout to prevent hanging
+        const dataLoadingPromise = Promise.all([
           studentsStore.fetchStudents(),
           teachersStore.fetchTeachers(),
           classesStore.fetchClasses(),
-          attendanceStore.fetchAttendanceDocuments(),
+          attendanceStore.fetchAttendanceDocuments?.() || Promise.resolve(),
           scheduleStore.fetchAllSchedules(),
         ]);
+
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Data loading timeout after 15 seconds')), 15000);
+        });
+
+        await Promise.race([dataLoadingPromise, timeoutPromise]);
 
         const loadTime = Date.now() - startTime;
         console.log(`✅ [Auth] Datos cargados exitosamente en ${loadTime}ms`);

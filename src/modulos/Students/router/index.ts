@@ -9,8 +9,8 @@ export const studentRoutes: RouteRecordRaw[] = [
   },
   {
     path: '/students/new',
-    name: 'StudentNew',
-    component: () => import('../view/StudentNewView.vue'),
+    name: 'NewStudent',
+    component: () => import('../view/NewStudentView.vue'),
     meta: { title: 'Nuevo Estudiante' },
   },
   {

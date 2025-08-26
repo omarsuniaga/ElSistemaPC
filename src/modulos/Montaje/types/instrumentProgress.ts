@@ -3,6 +3,33 @@
 import { EstadoCompass, TipoInstrumento } from './montaje';
 
 /**
+ * @deprecated Utilizar ProgresoCompasEstado en su lugar.
+ */
+export { EstadoCompass };
+
+/**
+ * Define los 5 estados de progreso para un compás, específico para un instrumento.
+ */
+export enum ProgresoCompasEstado {
+  SIN_TRABAJAR = 1,
+  LEIDO = 2,
+  CON_DIFICULTAD = 3,
+  LOGRADO = 4,
+  DOMINADO = 5,
+}
+
+/**
+ * Mapeo de los nuevos estados de progreso a colores y etiquetas para la UI.
+ */
+export const PROGRESO_COMPAS_INFO: Record<ProgresoCompasEstado, { hex: string; class: string; label: string }> = {
+  [ProgresoCompasEstado.SIN_TRABAJAR]: { hex: '#E0E0E0', class: 'bg-gray-300', label: 'Sin Trabajar' },
+  [ProgresoCompasEstado.LEIDO]: { hex: '#90CAF9', class: 'bg-blue-200', label: 'Leído' },
+  [ProgresoCompasEstado.CON_DIFICULTAD]: { hex: '#FFB74D', class: 'bg-orange-300', label: 'Con Dificultad' },
+  [ProgresoCompasEstado.LOGRADO]: { hex: '#A5D6A7', class: 'bg-green-200', label: 'Logrado' },
+  [ProgresoCompasEstado.DOMINADO]: { hex: '#4CAF50', class: 'bg-green-600', label: 'Dominado' },
+};
+
+/**
  * Interfaz para el estado de un compás específico de un instrumento
  */
 export interface EstadoCompassInstrumento {
@@ -10,7 +37,7 @@ export interface EstadoCompassInstrumento {
   obraId: string;            // ID de la obra
   instrumentoId: string;     // ID del instrumento
   numeroCompas: number;      // Número de compás
-  estado: EstadoCompass;     // Estado actual del compás para este instrumento
+  estado: ProgresoCompasEstado; // Utiliza el nuevo enum de 5 estados
   notas?: string;            // Notas o comentarios específicos
   ultimaActualizacion: Date; // Fecha de última actualización
   actualizadoPor: string;    // ID del usuario que actualizó por última vez
@@ -26,13 +53,10 @@ export interface EstadisticasProgreso {
   totalCompases: number;
   sinTrabajar: number;
   leido: number;
-  enProgreso: number;
   conDificultad: number;
   logrado: number;
   dominado: number;
-  completado: number;
-  noTrabajado: number;
-  porcentajeCompletado: number;
+  porcentajeCompletado: number; // Calculado en base a los estados
 }
 
 /**
@@ -42,7 +66,7 @@ export interface ActualizacionMasiva {
   obraId: string;
   instrumentoId: string;
   compasesIds: number[];
-  nuevoEstado: EstadoCompass;
+  nuevoEstado: ProgresoCompasEstado; // Utiliza el nuevo enum
   notas?: string;
 }
 
@@ -70,21 +94,9 @@ export interface CeldaMapaCalor {
   obraId: string;
   instrumentoId: string;
   numeroCompas: number;
-  estado: EstadoCompass;
+  estado: ProgresoCompasEstado; // Utiliza el nuevo enum
   colorHex: string;
   colorClass: string;
 }
 
-/**
- * Mapeo de estados de compás a colores para visualización
- */
-export const COLOR_ESTADOS_COMPASS: Record<EstadoCompass, { hex: string, class: string }> = {
-  [EstadoCompass.SIN_TRABAJAR]: { hex: '#f5f5f5', class: 'bg-gray-100' },
-  [EstadoCompass.LEIDO]: { hex: '#e3f2fd', class: 'bg-blue-100' },
-  [EstadoCompass.EN_PROGRESO]: { hex: '#fff9c4', class: 'bg-yellow-100' },
-  [EstadoCompass.CON_DIFICULTAD]: { hex: '#ffccbc', class: 'bg-orange-100' },
-  [EstadoCompass.LOGRADO]: { hex: '#c8e6c9', class: 'bg-green-100' },
-  [EstadoCompass.DOMINADO]: { hex: '#4caf50', class: 'bg-green-500' },
-  [EstadoCompass.COMPLETADO]: { hex: '#1b5e20', class: 'bg-green-800' },
-  [EstadoCompass.NO_TRABAJADO]: { hex: '#d32f2f', class: 'bg-red-500' },
-};
+

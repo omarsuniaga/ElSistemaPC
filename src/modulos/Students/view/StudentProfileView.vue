@@ -28,7 +28,13 @@
       </button>
     </div>
     <div id="student-profile-pdf">
-      <div class="student-profile mb-16 px-2 sm:px-4 md:px-8">
+      <div v-if="!student" class="flex justify-center items-center min-h-screen">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+          <p class="mt-4 text-gray-600 dark:text-gray-400">Cargando perfil del estudiante...</p>
+        </div>
+      </div>
+      <div v-else class="student-profile mb-16 px-2 sm:px-4 md:px-8">
         <!-- Header con avatar y acciones -->
         <div
           class="profile-header bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-8 rounded-b-3xl shadow-lg flex flex-col items-center relative"
@@ -44,27 +50,27 @@
             </button>
           </div>
           <StudentAvatar
-            :first-name="student.nombre || ''"
-            :last-name="student.apellido || ''"
+            :first-name="student?.nombre || ''"
+            :last-name="student?.apellido || ''"
             size="xl"
             class="shadow-lg border-4 border-white mb-4"
           />
           <h1 class="text-3xl font-extrabold tracking-tight mb-2 drop-shadow-lg">
-            {{ student.nombre }} {{ student.apellido }}
+            {{ student?.nombre || 'Cargando...' }} {{ student?.apellido || '' }}
           </h1>
           <div class="flex gap-2 mb-2">
             <span
               class="inline-flex items-center px-3 py-1 rounded-full bg-white/20 text-white font-semibold text-sm shadow"
             >
               <MusicalNoteIcon class="w-4 h-4 mr-1" />
-              {{ student.instrumento?.nombre || student.instrumento || "Sin instrumento" }}
+              {{ student?.instrumento?.nombre || student?.instrumento || "Sin instrumento" }}
             </span>
             <span
-              v-if="student.clase"
+              v-if="student?.clase"
               class="inline-flex items-center px-3 py-1 rounded-full bg-indigo-400/60 text-white font-semibold text-sm shadow"
             >
               <AcademicCapIcon class="w-4 h-4 mr-1" />
-              {{ student.clase }}
+              {{ student?.clase }}
             </span>
           </div>
           <div v-if="isEditing" class="flex gap-3 mt-2">
@@ -455,10 +461,23 @@
       class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40"
     >
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full">
-        <h2 class="text-xl font-bold mb-4 text-red-700">¿Eliminar alumno?</h2>
-        <p class="mb-6">
-          ¿Estás seguro que deseas eliminar este alumno? Esta acción no se puede deshacer.
-        </p>
+        <h2 class="text-xl font-bold mb-4 text-red-700 dark:text-red-400">⚠️ ¿Eliminar alumno?</h2>
+        <div class="mb-6">
+          <p class="mb-3 text-gray-700 dark:text-gray-300">
+            ¿Estás seguro que deseas eliminar a:
+          </p>
+          <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-3">
+            <p class="font-semibold text-gray-900 dark:text-white">
+              {{ student?.nombre || '' }} {{ student?.apellido || '' }}
+            </p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              {{ student?.instrumento?.nombre || student?.instrumento || 'Sin instrumento' }}
+            </p>
+          </div>
+          <p class="text-sm text-red-600 dark:text-red-400 font-medium">
+            Esta acción no se puede deshacer y eliminará al estudiante de todas las clases.
+          </p>
+        </div>
         <div class="flex justify-end gap-3">
           <button
             class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
@@ -468,11 +487,39 @@
           </button>
           <button
             :disabled="isDeleting"
-            class="btn bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded-lg shadow transition-all duration-200"
+            :class="[
+              'btn font-bold px-4 py-2 rounded-lg shadow transition-all duration-200',
+              isDeleting 
+                ? 'bg-red-400 cursor-not-allowed' 
+                : 'bg-red-600 hover:bg-red-700 text-white'
+            ]"
             @click="confirmDelete"
           >
-            <span v-if="isDeleting" class="animate-spin mr-2">⏳</span>
-            Eliminar
+            <div class="flex items-center justify-center">
+              <svg
+                v-if="isDeleting"
+                class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <TrashIcon v-else class="w-4 h-4 mr-2" />
+              {{ isDeleting ? 'Eliminando...' : 'Eliminar' }}
+            </div>
           </button>
         </div>
       </div>
@@ -767,26 +814,24 @@ const attendanceData = computed(() => {
 });
 
 // Obtener y procesar los datos de asistencia del estudiante
-const studentAttendance = computed(() => {
-  // Estado inicial
-  const result = ref({
-    records: [],
-    summary: {
-      total: 0,
-      present: 0,
-      absent: 0,
-      justified: 0,
-      late: 0,
-      attendanceRate: 0,
-    },
-    classification: 'Cargando...',
-    monthlyData: {},
-    recentRecords: [],
-    classPerformance: [],
-  });
+const studentAttendance = ref({
+  records: [],
+  summary: {
+    total: 0,
+    present: 0,
+    absent: 0,
+    justified: 0,
+    late: 0,
+    attendanceRate: 0,
+  },
+  classification: 'Cargando...',
+  monthlyData: {},
+  recentRecords: [],
+  classPerformance: [],
+});
 
-  // Función para cargar los datos
-  const loadAttendanceData = async () => {
+// Función para cargar los datos de asistencia
+const loadAttendanceData = async () => {
     if (!student.value || !studentId) return;
 
     try {
@@ -797,7 +842,7 @@ const studentAttendance = computed(() => {
       });
       
       if (!attendanceRecords || attendanceRecords.length === 0) {
-        result.value = {
+        studentAttendance.value = {
           records: [],
           summary: {
             total: 0,
@@ -889,7 +934,7 @@ const studentAttendance = computed(() => {
       const attendanceRateData = labels.map(m => Math.round((monthlyData[m].present / monthlyData[m].total) * 100));
 
       // Actualizar el resultado
-      result.value = {
+      studentAttendance.value = {
         records,
         summary,
         classification,
@@ -908,7 +953,7 @@ const studentAttendance = computed(() => {
 
     } catch (error) {
       console.error('Error al cargar los registros de asistencia:', error);
-      result.value = {
+      studentAttendance.value = {
         records: [],
         summary: {
           total: 0,
@@ -926,16 +971,7 @@ const studentAttendance = computed(() => {
     }
   };
 
-  // Cargar los datos iniciales
-  loadAttendanceData();
-
-  // Observar cambios en el rango de fechas
-  watch(dateRange, () => {
-    loadAttendanceData();
-  }, { deep: true });
-
-  return result.value;
-});
+// El watch para dateRange se define más abajo después de su declaración
 
 // Variables para actualización de datos
 const isRefreshing = ref(false);
@@ -1338,19 +1374,51 @@ const handleDelete = () => {
 };
 
 const confirmDelete = async () => {
-  if (!student.value?.id) return;
+  if (!student.value?.id) {
+    console.warn('No se puede eliminar: ID de estudiante no válido');
+    return;
+  }
+  
+  const studentId = student.value.id;
+  const studentName = `${student.value.nombre || ''} ${student.value.apellido || ''}`.trim();
+  
   isDeleting.value = true;
+  
   try {
-    await studentsStore.deleteStudent(student.value.id);
+    console.log(`🗑️ Iniciando eliminación del estudiante: ${studentName} (ID: ${studentId})`);
+    
+    // Eliminar el estudiante (esto incluye eliminarlo de clases y de la base de datos)
+    await studentsStore.deleteStudent(studentId);
+    
+    console.log(`✅ Estudiante ${studentName} eliminado exitosamente`);
+    
+    // Cerrar modal y resetear estados
     showDeleteConfirm.value = false;
     isDeleting.value = false;
+    
+    // Mostrar mensaje de éxito (opcional - puedes agregar un toast aquí)
+    // toast.success(`Estudiante ${studentName} eliminado exitosamente`);
+    
     // Redirigir a la lista de alumnos tras eliminar
-    router.push('/students');
+    await router.push('/students');
+    
   } catch (error) {
+    console.error(`❌ Error al eliminar alumno ${studentName}:`, error);
+    
+    // Resetear estados
     isDeleting.value = false;
     showDeleteConfirm.value = false;
-    console.error('Error al eliminar alumno:', error);
-    // Aquí podrías mostrar un toast o alerta
+    
+    // Mostrar error al usuario (puedes agregar un toast o alert aquí)
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido al eliminar el estudiante';
+    alert(`Error al eliminar el estudiante: ${errorMessage}`);
+    
+    // En caso de error, recargar los datos para mantener consistencia
+    try {
+      await studentsStore.fetchStudents();
+    } catch (refreshError) {
+      console.error('Error al recargar lista de estudiantes:', refreshError);
+    }
   }
 };
 
@@ -1377,6 +1445,9 @@ onMounted(async () => {
 
       // Cargar las clases específicas para este estudiante desde Firestore
       await classesStore.fetchClassesByStudentId(studentId);
+      
+      // Cargar los datos de asistencia del estudiante
+      await loadAttendanceData();
 
       // Si tenemos IDs de profesores, cargarlos también
       if (classesStore.classes.length > 0) {
@@ -1539,6 +1610,11 @@ const resetDateRange = () => {
     end: format(new Date(), 'yyyy-MM-dd'),
   };
 };
+
+// Observar cambios en el rango de fechas para recargar datos de asistencia
+watch(dateRange, () => {
+  loadAttendanceData();
+}, { deep: true });
 
 // Filtered attendance records based on date range
 const filteredAttendanceRecords = computed(() => {

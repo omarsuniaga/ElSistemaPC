@@ -21,8 +21,9 @@ import {
   EstadisticasProgreso, 
   ActualizacionMasiva,
   NotificacionProgreso,
-  EstadoCompass,
-} from '../types';
+  ProgresoCompasEstado, // Importar el nuevo enum
+} from '../types/instrumentProgress'; // Importar desde el archivo correcto
+import { TipoInstrumento } from '../types'; // Mantener TipoInstrumento
 import { permissionsService } from './permissionsService';
 import { MontajePermission } from '../types/permissions';
 import { teacherService } from './teacherService';
@@ -104,7 +105,7 @@ export const compassStateService = {
         // Actualizar estado existente
         const docRef = querySnapshot.docs[0].ref;
         await updateDoc(docRef, {
-          estado: estadoCompass.estado,
+          estado: estadoCompass.estado, // Ahora es ProgresoCompasEstado
           notas: estadoCompass.notas,
           ultimaActualizacion: serverTimestamp(),
           actualizadoPor: estadoCompass.actualizadoPor,
@@ -168,7 +169,7 @@ export const compassStateService = {
           obraId: data.obraId,
           instrumentoId: data.instrumentoId,
           numeroCompas: data.numeroCompas,
-          estado: data.estado,
+          estado: data.estado as ProgresoCompasEstado, // Castear al nuevo enum
           notas: data.notas,
           ultimaActualizacion: data.ultimaActualizacion instanceof Timestamp 
             ? data.ultimaActualizacion.toDate() 
@@ -250,7 +251,7 @@ export const compassStateService = {
             obraId: actualizacion.obraId,
             instrumentoId: actualizacion.instrumentoId,
             numeroCompas: numeroCompas,
-            estado: actualizacion.nuevoEstado,
+            estado: actualizacion.nuevoEstado, // Ahora es ProgresoCompasEstado
             notas: actualizacion.notas || '',
             ultimaActualizacion: serverTimestamp(),
             actualizadoPor: currentUser.uid,
@@ -261,7 +262,7 @@ export const compassStateService = {
           // Actualizar estado existente
           const docRef = querySnapshot.docs[0].ref;
           batch.update(docRef, {
-            estado: actualizacion.nuevoEstado,
+            estado: actualizacion.nuevoEstado, // Ahora es ProgresoCompasEstado
             notas: actualizacion.notas,
             ultimaActualizacion: serverTimestamp(),
             actualizadoPor: currentUser.uid,
@@ -304,69 +305,57 @@ export const compassStateService = {
       }
       
       const obraData = obraDoc.data();
-      const totalCompases = obraData.compas || 0;
+      const totalCompases = obraData.totalCompases || 0; // Usar totalCompases de la obra
       
       // Buscar el instrumento en la obra
       let nombreInstrumento = instrumentoId;
-      if (obraData.instruments && Array.isArray(obraData.instruments)) {
-        const instrumento = obraData.instruments.find((i: any) => i.id === instrumentoId);
+      if (obraData.instrumentosRequeridos && Array.isArray(obraData.instrumentosRequeridos)) {
+        const instrumento = obraData.instrumentosRequeridos.find((i: any) => i.instrumentoId === instrumentoId);
         if (instrumento) {
-          nombreInstrumento = instrumento.name;
+          nombreInstrumento = instrumento.nombre;
         }
       }
       
-      // Inicializar estadísticas
+      // Inicializar estadísticas con los nuevos estados
       const estadisticas: EstadisticasProgreso = {
         instrumentoId,
         nombreInstrumento,
         totalCompases,
         sinTrabajar: 0,
         leido: 0,
-        enProgreso: 0,
         conDificultad: 0,
         logrado: 0,
         dominado: 0,
-        completado: 0,
-        noTrabajado: 0,
         porcentajeCompletado: 0,
       };
       
       // Contar compases por estado
       for (const estado of estados) {
         switch (estado.estado) {
-        case EstadoCompass.SIN_TRABAJAR:
-          estadisticas.sinTrabajar++;
-          break;
-        case EstadoCompass.LEIDO:
-          estadisticas.leido++;
-          break;
-        case EstadoCompass.EN_PROGRESO:
-          estadisticas.enProgreso++;
-          break;
-        case EstadoCompass.CON_DIFICULTAD:
-          estadisticas.conDificultad++;
-          break;
-        case EstadoCompass.LOGRADO:
-          estadisticas.logrado++;
-          break;
-        case EstadoCompass.DOMINADO:
-          estadisticas.dominado++;
-          break;
-        case EstadoCompass.COMPLETADO:
-          estadisticas.completado++;
-          break;
-        case EstadoCompass.NO_TRABAJADO:
-          estadisticas.noTrabajado++;
-          break;
+          case ProgresoCompasEstado.SIN_TRABAJAR:
+            estadisticas.sinTrabajar++;
+            break;
+          case ProgresoCompasEstado.LEIDO:
+            estadisticas.leido++;
+            break;
+          case ProgresoCompasEstado.CON_DIFICULTAD:
+            estadisticas.conDificultad++;
+            break;
+          case ProgresoCompasEstado.LOGRADO:
+            estadisticas.logrado++;
+            break;
+          case ProgresoCompasEstado.DOMINADO:
+            estadisticas.dominado++;
+            break;
         }
       }
       
-      // Calcular compases sin estado asignado
-      const compasesConEstado = estados.length;
-      estadisticas.sinTrabajar += (totalCompases - compasesConEstado);
+      // Calcular compases sin estado asignado (si hay más compases en la obra que estados registrados)
+      const compasesConEstadoRegistrado = estados.length;
+      estadisticas.sinTrabajar += (totalCompases - compasesConEstadoRegistrado);
       
-      // Calcular porcentaje completado (dominado + completado)
-      const compasesCompletados = estadisticas.dominado + estadisticas.completado;
+      // Calcular porcentaje completado (Logrado + Dominado)
+      const compasesCompletados = estadisticas.logrado + estadisticas.dominado;
       estadisticas.porcentajeCompletado = totalCompases > 0 
         ? Math.round((compasesCompletados / totalCompases) * 100) 
         : 0;
@@ -397,10 +386,10 @@ export const compassStateService = {
       
       // Buscar el instrumento en la obra
       let nombreInstrumento = estadoCompass.instrumentoId;
-      if (obraData.instruments && Array.isArray(obraData.instruments)) {
-        const instrumento = obraData.instruments.find((i: any) => i.id === estadoCompass.instrumentoId);
+      if (obraData.instrumentosRequeridos && Array.isArray(obraData.instrumentosRequeridos)) {
+        const instrumento = obraData.instrumentosRequeridos.find((i: any) => i.instrumentoId === estadoCompass.instrumentoId);
         if (instrumento) {
-          nombreInstrumento = instrumento.name;
+          nombreInstrumento = instrumento.nombre;
         }
       }
       
@@ -421,8 +410,8 @@ export const compassStateService = {
       // Crear notificación
       const notificacion: NotificacionProgreso = {
         tipo: 'actualizacion_progreso',
-        titulo: `Actualización de progreso en ${obraData.name}`,
-        mensaje: `El compás ${estadoCompass.numeroCompas} de ${nombreInstrumento} ha sido actualizado a estado: ${estadoCompass.estado} por ${estadoCompass.actualizadoPorNombre}.`,
+        titulo: `Actualización de progreso en ${obraData.titulo}`,
+        mensaje: `El compás ${estadoCompass.numeroCompas} de ${nombreInstrumento} ha sido actualizado a estado: ${PROGRESO_COMPAS_INFO[estadoCompass.estado].label} por ${estadoCompass.actualizadoPorNombre}.`,
         obraId: estadoCompass.obraId,
         instrumentoId: estadoCompass.instrumentoId,
         maestroId: estadoCompass.actualizadoPor,
@@ -482,10 +471,10 @@ export const compassStateService = {
       
       // Buscar el instrumento en la obra
       let nombreInstrumento = actualizacion.instrumentoId;
-      if (obraData.instruments && Array.isArray(obraData.instruments)) {
-        const instrumento = obraData.instruments.find((i: any) => i.id === actualizacion.instrumentoId);
+      if (obraData.instrumentosRequeridos && Array.isArray(obraData.instrumentosRequeridos)) {
+        const instrumento = obraData.instrumentosRequeridos.find((i: any) => i.instrumentoId === actualizacion.instrumentoId);
         if (instrumento) {
-          nombreInstrumento = instrumento.name;
+          nombreInstrumento = instrumento.nombre;
         }
       }
       
@@ -506,8 +495,8 @@ export const compassStateService = {
       // Crear notificación
       await notificationsService.createNotification({
         type: 'montaje_update',
-        title: `Actualización masiva en ${obraData.name}`,
-        message: `${nombreMaestro} actualizó ${actualizacion.compasesIds.length} compases de ${nombreInstrumento} al estado: ${actualizacion.nuevoEstado}.`,
+        title: `Actualización masiva en ${obraData.titulo}`,
+        message: `${nombreMaestro} actualizó ${actualizacion.compasesIds.length} compases de ${nombreInstrumento} al estado: ${PROGRESO_COMPAS_INFO[actualizacion.nuevoEstado].label}.`,
         data: {
           obraId: actualizacion.obraId,
           instrumentoId: actualizacion.instrumentoId,

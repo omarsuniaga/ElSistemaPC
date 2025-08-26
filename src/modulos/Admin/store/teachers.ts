@@ -58,7 +58,10 @@ export const useAdminTeachersStore = defineStore('adminTeachers', {
             createdAt,
           } as Teacher;
         }) as Teacher[];
-        console.log('Fetched raw teachers from USERS collection:', fetchedTeachers);
+        console.log('🔍 [TeachersStore] Consulta realizada en colección USERS');
+        console.log('📊 [TeachersStore] Roles buscados:', teacherRoles);
+        console.log('👥 [TeachersStore] Maestros encontrados:', fetchedTeachers.length);
+        console.log('📋 [TeachersStore] Datos de maestros:', fetchedTeachers);
         this.teachers = fetchedTeachers as Teacher[];
       } catch (error: any) {
         this.error = error.message;

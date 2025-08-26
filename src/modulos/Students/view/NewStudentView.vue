@@ -19,9 +19,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Nombre -->
         <div class="sm:col-span-1">
-          <label for="nombre" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >Nombre</label
-          >
+          <label for="nombre" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
           <input
             id="nombre"
             v-model="capitalizedNombre"
@@ -32,9 +30,7 @@
 
         <!-- Apellido -->
         <div class="sm:col-span-1">
-          <label for="apellido" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >Apellido</label
-          >
+          <label for="apellido" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Apellido</label>
           <input
             id="apellido"
             v-model="capitalizedApellido"
@@ -45,9 +41,7 @@
 
         <!-- Edad -->
         <div>
-          <label for="edad" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >Edad</label
-          >
+          <label for="edad" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Edad</label>
           <input
             id="edad"
             v-model="newStudent.edad"
@@ -55,26 +49,23 @@
             class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
-        <!-- Instrumento -->
+
+        <!-- Instrumentos de Interés -->
         <div>
-          <label
-            for="instrumento"
-            class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >Instrumento</label
-          >
+          <label for="instrumento" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Instrumentos</label>
           <input
             id="instrumento"
             v-model="capitalizedInstrumento"
             type="text"
+            placeholder="Ej: Piano, Guitarra, Violín..."
             class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-100"
           />
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Escriba los instrumentos separados por comas</p>
         </div>
 
         <!-- Clase/Grupo -->
         <div>
-          <label for="grupo" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >Clase</label
-          >
+          <label for="grupo" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Clase</label>
           <select
             id="grupo"
             v-model="newStudent.grupo"
@@ -92,9 +83,7 @@
 
         <!-- Teléfono -->
         <div>
-          <label for="tlf" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >Teléfono</label
-          >
+          <label for="tlf" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Teléfono</label>
           <input
             id="tlf"
             v-model="newStudent.tlf"
@@ -105,13 +94,15 @@
 
         <!-- Email -->
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >Email</label
-          >
+          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Correo Electrónico 
+            <span class="text-gray-400 text-xs">(opcional)</span>
+          </label>
           <input
             id="email"
             v-model="newStudent.email"
             type="email"
+            placeholder="ejemplo@correo.com"
             class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-800 dark:text-gray-100"
           />
         </div>
@@ -119,9 +110,7 @@
 
       <!-- Dirección -->
       <div>
-        <label for="direccion" class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >Dirección</label
-        >
+        <label for="direccion" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Dirección</label>
         <textarea
           id="direccion"
           v-model="capitalizedDireccion"
@@ -132,11 +121,7 @@
 
       <!-- Observaciones -->
       <div>
-        <label
-          for="observaciones"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >Observaciones</label
-        >
+        <label for="observaciones" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Observaciones</label>
         <textarea
           id="observaciones"
           v-model="capitalizedObservaciones"
@@ -160,44 +145,15 @@
         <button
           type="submit"
           :disabled="isLoading"
-          class="fixed right-6 top-1/2 transform -translate-y-1/2 btn btn-primary rounded-full h-12 w-12 flex items-center justify-center z-10 shadow-lg"
+          class="btn btn-primary"
         >
-          <span v-if="isLoading" class="animate-spin">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m-15.357-2A8.001 8.001 0 0019.419 15m0 0H15"
-              />
-            </svg>
-          </span>
-          <svg
-            v-else
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-            />
-          </svg>
+          <span v-if="isLoading" class="animate-spin">⟳</span>
+          <span v-else>Guardar</span>
         </button>
       </div>
     </form>
 
-    <!-- Add status indicator for matched student -->
+    <!-- Status indicator for matched student -->
     <div
       v-if="isEditingExistingStudent && matchedStudent"
       class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 p-4 rounded-lg mb-4"
@@ -265,16 +221,28 @@ const normalizeText = (text: string = '') => {
 const cleanGroupValue = (group: string): string => {
   if (!group || typeof group !== 'string') return '';
 
-  // Limpiar el valor: eliminar caracteres especiales y capitalizar primera letra
+  // Limpiar el valor: eliminar caracteres especiales y normalizar espacios
   let cleanValue = group
     .trim()
-    .replace(/[[\]"',]+/g, '') // Eliminar [], comillas y comas
+    .replace(/[[\]"',{}()]+/g, '') // Eliminar [], {}, (), comillas y comas
+    .replace(/\s+/g, ' ') // Normalizar espacios múltiples a uno solo
     .trim();
 
-  // Capitalizar primera letra de cada palabra
+  // Si está vacío después de la limpieza, retornar vacío
+  if (!cleanValue) return '';
+
+  // Capitalizar primera letra de cada palabra y manejar casos especiales
   cleanValue = cleanValue
     .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map((word) => {
+      if (!word) return '';
+      // Manejar casos especiales como números romanos o abreviaciones
+      if (/^[IVX]+$/i.test(word)) {
+        return word.toUpperCase(); // Números romanos en mayúscula
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .filter(word => word.length > 0) // Filtrar palabras vacías
     .join(' ');
 
   return cleanValue;
@@ -503,8 +471,8 @@ const handleSubmit = async () => {
     // Normalize values for comparison
     const normalizedNombre = newStudent.value.nombre.toLowerCase().trim();
     const normalizedApellido = newStudent.value.apellido.toLowerCase().trim();
-    const normalizedEdad = newStudent.value.edad.toString().trim();
-    const normalizedInstrumento = newStudent.value.instrumento.toLowerCase().trim();
+    const normalizedEdad = (newStudent.value.edad || '').toString().trim();
+    const normalizedInstrumento = (newStudent.value.instrumento || '').toLowerCase().trim();
 
     // Improved duplicate check with better handling of edge cases
     const existingStudent = students.find((student) => {

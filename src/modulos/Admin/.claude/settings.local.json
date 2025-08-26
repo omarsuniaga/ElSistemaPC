@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/C:\\Users\\Admin\\Desktop\\Music_Academy_App_Act\\src/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -11,9 +11,46 @@ function shouldCacheInDevelopment(url) {
   if (!isDevelopment) return true;
 
   // No cachear archivos TypeScript, Vue, o módulos en desarrollo
-  const devPatterns = [/\.ts$/, /\.vue$/, /\/src\//, /@vite/, /@fs/, /node_modules/];
+  const devPatterns = [
+    /\.ts$/,
+    /\.vue$/,
+    /\/src\//,
+    /@vite/,
+    /@fs/,
+    /node_modules/,
+    /\.js\?v=/,
+    /\.css\?v=/,
+    /\?import/,
+    /\?direct/,
+    /\?raw/,
+    /localhost:5173\/src\//
+  ];
 
   return !devPatterns.some((pattern) => pattern.test(url));
+}
+
+// Función para determinar si una request debe ser interceptada por el SW
+function shouldInterceptRequest(request) {
+  if (!isDevelopment) return true;
+  
+  const url = request.url;
+  
+  // No interceptar requests de Vite en desarrollo
+  const vitePatterns = [
+    /localhost:5173\/src\//,
+    /\.vue$/,
+    /\.ts$/,
+    /\.jsx?$/,
+    /\.tsx?$/,
+    /@vite/,
+    /@fs/,
+    /\?v=/,
+    /\?import/,
+    /\?direct/,
+    /\?raw/
+  ];
+  
+  return !vitePatterns.some((pattern) => pattern.test(url));
 }
 
 const CACHE_NAMES = {
@@ -337,6 +374,11 @@ self.addEventListener('fetch', (event) => {
 
   // Skip chrome-extension requests
   if (event.request.url.startsWith('chrome-extension')) {
+    return;
+  }
+
+  // Skip Vite development requests
+  if (!shouldInterceptRequest(event.request)) {
     return;
   }
 

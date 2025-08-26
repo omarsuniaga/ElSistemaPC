@@ -670,7 +670,7 @@ const handleTakeAttendance = (classId: string) => {
   // Navigate to the attendance route
   router
     .push({
-      name: 'attendance', // Make sure you have a route named 'attendance' with params { date, classId }
+      name: 'TeacherAttendanceDetail', // Updated to use the correct route name
       params: {
         date: dateString,
         classId,

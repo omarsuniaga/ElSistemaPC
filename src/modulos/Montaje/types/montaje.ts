@@ -44,6 +44,9 @@ export enum TipoInstrumento {
   OTHER = 'OTHER'
 }
 
+/**
+ * @deprecated Utilizar ProgresoCompasEstado de './instrumentProgress' en su lugar.
+ */
 export enum EstadoCompass {
   SIN_TRABAJAR = 'SIN_TRABAJAR',
   LEIDO = 'LEIDO',

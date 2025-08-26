@@ -412,7 +412,7 @@ const viewAttendance = (emergencyClass: any) => {
   // Navegar a la vista de asistencia para esta clase emergente
   router
     .push({
-      name: 'attendance',
+      name: 'TeacherAttendanceDetail',
       params: {
         date: emergencyClass.date.replace(/-/g, ''),
         classId: emergencyClass.id,

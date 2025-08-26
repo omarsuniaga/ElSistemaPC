@@ -12,6 +12,14 @@ import {
   removeAssistantTeacher,
   updateAssistantPermissions,
   checkTeacherPermission,
+  checkSharedClassPermission,
+  canViewAttendance,
+  canTakeAttendance,
+  shouldReceiveNotifications,
+  canManageStudents,
+  canModifyClass,
+  canViewPendingAttendanceStates,
+  getTeacherPermissionLevel,
 } from '../service/classes';
 import type { ClassData, ClassCreate } from '../types/class';
 import { useQualificationStore } from '../../Qualifications/store/qualification';
@@ -1033,6 +1041,54 @@ export const useClassesStore = defineStore('classes', {
     async checkTeacherPermission(classId: string, teacherId: string, permission: string) {
       // checkTeacherPermission ya está importado estáticamente
       return await checkTeacherPermission(classId, teacherId, permission);
+    },
+
+    /**
+     * Verifica permisos específicos usando el sistema SharedClassPermission
+     */
+    async checkSharedClassPermission(classId: string, teacherId: string, permission: 'read' | 'write' | 'manage') {
+      // checkSharedClassPermission ya está importado estáticamente
+      return await checkSharedClassPermission(classId, teacherId, permission);
+    },
+
+    /**
+     * FUNCIONES ESPECÍFICAS PARA SISTEMA DE PERMISOS COMPARTIDOS
+     * Implementan la lógica exacta: READ, WRITE, MANAGE
+     */
+
+    // Puede VER asistencia (READ, WRITE, MANAGE)
+    async canViewAttendance(classId: string, teacherId: string) {
+      return await canViewAttendance(classId, teacherId);
+    },
+
+    // Puede PASAR asistencia (WRITE, MANAGE)
+    async canTakeAttendance(classId: string, teacherId: string) {
+      return await canTakeAttendance(classId, teacherId);
+    },
+
+    // DEBE recibir notificaciones obligatorias (MANAGE)
+    async shouldReceiveNotifications(classId: string, teacherId: string) {
+      return await shouldReceiveNotifications(classId, teacherId);
+    },
+
+    // Puede gestionar estudiantes (MANAGE)
+    async canManageStudents(classId: string, teacherId: string) {
+      return await canManageStudents(classId, teacherId);
+    },
+
+    // Puede modificar la clase (MANAGE)
+    async canModifyClass(classId: string, teacherId: string) {
+      return await canModifyClass(classId, teacherId);
+    },
+
+    // Ve estados de asistencias pendientes (MANAGE)
+    async canViewPendingAttendanceStates(classId: string, teacherId: string) {
+      return await canViewPendingAttendanceStates(classId, teacherId);
+    },
+
+    // Obtiene el nivel de permiso del maestro
+    async getTeacherPermissionLevel(classId: string, teacherId: string) {
+      return await getTeacherPermissionLevel(classId, teacherId);
     },
 
     /**

@@ -48,7 +48,7 @@ import './styles/main.scss';
 import './utils/musicAcademyDebugTools';
 import './utils/testingUtils';
 import './utils/pwaTester';
-import { setupGlobalTheme } from './composables/useTheme';
+
 
 // Auto-verificación de RBAC en desarrollo
 async function verifyRBACSetup() {
@@ -74,6 +74,12 @@ const app = createApp(App);
 
 // Configurar manejador global de errores avanzado
 app.config.errorHandler = (err, instance, info) => {
+  // Skip recursive update errors to prevent spam
+  if (err instanceof Error && err.message.includes('Maximum recursive updates exceeded')) {
+    console.warn('⚠️ Recursive update detected - this is usually handled by debouncing');
+    return;
+  }
+
   console.error('🚨 Error de aplicación:', err);
   console.log('📦 Componente:', instance);
   console.log('ℹ️ Info:', info);
@@ -152,8 +158,12 @@ setTimeout(() => {
   }
 }, 500);
 
-// Configurar tema global
-setupGlobalTheme();
+
+
+// Inicializar store de tema
+import { useThemeStore } from './stores/theme';
+const themeStore = useThemeStore();
+themeStore.initializeTheme();
 
 // Configurar función de debugging global en desarrollo
 if (import.meta.env.DEV) {
@@ -238,6 +248,49 @@ if (import.meta.env.DEV) {
 console.log('🔍 [Main] Montando aplicación...');
 app.mount('#app');
 console.log('✅ [Main] Aplicación montada correctamente');
+
+// Inicializar módulos de la aplicación
+console.log('🔍 [Main] Inicializando módulos...');
+
+// Importar e inicializar módulos principales
+Promise.all([
+  import('./modulos/Students/index'),
+  import('./modulos/Classes/index'),
+  import('./modulos/Teachers/index'),
+  import('./modulos/Attendance/index')
+])
+.then(([studentsModule, classesModule, teachersModule, attendanceModule]) => {
+  try {
+    // Inicializar cada módulo si tiene función de inicialización
+    if (studentsModule.initializeStudentsModule) {
+      studentsModule.initializeStudentsModule(app, router);
+      console.log('✅ [Main] Módulo de Estudiantes inicializado');
+    }
+    
+    if (classesModule.initializeClassesModule) {
+      classesModule.initializeClassesModule(app, router);
+      console.log('✅ [Main] Módulo de Clases inicializado');
+    }
+    
+    // El módulo de Teachers podría no tener una función de inicialización explícita
+    if (teachersModule.initializeTeachersModule) {
+      teachersModule.initializeTeachersModule(app, router);
+      console.log('✅ [Main] Módulo de Maestros inicializado');
+    }
+    
+    if (attendanceModule.initializeAttendanceModule) {
+      attendanceModule.initializeAttendanceModule(app, router);
+      console.log('✅ [Main] Módulo de Asistencias inicializado');
+    }
+    
+    console.log('✅ [Main] Todos los módulos inicializados correctamente');
+  } catch (error) {
+    console.error('❌ [Main] Error inicializando módulos:', error);
+  }
+})
+.catch(error => {
+  console.error('❌ [Main] Error importando módulos:', error);
+});
 
 // Debug stores after mounting
 setTimeout(() => {

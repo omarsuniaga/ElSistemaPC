@@ -121,16 +121,23 @@ const handleSubmit = async () => {
   isLoading.value = true;
 
   try {
-    const user = await authStore.login(email.value, password.value);
+    const loginResult = await authStore.login(email.value, password.value);
 
-    // Redirigir según el rol
-    if (user.role === 'Director') {
-      router.push('/dashboard');
-    } else if (user.role === 'Maestro') {
-      router.push('/attendance');
-    } else {
-      router.push('/');
+    // Check if login result is a redirect message (profile completion, approval, etc.)
+    if (loginResult.redirectTo && (loginResult.redirectTo === '/complete-profile' || loginResult.redirectTo === '/pending-approval')) {
+      console.log('🔄 Redirigiendo a:', loginResult.redirectTo);
+      router.push(loginResult.redirectTo);
+      return;
     }
+
+    // Use the redirectTo provided by the auth store for proper role-based redirection
+    const redirectPath = loginResult.redirectTo || '/';
+    const user = loginResult.user;
+    
+    console.log('🔐 Usuario autenticado:', user.email, 'Rol:', user.role);
+    console.log('🔄 Redirigiendo a:', redirectPath);
+    
+    router.push(redirectPath);
   } catch (e: any) {
     error.value = e.message || 'Error al iniciar sesión';
   } finally {

@@ -53,11 +53,11 @@
             class="form-select form-select-sm"
           >
             <option 
-              v-for="estado in Object.values(EstadoCompass)" 
-              :key="estado" 
-              :value="estado"
+              v-for="estadoKey in Object.keys(PROGRESO_COMPAS_INFO)" 
+              :key="estadoKey" 
+              :value="parseInt(estadoKey)"
             >
-              {{ formatEstado(estado) }}
+              {{ PROGRESO_COMPAS_INFO[parseInt(estadoKey) as ProgresoCompasEstado].label }}
             </option>
           </select>
         </div>
@@ -138,10 +138,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import { useMontajeStore } from '../store/montaje';
-import { EstadoCompass, TipoInstrumento, COLOR_ESTADOS_COMPASS } from '../types';
+import { TipoInstrumento } from '../types';
 import { 
   CeldaMapaCalor,
-  EstadoCompassInstrumento,
+  ProgresoCompasEstado, // Importar el nuevo enum
+  PROGRESO_COMPAS_INFO, // Importar la información de progreso
 } from '../types/instrumentProgress';
 import { MontajePermission } from '../types/permissions';
 import { permissionsService } from '../service/permissionsService';
@@ -171,12 +172,12 @@ const selectedCells = ref<number[]>([]);
 const compasesSeleccionados = ref<Record<number, boolean>>({});
 const isSelecting = ref(false);
 const selectionMode = ref<'single' | 'multiple' | 'range'>('single');
-const selectedState = ref<EstadoCompass>(EstadoCompass.LEIDO);
+const selectedState = ref<ProgresoCompasEstado>(ProgresoCompasEstado.LEIDO); // Usar el nuevo enum
 const loading = ref(false);
 const hasPermission = ref(false);
 
-// Colores para estados
-const colors = COLOR_ESTADOS_COMPASS;
+// Colores para estados (usar la nueva información de progreso)
+const colors = PROGRESO_COMPAS_INFO;
 
 // Estadísticas
 const estadisticas = computed(() => montajeStore.estadisticasInstrumento);
@@ -203,7 +204,8 @@ async function loadCompassStates() {
   
   loading.value = true;
   try {
-    await montajeStore.seleccionarInstrumento(props.instrumentId);
+    // Cargar el progreso del instrumento desde el store
+    await montajeStore.loadInstrumentProgress(props.obraId, props.instrumentId);
     generateHeatmapCells();
   } catch (error) {
     console.error('Error al cargar estados de compases:', error);
@@ -216,21 +218,21 @@ async function loadCompassStates() {
 function generateHeatmapCells() {
   if (!montajeStore.obraActual) return;
   
-  const totalCompases = montajeStore.obraActual.compas || 0;
-  const estados = montajeStore.instrumentCompassStates || [];
+  const totalCompases = montajeStore.obraActual.totalCompases || 0;
+  const progressMap = montajeStore.currentInstrumentProgress; // Es un Map<string, ProgresoCompasEstado>
   const celdaNueva: CeldaMapaCalor[] = [];
   
   for (let i = 1; i <= totalCompases; i++) {
-    const estadoCompass = estados.find(e => e.numeroCompas === i);
-    const estado = estadoCompass?.estado || EstadoCompass.SIN_TRABAJAR;
+    const estado = progressMap.get(i.toString()) || ProgresoCompasEstado.SIN_TRABAJAR;
+    const info = PROGRESO_COMPAS_INFO[estado];
     
     celdaNueva.push({
       obraId: props.obraId,
       instrumentoId: props.instrumentId,
       numeroCompas: i,
       estado,
-      colorHex: colors[estado].hex,
-      colorClass: colors[estado].class,
+      colorHex: info.hex,
+      colorClass: info.class,
     });
   }
   
@@ -274,16 +276,12 @@ async function updateSelectedCells() {
   
   loading.value = true;
   try {
-    if (selectedCells.value.length === 1) {
-      // Actualizar un solo compás
-      await montajeStore.actualizarEstadoCompassInstrumento(
-        selectedCells.value[0],
-        selectedState.value,
-      );
-    } else {
-      // Actualizar múltiples compases
-      await montajeStore.actualizarCompassesMasivamente(
-        selectedCells.value,
+    // Actualizar todos los compases seleccionados
+    for (const compassNumber of selectedCells.value) {
+      await montajeStore.updateInstrumentProgress(
+        props.obraId,
+        props.instrumentId,
+        compassNumber,
         selectedState.value,
       );
     }
@@ -292,7 +290,7 @@ async function updateSelectedCells() {
     compasesSeleccionados.value = {};
     selectedCells.value = [];
     
-    // Recargar datos
+    // Recargar datos (ya se actualizan localmente en el store, pero recargar para asegurar consistencia)
     await loadCompassStates();
   } catch (error) {
     console.error('Error al actualizar estados:', error);
@@ -314,8 +312,8 @@ function changeSelectedState(estado: EstadoCompass) {
 }
 
 // Formatear nombre de estado para mostrar
-function formatEstado(estado: EstadoCompass): string {
-  return estado.replace(/_/g, ' ').toLowerCase();
+function formatEstado(estado: ProgresoCompasEstado): string {
+  return PROGRESO_COMPAS_INFO[estado].label;
 }
 
 // Vigilar cambios en propiedades

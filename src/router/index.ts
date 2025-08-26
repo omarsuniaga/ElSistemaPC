@@ -251,20 +251,21 @@ const routes: Array<RouteRecordRaw> = [
       requiresAuth: true,
       requiresRBAC: true,
       moduleKey: 'dashboard',
-      permission: 'view',
+      permission: 'dashboard_view',
     },
   },
   {
-    path: '/admin/reporteSemanal',
-    name: 'AdminReporteSemanal',
-    component: () => import('../modulos/Teachers/view/admin/AdminReporteSemanal.vue'),
+    path: '/admin/reports/informe',
+    name: 'AdminInforme',
+    component: () => import('../components/reports/attendance/TeacherInformeAttendance.vue'),
     meta: {
       requiresAuth: true,
       requiresRBAC: true,
-      moduleKey: 'reports',
+      moduleKey: 'attendance',
       permission: 'admin_view',
     },
   },
+  
   {
     path: '/admin/reports',
     name: 'AdminReportsCenter',
@@ -551,7 +552,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
-    component: () => import('../views/ErrorView.vue'),
+    component: () => import(/* webpackChunkName: "error-view" */ '../views/ErrorView.vue'),
   },
 ];
 

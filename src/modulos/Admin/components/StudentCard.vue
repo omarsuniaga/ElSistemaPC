@@ -68,67 +68,27 @@
           <div
             v-if="showMenu"
             v-click-outside="() => (showMenu = false)"
-            class="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50"
+            class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50"
           >
-            <div class="py-2">
-              <!-- View Profile -->
-              <button
-                class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
-                @click="handleViewProfile"
-              >
-                <UserIcon class="w-5 h-5 text-blue-500" />
-                <span>Ver Perfil Completo</span>
-              </button>
-
-              <!-- Edit Student -->
+            <div class="py-1">
+              <!-- Modificar Student -->
               <button
                 v-if="permissions.canEdit"
-                class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
                 @click="handleEdit"
               >
-                <PencilIcon class="w-5 h-5 text-green-500" />
-                <span>Editar Estudiante</span>
-              </button>
-
-              <!-- Download Schedule -->
-              <button
-                class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
-                @click="handleDownloadSchedule"
-              >
-                <CalendarDaysIcon class="w-5 h-5 text-purple-500" />
-                <span>Descargar Horario</span>
-              </button>
-
-              <!-- WhatsApp Parents -->
-              <button
-                v-if="hasParentPhones"
-                class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
-                @click="handleWhatsAppParents"
-              >
-                <ChatBubbleLeftEllipsisIcon class="w-5 h-5 text-green-600" />
-                <span>WhatsApp a Padres</span>
-              </button>
-
-              <hr class="my-2 border-gray-200 dark:border-gray-600" />
-
-              <!-- Toggle Status -->
-              <button
-                v-if="permissions.canEdit"
-                class="w-full px-4 py-3 text-left text-sm text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 flex items-center space-x-3 transition-colors"
-                @click="handleToggleStatus"
-              >
-                <component :is="student.activo ? PauseIcon : PlayIcon" class="w-5 h-5" />
-                <span>{{ student.activo ? "Desactivar" : "Activar" }}</span>
+                <PencilIcon class="w-4 h-4 text-gray-500" />
+                <span>Modificar</span>
               </button>
 
               <!-- Delete Student -->
               <button
                 v-if="permissions.canDelete"
-                class="w-full px-4 py-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors"
+                class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors"
                 @click="handleDelete"
               >
-                <TrashIcon class="w-5 h-5" />
-                <span>Eliminar Estudiante</span>
+                <TrashIcon class="w-4 h-4" />
+                <span>Eliminar</span>
               </button>
             </div>
           </div>

@@ -281,7 +281,7 @@ const onTakeAttendance = (classId: string) => {
   // Navigate to the attendance route
   router
     .push({
-      name: 'attendance',
+      name: 'TeacherAttendanceDetail',
       params: {
         date: dateString,
         classId,

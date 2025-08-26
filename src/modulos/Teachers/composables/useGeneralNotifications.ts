@@ -80,7 +80,7 @@ export function useGeneralNotifications() {
    * Configurar escucha en tiempo real
    */
   const setupRealtimeListener = () => {
-    if (!authStore.user?.uid) return;
+    if (!authStore.user?.uid) return null;
 
     console.log(
       'Configurando listener en tiempo real para notificaciones generales:',
@@ -98,6 +98,8 @@ export function useGeneralNotifications() {
 
       unreadNotifications.value = unreadList;
     });
+    
+    return unsubscribe;
   };
 
   /**

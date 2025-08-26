@@ -114,47 +114,20 @@
                     </div>
 
                     <!-- Instrument -->
-                    <div>
+                    <div class="md:col-span-2">
                       <label
                         for="instrument"
                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
                       >
                         Instrumento
                       </label>
-                      <select
+                      <input
                         id="instrument"
                         v-model="formData.instrument"
-                        class="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors"
-                      >
-                        <option value="">Seleccionar instrumento</option>
-                        <option
-                          v-for="instrument in instruments"
-                          :key="instrument"
-                          :value="instrument"
-                        >
-                          {{ instrument }}
-                        </option>
-                      </select>
-                    </div>
-
-                    <!-- Level -->
-                    <div>
-                      <label
-                        for="level"
-                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                      >
-                        Nivel
-                      </label>
-                      <select
-                        id="level"
-                        v-model="formData.level"
-                        class="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors"
-                      >
-                        <option value="">Seleccionar nivel</option>
-                        <option value="Principiante">Principiante</option>
-                        <option value="Intermedio">Intermedio</option>
-                        <option value="Avanzado">Avanzado</option>
-                      </select>
+                        type="text"
+                        class="block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-colors"
+                        placeholder="Ej: Piano, Guitarra, Violín, Batería..."
+                      />
                     </div>
                   </div>
                 </div>
@@ -348,14 +321,120 @@
                   </div>
                 </div>
 
+                <!-- Current Enrolled Students Section (only show when editing) -->
+                <div v-if="isEditing && currentEnrolledStudents.length > 0" class="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-6">
+                  <h4
+                    class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center"
+                  >
+                    <UserGroupIcon class="h-5 w-5 text-amber-500 mr-2" />
+                    Estudiantes Inscritos Actualmente ({{ currentEnrolledStudents.length }})
+                  </h4>
+                  
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Estos son los estudiantes que ya están inscritos en esta clase. Puedes modificar su inscripción usando los controles de abajo.
+                  </p>
+
+                  <!-- Current Students Grid -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div
+                      v-for="student in currentEnrolledStudents"
+                      :key="student.id"
+                      class="relative p-3 bg-white dark:bg-gray-800 rounded-lg border-2 transition-all duration-200"
+                      :class="{
+                        'border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/20': formData.studentIds.includes(student.id),
+                        'border-red-300 dark:border-red-600 bg-red-50 dark:bg-red-900/20': !formData.studentIds.includes(student.id),
+                        'border-gray-200 dark:border-gray-600': !isEditing
+                      }"
+                    >
+                      <!-- Status Indicator -->
+                      <div class="absolute top-2 right-2">
+                        <div
+                          v-if="formData.studentIds.includes(student.id)"
+                          class="w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"
+                          title="Permanece inscrito"
+                        />
+                        <div
+                          v-else
+                          class="w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-gray-800"
+                          title="Será removido de la clase"
+                        />
+                      </div>
+
+                      <!-- Student Info -->
+                      <div class="pr-6">
+                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                          {{ student.nombre }} {{ student.apellido }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                          {{ student.instrumento || 'Sin instrumento' }}
+                        </p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500">
+                          <span v-if="student.codigo_estudiante">
+                            #{{ student.codigo_estudiante }}
+                          </span>
+                        </p>
+                      </div>
+
+                      <!-- Toggle Button -->
+                      <div class="mt-2 flex justify-end">
+                        <button
+                          type="button"
+                          class="text-xs px-2 py-1 rounded-md transition-colors"
+                          :class="{
+                            'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800': formData.studentIds.includes(student.id),
+                            'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800': !formData.studentIds.includes(student.id)
+                          }"
+                          @click="toggleStudentEnrollment(student.id)"
+                        >
+                          {{ formData.studentIds.includes(student.id) ? 'Remover' : 'Mantener' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Quick Actions for Current Students -->
+                  <div class="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      class="text-xs px-3 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-md hover:bg-green-200 dark:hover:bg-green-800 transition-colors"
+                      @click="keepAllCurrentStudents"
+                    >
+                      Mantener todos
+                    </button>
+                    <button
+                      type="button"
+                      class="text-xs px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-md hover:bg-red-200 dark:hover:bg-red-800 transition-colors"
+                      @click="removeAllCurrentStudents"
+                    >
+                      Remover todos
+                    </button>
+                  </div>
+                  
+                  <!-- Status Summary -->
+                  <div class="mt-3 p-2 bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-600">
+                    <div class="flex justify-between text-xs">
+                      <span class="text-green-600 dark:text-green-400">
+                        Mantienen inscripción: {{ studentsToKeep }}
+                      </span>
+                      <span class="text-red-600 dark:text-red-400">
+                        Serán removidos: {{ studentsToRemove }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Students Section -->
                 <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-6">
                   <h4
                     class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center"
                   >
                     <UserGroupIcon class="h-5 w-5 text-purple-500 mr-2" />
-                    Estudiantes de la Clase
+                    {{ isEditing ? 'Agregar Nuevos Estudiantes' : 'Estudiantes de la Clase' }}
                   </h4>
+                  
+                  <p v-if="isEditing" class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Selecciona estudiantes adicionales para agregar a esta clase.
+                  </p>
 
                   <!-- Search Students -->
                   <div class="mb-4">
@@ -412,8 +491,7 @@
                                 {{ student.nombre }} {{ student.apellido }}
                               </p>
                               <p class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ student.instrumento || "Sin instrumento" }} •
-                                {{ student.nivel || "Sin nivel" }}
+                                {{ student.instrumento || "Sin instrumento" }}
                               </p>
                             </div>
                             <div
@@ -428,12 +506,90 @@
                     </div>
                   </div>
 
-                  <!-- Selected Students Count -->
+                  <!-- Selected Students Summary -->
                   <div
                     v-if="formData.studentIds.length > 0"
-                    class="mt-3 text-sm text-gray-600 dark:text-gray-400"
+                    class="mt-4 p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-purple-200 dark:border-purple-700"
                   >
-                    {{ formData.studentIds.length }} estudiante(s) seleccionado(s)
+                    <div class="flex items-center justify-between mb-3">
+                      <h5 class="text-sm font-semibold text-purple-800 dark:text-purple-200 flex items-center">
+                        <UserGroupIcon class="h-4 w-4 mr-2" />
+                        Estudiantes Seleccionados ({{ formData.studentIds.length }})
+                      </h5>
+                      <button
+                        v-if="formData.studentIds.length > 0"
+                        type="button"
+                        class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 underline"
+                        @click="clearAllStudents"
+                      >
+                        Deseleccionar todos
+                      </button>
+                    </div>
+
+                    <!-- Grouped by Instrument -->
+                    <div class="space-y-3">
+                      <div
+                        v-for="(group, instrument) in selectedStudentsByInstrument"
+                        :key="instrument"
+                        class="border border-gray-200 dark:border-gray-600 rounded-lg p-3"
+                      >
+                        <div class="flex items-center justify-between mb-2">
+                          <h6 class="text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            {{ instrument }} ({{ group.length }})
+                          </h6>
+                          <button
+                            type="button"
+                            class="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                            @click="removeStudentsByInstrument(instrument)"
+                          >
+                            Quitar todos
+                          </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                          <div
+                            v-for="student in group"
+                            :key="student.id"
+                            class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-md group hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <div class="flex items-center space-x-2 min-w-0 flex-1">
+                              <div class="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
+                              <div class="min-w-0 flex-1">
+                                <p class="text-xs font-medium text-gray-900 dark:text-white truncate">
+                                  {{ student.nombre }} {{ student.apellido }}
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  <span v-if="student.codigo_estudiante">
+                                    #{{ student.codigo_estudiante }}
+                                  </span>
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              class="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-opacity"
+                              @click="removeStudent(student.id)"
+                            >
+                              <XMarkIcon class="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                        Total: {{ formData.studentIds.length }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- No Selection Message -->
+                  <div
+                    v-else
+                    class="mt-3 text-sm text-gray-500 dark:text-gray-400 italic text-center"
+                  >
+                    No hay estudiantes seleccionados
                   </div>
                 </div>
               </form>
@@ -548,22 +704,6 @@ const loading = ref({
   students: false,
 });
 
-// Available instruments
-const instruments = [
-  'Piano',
-  'Guitarra',
-  'Violín',
-  'Violonchelo',
-  'Flauta',
-  'Clarinete',
-  'Saxofón',
-  'Trompeta',
-  'Batería',
-  'Bajo',
-  'Canto',
-  'Ukulele',
-  'Mandolina',
-];
 
 // Form structure
 interface ScheduleSlot {
@@ -576,7 +716,6 @@ interface FormData {
   name: string
   description: string
   instrument: string
-  level: string
   teacherId: string
   studentIds: string[]
   sharedWith: string[]
@@ -589,7 +728,6 @@ const formData = ref<FormData>({
   name: '',
   description: '',
   instrument: '',
-  level: '',
   teacherId: '',
   studentIds: [],
   sharedWith: [],
@@ -640,10 +778,54 @@ const filteredStudents = computed(() => {
       safeStringIncludes(student.nombre) ||
       safeStringIncludes(student.apellido) ||
       safeStringIncludes(student.instrumento) ||
-      safeStringIncludes(student.nivel) ||
       safeNumberIncludes(student.codigo_estudiante)
     );
   });
+});
+
+const selectedStudentsByInstrument = computed(() => {
+  const selected = students.value.filter(student => 
+    formData.value.studentIds.includes(student.id)
+  );
+  
+  const grouped: Record<string, any[]> = {};
+  
+  selected.forEach(student => {
+    const instrument = student.instrumento || 'Sin instrumento';
+    if (!grouped[instrument]) {
+      grouped[instrument] = [];
+    }
+    grouped[instrument].push(student);
+  });
+  
+  // Sort students within each group by name
+  Object.keys(grouped).forEach(instrument => {
+    grouped[instrument].sort((a, b) => 
+      `${a.nombre} ${a.apellido}`.localeCompare(`${b.nombre} ${b.apellido}`)
+    );
+  });
+  
+  return grouped;
+});
+
+
+// Computed properties for current enrolled students section
+const currentEnrolledStudents = computed(() => {
+  if (!props.classData?.studentIds) return [];
+  
+  return students.value.filter(student => 
+    props.classData!.studentIds.includes(student.id)
+  );
+});
+
+const studentsToKeep = computed(() => {
+  return currentEnrolledStudents.value.filter(student =>
+    formData.value.studentIds.includes(student.id)
+  ).length;
+});
+
+const studentsToRemove = computed(() => {
+  return currentEnrolledStudents.value.length - studentsToKeep.value;
 });
 
 // Methods
@@ -660,7 +842,6 @@ const loadData = async () => {
       nombre: student.nombre ? String(student.nombre) : '',
       apellido: student.apellido ? String(student.apellido) : '',
       instrumento: student.instrumento ? String(student.instrumento) : '',
-      nivel: student.nivel ? String(student.nivel) : '',
       codigo_estudiante: student.codigo_estudiante || '',
     }));
   } catch (error) {
@@ -727,6 +908,54 @@ const removeScheduleSlot = (index: number) => {
   }
 };
 
+const clearAllStudents = () => {
+  formData.value.studentIds = [];
+};
+
+const removeStudent = (studentId: string) => {
+  formData.value.studentIds = formData.value.studentIds.filter(id => id !== studentId);
+};
+
+const removeStudentsByInstrument = (instrument: string) => {
+  const studentsInInstrument = students.value
+    .filter(student => (student.instrumento || 'Sin instrumento') === instrument)
+    .map(student => student.id);
+  
+  formData.value.studentIds = formData.value.studentIds.filter(
+    id => !studentsInInstrument.includes(id)
+  );
+};
+
+// Methods for current enrolled students section
+const toggleStudentEnrollment = (studentId: string) => {
+  const index = formData.value.studentIds.indexOf(studentId);
+  if (index > -1) {
+    // Student is currently selected, remove them
+    formData.value.studentIds.splice(index, 1);
+  } else {
+    // Student is not selected, add them
+    formData.value.studentIds.push(studentId);
+  }
+};
+
+const keepAllCurrentStudents = () => {
+  const currentStudentIds = currentEnrolledStudents.value.map(student => student.id);
+  // Add all current students to the selection if not already there
+  currentStudentIds.forEach(studentId => {
+    if (!formData.value.studentIds.includes(studentId)) {
+      formData.value.studentIds.push(studentId);
+    }
+  });
+};
+
+const removeAllCurrentStudents = () => {
+  const currentStudentIds = currentEnrolledStudents.value.map(student => student.id);
+  // Remove all current students from the selection
+  formData.value.studentIds = formData.value.studentIds.filter(
+    studentId => !currentStudentIds.includes(studentId)
+  );
+};
+
 const handleSubmit = async () => {
   if (!isFormValid.value) return;
 
@@ -777,7 +1006,6 @@ const resetForm = () => {
     name: '',
     description: '',
     instrument: '',
-    level: '',
     teacherId: '',
     studentIds: [],
     sharedWith: [],
@@ -795,7 +1023,6 @@ const loadFormData = () => {
       name: props.classData.name || '',
       description: props.classData.description || '',
       instrument: props.classData.instrument || '',
-      level: props.classData.level || '',
       teacherId: props.classData.teacherId || '',
       studentIds: props.classData.studentIds || [],
       sharedWith: props.classData.sharedWith || [],

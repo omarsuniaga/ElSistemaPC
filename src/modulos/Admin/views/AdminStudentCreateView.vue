@@ -274,7 +274,7 @@
               <!-- Instruments -->
               <div class="col-span-2">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Instrumentos de Interés *
+                  Instrumentos
                 </label>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <label
@@ -463,18 +463,8 @@ const errors = reactive({
 });
 
 // Available instruments
-const availableInstruments = [
-  { value: 'piano', label: 'Piano' },
-  { value: 'guitar', label: 'Guitarra' },
-  { value: 'violin', label: 'Violín' },
-  { value: 'drums', label: 'Batería' },
-  { value: 'voice', label: 'Canto' },
-  { value: 'bass', label: 'Bajo' },
-  { value: 'flute', label: 'Flauta' },
-  { value: 'saxophone', label: 'Saxofón' },
-  { value: 'trumpet', label: 'Trompeta' },
-  { value: 'cello', label: 'Violonchelo' },
-];
+const availableInstruments = []; //debemos iterar los instrumentos desde la base de datos
+
 
 // Methods
 const validateForm = (): boolean => {

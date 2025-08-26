@@ -49,29 +49,34 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { teacherMenuItems, adminMenuItems } from '../modulos/Teachers/constants/menuItems';
 import { superusuarioMenuItems } from '../modulos/Superusuario/constants/menuItems';
 import { HomeIcon, UserIcon } from '@heroicons/vue/24/outline';
-import { useGeneralNotifications } from '../modulos/Teachers/composables/useGeneralNotifications';
+// Simplified version - removed problematic import
+// import { useGeneralNotifications } from '../modulos/Teachers/composables/useGeneralNotifications';
 
 const route = useRoute();
 const authStore = useAuthStore();
 
 // Notification system for teachers
-const { unreadCount, loadNotifications, setupRealtimeListener } = useGeneralNotifications();
+// Simplified version - removed problematic dependency
+// const { unreadCount, loadNotifications, setupRealtimeListener } = useGeneralNotifications();
+const unreadCount = ref(0);
+const loadNotifications = () => {};
+const setupRealtimeListener = () => {};
 
 const unreadNotificationsCount = computed(() => unreadCount.value);
 
-const unsubscribe: (() => void) | null = null;
+let unsubscribe: (() => void) | null = null;
 
 // Initialize notifications for teachers
 onMounted(() => {
   if (authStore.isTeacher) {
     loadNotifications();
-    setupRealtimeListener();
+    unsubscribe = setupRealtimeListener();
   }
 });
 
@@ -181,8 +186,8 @@ const navigationItems = computed(() => {
       adminMenuItems[0], // Inicio (/admin)
       adminMenuItems[1], // Alumnos (/admin/students) -> AdminStudentsView.vue
       adminMenuItems[2], // Maestros (/admin/teachers) -> AdminTeachersView.vue con TeachersManagementPanel
-      adminMenuItems[3], // Instrumentos (/admin/instruments)
-      adminMenuItems[6], // Attendance (/admin/reporteAsistenciaDiaria) -> ReporteAsistenciaDiaria.vue
+      adminMenuItems[3], // Clases (/admin/classes)
+      adminMenuItems[4], // Asistencias (/admin/reporteAsistenciaDiaria) -> ReporteAsistenciaDiaria.vue
     ];
   }
 

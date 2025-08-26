@@ -9,6 +9,7 @@
             to="/admin"
             class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
+            <ChevronRightIcon class="w-4 h-4 mx-2" />
             Panel Admin
           </router-link>
         </li>

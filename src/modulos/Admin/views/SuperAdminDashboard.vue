@@ -232,6 +232,14 @@
           />
 
           <SuperActionCard
+            title="Reporte Semanal"
+            description="Asistencias y WhatsApp"
+            icon="CalendarDaysIcon"
+            gradient="from-blue-500 to-indigo-600"
+            @click="handleWeeklyReport"
+          />
+
+          <SuperActionCard
             title="Config Sistema"
             description="Configuraciones avanzadas"
             icon="CogIcon"
@@ -308,9 +316,7 @@
                 <UsersIcon class="w-6 h-6 mr-2 text-blue-500" />
                 Gestión Principal
               </h3>
-              <button class="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                Ver Todo
-              </button>
+              
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -501,6 +507,12 @@
                 color="purple"
                 @click="handleNotificationConfig"
               />
+              <QuickAccessButton
+                title="Asistencia Semanal Interactiva"
+                icon="TableCellsIcon"
+                color="indigo"
+                @click="handleWeeklyAttendance"
+              />
             </div>
           </div>
         </div>
@@ -560,6 +572,7 @@ import {
   ChevronRightIcon,
   ServerIcon,
   ChatBubbleLeftRightIcon,
+  CalendarDaysIcon,
 } from '@heroicons/vue/24/outline';
 
 // Components
@@ -844,6 +857,14 @@ const handleExportData = () => {
 
 const handleNotificationConfig = () => {
   router.push('/admin/notifications/config');
+};
+
+const handleWeeklyAttendance = () => {
+  router.push('/admin/attendance-weekly');
+};
+
+const handleWeeklyReport = () => {
+  router.push('/attendance/reports/weekly');
 };
 
 // Other Handlers

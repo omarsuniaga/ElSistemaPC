@@ -28,11 +28,12 @@
 
         <!-- Botón de asistencia diaria -->
         <button
-          class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+          class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          :disabled="!asistenciaPendiente"
           @click="$emit('irAAsistencia')"
         >
           📅 Asistencia Diaria
-          <span v-if="asistenciaPendiente" class="bg-red-500 text-white rounded-full w-2 h-2"></span>
+          <span v-if="asistenciaPendiente" class="bg-red-500 ring-2 ring-white dark:ring-gray-800 rounded-full w-3 h-3 -mr-1 -mt-4"></span>
         </button>
 
         <!-- Indicador de progreso semanal -->

@@ -433,11 +433,17 @@ const loadSystemData = async () => {
       studentsStore.loadStudents(),
       teachersStore.loadTeachers(),
       classesStore.fetchClasses(),
-      attendanceStore.fetchAttendance(),
+      attendanceStore.fetchAttendanceByDateRange(
+        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        new Date().toISOString().split('T')[0]
+      ),
       loadSystemAlerts(),
     ]);
 
     lastRefresh.value = new Date();
+
+    // Update cached stats
+    calculateSystemStats();
 
     // Record activity
     analytics.logSystemActivity({
@@ -453,32 +459,52 @@ const loadSystemData = async () => {
   }
 };
 
+// Local reactive data for stats to prevent circular dependencies
+const cachedSystemStats = ref({
+  totalUsers: 0,
+  activeClasses: 0,
+  dailyAttendance: 95,
+  systemHealth: 95,
+});
+
 // Calculate real system statistics
-const systemStats = computed(() => {
+const systemStats = computed(() => cachedSystemStats.value);
+
+// Function to calculate stats without reactive dependencies
+const calculateSystemStats = () => {
   const totalStudents = studentsStore.studentStats.total || 0;
   const activeStudents = studentsStore.studentStats.active || 0;
   const totalTeachers = teachersStore.teachers.length || 0;
   const activeClasses = classesStore.classes.filter((c) => c.status === 'active').length || 0;
-  // Calculate real attendance rate from attendance data
-  const attendanceRecords = attendanceStore.records || [];
-  const recentAttendance = attendanceRecords.filter((record) => {
-    const recordDate = new Date(record.fecha);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    return recordDate >= sevenDaysAgo;
-  });
+  
+  // Use a safe attendance calculation that doesn't depend on reactive records
+  let dailyAttendance = 95; // Default value
+  try {
+    const attendanceRecords = attendanceStore.records || [];
+    if (Array.isArray(attendanceRecords) && attendanceRecords.length > 0) {
+      const recentAttendance = attendanceRecords.filter((record) => {
+        const recordDate = new Date(record.fecha);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        return recordDate >= sevenDaysAgo;
+      });
 
-  const presentCount = recentAttendance.filter((r) => r.status === 'Presente').length;
-  const totalRecords = recentAttendance.length;
-  const dailyAttendance = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 95;
+      const presentCount = recentAttendance.filter((r) => r.status === 'Presente').length;
+      const totalRecords = recentAttendance.length;
+      dailyAttendance = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 95;
+    }
+  } catch (error) {
+    console.warn('Error calculating attendance stats:', error);
+    dailyAttendance = 95;
+  }
 
-  return {
+  cachedSystemStats.value = {
     totalUsers: totalStudents + totalTeachers,
     activeClasses,
     dailyAttendance,
     systemHealth: analytics.systemHealth.value,
   };
-});
+};
 
 // Real-time activities with enhanced data
 const realtimeActivities = computed(() => {
@@ -607,57 +633,50 @@ const loadSystemAlerts = async () => {
   }
 };
 
-// Generate intelligent alerts based on real system data
+// Generate intelligent alerts based on real system data (non-reactive)
 const generateIntelligentAlerts = () => {
   const alerts: SystemAlert[] = [];
 
   try {
-    // Calculate attendance directly to avoid computed recursion
-    const attendanceRecords = attendanceStore.records || [];
-    const recentAttendance = attendanceRecords.filter((record) => {
-      const recordDate = new Date(record.fecha);
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      return recordDate >= sevenDaysAgo;
-    });
-
-    const presentCount = recentAttendance.filter((r) => r.status === 'Presente').length;
-    const totalRecords = recentAttendance.length;
-    const dailyAttendance = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 95;
-
+    // Get current cached stats to avoid reactive dependencies
+    const currentStats = cachedSystemStats.value;
+    
     // Low attendance alert
-    if (dailyAttendance < 80) {
+    if (currentStats.dailyAttendance < 80) {
       alerts.push({
         id: 'attendance-low',
         title: 'Asistencia Baja Detectada',
-        description: `La asistencia promedio es del ${dailyAttendance}% (objetivo: 85%)`,
+        description: `La asistencia promedio es del ${currentStats.dailyAttendance}% (objetivo: 85%)`,
         severity: 'medium',
         timestamp: new Date(),
         acknowledged: false,
       });
     }
 
-    // High unread notifications
-    const unreadCount = notifications.value.filter((n) => !n.isRead).length;
-    if (unreadCount > 10) {
-      alerts.push({
-        id: 'notifications-high',
-        title: 'Muchas Notificaciones Pendientes',
-        description: `${unreadCount} notificaciones sin leer requieren atención`,
-        severity: 'low',
-        timestamp: new Date(),
-        acknowledged: false,
-      });
+    // High unread notifications (safe access)
+    try {
+      const unreadCount = notifications.value?.filter((n) => !n.isRead)?.length || 0;
+      if (unreadCount > 10) {
+        alerts.push({
+          id: 'notifications-high',
+          title: 'Muchas Notificaciones Pendientes',
+          description: `${unreadCount} notificaciones sin leer requieren atención`,
+          severity: 'low',
+          timestamp: new Date(),
+          acknowledged: false,
+        });
+      }
+    } catch (notificationError) {
+      console.warn('Error checking notifications:', notificationError);
     }
 
     // System performance alert
-    const systemHealth = analytics.systemHealth.value;
-    if (systemHealth < 85) {
+    if (currentStats.systemHealth < 85) {
       alerts.push({
         id: 'performance-low',
         title: 'Rendimiento del Sistema',
-        description: `Salud del sistema al ${systemHealth}% (objetivo: 90%)`,
-        severity: systemHealth < 70 ? 'high' : 'medium',
+        description: `Salud del sistema al ${currentStats.systemHealth}% (objetivo: 90%)`,
+        severity: currentStats.systemHealth < 70 ? 'high' : 'medium',
         timestamp: new Date(),
         acknowledged: false,
       });
@@ -706,20 +725,20 @@ watch(
     () => studentsStore.studentStats.total,
     () => studentsStore.studentStats.active,
     () => classesStore.classes.length,
-    () => attendanceStore.records.length,
   ],
   () => {
-    // Debounce alert generation to prevent recursion
+    // Debounce to prevent recursion
     if (alertGenerationTimeout) {
       clearTimeout(alertGenerationTimeout);
     }
 
     alertGenerationTimeout = window.setTimeout(() => {
+      calculateSystemStats();
       generateIntelligentAlerts();
       alertGenerationTimeout = null;
-    }, 1000);
+    }, 2000);
   },
-  { flush: 'post' },
+  { flush: 'post', deep: false },
 );
 
 // Lifecycle hooks

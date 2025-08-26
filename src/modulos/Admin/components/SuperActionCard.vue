@@ -40,6 +40,8 @@ const emit = defineEmits<{
 }>();
 
 const iconComponent = computed(() => {
-  return (HeroIcons as any)[props.icon] || HeroIcons.CogIcon;
+  // Safe fallback approach with proper component checking
+  const IconComponent = (HeroIcons as any)[props.icon];
+  return IconComponent && typeof IconComponent === 'function' ? IconComponent : HeroIcons.CogIcon;
 });
 </script>

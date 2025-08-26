@@ -30,7 +30,7 @@ const attendanceRoutes: Array<RouteRecordRaw> = [
   {
     path: '/attendance/:date?/:classId?',
     name: 'TeacherAttendanceDetail',
-    component: () => import('./views/teacher/AttendanceFormView.vue'),
+    component: () => import(/* webpackChunkName: "attendance-form" */ './views/teacher/AttendanceFormView.vue'),
     // component: () => import('./components/AttendanceList.vue'),
     props: true,
     meta: {
@@ -125,4 +125,5 @@ const attendanceRoutes: Array<RouteRecordRaw> = [
 ];
 
 export { attendanceRoutes };
+export const routes = attendanceRoutes;
 export default attendanceRoutes;

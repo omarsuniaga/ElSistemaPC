@@ -482,7 +482,7 @@
             </td>
             <td class="p-3 text-center">
               <div
-class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium" 
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
                 :class="getStudentAttendanceClass(student.id)"
               >
                 {{ getStudentAttendanceRate(student.id) }}%
@@ -490,9 +490,10 @@ class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
             </td>
             <td v-for="day in visibleDays" :key="day.getTime()" class="p-3 text-center">
               <div
-:class="getAttendanceClass(student.id, day) + ' inline-flex items-center justify-center h-7 w-7 rounded-full font-semibold'"
-                "
-                :title="getAttendanceTooltip(student.id, day)"
+                @click="showStudentsForDateAndStatus(day, getAttendanceStatus(student.id, day))"
+                @mouseover="showTooltipWithCount(day, getAttendanceStatus(student.id, day))"
+                :class="getAttendanceClass(student.id, day) + ' inline-flex items-center justify-center h-7 w-7 rounded-full font-semibold cursor-pointer hover:scale-110 transition-transform duration-200'"
+                :title="getEnhancedTooltip(day, getAttendanceStatus(student.id, day))"
               >
                 {{ getAttendanceStatus(student.id, day) }}
               </div>
@@ -527,9 +528,13 @@ class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
 
         <div v-for="page in paginationRange" :key="page" class="hidden sm:block">
           <button
-v-if="page !== '...'" :class="[currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300']" 
-                  ]"
-            class="px-2 py-1 rounded text-xs"
+            v-if="page !== '...'"
+            :class="[
+              currentPage === page 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300',
+              'px-2 py-1 rounded text-xs'
+            ]"
             @click="changePage(page)"
           >
             {{ page }}
@@ -677,6 +682,15 @@ v-if="page !== '...'" :class="[currentPage === page ? 'bg-blue-600 text-white' :
         </div>
       </div>
     </div>
+
+    <!-- Student List Modal -->
+    <StudentListModal
+      :show="showStudentModal"
+      :date="selectedDate"
+      :status="selectedStatus"
+      :students="studentsForSelectedCell"
+      @close="showStudentModal = false"
+    />
   </div>
 </template>
 
@@ -688,6 +702,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useClassesStore } from '../modulos/Classes/store/classes';
 import { useStudentsStore } from '../modulos/Students/store/students';
 import { useAttendanceStore } from '../modulos/Attendance/store/attendance';
+import StudentListModal from './modals/StudentListModal.vue';
 import {
   format,
   addDays,
@@ -777,6 +792,12 @@ const customDateRange = ref({
   start: format(subDays(new Date(), 7), 'yyyy-MM-dd'),
   end: format(new Date(), 'yyyy-MM-dd'),
 });
+
+// Student Modal state
+const showStudentModal = ref(false);
+const selectedDate = ref<Date | null>(null);
+const selectedStatus = ref<string>('');
+const studentsForSelectedCell = ref<any[]>([]);
 
 // Pagination
 const currentPage = ref(1);
@@ -1217,6 +1238,87 @@ function getAttendanceTooltip(studentId: string, date: Date): string {
   default:
     return `Sin clase el ${dateFormatted}`;
   }
+}
+
+// New interactive functions for student modal
+function showStudentsForDateAndStatus(date: Date, status: string) {
+  try {
+    if (!status || status === '' || !date) return; // No action for empty cells
+    
+    selectedDate.value = date;
+    selectedStatus.value = status;
+    studentsForSelectedCell.value = getStudentsForDateAndStatus(date, status);
+    showStudentModal.value = true;
+  } catch (error) {
+    console.error('Error showing students for date and status:', error);
+  }
+}
+
+function getStudentsForDateAndStatus(date: Date, status: string): any[] {
+  try {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const studentsWithStatus: any[] = [];
+
+    if (!students.value || students.value.length === 0) {
+      return studentsWithStatus;
+    }
+
+    students.value.forEach(student => {
+      if (!student || !student.id) return;
+      
+      const studentStatus = getAttendanceStatus(student.id, date);
+      
+      if (studentStatus === status) {
+        // Find attendance record for additional info
+        const record = attendance.value.find(a => a && a.studentId === student.id && a.date === dateStr);
+        
+        studentsWithStatus.push({
+          id: student.id,
+          name: student.name || 'Sin nombre',
+          photoURL: student.photoURL || '',
+          classInfo: student.classInfo || 'Sin clase asignada',
+          note: (record as any)?.note || undefined
+        });
+      }
+    });
+
+    return studentsWithStatus;
+  } catch (error) {
+    console.error('Error getting students for date and status:', error);
+    return [];
+  }
+}
+
+function getEnhancedTooltip(date: Date, status: string): string {
+  try {
+    if (!date || !status) return 'Sin información';
+    
+    const dateFormatted = format(date, 'PPP', { locale: es });
+    const count = getStudentsForDateAndStatus(date, status).length;
+    
+    const statusText = {
+      'P': 'Presentes',
+      'A': 'Ausentes', 
+      'T': 'Tardanzas',
+      'J': 'Justificados',
+      '-': 'Sin registro',
+      '': 'Sin clase'
+    }[status] || 'Desconocido';
+
+    if (count > 0) {
+      return `${count} estudiante${count !== 1 ? 's' : ''} ${statusText.toLowerCase()} el ${dateFormatted}. Click para ver lista.`;
+    }
+    
+    return `${statusText} el ${dateFormatted}`;
+  } catch (error) {
+    console.error('Error getting enhanced tooltip:', error);
+    return 'Error al cargar información';
+  }
+}
+
+function showTooltipWithCount(date: Date, status: string) {
+  // This function could be used for more sophisticated tooltip showing
+  // For now, the enhanced tooltip already shows the count
 }
 
 // Calculate attendance statistics

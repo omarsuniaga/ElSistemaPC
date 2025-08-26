@@ -15,8 +15,9 @@ export const attendanceRoutes: RouteRecordRaw[] = [
     meta: {
       title: 'Gestión de Asistencia',
       requiresAuth: true,
+      requiresRBAC: true,
       module: 'attendance',
-      permissions: ['attendance:read'],
+      allowedRoles: ['Maestro', 'maestro', 'teacher', 'Teacher', 'Admin', 'Director', 'Superusuario'],
       breadcrumb: [
         { name: 'Inicio', to: '/' },
         { name: 'Asistencia', to: '/attendance' },
@@ -53,20 +54,20 @@ export const attendanceRoutes: RouteRecordRaw[] = [
         meta: {
           title: 'Calendario Profesional',
           description: 'Calendario avanzado con datos reales e integración completa',
-          permissions: ['attendance:read'],
+          allowedRoles: ['Maestro', 'maestro', 'teacher', 'Teacher', 'Admin', 'Director', 'Superusuario'],
         },
       },
 
       // --- NUEVA RUTA PARA EL FORMULARIO DEL MAESTRO ---
       {
         path: 'form/:date/:classId',
-  name: 'TeacherAttendanceDetail',
-        component: () => import('../views/teacher/AttendanceFormView.vue'),
+        name: 'TeacherAttendanceDetail',
+        component: () => import(/* webpackChunkName: "attendance-form-teacher" */ '../views/teacher/AttendanceFormView.vue'),
         props: true, // Pasa los parámetros de la ruta como props al componente
         meta: {
           title: 'Formulario de Asistencia',
           description: 'Registro de asistencia para una clase específica.',
-          permissions: ['attendance:create', 'attendance:update'], // Permisos requeridos
+          allowedRoles: ['Maestro', 'maestro', 'teacher', 'Teacher', 'Admin', 'Director', 'Superusuario'],
           breadcrumb: [
             { name: 'Inicio', to: '/' },
             { name: 'Asistencia', to: '/attendance/professional-calendar' },
@@ -104,7 +105,7 @@ export const attendanceRoutes: RouteRecordRaw[] = [
         meta: {
           title: 'Reportes de Asistencia',
           description: 'Análisis y estadísticas de asistencia',
-          permissions: ['attendance:reports'],
+          allowedRoles: ['Maestro', 'maestro', 'teacher', 'Teacher', 'Admin', 'Director', 'Superusuario'],
         },
       },
 
@@ -294,4 +295,5 @@ export const attendanceAnalytics = {
 /**
  * 🚀 Exportación unificada
  */
+export const routes = attendanceRoutes;
 export default attendanceRoutes;

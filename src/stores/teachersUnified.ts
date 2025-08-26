@@ -193,15 +193,20 @@ export const useTeachersStore = defineStore('teachers', () => {
       const validatedTeachers = snapshot.docs.map((doc) => {
         const rawData = { id: doc.id, ...doc.data() };
 
-        // Validar datos con Zod antes de almacenar
-        const validated = validateFirebaseData(TeacherDataSchema, rawData);
-        
-        // Ensure required fields have defaults
-        return {
-          ...validated,
-          status: validated.status || 'activo',
-          specialties: validated.specialties || [],
+        // Provide defaults for required fields before validation
+        const dataWithDefaults = {
+          ...rawData,
+          createdAt: rawData.createdAt || new Date(),
+          status: rawData.status || 'activo',
+          specialties: rawData.specialties || [],
+          name: rawData.name || 'Sin nombre',
+          email: rawData.email || 'sin-email@ejemplo.com',
         };
+
+        // Validar datos con Zod antes de almacenar
+        const validated = validateFirebaseData(TeacherDataSchema, dataWithDefaults);
+        
+        return validated;
       });
 
       teachers.value = validatedTeachers;

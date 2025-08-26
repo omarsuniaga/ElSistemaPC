@@ -171,8 +171,21 @@ export function validateFirebaseData<T>(schema: z.ZodSchema<T>, data: any): T {
 
   Object.keys(transformedData).forEach((key) => {
     const value = transformedData[key];
+    
+    // Firebase Timestamp objects
     if (value && typeof value === 'object' && value.toDate) {
       transformedData[key] = value.toDate();
+    }
+    // Date strings (ISO format or similar)
+    else if (typeof value === 'string' && (key.includes('At') || key.includes('Date'))) {
+      const dateValue = new Date(value);
+      if (!isNaN(dateValue.getTime())) {
+        transformedData[key] = dateValue;
+      }
+    }
+    // Unix timestamps (numbers)
+    else if (typeof value === 'number' && (key.includes('At') || key.includes('Date'))) {
+      transformedData[key] = new Date(value);
     }
   });
 

@@ -174,6 +174,7 @@
           v-for="teacher in paginatedTeachers"
           :key="teacher.id"
           :teacher="teacher"
+          :teacher-classes="getTeacherClasses(teacher.id)"
           :permissions="{
             canView: canViewTeacher,
             canEdit: canEditTeacher,
@@ -243,6 +244,14 @@
       @close="showCreateModal = false"
       @create="handleCreateTeacher"
     />
+    
+    <!-- Teacher Classes Modal -->
+    <TeacherClassesModal
+      :show="showClassesModal"
+      :teacher-name="selectedTeacher?.name || ''"
+      :classes="selectedTeacherClasses"
+      @close="showClassesModal = false"
+    />
   </div>
 </template>
 
@@ -263,6 +272,7 @@ import { useRBACStore } from '../../../stores/rbacStore';
 import { useClassesStore } from '../../Classes/store/classes';
 import AdminTeacherCard from '../components/AdminTeacherCard.vue';
 import TeacherCreateModal from '../components/TeacherCreateModal.vue';
+import TeacherClassesModal from '../components/TeacherClassesModal.vue';
 import { useAdminTeachersStore } from '../store/teachers';
 
 import ConfirmationModal from '@/components/ConfirmationModal.vue';
@@ -301,7 +311,9 @@ const statusFilter = ref('');
 const specialtyFilter = ref('');
 const showCreateModal = ref(false);
 const showDeleteModal = ref(false);
+const showClassesModal = ref(false);
 const selectedTeacher = ref<ITeacher | null>(null);
+const selectedTeacherClasses = ref<any[]>([]);
 
 // Pagination
 const currentPage = ref(1);
@@ -314,10 +326,8 @@ const isLoading = computed(() => teachersStore.isLoading);
 // Enriquecer datos de maestros con información de clases
 const enrichedTeachers = computed(() => {
   return teachers.value.map((teacher) => {
-    // Obtener clases reales asignadas al maestro
-    const assignedClasses = classesStore.classes.filter(
-      (cls) => cls.teacherId === teacher.id || cls.teachers?.includes(teacher.id),
-    );
+    // Obtener clases reales asignadas al maestro usando la nueva lógica
+    const assignedClasses = getTeacherClasses(teacher.id);
 
     // Normalizar propiedades para compatibilidad
     const teacherData = teacher as unknown as ITeacher;
@@ -466,12 +476,35 @@ const deleteTeacher = (teacher: ITeacher) => {
   showDeleteModal.value = true;
 };
 
-const viewTeacherClasses = (teacher: ITeacher) => {
-  // Navegar al gestor de clases con filtro del maestro
-  router.push({
-    path: '/admin/classes',
-    query: { teacherId: teacher.id, teacherName: teacher.name },
+const getTeacherClasses = (teacherId: string) => {
+  // Buscar el maestro para obtener su UID
+  const teacher = teachers.value.find(t => t.id === teacherId);
+  const teacherUid = teacher?.uid || teacherId;
+  
+  return classesStore.classes.filter((cls) => {
+    // Verificar por teacherId directo
+    if (cls.teacherId === teacherId || cls.teacherId === teacherUid) {
+      return true;
+    }
+    
+    // Verificar en el array de teachers (para clases compartidas)
+    if (cls.teachers?.includes(teacherId) || cls.teachers?.includes(teacherUid)) {
+      return true;
+    }
+    
+    // Verificar por UID en el campo teacherId
+    if (cls.teacherId && teacher && cls.teacherId === teacher.uid) {
+      return true;
+    }
+    
+    return false;
   });
+};
+
+const viewTeacherClasses = (teacher: ITeacher) => {
+  selectedTeacher.value = teacher;
+  selectedTeacherClasses.value = getTeacherClasses(teacher.id);
+  showClassesModal.value = true;
 };
 
 const confirmDelete = async () => {
@@ -520,10 +553,19 @@ watch([searchQuery, statusFilter, specialtyFilter], () => {
 
 // Lifecycle
 onMounted(async () => {
-  await Promise.all([
-    teachersStore.loadTeachers(),
-    classesStore.fetchClasses(),
-  ]);
+  console.log('🔍 Cargando datos de maestros y clases...');
+  try {
+    await Promise.all([
+      teachersStore.loadTeachers(),
+      classesStore.fetchClasses(),
+    ]);
+    
+    console.log('📊 Maestros cargados:', teachersStore.teachers);
+    console.log('📚 Clases cargadas:', classesStore.classes);
+    console.log('🎯 Maestros enriquecidos:', enrichedTeachers.value);
+  } catch (error) {
+    console.error('❌ Error cargando datos:', error);
+  }
 });
 </script>
 

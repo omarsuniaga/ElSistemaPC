@@ -4,7 +4,7 @@
     <MaestroMontajeHeader
       :is-dark-mode="isDarkMode"
       :director-reviewed="directorReviewed"
-      :asistencia-pendiente="asistenciaPendiente"
+      :asistencia-pendiente="!!proximaClasePendiente" 
       :progreso-semanal-porcentaje="progresoSemanalPorcentaje"
       @toggle-dark-mode="toggleDarkMode"
       @ir-a-asistencia="irAAsistencia"
@@ -77,9 +77,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue'; // Añadir computed
 import { useRouter } from 'vue-router';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { useThemeContext } from '@/composables/ThemeContext';
 
 // Composables
 import { useMaestroMontajeData } from '../composables/useMaestroMontajeData';
@@ -101,7 +101,7 @@ import ModalEvaluacion from '../components/ModalEvaluacion.vue';
 const router = useRouter();
 
 // Contexto de tema
-const { isDarkMode, toggleDarkMode } = useTheme();
+const { isDarkMode, toggleTheme: toggleDarkMode } = useThemeContext();
 
 // Composables de datos y UI
 const { 
@@ -111,6 +111,7 @@ const {
   maestroObservacionesDirector,
   maestroActividadHoy,
   maestroProximasTareas,
+  proximaClasePendiente, // Obtener la próxima clase
   obras,
   estadosCompasesPorObra,
 } = useMaestroMontajeData();
@@ -137,14 +138,21 @@ const {
 // Composables de permisos (para uso futuro en la UI si es necesario)
 const { hasPermission, canUpdateWorkProgress } = useMontajePermissions();
 
+// El estado de la semana actual ahora se obtiene del composable de UI
+const currentWeek = computed(() => getCurrentWeek());
+
 // Estado reactivo local (mantener si no se mueve a composables)
 const directorReviewed = ref(false); // Esto podría venir de los datos del maestro
-const asistenciaPendiente = ref(true); // Esto podría venir de un store de asistencia
 const progresoSemanalPorcentaje = ref(65); // Esto podría ser calculado o venir de los datos del maestro
 
 // Métodos que interactúan con el router o lógica de negocio específica de la vista
 function irAAsistencia() {
-  router.push('/attendance/calendar');
+  if (proximaClasePendiente.value) {
+    const { id, date } = proximaClasePendiente.value;
+    router.push(`/attendance/form/${date}/${id}`);
+  } else {
+    alert('No hay clases pendientes para tomar asistencia.');
+  }
 }
 
 function verDetalleObra(obra: any) { // Tipo Obra

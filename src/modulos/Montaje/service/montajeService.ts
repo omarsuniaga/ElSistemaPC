@@ -11,9 +11,13 @@ import {
   limit as limitToFirst,
   Timestamp,
   serverTimestamp,
+  setDoc,
+  deleteDoc,
+  increment,
 } from 'firebase/firestore';
 import { db } from '../../../firebase/config';
 import { TipoInstrumento, EstadoCompass } from '../types';
+import { ProgresoCompasEstado } from '../types/instrumentProgress';
 import type {
   Obra,
   Repertorio,
@@ -217,6 +221,44 @@ class MontajeService {
         expiry: Date.now() + this.cacheExpiry,
       });
       return [];
+    }
+  }
+
+  /**
+   * Obtener obras asignadas a un maestro específico
+   */
+  async getObrasForTeacher(teacherId: string): Promise<Obra[]> {
+    try {
+      const cacheKey = `obras_teacher_${teacherId}`;
+      const cached = this.cache.get(cacheKey);
+
+      if (cached && Date.now() < cached.expiry) {
+        console.log('📦 Cache hit para obras del maestro:', teacherId);
+        return cached.data;
+      }
+
+      console.log('🔍 Consultando obras del maestro desde Firestore:', teacherId);
+
+      // First get all obras, then filter by teacher assignment
+      // For now, we'll return all obras since teacher-obra assignment logic may vary
+      // In the future, you can implement a proper filtering mechanism
+      const allObras = await this.obtenerObras();
+      
+      // TODO: Implement actual teacher-obra assignment filtering
+      // For now, return all active obras
+      const teacherObras = allObras.filter(obra => obra.auditoria?.activo !== false);
+
+      // Guardar en caché
+      this.cache.set(cacheKey, {
+        data: teacherObras,
+        expiry: Date.now() + this.cacheExpiry,
+      });
+
+      console.log(`✅ Obras para maestro ${teacherId}:`, teacherObras.length);
+      return teacherObras;
+    } catch (error) {
+      console.error('❌ Error obteniendo obras para maestro:', error);
+      throw error;
     }
   }
 
@@ -725,6 +767,58 @@ class MontajeService {
     } catch (error) {
       console.error('Error cambiando estado del compás:', error);
       throw error;
+    }
+  }
+
+  // ================== GESTIÓN DE PROGRESO POR INSTRUMENTO ==================
+
+  /**
+   * Obtiene el mapa de progreso de compases para un instrumento específico en una obra.
+   * @param obraId - El ID de la obra.
+   * @param instrumentId - El ID del instrumento.
+   * @returns Un mapa donde la clave es el número de compás y el valor es el estado de progreso.
+   */
+  async getInstrumentProgress(obraId: string, instrumentId: string): Promise<Map<string, ProgresoCompasEstado>> {
+    try {
+      const progressRef = doc(db, this.obrasCollection, obraId, 'progresoInstrumento', instrumentId);
+      const docSnap = await getDoc(progressRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        // Firestore devuelve un objeto, lo convertimos a un Map
+        return new Map(Object.entries(data.compasses || {}));
+      } else {
+        // Si no existe, devolver un mapa vacío
+        return new Map();
+      }
+    } catch (error) {
+      console.error('Error obteniendo progreso del instrumento:', error);
+      throw new Error('No se pudo obtener el progreso del instrumento.');
+    }
+  }
+
+  /**
+   * Actualiza el estado de uno o más compases para un instrumento específico.
+   * @param obraId - El ID de la obra.
+   * @param instrumentId - El ID del instrumento.
+   * @param compassUpdates - Un mapa con los compases a actualizar y sus nuevos estados.
+   */
+  async updateInstrumentProgress(obraId: string, instrumentId: string, compassUpdates: Map<string, ProgresoCompasEstado>): Promise<void> {
+    try {
+      const progressRef = doc(db, this.obrasCollection, obraId, 'progresoInstrumento', instrumentId);
+      
+      // Convertir el Map a un objeto para guardarlo en Firestore
+      const updates: { [key: string]: any } = {};
+      compassUpdates.forEach((value, key) => {
+        updates[`compasses.${key}`] = value;
+      });
+
+      // Usar set con merge:true para crear el documento si no existe, o actualizarlo si ya existe.
+      await setDoc(progressRef, updates, { merge: true });
+
+    } catch (error) {
+      console.error('Error actualizando progreso del instrumento:', error);
+      throw new Error('No se pudo actualizar el progreso del instrumento.');
     }
   }
 

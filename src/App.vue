@@ -44,7 +44,7 @@
 import { defineAsyncComponent, onMounted, onUnmounted, computed, ref, nextTick } from 'vue';
 import { RouterView } from 'vue-router';
 import { setupPersistence } from './firebase';
-import { useThemeSetup } from './composables/useTheme';
+import { provideTheme } from './composables/ThemeContext';
 
 // AGREGAR: Importaciones del sistema de módulos
 import { moduleManager } from './modulos/Montaje/core/ModuleManager';
@@ -62,8 +62,8 @@ const SyncStatusIndicator = defineAsyncComponent(
   () => import('./components/sync/SyncStatusIndicator.vue'),
 );
 
-// Configurar tema para toda la aplicación
-useThemeSetup();
+// Configurar y proveer el tema para toda la aplicación
+provideTheme();
 
 // State reactive variables
 const isAppInitialized = ref(false);
@@ -83,7 +83,7 @@ const initTimeout = setTimeout(() => {
     console.warn('⚠️ [App] Esto puede indicar problemas de conectividad o configuración');
     isAppInitialized.value = true;
   }
-}, 10000); // Increased to 10 seconds
+}, 20000); // Increased to 20 seconds
 
 // Clear timeout if initialization completes successfully
 const clearInitTimeout = () => {
@@ -162,10 +162,17 @@ onMounted(async () => {
 
     // Inicializar autenticación para evitar el flash de login
     try {
-      await authStore.value.checkAuth();
+      // Add timeout for auth check to prevent hanging
+      const authPromise = authStore.value.checkAuth();
+      const authTimeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Auth timeout after 8 seconds')), 8000);
+      });
+      
+      await Promise.race([authPromise, authTimeout]);
       console.log('🔐 Autenticación inicializada correctamente');
     } catch (error) {
       console.warn('🔐 Error al inicializar autenticación:', error);
+      // Continue with app initialization even if auth fails
     }
 
     // AGREGAR: Inicializar sistema de módulos después de la autenticación

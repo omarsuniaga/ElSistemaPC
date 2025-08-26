@@ -277,24 +277,7 @@ export const getClassesByTeacher = async (teacherId: string): Promise<ClassData[
   }
 };
 
-/**
- * Verifica si el usuario actual tiene permisos para modificar una clase.
- */
-export const canModifyClass = async (classId: string): Promise<boolean> => {
-  try {
-    const currentUser = await getCurrentUserFromFirestore();
-    if (!currentUser) return false;
-    if (currentUser.role === 'admin' || currentUser.role === 'superadmin') return true;
-    if (currentUser.role === 'teacher') {
-      const classData = await getClassByIdFirestore(classId);
-      return classData?.teacherId === currentUser.id;
-    }
-    return false;
-  } catch (error) {
-    console.error('Error checking modify permissions:', error);
-    return false;
-  }
-};
+
 
 /**
  * Obtiene todas las clases que tienen a un estudiante específico en su lista de estudiantes.
@@ -961,6 +944,8 @@ export const updateAssistantPermissions = async (
 
 /**
  * Verifica si un maestro tiene permisos específicos en una clase
+ * Maneja tanto el sistema de permisos compartidos ('read', 'write', 'manage') 
+ * como el sistema de permisos específicos de ClassTeacher
  */
 export const checkTeacherPermission = async (
   classId: string,
@@ -982,14 +967,89 @@ export const checkTeacherPermission = async (
       return true;
     }
 
-    // Buscar en maestros asistentes
+    // 1. Verificar sistema de permisos compartidos (SharedClassPermission)
+    if (classData.permissions && classData.permissions[teacherId]) {
+      const sharedPermissions = classData.permissions[teacherId];
+      
+      // Mapeo de permisos compartidos a permisos específicos
+      const permissionMapping: Record<keyof ClassTeacher['permissions'], string[]> = {
+        canViewAttendanceHistory: ['read', 'write', 'manage'],
+        canTakeAttendance: ['write', 'manage'],
+        canAddObservations: ['write', 'manage'], 
+        canEditClass: ['manage'],
+        canManageTeachers: ['manage'],
+        canManageStudents: ['manage'],
+        canManageSchedule: ['manage']
+      };
+
+      const requiredPermissions = permissionMapping[permission];
+      if (requiredPermissions && sharedPermissions.some(p => requiredPermissions.includes(p))) {
+        return true;
+      }
+    }
+
+    // 2. Verificar en la lista sharedWith (por compatibilidad)
+    if (classData.sharedWith && classData.sharedWith.includes(teacherId)) {
+      // Si está en sharedWith pero no tiene permisos específicos, asumir 'read'
+      const permissionMapping: Record<keyof ClassTeacher['permissions'], string[]> = {
+        canViewAttendanceHistory: ['read', 'write', 'manage'],
+        canTakeAttendance: ['write', 'manage'],
+        canAddObservations: ['write', 'manage'], 
+        canEditClass: ['manage'],
+        canManageTeachers: ['manage'],
+        canManageStudents: ['manage'],
+        canManageSchedule: ['manage']
+      };
+
+      const requiredPermissions = permissionMapping[permission];
+      // Solo dar permiso de lectura si no hay permisos específicos definidos
+      if (requiredPermissions && requiredPermissions.includes('read') && permission === 'canViewAttendanceHistory') {
+        return true;
+      }
+    }
+
+    // 3. Verificar sistema de maestros asistentes (ClassTeacher)
     const assistantTeacher = classData.teachers?.find(
-      (teacher) => teacher.teacherId === teacherId && teacher.role === TeacherRole.ASSISTANT,
+      (teacher: any) => teacher.teacherId === teacherId && teacher.role === TeacherRole.ASSISTANT,
     );
 
     return assistantTeacher?.permissions[permission] || false;
   } catch (error) {
     console.error('Error checking teacher permission:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica si un maestro tiene permisos específicos usando SharedClassPermission
+ */
+export const checkSharedClassPermission = async (
+  classId: string,
+  teacherId: string,
+  permission: 'read' | 'write' | 'manage',
+): Promise<boolean> => {
+  try {
+    const classRef = doc(db, CLASSES_COLLECTION, classId);
+    const classDoc = await getDoc(classRef);
+
+    if (!classDoc.exists()) {
+      return false;
+    }
+
+    const classData = classDoc.data() as ClassData;
+
+    // Si es el maestro principal, tiene todos los permisos
+    if (classData.teacherId === teacherId) {
+      return true;
+    }
+
+    // Verificar permisos específicos
+    const teacherPermissions = classData.permissions?.[teacherId];
+    if (!teacherPermissions) return false;
+
+    return teacherPermissions.includes(permission);
+  } catch (error) {
+    console.error('Error checking shared class permission:', error);
     return false;
   }
 };
@@ -1039,6 +1099,158 @@ export const canTeacherViewAttendanceHistory = async (
   } catch (error) {
     console.error('Error checking history viewing permission:', error);
     return false;
+  }
+};
+
+/**
+ * FUNCIONES ESPECÍFICAS PARA EL SISTEMA DE PERMISOS COMPARTIDOS
+ * Estas funciones implementan la lógica exacta que describiste:
+ * - READ: Solo puede ver el listado de asistencia
+ * - WRITE: Puede pasar asistencia, NO recibe notificaciones obligatorias
+ * - MANAGE: Todos los permisos + notificaciones + responsabilidad total
+ */
+
+/**
+ * Verifica si el maestro puede VER la asistencia (READ, WRITE, MANAGE)
+ */
+export const canViewAttendance = async (
+  classId: string,
+  teacherId: string,
+): Promise<boolean> => {
+  try {
+    // Cualquier nivel de permiso puede ver asistencia
+    const hasRead = await checkSharedClassPermission(classId, teacherId, 'read');
+    const hasWrite = await checkSharedClassPermission(classId, teacherId, 'write');
+    const hasManage = await checkSharedClassPermission(classId, teacherId, 'manage');
+    
+    return hasRead || hasWrite || hasManage;
+  } catch (error) {
+    console.error('Error checking view attendance permission:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica si el maestro puede PASAR asistencia (WRITE, MANAGE)
+ */
+export const canTakeAttendance = async (
+  classId: string,
+  teacherId: string,
+): Promise<boolean> => {
+  try {
+    const hasWrite = await checkSharedClassPermission(classId, teacherId, 'write');
+    const hasManage = await checkSharedClassPermission(classId, teacherId, 'manage');
+    
+    return hasWrite || hasManage;
+  } catch (error) {
+    console.error('Error checking take attendance permission:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica si el maestro DEBE RECIBIR notificaciones y recordatorios obligatorios (MANAGE)
+ */
+export const shouldReceiveNotifications = async (
+  classId: string,
+  teacherId: string,
+): Promise<boolean> => {
+  try {
+    // Solo los maestros con permiso MANAGE reciben notificaciones obligatorias
+    return await checkSharedClassPermission(classId, teacherId, 'manage');
+  } catch (error) {
+    console.error('Error checking notification permission:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica si el maestro puede GESTIONAR estudiantes (MANAGE)
+ */
+export const canManageStudents = async (
+  classId: string,
+  teacherId: string,
+): Promise<boolean> => {
+  try {
+    // Solo MANAGE puede registrar/quitar estudiantes
+    return await checkSharedClassPermission(classId, teacherId, 'manage');
+  } catch (error) {
+    console.error('Error checking manage students permission:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica si el maestro puede MODIFICAR la clase (MANAGE)
+ */
+export const canModifyClass = async (
+  classId: string,
+  teacherId: string,
+): Promise<boolean> => {
+  try {
+    // Solo MANAGE puede modificar detalles de la clase
+    return await checkSharedClassPermission(classId, teacherId, 'manage');
+  } catch (error) {
+    console.error('Error checking modify class permission:', error);
+    return false;
+  }
+};
+
+/**
+ * Verifica si el maestro ve ESTADOS DE ASISTENCIAS PENDIENTES (MANAGE)
+ */
+export const canViewPendingAttendanceStates = async (
+  classId: string,
+  teacherId: string,
+): Promise<boolean> => {
+  try {
+    // Solo MANAGE ve estados de asistencias pendientes
+    return await checkSharedClassPermission(classId, teacherId, 'manage');
+  } catch (error) {
+    console.error('Error checking pending attendance states permission:', error);
+    return false;
+  }
+};
+
+/**
+ * Obtiene el nivel de permiso del maestro para una clase
+ */
+export const getTeacherPermissionLevel = async (
+  classId: string,
+  teacherId: string,
+): Promise<'none' | 'read' | 'write' | 'manage' | 'owner'> => {
+  try {
+    const classRef = doc(db, CLASSES_COLLECTION, classId);
+    const classDoc = await getDoc(classRef);
+
+    if (!classDoc.exists()) {
+      return 'none';
+    }
+
+    const classData = classDoc.data() as ClassData;
+
+    // Si es el maestro principal
+    if (classData.teacherId === teacherId) {
+      return 'owner';
+    }
+
+    // Verificar permisos compartidos en orden de importancia
+    if (await checkSharedClassPermission(classId, teacherId, 'manage')) {
+      return 'manage';
+    }
+    
+    if (await checkSharedClassPermission(classId, teacherId, 'write')) {
+      return 'write';
+    }
+    
+    if (await checkSharedClassPermission(classId, teacherId, 'read')) {
+      return 'read';
+    }
+
+    return 'none';
+  } catch (error) {
+    console.error('Error getting teacher permission level:', error);
+    return 'none';
   }
 };
 

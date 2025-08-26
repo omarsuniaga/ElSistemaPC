@@ -91,7 +91,7 @@
     <!-- Stats and Bio Preview -->
     <div class="px-6 pb-4">
       <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-        <div class="grid grid-cols-2 gap-3 text-center">
+        <div class="grid grid-cols-3 gap-3 text-center">
           <div>
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
               {{ teacher.assignedClasses?.length || 0 }}
@@ -100,9 +100,15 @@
           </div>
           <div>
             <div class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ teacher.specialty?.length || 0 }}
+              {{ getTotalStudents() }}
             </div>
-            <div class="text-xs text-gray-600 dark:text-gray-400">Especialidades</div>
+            <div class="text-xs text-gray-600 dark:text-gray-400">Estudiantes</div>
+          </div>
+          <div>
+            <div class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ getWeeklyHours() }}h
+            </div>
+            <div class="text-xs text-gray-600 dark:text-gray-400">Semanales</div>
           </div>
         </div>
       </div>
@@ -194,9 +200,24 @@ interface IPermissions {
   canDelete: boolean
 }
 
+interface ClassData {
+  id: string
+  name: string
+  teacherId?: string
+  studentIds?: string[]
+  schedule?: {
+    slots?: Array<{
+      dayOfWeek: number
+      startTime: string
+      endTime: string
+    }>
+  }
+}
+
 const props = defineProps<{
   teacher: ITeacher
   permissions: IPermissions
+  teacherClasses?: ClassData[]
 }>();
 
 const emit = defineEmits<{
@@ -233,6 +254,32 @@ const getSpecialtyName = (specialty: string): string => {
 
 const handleCardClick = () => {
   handleViewClasses();
+};
+
+const getTotalStudents = (): number => {
+  if (!props.teacherClasses) return 0;
+  
+  const uniqueStudents = new Set<string>();
+  props.teacherClasses.forEach(cls => {
+    cls.studentIds?.forEach(studentId => uniqueStudents.add(studentId));
+  });
+  
+  return uniqueStudents.size;
+};
+
+const getWeeklyHours = (): number => {
+  if (!props.teacherClasses) return 0;
+  
+  return props.teacherClasses.reduce((total, cls) => {
+    if (!cls.schedule?.slots) return total;
+    
+    return total + cls.schedule.slots.reduce((classTotal, slot) => {
+      const start = new Date(`2000-01-01 ${slot.startTime}`);
+      const end = new Date(`2000-01-01 ${slot.endTime}`);
+      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      return classTotal + (hours > 0 ? hours : 0);
+    }, 0);
+  }, 0);
 };
 
 const handleViewClasses = () => {

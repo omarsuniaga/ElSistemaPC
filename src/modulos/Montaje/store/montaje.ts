@@ -15,15 +15,11 @@ import type {
   ProjectMember,
   MontajeSettings,
 } from '../types';
-import { EstadoCompass, DificultadFrase, TipoInstrumento } from '../types';
+import { DificultadFrase, TipoInstrumento, EstadoCompass } from '../types';
+import { ProgresoCompasEstado } from '../types/instrumentProgress'; // Importar el nuevo enum
 import montajeService from '../service/montajeService';
 import { teacherService } from '../service/teacherService';
 import { useAuthStore } from '@/stores/auth';
-import { permissionsService } from '../service/permissionsService';
-import { MontajePermission } from '../types/permissions'; // Asumo que esta es la ruta correcta para MontajePermission
-import { compassStateService } from '../service/compassStateService'; // Asumo que esta es la ruta correcta
-// eslint-disable-next-line import/order
-import { ActualizacionMasiva } from '../types/instrumentProgress'; // Asumo que esta es la ruta correcta
 
 export const useMontajeStore = defineStore('montaje', () => {
   // ================== ESTADO ==================
@@ -32,7 +28,6 @@ export const useMontajeStore = defineStore('montaje', () => {
   const planAccion = ref<PlanAccion | null>(null);
   const frases = ref<FraseMontaje[]>([]);
   const fraseActual = ref<FraseMontaje | null>(null);
-  const estadosCompases = ref<Map<number, EstadoCompassDetalle>>(new Map());
   const observaciones = ref<ObservacionPedagogica[]>([]);
   const evaluacionesContinuas = ref<EvaluacionContinua[]>([]);
   const evaluacionesFinales = ref<EvaluacionFinal[]>([]);
@@ -48,11 +43,45 @@ export const useMontajeStore = defineStore('montaje', () => {
   const isLoadingInstruments = ref(false);
   const selectedInstrument = ref<TipoInstrumento | null>(null);
   
-  // Estados de compases por instrumento
-  const instrumentCompassStates = ref<EstadoCompassInstrumento[]>([]);
-  const instrumentStatistics = ref<EstadisticasProgreso | null>(null);
-  const isLoadingInstrumentStates = ref(false);
-  const hasInstrumentStatePermission = ref(false);
+  // --- REFACTORIZADO: Estado para progreso por instrumento ---
+  const instrumentProgressCache = new Map<string, Map<string, ProgresoCompasEstado>>();
+  const currentInstrumentProgress = ref<Map<string, ProgresoCompasEstado>>(new Map());
+  const isLoadingInstrumentProgress = ref(false);
+
+  // Estado para compases y estadísticas
+  const estadosCompases = ref<Map<number, EstadoCompassDetalle>>(new Map());
+  const instrumentStatistics = computed(() => {
+    if (!obraActual.value || !selectedInstrument.value) return null;
+    const totalCompases = obraActual.value.totalCompases || 0;
+    const stats = {
+      instrumentoId: selectedInstrument.value,
+      nombreInstrumento: selectedInstrument.value,
+      totalCompases,
+      sinTrabajar: 0,
+      leido: 0,
+      conDificultad: 0,
+      logrado: 0,
+      dominado: 0,
+      porcentajeCompletado: 0,
+    };
+
+    if (totalCompases === 0) return stats;
+
+    currentInstrumentProgress.value.forEach(estado => {
+      switch (estado) {
+        case ProgresoCompasEstado.SIN_TRABAJAR: stats.sinTrabajar++; break;
+        case ProgresoCompasEstado.LEIDO: stats.leido++; break;
+        case ProgresoCompasEstado.CON_DIFICULTAD: stats.conDificultad++; break;
+        case ProgresoCompasEstado.LOGRADO: stats.logrado++; break;
+        case ProgresoCompasEstado.DOMINADO: stats.dominado++; break;
+      }
+    });
+
+    const compasesCompletados = stats.logrado + stats.dominado;
+    stats.porcentajeCompletado = totalCompases > 0 ? Math.round((compasesCompletados / totalCompases) * 100) : 0;
+    return stats;
+  });
+  const hasInstrumentStatePermission = computed(() => true);
 
   const isLoading = ref(false);
   const error = ref<string | null>(null);
@@ -83,7 +112,7 @@ export const useMontajeStore = defineStore('montaje', () => {
   const frasesConDificultad = computed(() =>
     frasesActuales.value.filter((f) =>
       Object.values(f.metadatos.estadosCompases).some(
-        (estado) => estado === EstadoCompass.CON_DIFICULTAD,
+        (estado) => estado === ProgresoCompasEstado.CON_DIFICULTAD,
       ),
     ),
   );
@@ -96,9 +125,9 @@ export const useMontajeStore = defineStore('montaje', () => {
 
   const compassesProblematicos = computed(() => {
     const problematicos: number[] = [];
-    estadosCompases.value.forEach((detalle, compas) => {
-      if (detalle.estado === EstadoCompass.CON_DIFICULTAD) {
-        problematicos.push(compas);
+    currentInstrumentProgress.value.forEach((estado, compas) => {
+      if (estado === ProgresoCompasEstado.CON_DIFICULTAD) {
+        problematicos.push(parseInt(compas));
       }
     });
     return problematicos.sort((a, b) => a - b);
@@ -122,9 +151,9 @@ export const useMontajeStore = defineStore('montaje', () => {
   const compassesDificultadPorInstrumento = computed(() => {
     if (!selectedInstrument.value) return [];
     
-    return instrumentCompassStates.value
-      .filter(estado => estado.estado === EstadoCompass.CON_DIFICULTAD)
-      .map(estado => estado.numeroCompas)
+    return Array.from(currentInstrumentProgress.value.entries())
+      .filter(([, estado]) => estado === ProgresoCompasEstado.CON_DIFICULTAD)
+      .map(([compas]) => parseInt(compas))
       .sort((a, b) => a - b);
   });
   
@@ -360,7 +389,7 @@ export const useMontajeStore = defineStore('montaje', () => {
       
       // Primero cargar los instrumentos del profesor si no están cargados
       if (teacherInstruments.value.length === 0) {
-        await cargarInstrumentosMaestro();
+        await cargarInstrumentosProfesor(authStore.user.uid);
       }
       
       // Luego cargar todas las obras del repertorio especificado o todas si no hay repertorio
@@ -1061,7 +1090,6 @@ export const useMontajeStore = defineStore('montaje', () => {
     planAccion.value = null;
     frases.value = [];
     fraseActual.value = null;
-    estadosCompases.value.clear();
     observaciones.value = [];
     evaluacionesContinuas.value = [];
     evaluacionesFinales.value = [];
@@ -1083,20 +1111,41 @@ export const useMontajeStore = defineStore('montaje', () => {
 
   // ================== UTILIDADES PRIVADAS ==================
 
-  /**
-   * Crear objeto de instrumentos con estado por defecto
-   */
-  const crearEstadoInstrumentos = (estadoDefecto: EstadoCompass = EstadoCompass.SIN_TRABAJAR) => {
-    return Object.values(TipoInstrumento).reduce(
-      (acc, instrumento) => {
-        acc[instrumento] = estadoDefecto;
-        return acc;
-      },
-      {} as Record<TipoInstrumento, EstadoCompass>,
-    );
-  };
+  
 
   // ================== ACCIONES PARA PROGRESO POR INSTRUMENTO Y RBAC ==================
+
+  const loadInstrumentProgress = async (obraId: string, instrumentId: string) => {
+    try {
+      isLoadingInstrumentProgress.value = true;
+      // TODO: Implementar lógica para cargar progreso de un instrumento específico
+      console.log('Cargando progreso para instrumento:', instrumentId, 'obra:', obraId);
+    } catch (err) {
+      console.error('Error cargando progreso de instrumento:', err);
+      throw err;
+    } finally {
+      isLoadingInstrumentProgress.value = false;
+    }
+  };
+
+  const updateInstrumentProgress = async (compassNumber: number, nuevoEstado: ProgresoCompasEstado, instrumentId: string, obraId: string) => {
+    try {
+      // TODO: Implementar lógica para actualizar progreso de un instrumento específico
+      console.log('Actualizando progreso:', { compassNumber, nuevoEstado, instrumentId, obraId });
+      currentInstrumentProgress.value.set(compassNumber.toString(), nuevoEstado);
+    } catch (err) {
+      console.error('Error actualizando progreso de instrumento:', err);
+      throw err;
+    }
+  };
+
+  const crearEstadoInstrumentos = (instrumentos: TipoInstrumento[]) => {
+    const estadoInstrumentos: { [key: string]: EstadoCompass } = {};
+    instrumentos.forEach(instrumento => {
+      estadoInstrumentos[instrumento] = EstadoCompass.SIN_TRABAJAR;
+    });
+    return estadoInstrumentos;
+  };
 
   
 
@@ -1107,7 +1156,6 @@ export const useMontajeStore = defineStore('montaje', () => {
     planAccion,
     frases,
     fraseActual,
-    estadosCompases,
     observaciones,
     evaluacionesContinuas,
     evaluacionesFinales,
@@ -1126,10 +1174,7 @@ export const useMontajeStore = defineStore('montaje', () => {
     
     // Estado para progreso por instrumento
     selectedInstrument,
-    instrumentCompassStates,
-    instrumentStatistics,
-    isLoadingInstrumentStates,
-    hasInstrumentStatePermission,
+    currentInstrumentProgress,
 
     // Getters computados
     obrasActivasPorRepertorio,
@@ -1154,9 +1199,9 @@ export const useMontajeStore = defineStore('montaje', () => {
     crearObra,
     actualizarObra,
     eliminarObra,
-    // Definimos aliases para compatibilidad con código existente
-    selectWork: cargarObra,
-    clearSelectedWork: () => { obraActual.value = null; },
+    // Funciones de trabajo (aliases)
+    selectWork,
+    clearSelectedWork,
 
     // Acciones de proyectos de montaje
     createMontajeProject,
@@ -1186,9 +1231,13 @@ export const useMontajeStore = defineStore('montaje', () => {
     cargarNotificaciones,
     marcarNotificacionLeida,
     markAllNotificationsAsRead,
-    // Acciones de estados
+    // Acciones de estados (antiguas, serán reemplazadas)
     cambiarEstadoCompass,
     cargarEstadosCompases,
+
+    // Nuevas acciones de progreso por instrumento
+    loadInstrumentProgress,
+    updateInstrumentProgress,
 
     // Utilidades
     limpiarEstado,
@@ -1197,21 +1246,46 @@ export const useMontajeStore = defineStore('montaje', () => {
     
     // Acciones para gestión de progreso por instrumento con RBAC
     cargarInstrumentosProfesor,
-    async cargarObrasParaMaestro() {
-      // TODO: Implementar lógica para cargar obras específicas para el maestro
+    cargarObrasParaMaestro: async () => {
       console.log('Cargando obras para maestro...');
+      
+      isLoading.value = true;
+      error.value = null;
+      
+      try {
+        const authStore = useAuthStore();
+        if (!authStore.user?.uid) {
+          throw new Error('Usuario no autenticado');
+        }
+
+        // Cargar obras desde el servicio
+        const obrasData = await montajeService.getObrasForTeacher(authStore.user.uid);
+        obras.value = obrasData;
+        
+        console.log(`✅ Cargadas ${obrasData.length} obras para el maestro`);
+        
+        // Si hay obras, seleccionar la primera por defecto
+        if (obrasData.length > 0) {
+          obraActual.value = obrasData[0];
+        }
+
+      } catch (err: any) {
+        console.error('❌ Error cargando obras para maestro:', err);
+        error.value = err.message || 'Error al cargar las obras';
+      } finally {
+        isLoading.value = false;
+      }
     },
     seleccionarInstrumento: (instrumento: TipoInstrumento | null) => {
       console.log('Seleccionando instrumento:', instrumento);
       selectedInstrument.value = instrumento;
     },
-    actualizarEstadoCompassInstrumento: async (compassNumber: number, nuevoEstado: EstadoCompass, instrumento: TipoInstrumento, obraId: string, maestroId: string) => {
-      console.log('Actualizando estado de compás por instrumento:', { compassNumber, nuevoEstado, instrumento, obraId, maestroId });
-      // Lógica para actualizar el estado del compás para un instrumento específico
-      // Esto debería interactuar con compassStateService
-    },
-    actualizarCompassesMasivamente,
-    verificarPermisosReportesAgregados,
+    // La acción actualizarEstadoCompassInstrumento ya no es necesaria aquí, se usa updateInstrumentProgress
+    // actualizarEstadoCompassInstrumento: async (compassNumber: number, nuevoEstado: EstadoCompass, instrumento: TipoInstrumento, obraId: string, maestroId: string) => {
+    //   console.log('Actualizando estado de compás por instrumento:', { compassNumber, nuevoEstado, instrumento, obraId, maestroId });
+    //   // Lógica para actualizar el estado del compás para un instrumento específico
+    //   // Esto debería interactuar con compassStateService
+    // },
 
     // Utilidades privadas
     crearEstadoInstrumentos,

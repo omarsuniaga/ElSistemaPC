@@ -4,6 +4,37 @@
 export class WhatsAppMessageValidator {
   
   /**
+   * Valida un número de teléfono individual
+   */
+  static validatePhoneNumber(phone) {
+    const validation = {
+      isValid: false,
+      errors: [],
+      warnings: [],
+    };
+
+    if (!phone || typeof phone !== 'string') {
+      validation.errors.push('Número de teléfono no proporcionado');
+      return validation;
+    }
+
+    // Limpiar el número de espacios, guiones y paréntesis
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    
+    // Verificar formato básico: debe ser numérico y tener longitud apropiada
+    const phoneRegex = /^[\+]?[1-9][\d]{7,14}$/;
+    
+    if (!phoneRegex.test(cleanPhone)) {
+      validation.errors.push('Formato de número inválido');
+      return validation;
+    }
+
+    // Si pasa todas las validaciones
+    validation.isValid = true;
+    return validation;
+  }
+
+  /**
    * Valida que los estudiantes seleccionados tengan números de teléfono válidos
    */
   static validateStudentPhoneNumbers(students) {

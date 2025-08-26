@@ -37,15 +37,15 @@
               </h3>
               <p class="text-gray-600 dark:text-gray-300">{{ obra.compositor }}</p>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {{ obra.totalCompases }} compases • {{ obra.duracionEstimada }} min
+                {{ obra.totalCompases ?? 0 }} compases • {{ obra.duracionEstimada ?? 0 }} min
               </p>
             </div>
             <div class="text-right">
               <div
                 class="text-2xl font-bold"
-                :class="getProgresoColorClass(obra.metadatos.progresoPorcentaje)"
+                :class="getProgresoColorClass(obra.metadatos?.progresoPorcentaje ?? 0)"
               >
-                {{ obra.metadatos.progresoPorcentaje }}%
+                {{ obra.metadatos?.progresoPorcentaje ?? 0 }}%
               </div>
               <div class="text-sm text-gray-500 dark:text-gray-400">Progreso</div>
             </div>
@@ -55,8 +55,8 @@
           <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
             <div
               class="h-2 rounded-full transition-all duration-300"
-              :class="getProgresoBarClass(obra.metadatos.progresoPorcentaje)"
-              :style="{width: obra.metadatos.progresoPorcentaje + '%'}"
+              :class="getProgresoBarClass(obra.metadatos?.progresoPorcentaje ?? 0)"
+              :style="{width: (obra.metadatos?.progresoPorcentaje ?? 0) + '%'}"
             />
           </div>
 
@@ -83,10 +83,11 @@
           <div>
             <MapaCalorCompases
               :obra-id="obra.id"
-              :total-compases="obra.totalCompases"
-              :estados-compases="estadosCompasesPorObra[obra.id] || {}"
+              :instrument-id="instrumentoSeleccionado[obra.id]"
+              :total-compases="obra.totalCompases ?? 0"
+              :estados-compases="montajeStore.currentInstrumentProgress"
               :editable="true"
-              @update-estado="$emit('actualizarEstadoCompass', obra.id, $event.compas, $event.estado)"
+              @update-estado="montajeStore.updateInstrumentProgress(obra.id, instrumentoSeleccionado[obra.id], $event.compas, $event.estado)"
             />
           </div>
 
@@ -133,18 +134,18 @@
 
 <script setup lang="ts">
 import { ref, computed, PropType } from 'vue';
-import type { Obra } from '../types';
+import type { Obra, TipoInstrumento } from '../types';
 import MapaCalorCompases from '../components/MapaCalorCompases.vue';
+import { useMontajeStore } from '../store/montaje'; // Importar el store
+
+const montajeStore = useMontajeStore(); // Instanciar el store
 
 const props = defineProps({
   obras: {
     type: Array as PropType<Obra[]>,
     required: true,
   },
-  estadosCompasesPorObra: {
-    type: Object as PropType<Record<string, Record<number, string>>>,
-    required: true,
-  },
+  // estadosCompasesPorObra ya no es un prop, se obtiene del store
   searchTerm: {
     type: String,
     required: true,
@@ -154,7 +155,7 @@ const props = defineProps({
     required: true,
   },
   instrumentoSeleccionado: {
-    type: Object as PropType<Record<string, string>>,
+    type: Object as PropType<Record<string, TipoInstrumento>>,
     required: true,
   },
   getProgresoColorClass: {
@@ -190,8 +191,17 @@ const filtroEstado = computed({
 
 const instrumentoSeleccionado = computed({
   get: () => props.instrumentoSeleccionado,
-  set: (value) => emit('update:instrumentoSeleccionado', value),
+  set: (value) => {
+    emit('update:instrumentoSeleccionado', value);
+    // Cuando el instrumento seleccionado cambia, cargar el progreso para esa obra y ese instrumento
+    if (value && montajeStore.obraActual?.id) {
+      montajeStore.loadInstrumentProgress(montajeStore.obraActual.id, value[montajeStore.obraActual.id]);
+    }
+  },
 });
+
+// Obtener el progreso del instrumento actual del store
+const estadosCompasesPorObra = computed(() => montajeStore.currentInstrumentProgress);
 
 const obrasFiltradas = computed(() => {
   let filteredObras = props.obras;
@@ -206,7 +216,7 @@ const obrasFiltradas = computed(() => {
 
   if (filtroEstado.value) {
     filteredObras = filteredObras.filter((obra) => {
-      const progreso = obra.metadatos.progresoPorcentaje;
+      const progreso = obra.metadatos?.progresoPorcentaje ?? 0;
       switch (filtroEstado.value) {
         case 'sin_trabajar':
           return progreso === 0;

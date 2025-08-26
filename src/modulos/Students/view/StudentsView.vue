@@ -96,11 +96,11 @@
         :key="student.id"
         :student="student"
         :attendance="0"
-        @open="openStudentDrawer(student)"
         @profile="handleViewProfile(student.id)"
         @edit="handleEdit(student.id)"
         @delete="handleDelete(student.id)"
       />
+      <!-- Temporarily disabled: @open="openStudentDrawer(student)" -->
     </div>
 
     <!-- Empty State -->
@@ -108,7 +108,8 @@
       No hay alumnos registrados
     </div>
 
-    <!-- Student Drawer -->
+    <!-- Student Drawer - Temporarily commented due to missing import -->
+    <!-- 
     <StudentDrawer
       :show="showStudentDrawer"
       :student="selectedStudent || undefined"
@@ -118,6 +119,7 @@
       @view-profile="handleViewProfile"
       @manage-documents="handleManageDocuments"
     />
+    -->
 
     <!-- Delete Confirmation Modal -->
     <ConfirmModal
@@ -142,48 +144,54 @@
 </template>
 
 <script setup lang="ts">
+// External dependencies
+import { PlusCircleIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useStudentsStore } from '../store/students';
-import { useAttendanceStore } from '../../Attendance/store/attendance';
-import { useAnalyticsStore } from '../../Analytics/store/analytics';
-import { useTeachersStore } from '../../Teachers/store/teachers';
-import { PlusCircleIcon, MagnifyingGlassIcon, EllipsisVerticalIcon } from '@heroicons/vue/24/outline';
-import ConfirmModal from '../../../components/ConfirmModal.vue';
-import StudentDrawer from '../components/StudentDrawer.vue';
-import StudentAvatar from '../components/StudentAvatar.vue';
-import StudentCard from '../components/StudentCard.vue';
-// import BaseCard from '../../../components/BaseCard.vue'
 
-// Student interface definition
-interface Student {
-  id: string
-  nombre: string
-  apellido: string
-  instrumento?: string
-  grupo?: string[]
-  fecInscripcion?: string
-  avatar?: string
-  edad?: number | string
-  nac?: string
-  sexo?: string
-  tlf?: string
-  email?: string
-  direccion?: string
-  observaciones?: string
-  pagos?: any[]
-  asistencias?: any[]
-  activo?: boolean
-  nivel?: string
-  // Added missing properties based on StudentDrawer component requirements
-  madre?: string
-  padre?: string
-  tlf_madre?: string
-  tlf_padre?: string
-  tutor?: string
-  tlf_tutor?: string
-  horario?: string
-  duracion?: string
+// Components
+import ConfirmModal from '../../../components/ConfirmModal.vue';
+import StudentCard from '../components/StudentCardSimple.vue';
+
+// Stores
+import { useAnalyticsStore } from '../../Analytics/store/analytics';
+import { useAttendanceStore } from '../../Attendance/store/attendance';
+import { useTeachersStore } from '../../Teachers/store/teachers';
+import { useStudentsStore } from '../store/students';
+
+// Definición de la interfaz de estudiante
+type Instrumento = string | { nombre: string };
+type Grupo = string[] | string;
+
+interface IStudent {
+  id: string;
+  nombre: string;
+  apellido: string;
+  instrumento?: Instrumento;
+  grupo?: Grupo;
+  fecInscripcion?: string;
+  avatar?: string;
+  edad?: number | string;
+  nac?: string;
+  sexo?: string;
+  phone?: string;
+  tlf?: string;
+  email?: string;
+  direccion?: string;
+  observaciones?: string;
+  pagos?: any[];
+  asistencias?: any[];
+  activo?: boolean;
+  nivel?: string;
+  madre?: string;
+  padre?: string;
+  tlf_madre?: string;
+  tlf_padre?: string;
+  tutor?: string;
+  tlf_tutor?: string;
+  horario?: string;
+  duracion?: string;
+  [key: string]: unknown; // Para permitir propiedades dinámicas
 }
 
 const router = useRouter();
@@ -199,7 +207,7 @@ const error = ref<string | null>(null);
 const isDeleting = ref(false);
 const searchQuery = ref('');
 const showStudentDrawer = ref(false);
-const selectedStudent = ref<Student | null>(null);
+const selectedStudent = ref<IStudent | null>(null);
 const activeMenu = ref<string | null>(null);
 // Change initialization to get from localStorage
 const sortOrder = ref<'none' | 'asc' | 'desc'>(
@@ -217,77 +225,61 @@ const toggleSort = () => {
 };
 
 // Computed property para ordenar estudiantes por apellido y filtrar por búsqueda
-const sortedStudents = computed(() => {
-  let filtered = [...studentsStore.students];
+const filteredStudents = computed(() => {
+  if (!searchQuery.value) return [...studentsStore.students] as IStudent[];
+  
+  const search = searchQuery.value.toLowerCase();
+  const filtered = (studentsStore.students as IStudent[]).filter((student: IStudent) => {
+    const instrumentoNombre = typeof student.instrumento === 'string' 
+      ? student.instrumento.toLowerCase()
+      : (student.instrumento as { nombre?: string })?.nombre?.toLowerCase() || '';
+      
+    const nombre = String(student.nombre || '').toLowerCase();
+    const apellido = String(student.apellido || '').toLowerCase();
+    const email = String(student.email || '').toLowerCase();
+    const phone = String(student.phone || '').toLowerCase();
+    const tlf = String(student.tlf || '').toLowerCase();
+    
+    return (
+      nombre.includes(search) ||
+      apellido.includes(search) ||
+      email.includes(search) ||
+      phone.includes(search) ||
+      tlf.includes(search) ||
+      instrumentoNombre.includes(search)
+    );
+  });
 
-  // Aplicar filtro de búsqueda si hay texto
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase().trim();
-    filtered = filtered.filter((student) => {
-      const nombre = typeof student.nombre === 'string' ? student.nombre.toLowerCase() : '';
-      const apellido = typeof student.apellido === 'string' ? student.apellido.toLowerCase() : '';
-      let instrumento = '';
-      if (typeof student.instrumento === 'string') {
-        instrumento = student.instrumento.toLowerCase();
-      } else if (
-        student.instrumento &&
-        typeof student.instrumento === 'object' &&
-        typeof student.instrumento.nombre === 'string'
-      ) {
-        instrumento = student.instrumento.nombre.toLowerCase();
-      }
-      let grupos = '';
-      if (Array.isArray(student.grupo)) {
-        grupos = student.grupo.map((g) => (typeof g === 'string' ? g.toLowerCase() : '')).join(' ');
-      } else if (typeof student.grupo === 'string') {
-        grupos = student.grupo.toLowerCase();
-      }
-      return (
-        nombre.includes(query) ||
-        apellido.includes(query) ||
-        instrumento.includes(query) ||
-        grupos.includes(query)
-      );
-    });
-  }
-
-  // Apply sorting based on sortOrder
-  if (sortOrder.value === 'asc') {
-    return filtered.sort((a, b) => {
-      const fullNameA = `${a.nombre} ${a.apellido}`.toLowerCase();
-      const fullNameB = `${b.nombre} ${b.apellido}`.toLowerCase();
-      return fullNameA.localeCompare(fullNameB);
-    });
-  } else if (sortOrder.value === 'desc') {
-    return filtered.sort((a, b) => {
-      const fullNameA = `${a.nombre} ${a.apellido}`.toLowerCase();
-      const fullNameB = `${b.nombre} ${b.apellido}`.toLowerCase();
-      return fullNameB.localeCompare(fullNameA);
-    });
-  }
-
-  // If no sort order specified, return unsorted
   return filtered;
 });
 
-// // Función para mostrar/ocultar el menú de opciones
-// const toggleMenu = (event: Event, studentId: string): void => {
-//   event.stopPropagation() // Evitar que se abra el drawer
-//   activeMenu.value = activeMenu.value === studentId ? null : studentId
-// }
+const sortedStudents = computed(() => {
+  if (sortOrder.value === 'none') return filteredStudents.value;
+  
+  return [...filteredStudents.value].sort((a, b) => {
+    const nameA = `${a.nombre || ''} ${a.apellido || ''}`.toLowerCase().trim();
+    const nameB = `${b.nombre || ''} ${b.apellido || ''}`.toLowerCase().trim();
+    
+    if (sortOrder.value === 'asc') {
+      return nameA.localeCompare(nameB);
+    } else {
+      return nameB.localeCompare(nameA);
+    }
+  });
+});
 
-// // Function to handle edit action from dropdown menu
-// const handleEditFromMenu = (event: Event, id: string): void => {
-//   event.stopPropagation()
-//   router.push({ name: 'StudentEdit', params: { id } })
-// }
+/*
+const handleEditFromMenu = (event: Event, id: string): void => {
+  event.stopPropagation();
+  router.push({ name: 'StudentEdit', params: { id } });
+};
 
-// // Function to handle delete action from dropdown menu
-// const handleDeleteFromMenu = (event: Event, id: string): void => {
-//   event.stopPropagation()
-//   studentToDelete.value = id
-//   showDeleteModal.value = true
-// }
+const handleDeleteFromMenu = (event: Event, id: string): void => {
+  event.stopPropagation();
+  studentToDelete.value = id;
+  showDeleteModal.value = true;
+};
+*/
 
 onMounted(async () => {
   isLoading.value = true;
@@ -336,15 +328,28 @@ const handleDelete = (id: string): void => {
   studentToDelete.value = id;
   showDeleteModal.value = true;
 };
-// Define error interface for better type safety
-interface ApiError {
-  message: string
-  code?: number
-  details?: unknown
+// Interface para manejo de errores (usada en el manejo de errores)
+interface IApiError {
+  message: string;
+  code?: number;
+  details?: unknown;
 }
 
+// Interface para los datos de análisis del estudiante
+interface IStudentAnalytics {
+  performance: number;
+  attendance: number;
+  lastAccess: string;
+  riskFactors: string[];
+  recommendedActions: string[];
+}
+
+// Estado para el análisis del estudiante seleccionado
+// Estado para el análisis del estudiante seleccionado
+const selectedStudentAnalytics = ref<IStudentAnalytics | null>(null);
+
 // Crear objeto que contiene datos de análisis simulados para cualquier estudiante
-const getStudentAnalyticsData = (studentId: string) => {
+const getStudentAnalyticsData = (studentId: string): IStudentAnalytics => {
   // Datos predeterminados para rendimiento y asistencia
   const defaultPerformance = Math.floor(Math.random() * 30) + 70; // Valor aleatorio entre 70-100
   const defaultAttendance = Math.floor(Math.random() * 20) + 80; // Valor aleatorio entre 80-100
@@ -353,41 +358,22 @@ const getStudentAnalyticsData = (studentId: string) => {
     performance: defaultPerformance,
     attendance: defaultAttendance,
     lastAccess: '3 días atrás',
-    riskFactors:
-      defaultPerformance < 75
-        ? [
-          'Bajo rendimiento en evaluaciones recientes',
-          'No ha completado las tareas de la última clase',
-          'Asistencia irregular',
-        ]
-        : [],
-    recommendedActions:
-      defaultPerformance < 75
-        ? [
-          'Programar sesión de refuerzo',
-          'Contactar al tutor o representante',
-          'Adaptar material de estudio a su ritmo de aprendizaje',
-        ]
-        : [],
+    riskFactors: defaultPerformance < 75 ? [
+      'Bajo rendimiento en evaluaciones recientes',
+      'No ha completado las tareas de la última clase',
+      'Asistencia irregular',
+    ] : [],
+    recommendedActions: defaultPerformance < 75 ? [
+      'Programar sesión de refuerzo',
+      'Contactar al tutor o representante',
+      'Adaptar material de estudio a su ritmo de aprendizaje',
+    ] : [],
   };
 };
 
-// Interface for student analytics data
-interface StudentAnalytics {
-  performance: number
-  attendance: number
-  lastAccess: string
-  riskFactors: string[]
-  recommendedActions: string[]
-}
-
-// Define el objeto de análisis del estudiante seleccionado
-const selectedStudentAnalytics = ref<StudentAnalytics | null>(null);
-
-// Modificar la función openStudentDrawer para incluir datos de análisis
-const openStudentDrawer = (student: Student): void => {
+// Función para abrir el drawer de estudiante con sus datos de análisis
+const openStudentDrawer = (student: IStudent): void => {
   selectedStudent.value = student;
-  // Generar datos de análisis para este estudiante
   selectedStudentAnalytics.value = getStudentAnalyticsData(student.id);
   showStudentDrawer.value = true;
 };
