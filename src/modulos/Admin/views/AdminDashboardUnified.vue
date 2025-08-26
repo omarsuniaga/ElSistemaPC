@@ -436,18 +436,7 @@ onMounted(() => {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-  .grid.lg\\:grid-cols-4 {
-    @apply grid-cols-2;
-  }
-}
 
-@media (max-width: 768px) {
-  .grid.grid-cols-2 {
-    @apply grid-cols-1;
-  }
-}
 
 /* Loading states */
 .loading-shimmer {

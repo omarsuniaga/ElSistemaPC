@@ -36,7 +36,7 @@ import {
   UserPlusIcon,
   CheckCircleIcon,
   CurrencyDollarIcon,
-  UserCheckIcon,
+  CheckBadgeIcon, // Changed from UserCheckIcon
   ExclamationTriangleIcon,
   InformationCircleIcon,
 } from '@heroicons/vue/24/outline';
@@ -63,7 +63,7 @@ const iconComponent = computed(() => {
     'user-plus': UserPlusIcon,
     'check': CheckCircleIcon,
     'currency': CurrencyDollarIcon,
-    'user-check': UserCheckIcon,
+    'user-check': CheckBadgeIcon, // Changed from UserCheckIcon
     'warning': ExclamationTriangleIcon,
     'info': InformationCircleIcon,
   };

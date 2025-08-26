@@ -186,7 +186,7 @@ const handleAlertAction = (alert: Alert) => {
   animation: pulse 2s infinite;
 }
 
-.dark .alert-card.bg-red-900\\/20::before {
+.dark .alert-card.bg-red-900\/20::before {
   animation: pulse 2s infinite;
 }
 

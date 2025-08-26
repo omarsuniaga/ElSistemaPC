@@ -432,8 +432,8 @@ import {
 // Components
 import MetricCard from '../components/MetricCard.vue';
 import CreateClassModal from '../components/CreateClassModal.vue';
-import EditClassModal from '../components/EditClassModal.vue';
-import ManageStudentsModal from '../components/ManageStudentsModal.vue';
+import EditClassModal from '../../Classes/components/ClassEditModal.vue';
+import ManageStudentsModal from '../components/ClassAssignmentModal.vue';
 
 // Stores
 import { useClassesStore } from '../../Classes/store/classes';
