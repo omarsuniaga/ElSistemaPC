@@ -16,7 +16,7 @@
             </button>
             <div class="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
             <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
-              {{ isEditingExistingStudent ? 'Editar Alumno' : 'Nuevo Alumno' }}
+              {{ isEditingExistingStudent ? 'Editar' : 'Nuevo Alumno' }}
             </h1>
           </div>
           <div class="flex items-center space-x-3">
@@ -108,6 +108,133 @@
           :validation-errors="validationErrors"
         />
 
+        <!-- Sección de Instrumentos -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+              <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+              </svg>
+              Instrumentos Musicales
+            </h3>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Instrumentos que toca o estudia el alumno</p>
+          </div>
+          
+          <div class="p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <!-- Instrumento Principal -->
+              <div class="relative">
+                <label for="instrumento-principal" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Instrumento Principal
+                </label>
+                <div class="relative">
+                  <input
+                    id="instrumento-principal"
+                    v-model="newStudent.instrumento"
+                    type="text"
+                    :class="[
+                      'block w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none',
+                      validationErrors.instrumento
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-200'
+                        : newStudent.instrumento
+                        ? 'border-green-300 focus:border-green-500 focus:ring-green-200'
+                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200',
+                      'dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100'
+                    ]"
+                    placeholder="Ej: Piano, Guitarra, Violín..."
+                    @input="validateField('instrumento')"
+                  />
+                  <div v-if="newStudent.instrumento" class="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                <p v-if="validationErrors.instrumento" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {{ validationErrors.instrumento }}
+                </p>
+              </div>
+
+              <!-- Instrumentos Secundarios -->
+              <div class="relative">
+                <label for="instrumentos-secundarios" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Instrumentos Secundarios
+                </label>
+                <div class="relative">
+                  <textarea
+                    id="instrumentos-secundarios"
+                    v-model="newStudent.instrumentosSecundarios"
+                    rows="3"
+                    :class="[
+                      'block w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none resize-none',
+                      newStudent.instrumentosSecundarios
+                        ? 'border-green-300 focus:border-green-500 focus:ring-green-200'
+                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200',
+                      'dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100'
+                    ]"
+                    placeholder="Otros instrumentos que toca o está aprendiendo (separados por comas)..."
+                  />
+                </div>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Ejemplo: Bajo, Batería, Flauta
+                </p>
+              </div>
+
+              <!-- Nivel Musical -->
+              <div class="relative">
+                <label for="nivel-musical" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Nivel Musical
+                </label>
+                <select
+                  id="nivel-musical"
+                  v-model="newStudent.nivelMusical"
+                  :class="[
+                    'block w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none',
+                    newStudent.nivelMusical
+                      ? 'border-green-300 focus:border-green-500 focus:ring-green-200'
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200',
+                    'dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100'
+                  ]"
+                >
+                  <option value="">Seleccionar nivel...</option>
+                  <option value="principiante">Principiante</option>
+                  <option value="basico">Básico</option>
+                  <option value="intermedio">Intermedio</option>
+                  <option value="avanzado">Avanzado</option>
+                  <option value="profesional">Profesional</option>
+                </select>
+              </div>
+
+              <!-- Experiencia Musical -->
+              <div class="relative">
+                <label for="experiencia-musical" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Años de Experiencia
+                </label>
+                <div class="relative">
+                  <input
+                    id="experiencia-musical"
+                    v-model="newStudent.experienciaMusical"
+                    type="number"
+                    min="0"
+                    max="50"
+                    :class="[
+                      'block w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none',
+                      newStudent.experienciaMusical
+                        ? 'border-green-300 focus:border-green-500 focus:ring-green-200'
+                        : 'border-gray-300 focus:border-blue-500 focus:ring-blue-200',
+                      'dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100'
+                    ]"
+                    placeholder="0"
+                  />
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">años</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Información Adicional -->
         <StudentAdditionalInfo
           v-model:student="newStudent"
@@ -139,7 +266,7 @@
 
           <button
             type="submit"
-            :disabled="isLoading || !isFormValid"
+            :disabled="isLoading"
             class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
           >
             <svg v-if="isLoading" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
@@ -193,8 +320,22 @@ const {
 
 // Computed properties
 const completionPercentage = computed(() => {
-  const fields = ['nombre', 'apellido', 'instrumento', 'edad', 'tlf', 'email', 'direccion']
-  const filledFields = fields.filter(field => newStudent.value[field as keyof typeof newStudent.value])
+  const fields = [
+    'nombre', 
+    'apellido', 
+    'instrumento', 
+    'instrumentosSecundarios',
+    'nivelMusical',
+    'experienciaMusical',
+    'edad', 
+    'tlf', 
+    'email', 
+    'direccion'
+  ]
+  const filledFields = fields.filter(field => {
+    const value = newStudent.value[field as keyof typeof newStudent.value]
+    return value && value !== '' && value !== 0
+  })
   return Math.round((filledFields.length / fields.length) * 100)
 })
 

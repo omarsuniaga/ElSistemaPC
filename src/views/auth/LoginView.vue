@@ -166,10 +166,7 @@ onMounted(() => {
   }
 });
 
-const setDemoCredentials = () => {
-  email.value = 'demo@example.com';
-  password.value = 'demo123';
-};
+
 
 const handleSubmit = async () => {
   if (!email.value || !password.value) {
@@ -182,10 +179,38 @@ const handleSubmit = async () => {
   isLoading.value = true;
 
   try {
-    await authStore.login(email.value, password.value);
-    // Después de un login exitoso, el router guard se encargará de la redirección.
-    // Simplemente empujamos a la raíz y el guard decidirá el destino final.
-    router.push(route.query.redirect?.toString() || '/');
+    const loginResult = await authStore.login(email.value, password.value);
+    
+    // El store ya maneja las redirecciones apropiadas por rol
+    let redirectTo = '/dashboard'; // Fallback por defecto
+    
+    if (loginResult && typeof loginResult === 'object' && 'redirectTo' in loginResult) {
+      // Usar la redirección específica del rol
+      redirectTo = loginResult.redirectTo;
+    } else if (authStore.user?.role) {
+      // Fallback basado en rol si loginResult no tiene redirectTo
+      switch (authStore.user.role) {
+        case 'Superusuario':
+          redirectTo = '/superusuario/dashboard';
+          break;
+        case 'Maestro':
+          redirectTo = '/teacher';
+          break;
+        case 'Director':
+        case 'Admin':
+          redirectTo = '/dashboard';
+          break;
+        default:
+          redirectTo = '/dashboard';
+      }
+    }
+    
+    // Respetar la query de redirección si existe
+    const finalRedirect = route.query.redirect?.toString() || redirectTo;
+    
+    console.log('🔄 [LoginView] Redirigiendo a:', finalRedirect, 'para rol:', authStore.user?.role);
+    router.push(finalRedirect);
+    
   } catch (e: any) {
     error.value = e.message;
     console.error('Error de login:', e);

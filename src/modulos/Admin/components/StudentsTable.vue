@@ -318,6 +318,14 @@
             </th>
             <th
               scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider hidden lg:table-cell"
+            >
+              <div class="flex items-center space-x-1">
+                <span>Asistencia</span>
+              </div>
+            </th>
+            <th
+              scope="col"
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 hidden xl:table-cell"
               @click="handleSort('createdAt')"
             >
@@ -418,6 +426,34 @@
               </button>
             </td>
 
+            <!-- Attendance column -->
+            <td class="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+              <div v-if="loadingAttendance.has(student.id)" class="animate-pulse">
+                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mb-1"></div>
+                <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+              </div>
+              <div v-else-if="attendanceDataMap.has(student.id)" class="">
+                <div class="flex items-center space-x-2">
+                  <span :class="getAttendanceTextColor(student.id)" class="text-sm font-medium">
+                    {{ getAttendanceLevel(student.id) }}
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ getAttendancePercentage(student.id) }}%
+                  </span>
+                </div>
+                <div class="mt-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                  <div
+                    :class="getAttendanceBarColor(student.id)"
+                    :style="{width: `${getAttendancePercentage(student.id)}%`}"
+                    class="h-1.5 rounded-full transition-all duration-300"
+                  />
+                </div>
+              </div>
+              <div v-else class="text-xs text-gray-400 dark:text-gray-500">
+                Sin datos
+              </div>
+            </td>
+
             <!-- Registration date column -->
             <td class="px-6 py-4 whitespace-nowrap hidden xl:table-cell">
               <div class="text-sm text-gray-900 dark:text-white">
@@ -506,11 +542,16 @@ import {
   TrashIcon,
   UserGroupIcon,
   ChatBubbleLeftRightIcon,
+  ChartBarIcon,
 } from '@heroicons/vue/24/outline';
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 // Local components
 import ConversationHistoryModal from '../../../components/SuperAdmin/ConversationHistoryModal.vue';
+
+// Services
+import { getStudentAttendanceMetrics } from '../../Students/services/attendanceAnalysis';
+import type { AttendanceMetrics } from '../../Students/services/attendanceAnalysis';
 
 // Utils
 import { formatDate } from '../utils/dateFormatter';
@@ -549,6 +590,8 @@ const emit = defineEmits<IEmits>();
 const compactMode = ref(props.compactView);
 const selectedStudentId = ref<string>('');
 const isHistoryModalVisible = ref(false);
+const attendanceDataMap = ref<Map<string, AttendanceMetrics>>(new Map());
+const loadingAttendance = ref<Set<string>>(new Set());
 
 // Utility functions
 const getInitials = (name: string): string => {
@@ -660,6 +703,89 @@ const handleShowHistory = (student: Student) => {
   selectedStudentId.value = student.id;
   isHistoryModalVisible.value = true;
 };
+
+// Attendance methods
+const loadStudentAttendance = async (studentId: string) => {
+  if (loadingAttendance.value.has(studentId) || attendanceDataMap.value.has(studentId)) {
+    return;
+  }
+  
+  try {
+    loadingAttendance.value.add(studentId);
+    
+    // Get attendance data for the last 3 months
+    const now = new Date();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(now.getMonth() - 3);
+    
+    const dateRange = {
+      start: threeMonthsAgo.toISOString().split('T')[0],
+      end: now.toISOString().split('T')[0]
+    };
+    
+    const metrics = await getStudentAttendanceMetrics(studentId, dateRange);
+    attendanceDataMap.value.set(studentId, metrics);
+  } catch (error) {
+    console.error('Error loading attendance for student:', studentId, error);
+  } finally {
+    loadingAttendance.value.delete(studentId);
+  }
+};
+
+const getAttendanceLevel = (studentId: string): string => {
+  const data = attendanceDataMap.value.get(studentId);
+  if (!data || data.summary.total === 0) return 'Sin datos';
+  return data.classification;
+};
+
+const getAttendancePercentage = (studentId: string): number => {
+  const data = attendanceDataMap.value.get(studentId);
+  if (!data) return 0;
+  return data.summary.attendanceRate;
+};
+
+const getAttendanceTextColor = (studentId: string): string => {
+  const percentage = getAttendancePercentage(studentId);
+  if (percentage >= 90) return 'text-green-700 dark:text-green-300';
+  if (percentage >= 80) return 'text-blue-700 dark:text-blue-300';
+  if (percentage >= 70) return 'text-yellow-700 dark:text-yellow-300';
+  if (percentage > 0) return 'text-red-700 dark:text-red-300';
+  return 'text-gray-500 dark:text-gray-400';
+};
+
+const getAttendanceBarColor = (studentId: string): string => {
+  const percentage = getAttendancePercentage(studentId);
+  if (percentage >= 90) return 'bg-gradient-to-r from-green-400 to-emerald-500';
+  if (percentage >= 80) return 'bg-gradient-to-r from-blue-400 to-blue-500';
+  if (percentage >= 70) return 'bg-gradient-to-r from-yellow-400 to-amber-500';
+  if (percentage > 0) return 'bg-gradient-to-r from-red-400 to-red-500';
+  return 'bg-gradient-to-r from-gray-400 to-gray-500';
+};
+
+// Load attendance for visible students
+const loadVisibleStudentsAttendance = () => {
+  props.students.forEach((student) => {
+    loadStudentAttendance(student.id);
+  });
+};
+
+// Watch for student changes and load attendance data
+onMounted(() => {
+  loadVisibleStudentsAttendance();
+});
+
+// Load attendance when students prop changes
+computed(() => {
+  // This reactive computation will trigger when students change
+  const studentIds = props.students.map(s => s.id);
+  // Load attendance for any new students
+  studentIds.forEach(id => {
+    if (!attendanceDataMap.value.has(id) && !loadingAttendance.value.has(id)) {
+      loadStudentAttendance(id);
+    }
+  });
+  return studentIds;
+});
 </script>
 
 <style scoped>

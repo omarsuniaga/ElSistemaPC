@@ -188,11 +188,19 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       isLoading.value = true;
       error.value = null;
 
-      const docRef = await addDoc(collection(db, 'ALUMNOS'), {
+      // Prepare data for Firestore, handling null dates
+      const firestoreData = {
         ...studentData,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
+      
+      // Remove null dates or convert them appropriately
+      if (firestoreData.birthDate === null || firestoreData.birthDate === undefined) {
+        delete firestoreData.birthDate;
+      }
+
+      const docRef = await addDoc(collection(db, 'ALUMNOS'), firestoreData);
 
       const newStudent: Student = {
         id: docRef.id,

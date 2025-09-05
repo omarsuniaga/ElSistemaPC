@@ -171,7 +171,7 @@
                       Fecha de Nacimiento
                     </dt>
                     <dd class="mt-1 text-sm text-gray-900 dark:text-white">
-                      {{ formatDate(student.birthDate) }}
+                      {{ formatDate(student?.birthDate) }}
                     </dd>
                   </div>
                   <div class="sm:col-span-2">
@@ -199,7 +199,7 @@
                   <div>
                     <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Nombre</dt>
                     <dd class="mt-1 text-sm text-gray-900 dark:text-white">
-                      {{ student.parentName }}
+                      {{ student?.parentName || 'No especificado' }}
                     </dd>
                   </div>
                   <div>
@@ -213,7 +213,7 @@
                       Correo Electrónico
                     </dt>
                     <dd class="mt-1 text-sm text-gray-900 dark:text-white">
-                      {{ student.parentEmail || "No especificado" }}
+                      {{ student?.parentEmail || 'No especificado' }}
                     </dd>
                   </div>
                 </dl>
@@ -239,7 +239,7 @@
                         :class="gradeColors[student.grade]"
                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                       >
-                        {{ getGradeName(student.grade) }}
+                        {{ getGradeName(student?.grade) }}
                       </span>
                     </dd>
                   </div>
@@ -248,7 +248,7 @@
                       Fecha de Inscripción
                     </dt>
                     <dd class="mt-1 text-sm text-gray-900 dark:text-white">
-                      {{ formatDate(student.enrollmentDate) }}
+                      {{ formatDate(student?.enrollmentDate) }}
                     </dd>
                   </div>
                   <div class="sm:col-span-2">
@@ -268,7 +268,7 @@
                   </div>
                   <div v-if="student.notes" class="sm:col-span-2">
                     <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Notas</dt>
-                    <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ student.notes }}</dd>
+                    <dd class="mt-1 text-sm text-gray-900 dark:text-white">{{ student?.notes || 'Sin notas' }}</dd>
                   </div>
                 </dl>
               </div>
@@ -296,22 +296,22 @@
                 <div class="flex items-center justify-between">
                   <span class="text-sm text-gray-500 dark:text-gray-400">Instrumentos</span>
                   <span class="text-lg font-semibold text-gray-900 dark:text-white">{{
-                    student.instruments.length
+                    student.instruments?.length || 0
                   }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-sm text-gray-500 dark:text-gray-400">Estado</span>
                   <span
-                    :class="statusBadgeColors[student.status]"
+                    :class="statusBadgeColors[student?.status || 'unknown']"
                     class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                   >
-                    {{ getStatusName(student.status) }}
+                    {{ getStatusName(student?.status || 'unknown') }}
                   </span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-sm text-gray-500 dark:text-gray-400">Tiempo Inscrito</span>
                   <span class="text-sm text-gray-900 dark:text-white">{{
-                    getTimeEnrolled(student.enrollmentDate)
+                    getTimeEnrolled(student?.enrollmentDate)
                   }}</span>
                 </div>
               </div>
@@ -394,7 +394,7 @@
                             <div
                               class="text-right text-sm whitespace-nowrap text-gray-500 dark:text-gray-400"
                             >
-                              {{ formatDate(student.enrollmentDate) }}
+                              {{ formatDate(student?.enrollmentDate) }}
                             </div>
                           </div>
                         </div>
@@ -497,12 +497,27 @@ const getInitials = (name: string): string => {
     .toUpperCase();
 };
 
-const formatPhone = (phone: string): string => {
-  return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+const formatPhone = (phone: string | null | undefined): string => {
+  if (!phone || phone.trim() === '') {
+    return 'No especificado';
+  }
+  
+  const cleanPhone = phone.replace(/\D/g, '');
+  
+  if (cleanPhone.length === 10) {
+    return cleanPhone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+  } else if (cleanPhone.length === 11) {
+    return cleanPhone.replace(/(\d{1})(\d{3})(\d{3})(\d{4})/, '$1-($2) $3-$4');
+  }
+  
+  return phone; // Return original if format is not recognized
 };
 
-const formatDate = (date: Date): string => {
-  return date.toLocaleDateString('es-ES', {
+// Import the centralized date formatter
+import { formatDate as centralizedFormatDate } from '../utils/dateFormatter';
+
+const formatDate = (date: any): string => {
+  return centralizedFormatDate(date, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -525,7 +540,9 @@ const getInstrumentName = (instrument: string): string => {
   return instruments[instrument] || instrument;
 };
 
-const getGradeName = (grade: string): string => {
+const getGradeName = (grade: string | null | undefined): string => {
+  if (!grade) return 'No especificado';
+  
   const grades: Record<string, string> = {
     beginner: 'Principiante',
     intermediate: 'Intermedio',
@@ -534,7 +551,9 @@ const getGradeName = (grade: string): string => {
   return grades[grade] || grade;
 };
 
-const getStatusName = (status: string): string => {
+const getStatusName = (status: string | null | undefined): string => {
+  if (!status) return 'Sin estado';
+  
   const statuses: Record<string, string> = {
     active: 'Activo',
     inactive: 'Inactivo',
@@ -543,9 +562,17 @@ const getStatusName = (status: string): string => {
   return statuses[status] || status;
 };
 
-const getTimeEnrolled = (enrollmentDate: Date): string => {
+const getTimeEnrolled = (enrollmentDate: Date | null | undefined): string => {
+  if (!enrollmentDate) {
+    return 'No especificado';
+  }
+  
+  const dateObj = enrollmentDate instanceof Date ? enrollmentDate : new Date(enrollmentDate);
+  if (isNaN(dateObj.getTime())) {
+    return 'Fecha inválida';
+  }
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - enrollmentDate.getTime());
+  const diffTime = Math.abs(now.getTime() - dateObj.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays < 30) {

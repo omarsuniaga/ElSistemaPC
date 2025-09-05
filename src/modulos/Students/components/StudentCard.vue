@@ -79,7 +79,7 @@
           />
         </svg>
       </button>
-      <button class="btn btn-xs btn-secondary" title="Editar alumno" @click.stop="$emit('edit')">
+      <button class="btn btn-xs btn-secondary" title="Editar" @click.stop="$emit('edit')">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-4 w-4 inline"

@@ -15,14 +15,13 @@
         <!-- Nombre -->
         <div class="relative">
           <label for="nombre" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Nombre *
+            Nombre
           </label>
           <div class="relative">
             <input
               id="nombre"
               v-model="localStudent.nombre"
               type="text"
-              required
               :class="[
                 'block w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none',
                 validationErrors.nombre
@@ -49,14 +48,13 @@
         <!-- Apellido -->
         <div class="relative">
           <label for="apellido" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Apellido *
+            Apellido
           </label>
           <div class="relative">
             <input
               id="apellido"
               v-model="localStudent.apellido"
               type="text"
-              required
               :class="[
                 'block w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none',
                 validationErrors.apellido

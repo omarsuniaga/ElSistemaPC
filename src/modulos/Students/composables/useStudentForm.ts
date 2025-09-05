@@ -176,11 +176,7 @@ export const useStudentForm = () => {
   // Manejar envío del formulario
   const handleSubmit = async () => {
     try {
-      if (!newStudent.value.nombre || !newStudent.value.apellido) {
-        error.value = 'Nombre y apellido son obligatorios'
-        showNotification(error.value, 'error')
-        return
-      }
+      // No hay campos obligatorios - permitir guardar con cualquier dato
 
       isLoading.value = true
       error.value = null
@@ -204,35 +200,27 @@ export const useStudentForm = () => {
         return
       }
 
-      // Verificar duplicados
-      if (studentsStore.students.length === 0) {
-        await studentsStore.fetchStudents()
-      }
+      // Verificar duplicados solo si hay nombre y apellido para evitar falsos positivos
+      if (newStudent.value.nombre && newStudent.value.apellido) {
+        if (studentsStore.students.length === 0) {
+          await studentsStore.fetchStudents()
+        }
 
-      const students = studentsStore.students
-      const normalizedNombre = newStudent.value.nombre.toLowerCase().trim()
-      const normalizedApellido = newStudent.value.apellido.toLowerCase().trim()
-      const normalizedEdad = newStudent.value.edad?.toString().trim() || ''
-      const normalizedInstrumento = newStudent.value.instrumento?.toLowerCase().trim() || ''
+        const students = studentsStore.students
+        const normalizedNombre = newStudent.value.nombre.toLowerCase().trim()
+        const normalizedApellido = newStudent.value.apellido.toLowerCase().trim()
 
-      const existingStudent = students.find((student) => {
-        const studentNombre = (student.nombre || '').toLowerCase().trim()
-        const studentApellido = (student.apellido || '').toLowerCase().trim()
-        const studentEdad = (student.edad || '').toString().trim()
-        const studentInstrumento = (student.instrumento || '').toLowerCase().trim()
+        const existingStudent = students.find((student) => {
+          const studentNombre = (student.nombre || '').toLowerCase().trim()
+          const studentApellido = (student.apellido || '').toLowerCase().trim()
+          return studentNombre === normalizedNombre && studentApellido === normalizedApellido
+        })
 
-        const nameMatches = studentNombre === normalizedNombre && studentApellido === normalizedApellido
-        const edadMatches = !normalizedEdad || !studentEdad || normalizedEdad === studentEdad
-        const instrumentoMatches = !normalizedInstrumento || !studentInstrumento || normalizedInstrumento === studentInstrumento
-
-        return nameMatches && edadMatches && instrumentoMatches
-      })
-
-      if (existingStudent) {
-        error.value = `Ya existe un alumno con el nombre ${existingStudent.nombre} ${existingStudent.apellido}`
-        showNotification(error.value, 'error')
-        isLoading.value = false
-        return
+        if (existingStudent) {
+          error.value = `Ya existe un alumno con el nombre ${existingStudent.nombre} ${existingStudent.apellido}`
+          showNotification(error.value, 'warning')
+          // Continuar con la creación en lugar de retornar
+        }
       }
 
       // Crear nuevo estudiante

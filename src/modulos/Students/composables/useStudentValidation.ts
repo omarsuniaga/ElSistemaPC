@@ -7,9 +7,7 @@ export const useStudentValidation = (student: Ref<Omit<Student, 'id'> & { id?: s
   // Reglas de validación
   const validationRules = {
     nombre: (value: string) => {
-      if (!value || value.trim().length === 0) {
-        return 'El nombre es obligatorio'
-      }
+      if (!value) return '' // Campo opcional
       if (value.trim().length < 2) {
         return 'El nombre debe tener al menos 2 caracteres'
       }
@@ -20,9 +18,7 @@ export const useStudentValidation = (student: Ref<Omit<Student, 'id'> & { id?: s
     },
 
     apellido: (value: string) => {
-      if (!value || value.trim().length === 0) {
-        return 'El apellido es obligatorio'
-      }
+      if (!value) return '' // Campo opcional
       if (value.trim().length < 2) {
         return 'El apellido debe tener al menos 2 caracteres'
       }
@@ -95,6 +91,35 @@ export const useStudentValidation = (student: Ref<Omit<Student, 'id'> & { id?: s
       if (!value) return ''
       if (Array.isArray(value) && value.length === 0) return ''
       return ''
+    },
+
+    instrumentosSecundarios: (value: string) => {
+      if (!value) return '' // Campo opcional
+      if (value.trim().length > 200) {
+        return 'Los instrumentos secundarios no pueden exceder 200 caracteres'
+      }
+      return ''
+    },
+
+    nivelMusical: (value: string) => {
+      if (!value) return '' // Campo opcional
+      const validLevels = ['principiante', 'basico', 'intermedio', 'avanzado', 'profesional']
+      if (!validLevels.includes(value)) {
+        return 'Nivel musical inválido'
+      }
+      return ''
+    },
+
+    experienciaMusical: (value: number | string) => {
+      if (!value) return '' // Campo opcional
+      const exp = typeof value === 'string' ? parseInt(value) : value
+      if (isNaN(exp)) {
+        return 'La experiencia musical debe ser un número válido'
+      }
+      if (exp < 0 || exp > 50) {
+        return 'La experiencia musical debe estar entre 0 y 50 años'
+      }
+      return ''
     }
   }
 
@@ -136,12 +161,8 @@ export const useStudentValidation = (student: Ref<Omit<Student, 'id'> & { id?: s
 
   // Computed para verificar si el formulario es válido
   const isFormValid = computed(() => {
-    // Campos obligatorios
-    const requiredFields = ['nombre', 'apellido']
-    const hasRequiredFields = requiredFields.every(field => {
-      const value = student.value[field as keyof typeof student.value]
-      return value && typeof value === 'string' && value.trim().length > 0
-    })
+    // No hay campos obligatorios
+    const hasRequiredFields = true
 
     // No debe haber errores de validación
     const hasNoErrors = Object.keys(validationErrors.value).length === 0

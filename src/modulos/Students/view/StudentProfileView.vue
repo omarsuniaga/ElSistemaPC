@@ -178,8 +178,17 @@
           </div>
         </div>
 
-        <!-- Estadísticas y asistencia -->
-        <div class="mt-8 flex flex-col gap-6 md:flex-row md:items-start">
+        <!-- Métricas de Asistencia Mejoradas -->
+        <StudentAttendanceMetrics
+          v-if="studentId"
+          :student-id="studentId"
+          :date-range="dateRange"
+          :auto-refresh="true"
+          class="mt-8"
+        />
+
+        <!-- Estadísticas y asistencia (mantener para compatibilidad) -->
+        <div class="mt-8 flex flex-col gap-6 md:flex-row md:items-start" style="display: none;">
           <!-- Gráfico circular y estadísticas -->
           <div
             class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 shadow rounded-xl p-6 w-full md:w-1/3 mb-6 md:mb-0"
@@ -570,6 +579,7 @@ import { useTeachersStore } from '../../Teachers/store/teachers';
 import PerformanceWidget from '../../Performance/components/PerformanceWidget.vue';
 import FileUpload from '../../../components/FileUpload.vue';
 import StudentAvatar from '../components/StudentAvatar.vue';
+import StudentAttendanceMetrics from '../components/StudentAttendanceMetrics.vue';
 import { useObservationsStore } from '@/stores/observations';
 import type { ObservationData } from '@/stores/observations';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';

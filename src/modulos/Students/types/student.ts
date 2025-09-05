@@ -13,6 +13,9 @@ export interface Student {
   photoURL?: string
   status?: string
   instrumento?: string
+  instrumentosSecundarios?: string
+  nivelMusical?: string
+  experienciaMusical?: number
   fechaNacimiento?: Date
   direccion?: string
   ciudad?: string

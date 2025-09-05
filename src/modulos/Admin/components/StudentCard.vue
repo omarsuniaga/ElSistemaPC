@@ -57,38 +57,68 @@
         <!-- Quick Actions Menu -->
         <div class="relative flex-shrink-0">
           <button
-            class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-            title="Opciones"
-            @click="showMenu = !showMenu"
+            class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm hover:shadow-md"
+            :class="{ 'bg-gray-200 dark:bg-gray-600 shadow-md': showMenu }"
+            title="Más opciones"
+            @click.stop="toggleMenu"
           >
-            <EllipsisVerticalIcon class="w-5 h-5" />
+            <EllipsisVerticalIcon 
+              class="w-5 h-5 transition-transform duration-200" 
+              :class="{ 'rotate-90': showMenu }"
+            />
           </button>
 
           <!-- Dropdown Menu -->
           <div
-            v-if="showMenu"
-            v-click-outside="() => (showMenu = false)"
-            class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50"
+            v-show="showMenu"
+            class="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[60] overflow-hidden"
           >
-            <div class="py-1">
-              <!-- Modificar Student -->
+            <div class="py-2">
+              <!-- Ver Perfil -->
+              <button
+                class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-3 transition-colors group"
+                @click="handleViewProfile"
+              >
+                <EyeIcon class="w-4 h-4 text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                <span class="group-hover:text-blue-600 dark:group-hover:text-blue-400">Ver Perfil</span>
+              </button>
+
+              <!-- Divider -->
+              <div class="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+
+              <!-- Editar Student -->
               <button
                 v-if="permissions.canEdit"
-                class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-3 transition-colors"
+                class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center space-x-3 transition-colors group"
                 @click="handleEdit"
               >
-                <PencilIcon class="w-4 h-4 text-gray-500" />
-                <span>Modificar</span>
+                <PencilIcon class="w-4 h-4 text-gray-500 group-hover:text-green-600 dark:group-hover:text-green-400" />
+                <span class="group-hover:text-green-600 dark:group-hover:text-green-400">Editar Estudiante</span>
               </button>
+
+              <!-- Toggle Status -->
+              <button
+                v-if="permissions.canEdit"
+                class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 flex items-center space-x-3 transition-colors group"
+                @click="handleToggleStatus"
+              >
+                <UserIcon class="w-4 h-4 text-gray-500 group-hover:text-yellow-600 dark:group-hover:text-yellow-400" />
+                <span class="group-hover:text-yellow-600 dark:group-hover:text-yellow-400">
+                  {{ student.activo ? 'Desactivar' : 'Activar' }} Estudiante
+                </span>
+              </button>
+
+              <!-- Divider antes de eliminar -->
+              <div v-if="permissions.canDelete" class="h-px bg-gray-200 dark:bg-gray-700 my-1" />
 
               <!-- Delete Student -->
               <button
                 v-if="permissions.canDelete"
-                class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors"
+                class="w-full px-4 py-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors group"
                 @click="handleDelete"
               >
-                <TrashIcon class="w-4 h-4" />
-                <span>Eliminar</span>
+                <TrashIcon class="w-4 h-4 group-hover:text-red-700 dark:group-hover:text-red-300" />
+                <span class="group-hover:text-red-700 dark:group-hover:text-red-300 font-medium">Eliminar Estudiante</span>
               </button>
             </div>
           </div>
@@ -174,7 +204,7 @@
       <!-- Quick Action Buttons -->
       <div class="mt-6 flex flex-wrap gap-2">
         <button
-          class="flex-1 min-w-0 px-3 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-200 text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
+          class="flex-1 min-w-0 px-3 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-200 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 hover:shadow-sm"
           @click="handleViewProfile"
         >
           <EyeIcon class="w-4 h-4" />
@@ -183,7 +213,7 @@
 
         <button
           v-if="permissions.canEdit"
-          class="flex-1 min-w-0 px-3 py-2 bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-700 dark:text-green-200 text-sm font-medium rounded-lg transition-colors flex items-center justify-center space-x-2"
+          class="flex-1 min-w-0 px-3 py-2 bg-green-100 hover:bg-green-200 dark:bg-green-900 dark:hover:bg-green-800 text-green-700 dark:text-green-200 text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 hover:shadow-sm"
           @click="handleEdit"
         >
           <PencilIcon class="w-4 h-4" />
@@ -211,45 +241,102 @@
         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
           {{ attendanceDescription }}
         </p>
+        <p v-if="!attendanceLoading && attendanceData && attendanceData.summary.total > 0" 
+           class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          Últimos 3 meses • {{ attendanceData.recentRecords.length }} registros recientes
+        </p>
       </div>
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div
-      v-if="showDeleteConfirmation"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      @click="showDeleteConfirmation = false"
+    <Transition
+      enter-active-class="transition ease-out duration-200"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition ease-in duration-150"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
     >
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4" @click.stop>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Confirmar Eliminación
-        </h3>
-        <p class="text-gray-700 dark:text-gray-300 mb-6">
-          ¿Estás seguro de que deseas eliminar a
-          <strong>{{ `${student.nombre} ${student.apellido}` }}</strong
-          >? Esta acción no se puede deshacer.
-        </p>
-        <div class="flex justify-end space-x-3">
-          <button
-            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
-            @click="showDeleteConfirmation = false"
+      <div
+        v-if="showDeleteConfirmation"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4"
+        @click="showDeleteConfirmation = false"
+      >
+        <Transition
+          enter-active-class="transition ease-out duration-200"
+          enter-from-class="transform opacity-0 scale-95 translate-y-4"
+          enter-to-class="transform opacity-100 scale-100 translate-y-0"
+          leave-active-class="transition ease-in duration-150"
+          leave-from-class="transform opacity-100 scale-100 translate-y-0"
+          leave-to-class="transform opacity-0 scale-95 translate-y-4"
+        >
+          <div 
+            v-if="showDeleteConfirmation"
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700" 
+            @click.stop
           >
-            Cancelar
-          </button>
-          <button
-            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-            @click="confirmDelete"
-          >
-            Eliminar
-          </button>
-        </div>
+            <!-- Header with icon -->
+            <div class="flex items-center mb-4">
+              <div class="flex-shrink-0 w-10 h-10 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                <TrashIcon class="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div class="ml-3">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                  Eliminar Estudiante
+                </h3>
+              </div>
+            </div>
+            
+            <!-- Content -->
+            <div class="mb-6">
+              <p class="text-gray-700 dark:text-gray-300 mb-3">
+                ¿Estás seguro de que deseas eliminar a:
+              </p>
+              <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-3">
+                <div class="flex items-center space-x-3">
+                  <div :class="avatarBackgroundColor" class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    {{ getInitials(`${student.nombre} ${student.apellido}`) }}
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-900 dark:text-white">
+                      {{ `${student.nombre} ${student.apellido}` }}
+                    </p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      {{ student.email }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <p class="text-sm text-red-600 dark:text-red-400 font-medium">
+                ⚠️ Esta acción no se puede deshacer.
+              </p>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex justify-end space-x-3">
+              <button
+                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors font-medium"
+                @click="showDeleteConfirmation = false"
+              >
+                Cancelar
+              </button>
+              <button
+                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center space-x-2"
+                @click="confirmDelete"
+              >
+                <TrashIcon class="w-4 h-4" />
+                <span>Eliminar</span>
+              </button>
+            </div>
+          </div>
+        </Transition>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   EllipsisVerticalIcon,
@@ -267,6 +354,8 @@ import {
   ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/vue/24/outline';
 import type { Student } from '@/types';
+import { getStudentAttendanceMetrics } from '../../Students/services/attendanceAnalysis';
+import type { AttendanceMetrics } from '../../Students/services/attendanceAnalysis';
 
 // Define component name
 defineOptions({
@@ -304,6 +393,8 @@ const router = useRouter();
 // State
 const showMenu = ref(false);
 const showDeleteConfirmation = ref(false);
+const attendanceData = ref<AttendanceMetrics | null>(null);
+const attendanceLoading = ref(true);
 
 // Computed Properties
 const _hasAnyPermission = computed(
@@ -317,64 +408,101 @@ const hasParentPhones = computed(() => {
   );
 });
 
-// Attendance calculation (mock data - replace with real calculation)
+// Real attendance calculation
 const attendancePercentage = computed(() => {
-  // TODO: Implement real attendance calculation
-  // For now, return a value based on student ID to simulate different levels
-  const studentId = props.student.id || '';
-  const hash = studentId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return Math.max(30, Math.min(95, 50 + (hash % 45)));
+  if (!attendanceData.value || attendanceLoading.value) {
+    return 0;
+  }
+  return attendanceData.value.summary.attendanceRate;
+});
+
+const totalClasses = computed(() => {
+  if (!attendanceData.value) return 0;
+  return attendanceData.value.summary.total;
+});
+
+const presentClasses = computed(() => {
+  if (!attendanceData.value) return 0;
+  return attendanceData.value.summary.present + attendanceData.value.summary.justified;
 });
 
 const attendanceLevel = computed(() => {
-  const percentage = attendancePercentage.value;
-  if (percentage >= 85) return 'Excelente';
-  if (percentage >= 70) return 'Bueno';
-  if (percentage >= 55) return 'Regular';
-  return 'Crítico';
+  if (attendanceLoading.value) return 'Cargando...';
+  if (!attendanceData.value || attendanceData.value.summary.total === 0) {
+    return 'Sin datos';
+  }
+  return attendanceData.value.classification;
 });
 
 const attendanceDescription = computed(() => {
-  const percentage = attendancePercentage.value;
-  if (percentage >= 85) return 'Estudiante muy constante, asistencia ejemplar';
-  if (percentage >= 70) return 'Asistencia aceptable con algunas ausencias';
-  if (percentage >= 55) return 'Asistencia irregular, requiere atención';
-  return 'Asistencia crítica, requiere intervención inmediata';
+  if (attendanceLoading.value) return 'Cargando datos de asistencia...';
+  if (!attendanceData.value || attendanceData.value.summary.total === 0) {
+    return 'No hay registros de asistencia disponibles';
+  }
+  
+  const total = attendanceData.value.summary.total;
+  const present = attendanceData.value.summary.present;
+  const justified = attendanceData.value.summary.justified;
+  const absent = attendanceData.value.summary.absent;
+  const late = attendanceData.value.summary.late;
+  
+  return `${present + justified}/${total} clases asistidas (P:${present}, J:${justified}, A:${absent}, T:${late})`;
 });
 
 const attendanceBackgroundColor = computed(() => {
+  if (attendanceLoading.value) {
+    return 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20';
+  }
+  
   const percentage = attendancePercentage.value;
-  if (percentage >= 85)
+  if (percentage >= 90)
     return 'bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-800/20';
+  if (percentage >= 80)
+    return 'bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20';
   if (percentage >= 70)
     return 'bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-900/20 dark:to-amber-800/20';
-  if (percentage >= 55)
-    return 'bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20';
-  return 'bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20';
+  if (percentage > 0)
+    return 'bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20';
+  return 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20';
 });
 
 const attendanceIndicatorColor = computed(() => {
+  if (attendanceLoading.value) {
+    return 'bg-gradient-to-r from-gray-400 to-gray-500';
+  }
+  
   const percentage = attendancePercentage.value;
-  if (percentage >= 85) return 'bg-gradient-to-r from-green-400 to-emerald-500';
+  if (percentage >= 90) return 'bg-gradient-to-r from-green-400 to-emerald-500';
+  if (percentage >= 80) return 'bg-gradient-to-r from-blue-400 to-blue-500';
   if (percentage >= 70) return 'bg-gradient-to-r from-yellow-400 to-amber-500';
-  if (percentage >= 55) return 'bg-gradient-to-r from-orange-400 to-orange-500';
-  return 'bg-gradient-to-r from-red-400 to-red-500';
+  if (percentage > 0) return 'bg-gradient-to-r from-red-400 to-red-500';
+  return 'bg-gradient-to-r from-gray-400 to-gray-500';
 });
 
 const attendanceTextColor = computed(() => {
+  if (attendanceLoading.value) {
+    return 'text-gray-700 dark:text-gray-300';
+  }
+  
   const percentage = attendancePercentage.value;
-  if (percentage >= 85) return 'text-green-700 dark:text-green-300';
+  if (percentage >= 90) return 'text-green-700 dark:text-green-300';
+  if (percentage >= 80) return 'text-blue-700 dark:text-blue-300';
   if (percentage >= 70) return 'text-yellow-700 dark:text-yellow-300';
-  if (percentage >= 55) return 'text-orange-700 dark:text-orange-300';
-  return 'text-red-700 dark:text-red-300';
+  if (percentage > 0) return 'text-red-700 dark:text-red-300';
+  return 'text-gray-700 dark:text-gray-300';
 });
 
 const attendanceBarColor = computed(() => {
+  if (attendanceLoading.value) {
+    return 'bg-gradient-to-r from-gray-400 to-gray-500 animate-pulse';
+  }
+  
   const percentage = attendancePercentage.value;
-  if (percentage >= 85) return 'bg-gradient-to-r from-green-400 to-emerald-500';
+  if (percentage >= 90) return 'bg-gradient-to-r from-green-400 to-emerald-500';
+  if (percentage >= 80) return 'bg-gradient-to-r from-blue-400 to-blue-500';
   if (percentage >= 70) return 'bg-gradient-to-r from-yellow-400 to-amber-500';
-  if (percentage >= 55) return 'bg-gradient-to-r from-orange-400 to-orange-500';
-  return 'bg-gradient-to-r from-red-400 to-red-500';
+  if (percentage > 0) return 'bg-gradient-to-r from-red-400 to-red-500';
+  return 'bg-gradient-to-r from-gray-400 to-gray-500';
 });
 
 const avatarBackgroundColor = computed(() => {
@@ -450,17 +578,21 @@ const formatPhone = (phone: string): string => {
   return phone;
 };
 
+// Use centralized date formatter
 const formatDate = (dateString: string): string => {
   if (!dateString) return '';
   try {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return 'Fecha inválida';
+    }
     return date.toLocaleDateString('es-ES', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
   } catch {
-    return dateString;
+    return 'Error en fecha';
   }
 };
 
@@ -480,13 +612,17 @@ const handleViewProfile = async () => {
   } catch (error) {
     console.error('Error navigating to student profile:', error);
     // Fallback: emit event for parent component to handle
-    emit('view-profile', props.student);
+    emit('view', props.student);
   }
 };
 
 const _handleView = () => {
   showMenu.value = false;
   emit('view', props.student);
+};
+
+const toggleMenu = () => {
+  showMenu.value = !showMenu.value;
 };
 
 const handleEdit = () => {
@@ -519,22 +655,50 @@ const handleWhatsAppParents = () => {
   emit('whatsapp-parents', props.student);
 };
 
-// Click outside directive
-const vClickOutside = {
-  mounted(el: HTMLElement & {clickOutsideEvent?: (event: Event) => void}, binding: any) {
-    el.clickOutsideEvent = (event: Event) => {
-      if (!(el === event.target || el.contains(event.target as Node))) {
-        binding.value();
-      }
+// Load attendance data
+const loadAttendanceData = async () => {
+  if (!props.student.id) return;
+  
+  try {
+    attendanceLoading.value = true;
+    
+    // Get attendance data for the last 3 months
+    const now = new Date();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(now.getMonth() - 3);
+    
+    const dateRange = {
+      start: threeMonthsAgo.toISOString().split('T')[0],
+      end: now.toISOString().split('T')[0]
     };
-    document.addEventListener('click', el.clickOutsideEvent);
-  },
-  unmounted(el: HTMLElement & {clickOutsideEvent?: (event: Event) => void}) {
-    if (el.clickOutsideEvent) {
-      document.removeEventListener('click', el.clickOutsideEvent);
-    }
-  },
+    
+    const metrics = await getStudentAttendanceMetrics(props.student.id, dateRange);
+    attendanceData.value = metrics;
+  } catch (error) {
+    console.error('Error loading attendance data for student:', props.student.id, error);
+    attendanceData.value = null;
+  } finally {
+    attendanceLoading.value = false;
+  }
 };
+
+// Handle clicking outside menu
+const handleClickOutside = (event: MouseEvent) => {
+  if (showMenu.value) {
+    showMenu.value = false;
+  }
+};
+
+// Load data on component mount
+onMounted(() => {
+  loadAttendanceData();
+  document.addEventListener('click', handleClickOutside);
+});
+
+// Clean up on unmount
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style scoped>

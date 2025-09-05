@@ -17,7 +17,7 @@
     </div>
 
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Editar Alumno</h1>
+      <h1 class="text-2xl font-bold">Editar</h1>
       <button
         class="btn bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
         :disabled="isLoading"
@@ -83,15 +83,8 @@
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Instrumento</label>
-            <select v-model="formData.instrumento" class="input">
-              <option
-                v-for="instrument in instruments"
-                :key="instrument.id"
-                :value="instrument.nombre"
-              >
-                {{ instrument.nombre }}
-              </option>
-            </select>
+            <!-- campo de texto para el instrumento -->
+            <input v-model="formData.instrumento" type="text" class="input" />
           </div>
         </div>
       </div>
@@ -142,10 +135,65 @@
         </div>
       </div>
 
-      <!-- Group Selection -->
+      <!-- Groups Management -->
       <div class="card mt-6">
-        <h2 class="text-lg font-semibold mb-4">Grupos</h2>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold">Grupos</h2>
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Modo texto</span>
+            <button
+              type="button"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                useTextMode ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+              ]"
+              @click="toggleTextMode"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white transition',
+                  useTextMode ? 'translate-x-6' : 'translate-x-1'
+                ]"
+              />
+            </button>
+          </div>
+        </div>
+
+        <!-- Text Mode -->
+        <div v-if="useTextMode" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Grupos del Alumno
+            </label>
+            <textarea
+              v-model="gruposText"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-none"
+              placeholder="Escriba los grupos separados por comas (ej: Coro, Orquesta, Solfeo)"
+              @input="updateGruposFromText"
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Separe múltiples grupos con comas. El texto se guardará como está escrito.
+            </p>
+          </div>
+          
+          <!-- Preview of groups -->
+          <div v-if="currentGroups.length > 0" class="mt-3">
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Vista previa:</p>
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="group in currentGroups"
+                :key="group"
+                class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
+              >
+                {{ group.trim() }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checkbox Mode (original) -->
+        <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div
             v-for="group in classesStore.classes"
             :key="group.id"
@@ -224,6 +272,10 @@ const isLoading = ref(false);
 const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
 
+// Groups management
+const useTextMode = ref(false);
+const gruposText = ref('');
+
 // Cargar datos necesarios al montar el componente
 onMounted(async () => {
   try {
@@ -267,15 +319,55 @@ const normalizeGrupo = (grupo: any): string[] => {
 
 const formData = ref<any>(null);
 
+// Computed property for current groups
+const currentGroups = computed(() => {
+  if (useTextMode.value) {
+    return gruposText.value ? gruposText.value.split(',').map(g => g.trim()).filter(g => g.length > 0) : [];
+  } else {
+    return formData.value?.grupo || [];
+  }
+});
+
+// Functions for groups management
+const toggleTextMode = () => {
+  if (useTextMode.value) {
+    // Switching from text mode to checkbox mode
+    // Update formData.grupo with the parsed text
+    formData.value.grupo = currentGroups.value;
+  } else {
+    // Switching from checkbox mode to text mode  
+    // Update gruposText with current selection
+    if (formData.value?.grupo && Array.isArray(formData.value.grupo)) {
+      gruposText.value = formData.value.grupo.join(', ');
+    }
+  }
+  useTextMode.value = !useTextMode.value;
+};
+
+const updateGruposFromText = () => {
+  // Real-time update of formData.grupo when typing in text mode
+  if (useTextMode.value && formData.value) {
+    const parsedGroups = currentGroups.value;
+    formData.value.grupo = parsedGroups;
+    console.log('🔄 Grupos actualizados desde texto en tiempo real:', parsedGroups);
+  }
+};
+
 // Watch para actualizar formData cuando se carga el estudiante
 watch(
   originalStudent,
   (newStudent) => {
     if (newStudent) {
+      const normalizedGrupo = normalizeGrupo(newStudent.grupo);
       formData.value = {
         ...newStudent,
-        grupo: normalizeGrupo(newStudent.grupo),
+        grupo: normalizedGrupo,
       };
+      
+      // Initialize gruposText with current groups
+      if (normalizedGrupo.length > 0) {
+        gruposText.value = normalizedGrupo.join(', ');
+      }
     }
   },
   { immediate: true },
@@ -288,18 +380,43 @@ const handleSubmit = async () => {
   }
 
   console.log('🔄 Iniciando actualización del estudiante:', studentId);
-  console.log('📝 Datos a guardar:', JSON.stringify(formData.value, null, 2));
+  console.log('🎛️ Estado del sistema de grupos:');
+  console.log('   - Modo texto activo:', useTextMode.value);
+  console.log('   - Contenido del textarea:', gruposText.value);
+  console.log('   - Grupos actuales (computed):', currentGroups.value);
+  console.log('   - Grupos en formData:', formData.value.grupo);
+  console.log('📝 Datos completos a guardar:', JSON.stringify(formData.value, null, 2));
 
   isLoading.value = true;
   error.value = null;
   successMessage.value = null;
 
   try {
-    // Asegurarnos que grupo sea un array antes de guardar
-    if (!Array.isArray(formData.value.grupo)) {
-      formData.value.grupo = normalizeGrupo(formData.value.grupo);
+    // Sincronizar grupos dependiendo del modo activo
+    if (useTextMode.value) {
+      // En modo texto, usar los grupos parseados del textarea
+      formData.value.grupo = currentGroups.value;
+      console.log('📝 Modo texto activo - Grupos sincronizados desde texto:', formData.value.grupo);
+    } else {
+      // En modo checkbox, asegurar que sea un array
+      if (!Array.isArray(formData.value.grupo)) {
+        formData.value.grupo = normalizeGrupo(formData.value.grupo);
+      }
+      console.log('☑️ Modo checkbox activo - Grupos normalizados:', formData.value.grupo);
     }
 
+    // Validación final: asegurar que grupos sea un array válido
+    if (!formData.value.grupo || !Array.isArray(formData.value.grupo)) {
+      formData.value.grupo = [];
+      console.log('⚠️ Grupos no válidos, estableciendo array vacío');
+    }
+    
+    // Limpiar grupos vacíos y espacios
+    formData.value.grupo = formData.value.grupo
+      .map(grupo => typeof grupo === 'string' ? grupo.trim() : String(grupo).trim())
+      .filter(grupo => grupo.length > 0);
+
+    console.log('📋 Grupos finales a guardar:', JSON.stringify(formData.value.grupo, null, 2));
     console.log('📤 Enviando datos al store...');
     await studentsStore.updateStudent(String(studentId), formData.value);
 
