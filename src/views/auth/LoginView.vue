@@ -138,15 +138,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { useAuthStore } from '../../stores/auth';
 import {
   ExclamationCircleIcon,
   EyeIcon,
   EyeSlashIcon,
   CheckCircleIcon,
 } from '@heroicons/vue/24/outline';
+
+import { ref, onMounted } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+
+import { useAuthStore } from '../../stores/auth';
 
 const router = useRouter();
 const route = useRoute();
@@ -190,18 +192,18 @@ const handleSubmit = async () => {
     } else if (authStore.user?.role) {
       // Fallback basado en rol si loginResult no tiene redirectTo
       switch (authStore.user.role) {
-        case 'Superusuario':
-          redirectTo = '/superusuario/dashboard';
-          break;
-        case 'Maestro':
-          redirectTo = '/teacher';
-          break;
-        case 'Director':
-        case 'Admin':
-          redirectTo = '/dashboard';
-          break;
-        default:
-          redirectTo = '/dashboard';
+      case 'Superusuario':
+        redirectTo = '/superusuario/dashboard';
+        break;
+      case 'Maestro':
+        redirectTo = '/teacher';
+        break;
+      case 'Director':
+      case 'Admin':
+        redirectTo = '/dashboard';
+        break;
+      default:
+        redirectTo = '/dashboard';
       }
     }
     
@@ -211,8 +213,8 @@ const handleSubmit = async () => {
     console.log('🔄 [LoginView] Redirigiendo a:', finalRedirect, 'para rol:', authStore.user?.role);
     router.push(finalRedirect);
     
-  } catch (e: any) {
-    error.value = e.message;
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Error desconocido';
     console.error('Error de login:', e);
   } finally {
     isLoading.value = false;

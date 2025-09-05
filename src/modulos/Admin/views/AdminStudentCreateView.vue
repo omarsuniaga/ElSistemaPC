@@ -452,8 +452,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from "vue";
-import { useRouter } from "vue-router";
 import {
   HomeIcon,
   ChevronRightIcon,
@@ -462,7 +460,10 @@ import {
   UsersIcon,
   AcademicCapIcon,
   MusicalNoteIcon,
-} from "@heroicons/vue/24/outline";
+} from '@heroicons/vue/24/outline';
+
+import { ref, reactive } from 'vue';
+import { useRouter } from 'vue-router';
 // import { useAdminStudentsStore } from '../store/adminStudents';
 // import type { Student } from '../store/adminStudents';
 
@@ -475,33 +476,33 @@ const isSubmitting = ref(false);
 
 // Form data
 const form = reactive({
-  nombre: "",
-  apellido: "",
-  email: "",
-  phone: "",
-  birthDate: "",
-  address: "",
-  parentName: "",
-  parentPhone: "",
-  parentEmail: "",
-  instrument: "",
-  grade: "" as "beginner" | "intermediate" | "advanced" | "",
-  status: "pending" as "active" | "inactive" | "pending",
-  notes: "",
+  nombre: '',
+  apellido: '',
+  email: '',
+  phone: '',
+  birthDate: '',
+  address: '',
+  parentName: '',
+  parentPhone: '',
+  parentEmail: '',
+  instrument: '',
+  grade: '' as 'beginner' | 'intermediate' | 'advanced' | '',
+  status: 'pending' as 'active' | 'inactive' | 'pending',
+  notes: '',
 });
 
 // Form errors
 const errors = reactive({
-  nombre: "",
-  apellido: "",
-  email: "",
-  phone: "",
-  birthDate: "",
-  parentName: "",
-  parentPhone: "",
-  parentEmail: "",
-  instrument: "",
-  grade: "",
+  nombre: '',
+  apellido: '',
+  email: '',
+  phone: '',
+  birthDate: '',
+  parentName: '',
+  parentPhone: '',
+  parentEmail: '',
+  instrument: '',
+  grade: '',
 });
 
 // No longer needed - using simple text input
@@ -510,7 +511,7 @@ const errors = reactive({
 const validateForm = (): boolean => {
   // Clear previous errors
   Object.keys(errors).forEach((key) => {
-    errors[key as keyof typeof errors] = "";
+    errors[key as keyof typeof errors] = '';
   });
 
   let isValid = true;
@@ -520,7 +521,7 @@ const validateForm = (): boolean => {
   // Validate email format only if provided
   if (form.email && form.email.trim().length > 0) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      errors.email = "El correo electrónico no es válido";
+      errors.email = 'El correo electrónico no es válido';
       isValid = false;
     }
   }
@@ -528,7 +529,7 @@ const validateForm = (): boolean => {
   // Validate phone format only if provided
   if (form.phone && form.phone.trim().length > 0) {
     if (form.phone.trim().length < 7) {
-      errors.phone = "El teléfono debe tener al menos 7 dígitos";
+      errors.phone = 'El teléfono debe tener al menos 7 dígitos';
       isValid = false;
     }
   }
@@ -536,7 +537,7 @@ const validateForm = (): boolean => {
   // Validate nombre format only if provided
   if (form.nombre && form.nombre.trim().length > 0) {
     if (form.nombre.trim().length < 2) {
-      errors.nombre = "El nombre debe tener al menos 2 caracteres";
+      errors.nombre = 'El nombre debe tener al menos 2 caracteres';
       isValid = false;
     }
   }
@@ -544,7 +545,7 @@ const validateForm = (): boolean => {
   // Validate apellido format only if provided
   if (form.apellido && form.apellido.trim().length > 0) {
     if (form.apellido.trim().length < 2) {
-      errors.apellido = "El apellido debe tener al menos 2 caracteres";
+      errors.apellido = 'El apellido debe tener al menos 2 caracteres';
       isValid = false;
     }
   }
@@ -552,7 +553,7 @@ const validateForm = (): boolean => {
   // Validate parent name format only if provided
   if (form.parentName && form.parentName.trim().length > 0) {
     if (form.parentName.trim().length < 2) {
-      errors.parentName = "El nombre del padre/tutor debe tener al menos 2 caracteres";
+      errors.parentName = 'El nombre del padre/tutor debe tener al menos 2 caracteres';
       isValid = false;
     }
   }
@@ -560,7 +561,7 @@ const validateForm = (): boolean => {
   // Validate parent phone format only if provided
   if (form.parentPhone && form.parentPhone.trim().length > 0) {
     if (form.parentPhone.trim().length < 7) {
-      errors.parentPhone = "El teléfono del padre/tutor debe tener al menos 7 dígitos";
+      errors.parentPhone = 'El teléfono del padre/tutor debe tener al menos 7 dígitos';
       isValid = false;
     }
   }
@@ -568,7 +569,7 @@ const validateForm = (): boolean => {
   // Validate parent email format only if provided
   if (form.parentEmail && form.parentEmail.trim().length > 0) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.parentEmail)) {
-      errors.parentEmail = "El correo electrónico del padre/tutor no es válido";
+      errors.parentEmail = 'El correo electrónico del padre/tutor no es válido';
       isValid = false;
     }
   }
@@ -576,13 +577,13 @@ const validateForm = (): boolean => {
   // Instrument field is optional
   if (form.instrument && form.instrument.trim().length > 0) {
     if (form.instrument.trim().length < 2) {
-      errors.instrument = "El instrumento debe tener al menos 2 caracteres";
+      errors.instrument = 'El instrumento debe tener al menos 2 caracteres';
       isValid = false;
     } else if (form.instrument.trim().length > 50) {
-      errors.instrument = "El instrumento no puede exceder 50 caracteres";
+      errors.instrument = 'El instrumento no puede exceder 50 caracteres';
       isValid = false;
     } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(form.instrument.trim())) {
-      errors.instrument = "El instrumento solo puede contener letras y espacios";
+      errors.instrument = 'El instrumento solo puede contener letras y espacios';
       isValid = false;
     }
   }
@@ -593,13 +594,13 @@ const validateForm = (): boolean => {
     const today = new Date();
 
     if (isNaN(birthDateObj.getTime())) {
-      errors.birthDate = "Fecha de nacimiento inválida";
+      errors.birthDate = 'Fecha de nacimiento inválida';
       isValid = false;
     } else if (birthDateObj > today) {
-      errors.birthDate = "La fecha de nacimiento no puede ser en el futuro";
+      errors.birthDate = 'La fecha de nacimiento no puede ser en el futuro';
       isValid = false;
     } else if (today.getFullYear() - birthDateObj.getFullYear() > 120) {
-      errors.birthDate = "Fecha de nacimiento no realista";
+      errors.birthDate = 'Fecha de nacimiento no realista';
       isValid = false;
     }
   }
@@ -617,59 +618,49 @@ const handleSubmit = async () => {
   try {
     isSubmitting.value = true;
 
-    // Handle dates safely
-    let birthDate = null;
-    if (form.birthDate && form.birthDate.trim()) {
-      const date = new Date(form.birthDate);
-      if (isNaN(date.getTime())) {
-        throw new Error("Fecha de nacimiento inválida");
-      }
-      birthDate = date;
-    }
-
     const studentData = {
-      nombre: form.nombre || "",
-      apellido: form.apellido || "",
-      email: form.email || "",
-      tlf: form.phone || "",
-      nac: form.birthDate || "",
-      edad: "",
-      sexo: "",
-      direccion: form.address || "",
-      madre: form.parentName || "",
-      tlf_madre: form.parentPhone || "",
-      padre: "",
-      tlf_padre: "",
-      colegio_trabajo: "",
-      horario_colegio_trabajo: "",
-      instrumento: form.instrument || "",
+      nombre: form.nombre || '',
+      apellido: form.apellido || '',
+      email: form.email || '',
+      tlf: form.phone || '',
+      nac: form.birthDate || '',
+      edad: '',
+      sexo: '',
+      direccion: form.address || '',
+      madre: form.parentName || '',
+      tlf_madre: form.parentPhone || '',
+      padre: '',
+      tlf_padre: '',
+      colegio_trabajo: '',
+      horario_colegio_trabajo: '',
+      instrumento: form.instrument || '',
       grupo: [],
-      clase: "",
-      activo: form.status === "active",
-      observaciones: form.notes || "",
-      fecInscripcion: new Date().toISOString().split("T")[0],
-      avatar: "",
+      clase: '',
+      activo: form.status === 'active',
+      observaciones: form.notes || '',
+      fecInscripcion: new Date().toISOString().split('T')[0],
+      avatar: '',
       documentos: {},
     };
 
     // Usar el servicio directo de Firebase que maneja la estructura correcta
-    const { createStudentFirebase } = await import("@/modulos/Students/service/students");
+    const { createStudentFirebase } = await import('@/modulos/Students/service/students');
     const newStudent = await createStudentFirebase(studentData);
 
     // Navigate to the created student's detail page or back to list
     router.push(`/admin/students/${newStudent.id}`);
   } catch (error: unknown) {
-    console.error("Error creating student:", error);
+    console.error('Error creating student:', error);
 
     // Show user-friendly error message
-    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-    if (errorMessage.includes("fecha")) {
-      alert("Error: " + errorMessage);
-    } else if (errorMessage.includes("Invalid time value")) {
-      alert("Error: Por favor verifica que todas las fechas sean válidas");
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    if (errorMessage.includes('fecha')) {
+      alert('Error: ' + errorMessage);
+    } else if (errorMessage.includes('Invalid time value')) {
+      alert('Error: Por favor verifica que todas las fechas sean válidas');
     } else {
       alert(
-        "Error al crear el estudiante. Por favor verifica los datos e inténtalo de nuevo."
+        'Error al crear el estudiante. Por favor verifica los datos e inténtalo de nuevo.',
       );
     }
   } finally {
