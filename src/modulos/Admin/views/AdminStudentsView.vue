@@ -212,7 +212,7 @@
                 <option value="Excelente">Asistencia Excelente (90%+)</option>
                 <option value="Bueno">Asistencia Buena (80-89%)</option>
                 <option value="Regular">Asistencia Regular (70-79%)</option>
-                <option value="Deficiente">Asistencia Deficiente (<70%)</option>
+                <option value="Deficiente">Asistencia Deficiente (&lt;70%)</option>
               </select>
             </div>
           </div>
@@ -359,8 +359,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineAsyncComponent } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue';
+import { useRouter } from 'vue-router';
 // Icons
 import {
   HomeIcon,
@@ -373,54 +373,42 @@ import {
   FunnelIcon,
   DocumentPlusIcon,
   ChevronRightIcon,
-} from "@heroicons/vue/24/outline";
+} from '@heroicons/vue/24/outline';
 
 // Stores
-import { useRBACStore } from "../../../stores/rbacStore";
-import { useAdminStudentsStore } from "../store/adminStudents";
+import { useRBACStore } from '../../../stores/rbacStore';
+import { useAdminStudentsStore } from '../store/adminStudents';
 
-// Types
-interface IStudent {
-  id: string;
-  nombre: string;
-  apellido: string;
-  email: string;
-  phone?: string;
-  activo: boolean;
-  clase?: string;
-  classId?: string;
-  grupo?: string[];
-  instrumento?: string;
-  nivel?: string;
-  status?: "active" | "inactive";
-  createdAt: string; // Assuming createdAt is a string like an ISO date
-  [key: string]: unknown;
-}
+// Import Student type from the shared types
+import type { Student } from '@/modulos/Students/types/student';
+
+// Use Student type directly instead of IStudent
+type IStudent = Student;
 
 // Components
 const studentCard = defineAsyncComponent(
-  () => import(/* webpackChunkName: "student-card" */ "../components/StudentCard.vue")
+  () => import(/* webpackChunkName: 'student-card' */ '../components/StudentCard.vue'),
 );
 const studentCreateModal = defineAsyncComponent(
   () =>
     import(
-      /* webpackChunkName: "student-create-modal" */ "../components/StudentCreateModal.vue"
-    )
+      /* webpackChunkName: 'student-create-modal' */ '../components/StudentCreateModal.vue'
+    ),
 );
 const studentEditModal = defineAsyncComponent(
   () =>
     import(
-      /* webpackChunkName: "student-edit-modal" */ "../components/StudentEditModal.vue"
-    )
+      /* webpackChunkName: 'student-edit-modal' */ '../components/StudentEditModal.vue'
+    ),
 );
 const studentsTable = defineAsyncComponent(
-  () => import(/* webpackChunkName: "students-table" */ "../components/StudentsTable.vue")
+  () => import(/* webpackChunkName: 'students-table' */ '../components/StudentsTable.vue'),
 );
 const confirmationModal = defineAsyncComponent(
   () =>
     import(
-      /* webpackChunkName: "confirmation-modal" */ "@/components/ConfirmationModal.vue"
-    )
+      /* webpackChunkName: 'confirmation-modal' */ '@/components/ConfirmationModal.vue'
+    ),
 );
 
 // Stores
@@ -583,7 +571,7 @@ const confirmDelete = async () => {
 };
 
 const toggleStudentStatus = async (student: IStudent) => {
-  const newStatus = student.activo ? "inactive" : "active";
+  const newStatus = student.activo ? 'inactive' : 'active';
   await studentsStore.updateStudentStatus(student.id, newStatus);
   await studentsStore.loadStudents();
 };
