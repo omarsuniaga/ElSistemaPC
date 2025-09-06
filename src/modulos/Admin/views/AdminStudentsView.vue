@@ -65,6 +65,81 @@
           </div>
         </div>
 
+        <!-- Indicadores de estado de caché y sincronización -->
+        <div v-if="isSyncing || cacheStatus !== 'fresh'" class="mb-4">
+          <div class="flex items-center space-x-2 text-sm">
+            <div
+              v-if="isSyncing"
+              class="flex items-center text-blue-600 dark:text-blue-400"
+            >
+              <svg
+                class="animate-spin -ml-1 mr-2 h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Sincronizando datos...
+            </div>
+            <div
+              v-else-if="cacheStatus === 'stale'"
+              class="flex items-center text-amber-600 dark:text-amber-400"
+            >
+              <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fill-rule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Datos en caché (pueden estar desactualizados)
+            </div>
+            <div
+              v-else-if="cacheStatus === 'empty'"
+              class="flex items-center text-gray-500 dark:text-gray-400"
+            >
+              <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fill-rule="evenodd"
+                  d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Sin caché - Cargando desde servidor
+            </div>
+            <button
+              v-if="!isSyncing"
+              @click="refreshData"
+              class="ml-4 inline-flex items-center px-2 py-1 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fill-rule="evenodd"
+                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Refrescar
+            </button>
+          </div>
+          <div v-if="lastSyncTime" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Última sincronización: {{ new Date(lastSyncTime).toLocaleString() }}
+          </div>
+        </div>
+
         <!-- Title and stats -->
         <div class="mt-4">
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
@@ -188,18 +263,12 @@
 
             <!-- Instrument Filter -->
             <div>
-              <select
+              <input
                 v-model="instrumentFilter"
-                class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Todos los instrumentos</option>
-                <option value="piano">Piano</option>
-                <option value="guitar">Guitarra</option>
-                <option value="violin">Violín</option>
-                <option value="drums">Batería</option>
-                <option value="voice">Canto</option>
-                <option value="bass">Bajo</option>
-              </select>
+                type="text"
+                placeholder="Buscar por instrumento..."
+                class="block w-full py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
 
             <!-- Attendance Filter -->
@@ -342,6 +411,7 @@
       v-if="showEditModal && selectedStudent"
       :student="selectedStudent"
       @close="showEditModal = false"
+      @submit="handleStudentSubmit"
       @updated="handleStudentUpdated"
     />
 
@@ -359,8 +429,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineAsyncComponent } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, defineAsyncComponent } from "vue";
+import { useRouter } from "vue-router";
 // Icons
 import {
   HomeIcon,
@@ -373,42 +443,42 @@ import {
   FunnelIcon,
   DocumentPlusIcon,
   ChevronRightIcon,
-} from '@heroicons/vue/24/outline';
+} from "@heroicons/vue/24/outline";
 
 // Stores
-import { useRBACStore } from '../../../stores/rbacStore';
-import { useAdminStudentsStore } from '../store/adminStudents';
+import { useRBACStore } from "../../../stores/rbacStore";
+import { useAdminStudentsStore } from "../store/adminStudents";
 
 // Import Student type from the shared types
-import type { Student } from '@/modulos/Students/types/student';
+import type { Student } from "@/modulos/Students/types/student";
 
 // Use Student type directly instead of IStudent
 type IStudent = Student;
 
 // Components
 const studentCard = defineAsyncComponent(
-  () => import(/* webpackChunkName: 'student-card' */ '../components/StudentCard.vue'),
+  () => import(/* webpackChunkName: 'student-card' */ "../components/StudentCard.vue")
 );
 const studentCreateModal = defineAsyncComponent(
   () =>
     import(
-      /* webpackChunkName: 'student-create-modal' */ '../components/StudentCreateModal.vue'
-    ),
+      /* webpackChunkName: 'student-create-modal' */ "../components/StudentCreateModal.vue"
+    )
 );
 const studentEditModal = defineAsyncComponent(
   () =>
     import(
-      /* webpackChunkName: 'student-edit-modal' */ '../components/StudentEditModal.vue'
-    ),
+      /* webpackChunkName: 'student-edit-modal' */ "../components/StudentEditModal.vue"
+    )
 );
 const studentsTable = defineAsyncComponent(
-  () => import(/* webpackChunkName: 'students-table' */ '../components/StudentsTable.vue'),
+  () => import(/* webpackChunkName: 'students-table' */ "../components/StudentsTable.vue")
 );
 const confirmationModal = defineAsyncComponent(
   () =>
     import(
-      /* webpackChunkName: 'confirmation-modal' */ '@/components/ConfirmationModal.vue'
-    ),
+      /* webpackChunkName: 'confirmation-modal' */ "@/components/ConfirmationModal.vue"
+    )
 );
 
 // Stores
@@ -423,6 +493,8 @@ const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteModal = ref(false);
 const selectedStudent = ref<IStudent | null>(null);
+const isInitialLoad = ref(true);
+const lastSyncTime = ref<Date | null>(null);
 
 // --- Filtering State ---
 const searchQuery = ref("");
@@ -439,6 +511,8 @@ const sortOrder = ref<"asc" | "desc">("asc");
 
 const students = computed(() => studentsStore.students as IStudent[]);
 const isLoading = computed(() => studentsStore.isLoading);
+const isSyncing = computed(() => studentsStore.isSyncing);
+const cacheStatus = computed(() => studentsStore.cacheStatus);
 
 // Stats
 const totalStudents = computed(() => students.value.length);
@@ -475,15 +549,11 @@ const filteredStudents = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase().trim();
     filtered = filtered.filter((student) => {
-      const nombre = String(student?.nombre || "").toLowerCase();
-      const apellido = String(student?.apellido || "").toLowerCase();
-      const email = String(student?.email || "").toLowerCase();
-      const phone = String(student?.phone || "").toLowerCase();
       return (
-        nombre.includes(query) ||
-        apellido.includes(query) ||
-        email.includes(query) ||
-        phone.includes(query)
+        student.nombre?.toLowerCase().includes(query) ||
+        student.apellido?.toLowerCase().includes(query) ||
+        student.email?.toLowerCase().includes(query) ||
+        student.tlf?.toLowerCase().includes(query)
       );
     });
   }
@@ -494,19 +564,19 @@ const filteredStudents = computed(() => {
   }
 
   if (gradeFilter.value && gradeFilter.value !== "all") {
-    filtered = filtered.filter(
-      (student) =>
-        (student.nivel?.toString().toLowerCase() || "") ===
-        gradeFilter.value.toLowerCase()
-    );
+    // Filtro por grado removido temporalmente hasta que se defina la propiedad nivel
+    // filtered = filtered.filter(
+    //   (student) => student.nivel === gradeFilter.value,
+    // );
   }
 
   if (instrumentFilter.value && instrumentFilter.value !== "all") {
-    filtered = filtered.filter(
-      (student) =>
-        (student.instrumento?.toString().toLowerCase() || "") ===
-        instrumentFilter.value.toLowerCase()
-    );
+    const normalizedFilter = normalizeText(instrumentFilter.value);
+    filtered = filtered.filter((student) => {
+      const studentInstrument = student.instrumento?.toString() || "";
+      const normalizedInstrument = normalizeText(studentInstrument);
+      return normalizedInstrument.includes(normalizedFilter);
+    });
   }
 
   // Sorting
@@ -524,6 +594,14 @@ const filteredStudents = computed(() => {
 });
 
 // --- Methods ---
+
+// Función para normalizar texto (sin acentos y en minúsculas)
+const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+};
 
 const clearFilters = () => {
   searchQuery.value = "";
@@ -566,35 +644,67 @@ const confirmDelete = async () => {
     await studentsStore.deleteStudent(selectedStudent.value.id);
     showDeleteModal.value = false;
     selectedStudent.value = null;
-    await studentsStore.loadStudents();
+    // No necesitamos recargar - el store ya actualiza la caché
   }
 };
 
 const toggleStudentStatus = async (student: IStudent) => {
-  const newStatus = student.activo ? 'inactive' : 'active';
+  const newStatus = student.activo ? "inactive" : "active";
   await studentsStore.updateStudentStatus(student.id, newStatus);
-  await studentsStore.loadStudents();
+  // No necesitamos recargar - el store ya actualiza la caché
 };
 
 const handleStudentCreated = () => {
   showCreateModal.value = false;
-  studentsStore.loadStudents();
+  // No necesitamos recargar - el store ya actualiza la caché
+};
+
+const handleStudentSubmit = async (studentData: Student) => {
+  try {
+    await studentsStore.updateStudent(studentData.id, studentData);
+    showEditModal.value = false;
+    selectedStudent.value = null;
+    // No necesitamos recargar - el store ya actualiza la caché
+  } catch (error: unknown) {
+    console.error("Error al actualizar estudiante:", error);
+    // Aquí podrías mostrar un mensaje de error al usuario
+  }
 };
 
 const handleStudentUpdated = () => {
   showEditModal.value = false;
   selectedStudent.value = null;
-  studentsStore.loadStudents();
+  // No necesitamos recargar - el store ya actualiza la caché
 };
 
 const exportStudents = () => {
   studentsStore.exportStudents(filteredStudents.value);
 };
 
+// Función para refrescar datos manualmente
+const refreshData = async () => {
+  await studentsStore.forceRefreshFromFirestore();
+  lastSyncTime.value = new Date();
+};
+
+// Función para limpiar caché
+const clearCache = async () => {
+  studentsStore.clearCache();
+  await studentsStore.loadStudents();
+  lastSyncTime.value = new Date();
+};
+
 // --- Lifecycle Hooks ---
 
-onMounted(() => {
-  studentsStore.loadStudents();
+onMounted(async () => {
+  try {
+    await studentsStore.loadStudents();
+    lastSyncTime.value = new Date();
+    isInitialLoad.value = false;
+  } catch (error) {
+    console.error("Error al cargar estudiantes:", error);
+    isInitialLoad.value = false;
+  }
 });
 </script>
 

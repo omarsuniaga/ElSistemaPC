@@ -38,7 +38,9 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
   // State
   const students = ref<Student[]>([]);
   const isLoading = ref(false);
+  const isSyncing = ref(false);
   const error = ref<string | null>(null);
+  const cacheStatus = ref<'fresh' | 'stale' | 'empty'>('empty');
   const filters = ref<StudentFilters>({
     search: '',
     status: '',
@@ -143,23 +145,94 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       .sort((a, b) => new Date(b.fecInscripcion!).getTime() - new Date(a.fecInscripcion!).getTime())
       .slice(0, 10),
   );
+  // Cache management
+  const CACHE_KEY = 'admin_students_cache';
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+  
+  const getCachedStudents = (): { data: Student[]; timestamp: number } | null => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const parsedCache = JSON.parse(cached);
+        const now = Date.now();
+        if (now - parsedCache.timestamp < CACHE_DURATION) {
+          return parsedCache;
+        }
+      }
+    } catch (error) {
+      console.warn('Error reading cache:', error);
+    }
+    return null;
+  };
+  
+  const setCachedStudents = (data: Student[]) => {
+    try {
+      const cacheData = {
+        data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    } catch (error) {
+      console.warn('Error setting cache:', error);
+    }
+  };
+  
+  const clearCache = () => {
+    localStorage.removeItem(CACHE_KEY);
+    cacheStatus.value = 'empty';
+    console.log('🗑️ Caché de estudiantes limpiada');
+  };
+
+  const forceRefreshFromFirestore = async () => {
+    isSyncing.value = true;
+    clearCache();
+    await loadStudents();
+    isSyncing.value = false;
+  };
+
   // Actions
-  const loadStudents = async () => {
+  const loadStudents = async (forceRefresh = false) => {
     try {
       isLoading.value = true;
       error.value = null;
 
-      // Usar el servicio existente que ya maneja la estructura correcta
-      const studentsData = await getStudentsFirebase();
-      students.value = studentsData;
+      // Intentar cargar desde caché primero si no es refresh forzado
+      if (!forceRefresh) {
+        const cachedData = getCachedStudents();
+        if (cachedData) {
+          students.value = cachedData.data;
+          console.log('✅ Students loaded from cache:', students.value.length);
+          isLoading.value = false;
+          
+          // Cargar datos frescos en segundo plano
+          loadStudentsFromFirestore().then((freshData) => {
+            if (JSON.stringify(freshData) !== JSON.stringify(cachedData.data)) {
+              students.value = freshData;
+              setCachedStudents(freshData);
+              console.log('🔄 Students updated from Firestore:', freshData.length);
+            }
+          }).catch(console.error);
+          
+          return;
+        }
+      }
 
-      console.log('✅ Students loaded from admin store:', students.value.length);
+      // Cargar desde Firestore
+      const studentsData = await loadStudentsFromFirestore();
+      students.value = studentsData;
+      setCachedStudents(studentsData);
+      
+      console.log('✅ Students loaded from Firestore:', students.value.length);
     } catch (err: any) {
       console.error('❌ Error loading students in admin store:', err);
       error.value = err.message;
     } finally {
       isLoading.value = false;
     }
+  };
+  
+  const loadStudentsFromFirestore = async (): Promise<Student[]> => {
+    return await getStudentsFirebase();
   };
   const getStudent = async (studentId: string): Promise<Student | null> => {
     try {
@@ -210,6 +283,10 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
       };
 
       students.value.push(newStudent);
+      
+      // Actualizar caché
+      setCachedStudents(students.value);
+      
       console.log('✅ Student created:', newStudent.nombre);
 
       return newStudent;
@@ -242,6 +319,9 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
           updatedAt: new Date(),
         };
       }
+      
+      // Actualizar caché
+      setCachedStudents(students.value);
 
       console.log('✅ Student updated:', studentId);
     } catch (err: any) {
@@ -266,6 +346,9 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
 
       // Remove from local state
       students.value = students.value.filter((s) => s.id !== studentId);
+      
+      // Actualizar caché
+      setCachedStudents(students.value);
 
       console.log('✅ Student deleted:', studentId);
     } catch (err: any) {
@@ -483,6 +566,12 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     isLoading.value = false;
     error.value = null;
     clearFilters();
+    clearCache();
+  };
+  
+  // Función para refrescar datos
+  const refreshStudents = async () => {
+    await loadStudents(true); // Forzar refresh desde Firestore
   };
 
   // ==========================================
@@ -712,6 +801,8 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     // State
     students,
     isLoading,
+    isSyncing,
+    cacheStatus,
     error,
     filters,
 
@@ -723,6 +814,7 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
 
     // Actions
     loadStudents,
+    refreshStudents,
     getStudent,
     createStudent,
     updateStudent,
@@ -738,6 +830,8 @@ export const useAdminStudentsStore = defineStore('adminStudents', () => {
     bulkDeleteStudents,
     setFilters,
     clearFilters,
+    clearCache,
+    forceRefreshFromFirestore,
     $reset,
   };
 });

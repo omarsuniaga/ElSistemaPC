@@ -29,7 +29,12 @@ export const useAttendanceStore = defineStore('attendance', () => {
 
   // Exponer todas las propiedades y métodos de los composables
   return {
+    // Métodos del composable de documentos
     ...attendanceDocumentsComposable,
+    // Asegurar que fetchAttendanceDocuments esté disponible
+    fetchAttendanceDocuments: attendanceDocumentsComposable.fetchAttendanceDocuments,
+    
+    // Otros composables
     ...attendanceAnalyticsComposable,
     ...attendanceObservationsComposable,
     ...attendanceJustificationsComposable,

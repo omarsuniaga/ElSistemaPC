@@ -1,8 +1,9 @@
 import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
-import { rbacService } from '../services/rbacService';
 
-export interface RoutePermissions {
+import { rbacService } from '../services/rbacService';
+import { useAuthStore } from '@/stores/auth';
+
+export interface IRoutePermissions {
   module?: string;
   action?: string;
   permissions?: string[];
@@ -21,9 +22,9 @@ export const authGuard = (
   // Check if route requires authentication
   const requiresAuth = to.meta.requiresAuth as boolean;
   
-  if (requiresAuth && !authStore.isAuthenticated) {
+  if (requiresAuth && !authStore.isLoggedIn) {
     // Redirect to login with intended destination as query parameter
-    next(`/login?redirect=${encodeURIComponent(to.fullPath)}`);
+    next('/dashboard');
     return;
   }
   
@@ -37,10 +38,10 @@ export const permissionGuard = (
   next: NavigationGuardNext
 ) => {
   const authStore = useAuthStore();
-  const permissions = to.meta.permissions as RoutePermissions;
+  const permissions = to.meta.permissions as IRoutePermissions;
   
   // Skip if no permissions defined or user not authenticated
-  if (!permissions || !authStore.isAuthenticated) {
+  if (!permissions || !authStore.isLoggedIn) {
     next();
     return;
   }
@@ -59,7 +60,7 @@ export const permissionGuard = (
   if (permissions.permissions) {
     const hasPermission = rbacService.hasAnyPermission(permissions.permissions as any[]);
     if (!hasPermission) {
-      console.warn(`Access denied: User lacks required permissions:`, permissions.permissions);
+      console.warn('Access denied: User lacks required permissions:', permissions.permissions);
       next('/admin?error=insufficient_permissions');
       return;
     }
@@ -77,8 +78,8 @@ export const permissionGuard = (
   }
   
   // Check route-specific access
-  if (to.name && !rbacService.canAccessRoute(to.name as string)) {
-    console.warn(`Access denied: User cannot access route "${to.name}"`);
+  if (to.name && !rbacService.canAccessRoute(String(to.name))) {
+    console.warn(`Access denied: User cannot access route "${String(to.name)}"`);
     next('/admin?error=route_access_denied');
     return;
   }
@@ -90,11 +91,11 @@ export const permissionGuard = (
 export const roleRedirectGuard = (
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
-  next: NavigationGuardNext
+  next: NavigationGuardNext,
 ) => {
   const authStore = useAuthStore();
   
-  if (!authStore.isAuthenticated) {
+  if (!authStore.isLoggedIn) {
     next();
     return;
   }
@@ -133,11 +134,11 @@ export const roleRedirectGuard = (
 export const superAdminGuard = (
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
-  next: NavigationGuardNext
+  next: NavigationGuardNext,
 ) => {
   const authStore = useAuthStore();
   
-  if (!authStore.isAuthenticated) {
+  if (!authStore.isLoggedIn) {
     next('/login');
     return;
   }
@@ -157,11 +158,11 @@ export const superAdminGuard = (
 export const directorGuard = (
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
-  next: NavigationGuardNext
+  next: NavigationGuardNext,
 ) => {
   const authStore = useAuthStore();
   
-  if (!authStore.isAuthenticated) {
+  if (!authStore.isLoggedIn) {
     next('/login');
     return;
   }
@@ -181,11 +182,11 @@ export const directorGuard = (
 export const adminGuard = (
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
-  next: NavigationGuardNext
+  next: NavigationGuardNext,
 ) => {
   const authStore = useAuthStore();
   
-  if (!authStore.isAuthenticated) {
+  if (!authStore.isLoggedIn) {
     next('/login');
     return;
   }
@@ -205,11 +206,11 @@ export const adminGuard = (
 export const teacherGuard = (
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
-  next: NavigationGuardNext
+  next: NavigationGuardNext,
 ) => {
   const authStore = useAuthStore();
   
-  if (!authStore.isAuthenticated) {
+  if (!authStore.isLoggedIn) {
     next('/login');
     return;
   }
@@ -232,7 +233,7 @@ export const teacherGuard = (
 export const adminRouteGuard = (
   to: RouteLocationNormalized,
   from: RouteLocationNormalized,
-  next: NavigationGuardNext
+  next: NavigationGuardNext,
 ) => {
   // Run guards in sequence
   authGuard(to, from, (result) => {
@@ -256,7 +257,7 @@ export const adminRouteGuard = (
 export const canEditResource = (resourceId: string, ownerId?: string): boolean => {
   const authStore = useAuthStore();
   
-  if (!authStore.isAuthenticated) return false;
+  if (!authStore.isLoggedIn) return false;
   
   rbacService.setCurrentUser(authStore.user);
   
@@ -286,7 +287,7 @@ export const canEditResource = (resourceId: string, ownerId?: string): boolean =
 export const getAccessibleMenuItems = (menuItems: any[]) => {
   const authStore = useAuthStore();
   
-  if (!authStore.isAuthenticated) return [];
+  if (!authStore.isLoggedIn) return [];
   
   rbacService.setCurrentUser(authStore.user);
   return rbacService.getFilteredNavigation(menuItems);
@@ -302,5 +303,5 @@ export default {
   teacherGuard,
   adminRouteGuard,
   canEditResource,
-  getAccessibleMenuItems
+  getAccessibleMenuItems,
 };

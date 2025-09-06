@@ -229,6 +229,8 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   cancel: []
   submit: [data: any]
+  updated: [data: any]
+  close: []
 }>();
 
 // Form data
@@ -303,6 +305,7 @@ const handleSubmit = async () => {
     };
 
     emit('submit', submitData);
+    emit('updated', submitData);
   } catch (error) {
     console.error('Error al enviar el formulario:', error);
   } finally {
@@ -313,5 +316,6 @@ const handleSubmit = async () => {
 // Handle cancel
 const handleCancel = () => {
   emit('cancel');
+  emit('close');
 };
 </script>

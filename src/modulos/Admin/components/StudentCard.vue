@@ -57,71 +57,149 @@
         <!-- Quick Actions Menu -->
         <div class="relative flex-shrink-0">
           <button
-            class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm hover:shadow-md"
-            :class="{ 'bg-gray-200 dark:bg-gray-600 shadow-md': showMenu }"
+            class="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-600 dark:text-gray-300 hover:from-gray-200 hover:to-gray-300 dark:hover:from-gray-600 dark:hover:to-gray-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+            :class="{ 
+              'from-blue-100 to-blue-200 dark:from-blue-800 dark:to-blue-900 shadow-xl scale-105 ring-2 ring-blue-500/30': showMenu,
+              'shadow-md': !showMenu 
+            }"
             title="Más opciones"
             @click.stop="toggleMenu"
           >
             <EllipsisVerticalIcon 
-              class="w-5 h-5 transition-transform duration-200" 
-              :class="{ 'rotate-90': showMenu }"
+              class="w-5 h-5 transition-all duration-300" 
+              :class="{ 
+                'rotate-90 text-blue-600 dark:text-blue-400': showMenu,
+                'text-gray-600 dark:text-gray-300': !showMenu
+              }"
             />
           </button>
 
           <!-- Dropdown Menu -->
-          <div
-            v-show="showMenu"
-            class="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[60] overflow-hidden"
+          <Transition
+            enter-active-class="transition ease-out duration-200"
+            enter-from-class="transform opacity-0 scale-95 translate-y-1"
+            enter-to-class="transform opacity-100 scale-100 translate-y-0"
+            leave-active-class="transition ease-in duration-150"
+            leave-from-class="transform opacity-100 scale-100 translate-y-0"
+            leave-to-class="transform opacity-0 scale-95 translate-y-1"
           >
-            <div class="py-2">
-              <!-- Ver Perfil -->
-              <button
-                class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-3 transition-colors group"
-                @click="handleViewProfile"
-              >
-                <EyeIcon class="w-4 h-4 text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                <span class="group-hover:text-blue-600 dark:group-hover:text-blue-400">Ver Perfil</span>
-              </button>
+            <div
+              v-show="showMenu"
+              class="absolute right-0 top-full mt-3 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 z-[60] overflow-hidden backdrop-blur-sm"
+              style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);"
+            >
+              <!-- Header del menú -->
+              <div class="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 border-b border-gray-200 dark:border-gray-600">
+                <div class="flex items-center space-x-3">
+                  <div :class="avatarBackgroundColor" class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                    {{ getInitials(`${student.nombre} ${student.apellido}`) }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                      {{ `${student.nombre} ${student.apellido}` }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {{ student.email }}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-              <!-- Divider -->
-              <div class="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+              <div class="py-2">
+                <!-- Ver Perfil -->
+                <button
+                  class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 dark:hover:from-blue-900/20 dark:hover:to-blue-800/20 flex items-center space-x-3 transition-all duration-200 group relative overflow-hidden"
+                  @click="handleViewProfile"
+                >
+                  <div class="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-blue-500/0 group-hover:from-blue-500/5 group-hover:to-blue-500/10 transition-all duration-200" />
+                  <div class="relative z-10 flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
+                      <EyeIcon class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <span class="font-medium text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">Ver Perfil</span>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Información completa</p>
+                    </div>
+                  </div>
+                </button>
 
-              <!-- Editar Student -->
-              <button
-                v-if="permissions.canEdit"
-                class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center space-x-3 transition-colors group"
-                @click="handleEdit"
-              >
-                <PencilIcon class="w-4 h-4 text-gray-500 group-hover:text-green-600 dark:group-hover:text-green-400" />
-                <span class="group-hover:text-green-600 dark:group-hover:text-green-400">Editar Estudiante</span>
-              </button>
+                <!-- Divider -->
+                <div class="mx-4 my-2 h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-600 to-transparent" />
 
-              <!-- Toggle Status -->
-              <button
-                v-if="permissions.canEdit"
-                class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 flex items-center space-x-3 transition-colors group"
-                @click="handleToggleStatus"
-              >
-                <UserIcon class="w-4 h-4 text-gray-500 group-hover:text-yellow-600 dark:group-hover:text-yellow-400" />
-                <span class="group-hover:text-yellow-600 dark:group-hover:text-yellow-400">
-                  {{ student.activo ? 'Desactivar' : 'Activar' }} Estudiante
-                </span>
-              </button>
+                <!-- Editar Student -->
+                <button
+                  v-if="permissions.canEdit"
+                  class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-emerald-100 dark:hover:from-emerald-900/20 dark:hover:to-emerald-800/20 flex items-center space-x-3 transition-all duration-200 group relative overflow-hidden"
+                  @click="handleEdit"
+                >
+                  <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/5 group-hover:to-emerald-500/10 transition-all duration-200" />
+                  <div class="relative z-10 flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition-colors">
+                      <PencilIcon class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <span class="font-medium text-gray-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">Editar</span>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Modificar información</p>
+                    </div>
+                  </div>
+                </button>
 
-              <!-- Divider antes de eliminar -->
-              <div v-if="permissions.canDelete" class="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+                <!-- Toggle Status -->
+                <button
+                  v-if="permissions.canEdit"
+                  class="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-amber-50 hover:to-amber-100 dark:hover:from-amber-900/20 dark:hover:to-amber-800/20 flex items-center space-x-3 transition-all duration-200 group relative overflow-hidden"
+                  @click="handleToggleStatus"
+                >
+                  <div class="absolute inset-0 bg-gradient-to-r from-amber-500/0 to-amber-500/0 group-hover:from-amber-500/5 group-hover:to-amber-500/10 transition-all duration-200" />
+                  <div class="relative z-10 flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center group-hover:bg-amber-200 dark:group-hover:bg-amber-800/50 transition-colors">
+                      <UserIcon class="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <span class="font-medium text-gray-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
+                        {{ student.activo ? 'Desactivar' : 'Activar' }}
+                      </span>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">
+                        {{ student.activo ? 'Suspender acceso' : 'Reactivar acceso' }}
+                      </p>
+                    </div>
+                  </div>
+                </button>
 
-              <!-- Delete Student -->
-              <button
-                v-if="permissions.canDelete"
-                class="w-full px-4 py-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors group"
-                @click="handleDelete"
-              >
-                <TrashIcon class="w-4 h-4 group-hover:text-red-700 dark:group-hover:text-red-300" />
-                <span class="group-hover:text-red-700 dark:group-hover:text-red-300 font-medium">Eliminar Estudiante</span>
-              </button>
+                <!-- Divider antes de eliminar -->
+                <div v-if="permissions.canDelete" class="mx-4 my-2 h-px bg-gradient-to-r from-transparent via-red-200 dark:via-red-600/50 to-transparent" />
+
+                <!-- Delete Student -->
+                <button
+                  v-if="permissions.canDelete"
+                  class="w-full px-4 py-3 text-left text-sm hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-red-900/20 dark:hover:to-red-800/20 flex items-center space-x-3 transition-all duration-200 group relative overflow-hidden"
+                  @click="handleDelete"
+                >
+                  <div class="absolute inset-0 bg-gradient-to-r from-red-500/0 to-red-500/0 group-hover:from-red-500/5 group-hover:to-red-500/10 transition-all duration-200" />
+                  <div class="relative z-10 flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center group-hover:bg-red-200 dark:group-hover:bg-red-800/50 transition-colors">
+                      <TrashIcon class="w-4 h-4 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div>
+                      <span class="font-medium text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300 transition-colors">Eliminar</span>
+                      <p class="text-xs text-red-500/70 dark:text-red-400/70">Acción permanente</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Footer con información adicional -->
+              <div class="px-4 py-2 bg-gray-50/50 dark:bg-gray-700/30 border-t border-gray-200/50 dark:border-gray-600/50">
+                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span class="flex items-center space-x-1">
+                    <div class="w-2 h-2 rounded-full" :class="student.activo ? 'bg-green-400' : 'bg-red-400'"></div>
+                    <span>{{ student.activo ? 'Activo' : 'Inactivo' }}</span>
+                  </span>
+                  <span>ID: {{ student.id.slice(-6) }}</span>
+                </div>
+              </div>
             </div>
-          </div>
+          </Transition>
         </div>
       </div>
 
@@ -353,6 +431,7 @@ import {
   PauseIcon,
   ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/vue/24/outline';
+import { Transition } from 'vue';
 import type { Student } from '@/types';
 import { getStudentAttendanceMetrics } from '../../Students/services/attendanceAnalysis';
 import type { AttendanceMetrics } from '../../Students/services/attendanceAnalysis';

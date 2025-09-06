@@ -80,12 +80,22 @@
 
               <div class="mt-4 space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div v-if="student.age" class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Edad</h4>
-                    <p class="text-base text-gray-900 dark:text-gray-100">{{ student.age }} años</p>
+                  <div
+                    v-if="student.age"
+                    class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md"
+                  >
+                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Edad
+                    </h4>
+                    <p class="text-base text-gray-900 dark:text-gray-100">
+                      {{ student.age }} años
+                    </p>
                   </div>
 
-                  <div v-if="student.instrument" class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                  <div
+                    v-if="student.instrument"
+                    class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md"
+                  >
                     <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Instrumento
                     </h4>
@@ -94,28 +104,53 @@
                     </p>
                   </div>
 
-                  <div v-if="student.email" class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Email</h4>
-                    <p class="text-base text-gray-900 dark:text-gray-100">{{ student.email }}</p>
+                  <div
+                    v-if="student.email"
+                    class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md"
+                  >
+                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Email
+                    </h4>
+                    <p class="text-base text-gray-900 dark:text-gray-100">
+                      {{ student.email }}
+                    </p>
                   </div>
 
-                  <div v-if="student.phone" class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Teléfono</h4>
-                    <p class="text-base text-gray-900 dark:text-gray-100">{{ student.phone }}</p>
+                  <div
+                    v-if="student.phone"
+                    class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md"
+                  >
+                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Teléfono
+                    </h4>
+                    <p class="text-base text-gray-900 dark:text-gray-100">
+                      {{ student.phone }}
+                    </p>
                   </div>
 
                   <div
                     v-if="student.address"
                     class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md sm:col-span-2"
                   >
-                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Dirección</h4>
-                    <p class="text-base text-gray-900 dark:text-gray-100">{{ student.address }}</p>
+                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Dirección
+                    </h4>
+                    <p class="text-base text-gray-900 dark:text-gray-100">
+                      {{ student.address }}
+                    </p>
                   </div>
                 </div>
 
-                <div v-if="student.notes" class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-                  <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">Notas</h4>
-                  <p class="text-base text-gray-900 dark:text-gray-100">{{ student.notes }}</p>
+                <div
+                  v-if="student.notes"
+                  class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md"
+                >
+                  <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    Notas
+                  </h4>
+                  <p class="text-base text-gray-900 dark:text-gray-100">
+                    {{ student.notes }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -123,12 +158,14 @@
         </div>
 
         <!-- Actions -->
-        <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+        <div
+          class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
+        >
           <button
             class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
             @click="viewFullProfile"
           >
-            Ver perfil completo
+            Ver perfil
           </button>
           <button
             type="button"
@@ -145,26 +182,26 @@
 
 <script setup lang="ts">
 interface Student {
-  id: string
-  name: string
-  age?: number
-  instrument?: string
-  email?: string
-  phone?: string
-  address?: string
-  notes?: string
+  id: string;
+  name: string;
+  age?: number;
+  instrument?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
 }
 
 const props = defineProps<{
-  student: Student
-  show: boolean
+  student: Student;
+  show: boolean;
 }>();
 
-const emit = defineEmits(['close', 'view-profile']);
+const emit = defineEmits(["close", "view-profile"]);
 
 // Handle viewing full profile
 const viewFullProfile = () => {
-  emit('view-profile', props.student.id);
+  emit("view-profile", props.student.id);
 };
 </script>
 
@@ -176,9 +213,7 @@ const viewFullProfile = () => {
 /* Add animation for modal entrance and exit */
 .modal-enter-active,
 .modal-leave-active {
-  transition:
-    opacity 0.3s,
-    transform 0.3s;
+  transition: opacity 0.3s, transform 0.3s;
 }
 
 .modal-enter-from,

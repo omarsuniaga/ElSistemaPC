@@ -66,7 +66,7 @@
       <div class="max-w-4xl mx-auto">
         <!-- Creation Form Card -->
         <div
-          class="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700"
+          class="bg-white dark:bg-gray-800 shadow-sm rounded-lg mb-24 border border-gray-200 dark:border-gray-700"
         >
           <!-- Form Header -->
           <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
@@ -101,6 +101,7 @@
                 </label>
                 <input
                   id="nombre"
+                  ref="nombreInputRef"
                   v-model="form.nombre"
                   type="text"
                   class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
@@ -343,22 +344,112 @@
 
               <!-- Grade Level -->
               <div>
-                <label
-                  for="grade"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Nivel
                 </label>
-                <select
-                  id="grade"
-                  v-model="form.grade"
-                  class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-                >
-                  <option value="">Seleccionar nivel</option>
-                  <option value="beginner">Principiante</option>
-                  <option value="intermediate">Intermedio</option>
-                  <option value="advanced">Avanzado</option>
-                </select>
+                <div class="flex items-center space-x-4">
+                  <!-- Principiante -->
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      v-model="form.grade"
+                      type="radio"
+                      value="beginner"
+                      class="sr-only"
+                    />
+                    <div class="relative">
+                      <div
+                        :class="[
+                          'w-6 h-6 rounded border-2 flex items-center justify-center transition-colors',
+                          form.grade === 'beginner'
+                            ? 'bg-yellow-500 border-yellow-500'
+                            : 'bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-600'
+                        ]"
+                      >
+                        <svg
+                          v-if="form.grade === 'beginner'"
+                          class="w-4 h-4 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Principiante</span>
+                  </label>
+
+                  <!-- Intermedio -->
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      v-model="form.grade"
+                      type="radio"
+                      value="intermediate"
+                      class="sr-only"
+                    />
+                    <div class="relative">
+                      <div
+                        :class="[
+                          'w-6 h-6 rounded border-2 flex items-center justify-center transition-colors',
+                          form.grade === 'intermediate'
+                            ? 'bg-orange-500 border-orange-500'
+                            : 'bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-600'
+                        ]"
+                      >
+                        <svg
+                          v-if="form.grade === 'intermediate'"
+                          class="w-4 h-4 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Intermedio</span>
+                  </label>
+
+                  <!-- Avanzado -->
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      v-model="form.grade"
+                      type="radio"
+                      value="advanced"
+                      class="sr-only"
+                    />
+                    <div class="relative">
+                      <div
+                        :class="[
+                          'w-6 h-6 rounded border-2 flex items-center justify-center transition-colors',
+                          form.grade === 'advanced'
+                            ? 'bg-green-500 border-green-500'
+                            : 'bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-600'
+                        ]"
+                      >
+                        <svg
+                          v-if="form.grade === 'advanced'"
+                          class="w-4 h-4 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Avanzado</span>
+                  </label>
+                </div>
                 <p
                   v-if="errors.grade"
                   class="mt-1 text-sm text-red-600 dark:text-red-400"
@@ -369,21 +460,112 @@
 
               <!-- Status -->
               <div>
-                <label
-                  for="status"
-                  class="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Estado Inicial
                 </label>
-                <select
-                  id="status"
-                  v-model="form.status"
-                  class="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-                >
-                  <option value="pending">Pendiente</option>
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                </select>
+                <div class="flex items-center space-x-4">
+                  <!-- Activo -->
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="form.status"
+                      value="active"
+                      class="sr-only"
+                    />
+                    <div class="relative">
+                      <div
+                        :class="[
+                          'w-6 h-6 rounded border-2 flex items-center justify-center transition-colors',
+                          form.status === 'active'
+                            ? 'bg-green-500 border-green-500'
+                            : 'bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-600'
+                        ]"
+                      >
+                        <svg
+                          v-if="form.status === 'active'"
+                          class="w-4 h-4 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Activo</span>
+                  </label>
+
+                  <!-- Inactivo -->
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="form.status"
+                      value="inactive"
+                      class="sr-only"
+                    />
+                    <div class="relative">
+                      <div
+                        :class="[
+                          'w-6 h-6 rounded border-2 flex items-center justify-center transition-colors',
+                          form.status === 'inactive'
+                            ? 'bg-red-500 border-red-500'
+                            : 'bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-600'
+                        ]"
+                      >
+                        <svg
+                          v-if="form.status === 'inactive'"
+                          class="w-4 h-4 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Inactivo</span>
+                  </label>
+
+                  <!-- Pendiente -->
+                  <label class="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      v-model="form.status"
+                      value="pending"
+                      class="sr-only"
+                    />
+                    <div class="relative">
+                      <div
+                        :class="[
+                          'w-6 h-6 rounded border-2 flex items-center justify-center transition-colors',
+                          form.status === 'pending'
+                            ? 'bg-yellow-500 border-yellow-500'
+                            : 'bg-white border-gray-300 dark:bg-gray-700 dark:border-gray-600'
+                        ]"
+                      >
+                        <svg
+                          v-if="form.status === 'pending'"
+                          class="w-4 h-4 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Pendiente</span>
+                  </label>
+                </div>
               </div>
 
               <!-- Notes -->
@@ -462,17 +644,18 @@ import {
   MusicalNoteIcon,
 } from '@heroicons/vue/24/outline';
 
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-// import { useAdminStudentsStore } from '../store/adminStudents';
-// import type { Student } from '../store/adminStudents';
+
+import { useStudentsStore } from '@/modulos/Students/store/students';
 
 // Router and stores
 const router = useRouter();
-// const studentsStore = useAdminStudentsStore(); // No usado actualmente
+const studentsStore = useStudentsStore();
 
 // State
 const isSubmitting = ref(false);
+const nombreInputRef = ref<HTMLInputElement | null>(null);
 
 // Form data
 const form = reactive({
@@ -486,8 +669,8 @@ const form = reactive({
   parentPhone: '',
   parentEmail: '',
   instrument: '',
-  grade: '' as 'beginner' | 'intermediate' | 'advanced' | '',
-  status: 'pending' as 'active' | 'inactive' | 'pending',
+  grade: '',
+  status: 'active',
   notes: '',
 });
 
@@ -504,8 +687,6 @@ const errors = reactive({
   instrument: '',
   grade: '',
 });
-
-// No longer needed - using simple text input
 
 // Methods
 const validateForm = (): boolean => {
@@ -641,32 +822,45 @@ const handleSubmit = async () => {
       fecInscripcion: new Date().toISOString().split('T')[0],
       avatar: '',
       documentos: {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    // Usar el servicio directo de Firebase que maneja la estructura correcta
-    const { createStudentFirebase } = await import('@/modulos/Students/service/students');
-    const newStudent = await createStudentFirebase(studentData);
+    // Usar el store para crear el estudiante y actualizar la lista automáticamente
+    await studentsStore.addStudent(studentData);
 
-    // Navigate to the created student's detail page or back to list
-    router.push(`/admin/students/${newStudent.id}`);
+    // Navigate back to the students list
+    router.push('/admin/students');
   } catch (error: unknown) {
     console.error('Error creating student:', error);
 
     // Show user-friendly error message
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    if (errorMessage.includes('fecha')) {
-      alert('Error: ' + errorMessage);
-    } else if (errorMessage.includes('Invalid time value')) {
+    if (errorMessage.includes('ya está registrado en el sistema')) {
+      alert(
+        '⚠️ Estudiante Duplicado\n\n' +
+          errorMessage +
+          '\n\nPor favor verifica los datos antes de continuar.'
+      );
+    } else if (errorMessage.includes('fecha')) {
       alert('Error: Por favor verifica que todas las fechas sean válidas');
     } else {
       alert(
-        'Error al crear el estudiante. Por favor verifica los datos e inténtalo de nuevo.',
+        'Error al crear el estudiante. Por favor verifica los datos e inténtalo de nuevo.'
       );
     }
   } finally {
     isSubmitting.value = false;
   }
 };
+
+// Auto-focus en el primer campo cuando se monta el componente
+onMounted(async () => {
+  await nextTick();
+  if (nombreInputRef.value) {
+    nombreInputRef.value.focus();
+  }
+});
 </script>
 
 <style scoped>

@@ -34,6 +34,44 @@ export const verifyDatabaseConnection = async (): Promise<boolean> => {
   }
 };
 
+// Verificar si un estudiante ya existe por nombre y apellido
+export const checkStudentExists = async (nombre: string, apellido: string): Promise<boolean> => {
+  try {
+    console.log(`[checkStudentExists] Verificando si existe: ${nombre} ${apellido}`);
+    const studentsCollection = collection(db, COLLECTION_NAME);
+    
+    // Normalizar nombres para comparación (sin espacios extra, lowercase)
+    const normalizedNombre = nombre.trim().toLowerCase();
+    const normalizedApellido = apellido.trim().toLowerCase();
+    
+    // Buscar por nombre y apellido exactos
+    const q = query(
+      studentsCollection,
+      where('nombre', '==', nombre.trim()),
+      where('apellido', '==', apellido.trim())
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const exists = !querySnapshot.empty;
+    
+    if (exists) {
+      console.log(`[checkStudentExists] Estudiante encontrado: ${nombre} ${apellido}`);
+      // Mostrar información del estudiante existente
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        console.log(`[checkStudentExists] ID: ${doc.id}, Activo: ${data.activo}`);
+      });
+    } else {
+      console.log(`[checkStudentExists] Estudiante no encontrado: ${nombre} ${apellido}`);
+    }
+    
+    return exists;
+  } catch (error) {
+    console.error('[checkStudentExists] Error verificando estudiante:', error);
+    throw new Error('Error al verificar si el estudiante ya existe');
+  }
+};
+
 // Función auxiliar para mapear datos del estudiante
 const mapStudentData = (id: string, data: any): Student => {
   return {
@@ -357,22 +395,29 @@ export const getStudentByIdFirebase = async (id: string): Promise<Student | null
   }
 };
 
-export const createStudentFirebase = async (student: Omit<Student, 'id'>): Promise<Student> => {
+export const createStudentFirebase = async (studentData: Omit<Student, 'id'>): Promise<Student> => {
   try {
-    console.log('[createStudentFirebase] Starting student creation process');
-    console.log('[createStudentFirebase] Input student data:', JSON.stringify(student, null, 2));
+    console.log('[createStudentFirebase] Iniciando creación de estudiante:', studentData);
 
-    // Verify database connection first
+    // Verificar conexión a la base de datos
     const isConnected = await verifyDatabaseConnection();
     if (!isConnected) {
       throw new Error('No se pudo conectar a la base de datos');
     }
 
+    // Verificar si el estudiante ya existe
+    if (studentData.nombre && studentData.apellido) {
+      const exists = await checkStudentExists(studentData.nombre, studentData.apellido);
+      if (exists) {
+        throw new Error(`El estudiante ${studentData.nombre} ${studentData.apellido} ya está registrado en el sistema`);
+      }
+    }
+
     // Normalizar el objeto student para asegurarse de que grupo sea siempre un array
     const normalizedStudent = {
-      ...student,
+      ...studentData,
       // Asegurarse de que grupo sea un array
-      grupo: Array.isArray(student.grupo) ? student.grupo : student.grupo ? [student.grupo] : [],
+      grupo: Array.isArray(studentData.grupo) ? studentData.grupo : studentData.grupo ? [studentData.grupo] : [],
     };
 
     console.log(
@@ -425,6 +470,12 @@ export const createStudentFirebase = async (student: Omit<Student, 'id'>): Promi
       error?.code,
       error?.stack,
     );
+    
+    // Si el error ya es sobre estudiante duplicado, no envolver el mensaje
+    if (error?.message?.includes('ya está registrado en el sistema')) {
+      throw error;
+    }
+    
     throw new Error('Error al crear el estudiante: ' + (error?.message || 'Error desconocido'));
   }
 };

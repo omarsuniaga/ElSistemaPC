@@ -116,8 +116,8 @@
             hasFilters
               ? "Intenta cambiar tus filtros de búsqueda."
               : activeTab === "shared-classes"
-                ? "No tienes clases compartidas actualmente."
-                : "No tienes clases asignadas actualmente."
+              ? "No tienes clases compartidas actualmente."
+              : "No tienes clases asignadas actualmente."
           }}
         </p>
       </div>
@@ -146,7 +146,9 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div class="flex items-center mb-2">
-                  <h3 class="text-lg font-semibold mr-3">{{ class_.nombre || class_.name }}</h3>
+                  <h3 class="text-lg font-semibold mr-3">
+                    {{ class_.nombre || class_.name }}
+                  </h3>
                   <span
                     class="px-2 py-1 text-xs rounded-full"
                     :class="getClassTypeClass(class_.type || 'group')"
@@ -154,7 +156,9 @@
                     {{ getClassTypeLabel(class_.type || "group") }}
                   </span>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400 mb-2">{{ class_.description }}</p>
+                <p class="text-gray-600 dark:text-gray-400 mb-2">
+                  {{ class_.description }}
+                </p>
                 <div class="flex flex-wrap gap-2 mb-3">
                   <span
                     class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full"
@@ -171,7 +175,10 @@
                   <div class="flex items-center">
                     <UserGroupIcon class="h-5 w-5 mr-2 text-gray-500" />
                     <span class="text-sm"
-                      >{{ (class_.studentIds || class_.alumnos)?.length || 0 }} estudiantes</span
+                      >{{
+                        (class_.studentIds || class_.alumnos)?.length || 0
+                      }}
+                      estudiantes</span
                     >
                   </div>
                   <div class="flex items-center">
@@ -212,7 +219,8 @@
                 :key="index"
                 class="px-3 py-1 bg-white dark:bg-gray-700 text-sm rounded-md shadow-sm"
               >
-                {{ schedule.day }}, {{ schedule.startTime }} - {{ formatEndTime(schedule) }} ·
+                {{ schedule.day }}, {{ schedule.startTime }} -
+                {{ formatEndTime(schedule) }} ·
                 {{ schedule.location }}
               </div>
             </div>
@@ -260,8 +268,12 @@
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
     >
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl">
-        <div class="flex justify-between items-center px-6 py-4 border-b dark:border-gray-700">
-          <h3 class="text-lg font-semibold">Estudiantes de {{ selectedClassStudents.name }}</h3>
+        <div
+          class="flex justify-between items-center px-6 py-4 border-b dark:border-gray-700"
+        >
+          <h3 class="text-lg font-semibold">
+            Estudiantes de {{ selectedClassStudents.name }}
+          </h3>
           <button
             class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             @click="selectedClassStudents = null"
@@ -270,7 +282,10 @@
           </button>
         </div>
         <div class="p-6">
-          <div v-if="classStudents.length > 0" class="space-y-4 max-h-[60vh] overflow-y-auto">
+          <div
+            v-if="classStudents.length > 0"
+            class="space-y-4 max-h-[60vh] overflow-y-auto"
+          >
             <div
               v-for="student in classStudents"
               :key="student.id"
@@ -303,8 +318,12 @@
           </div>
           <div v-else class="text-center py-12">
             <UserIcon class="h-12 w-12 mx-auto text-gray-400" />
-            <h3 class="mt-2 text-lg font-medium text-gray-500">No hay estudiantes asignados</h3>
-            <p class="mt-1 text-gray-500">Esta clase aún no tiene estudiantes asignados.</p>
+            <h3 class="mt-2 text-lg font-medium text-gray-500">
+              No hay estudiantes asignados
+            </h3>
+            <p class="mt-1 text-gray-500">
+              Esta clase aún no tiene estudiantes asignados.
+            </p>
           </div>
         </div>
         <div class="px-6 py-4 border-t dark:border-gray-700 flex justify-end">
@@ -324,8 +343,10 @@
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
     >
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-2xl">
-        <div class="flex justify-between items-center px-6 py-4 border-b dark:border-gray-700">
-          <h3 class="text-lg font-semibold">Detalles del Estudiante</h3>
+        <div
+          class="flex justify-between items-center px-6 py-4 border-b dark:border-gray-700"
+        >
+          <h3 class="text-lg font-semibold">Detalles Estudiante</h3>
           <button
             class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             @click="selectedStudentDetails = null"
@@ -340,14 +361,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { format, addMinutes, parseISO } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { useRouter } from 'vue-router';
-import { useClassesStore } from '../../stores/classes';
-import { useStudentsStore } from '../../modulos/Students/store/students';
-import { useTeachersStore } from '../../modulos/Teachers/store/teachers';
-import type { Student } from '../../modulos/Students/types/student';
+import { ref, computed, onMounted, watch } from "vue";
+import { format, addMinutes, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
+import { useRouter } from "vue-router";
+import { useClassesStore } from "../../stores/classes";
+import { useStudentsStore } from "../../modulos/Students/store/students";
+import { useTeachersStore } from "../../modulos/Teachers/store/teachers";
+import type { Student } from "../../modulos/Students/types/student";
 import {
   MagnifyingGlassIcon,
   AcademicCapIcon,
@@ -358,42 +379,42 @@ import {
   CalendarIcon,
   DocumentTextIcon,
   XMarkIcon,
-} from '@heroicons/vue/24/outline';
-import StudentAvatar from '../../modulos/Students/components/StudentAvatar.vue';
-import SharedClassCard from '../../modulos/Teachers/components/SharedClassCard.vue';
+} from "@heroicons/vue/24/outline";
+import StudentAvatar from "../../modulos/Students/components/StudentAvatar.vue";
+import SharedClassCard from "../../modulos/Teachers/components/SharedClassCard.vue";
 
 // Interfaces
 interface Schedule {
-  day: string
-  startTime: string
-  endTime: string
-  location?: string
+  day: string;
+  startTime: string;
+  endTime: string;
+  location?: string;
 }
 
 interface TeacherClass {
-  id: string
-  nombre: string
-  name?: string // Para compatibilidad
-  description?: string
-  instrument?: string
-  level?: string
-  type?: 'individual' | 'group'
-  teacherId: string
-  studentIds?: string[]
-  alumnos?: string[] // Nombre real de la propiedad
+  id: string;
+  nombre: string;
+  name?: string; // Para compatibilidad
+  description?: string;
+  instrument?: string;
+  level?: string;
+  type?: "individual" | "group";
+  teacherId: string;
+  studentIds?: string[];
+  alumnos?: string[]; // Nombre real de la propiedad
   horario?: {
-    dia: string
-    horaInicio: string
-    horaFin: string
-  }
-  schedule?: Schedule[]
-  nextDate?: string
-  contenido?: string
+    dia: string;
+    horaInicio: string;
+    horaFin: string;
+  };
+  schedule?: Schedule[];
+  nextDate?: string;
+  contenido?: string;
   temas?: Array<{
-    id: string
-    titulo: string
-    descripcion?: string
-  }>
+    id: string;
+    titulo: string;
+    descripcion?: string;
+  }>;
 }
 
 // Router
@@ -405,22 +426,22 @@ const studentsStore = useStudentsStore();
 const teachersStore = useTeachersStore();
 
 // Estado
-const searchQuery = ref('');
-const filterInstrument = ref('');
-const filterLevel = ref('');
+const searchQuery = ref("");
+const filterInstrument = ref("");
+const filterLevel = ref("");
 const currentPage = ref(1);
 const pageSize = 5;
 const selectedClassStudents = ref<TeacherClass | null>(null);
 const classStudents = ref<Student[]>([]);
-const activeTab = ref('my-classes');
+const activeTab = ref("my-classes");
 const teacherClasses = ref<TeacherClass[]>([]);
 
 // ID del profesor (simulado)
-const teacherId = '1'; // En un caso real, se obtendría del usuario autenticado
+const teacherId = "1"; // En un caso real, se obtendría del usuario autenticado
 
 // Opciones de filtro
-const instruments = ['Piano', 'Violín', 'Guitarra', 'Flauta', 'Violonchelo', 'Percusión'];
-const levels = ['Principiante', 'Intermedio', 'Avanzado'];
+const instruments = ["Piano", "Violín", "Guitarra", "Flauta", "Violonchelo", "Percusión"];
+const levels = ["Principiante", "Intermedio", "Avanzado"];
 
 // Estadísticas de clases
 const classesStats = computed(() => {
@@ -437,7 +458,7 @@ const classesStats = computed(() => {
       studentList.forEach((id: string) => uniqueStudents.add(id));
     }
 
-    if (cls.type === 'individual') {
+    if (cls.type === "individual") {
       individual++;
     } else {
       group++;
@@ -458,7 +479,7 @@ const sharedClasses = ref<TeacherClass[]>([]);
 // Clases mostradas según la pestaña activa
 const myClasses = computed(() => teacherClasses.value);
 const currentClasses = computed(() => {
-  return activeTab.value === 'my-classes' ? myClasses.value : sharedClasses.value;
+  return activeTab.value === "my-classes" ? myClasses.value : sharedClasses.value;
 });
 
 // Clases filtradas (usa currentClasses en lugar de teacherClasses)
@@ -469,8 +490,8 @@ const filteredClasses = computed(() => {
     const query = searchQuery.value.toLowerCase();
     result = result.filter(
       (cls) =>
-        (cls.name ?? '').toLowerCase().includes(query) ||
-        (cls.instrument && cls.instrument.toLowerCase().includes(query)),
+        (cls.name ?? "").toLowerCase().includes(query) ||
+        (cls.instrument && cls.instrument.toLowerCase().includes(query))
     );
   }
 
@@ -496,63 +517,65 @@ const paginatedClasses = computed(() => {
 const totalPages = computed(() => Math.ceil(filteredClasses.value.length / pageSize));
 
 // Verificar si hay filtros activos
-const hasFilters = computed(() => searchQuery.value || filterInstrument.value || filterLevel.value);
+const hasFilters = computed(
+  () => searchQuery.value || filterInstrument.value || filterLevel.value
+);
 
 // Formatear el número de horarios
 const formatScheduleCount = (class_: TeacherClass) => {
   const count = class_.schedule?.length || 0;
-  return count === 1 ? '1 sesión semanal' : `${count} sesiones semanales`;
+  return count === 1 ? "1 sesión semanal" : `${count} sesiones semanales`;
 };
 
 // Formatear la fecha de la próxima clase
 const formatNextClass = (class_: TeacherClass) => {
-  if (!class_.nextDate) return 'Sin programación';
+  if (!class_.nextDate) return "Sin programación";
 
   const nextDate = parseISO(class_.nextDate);
-  return format(nextDate, 'd \'de\' MMMM', { locale: es });
+  return format(nextDate, "d 'de' MMMM", { locale: es });
 };
 
 // Formatear la hora de finalización
 const formatEndTime = (schedule: Schedule) => {
-  const [hours, minutes] = schedule.startTime.split(':').map(Number);
+  const [hours, minutes] = schedule.startTime.split(":").map(Number);
   const startDate = new Date();
   startDate.setHours(hours, minutes, 0);
 
   const durationMinutes = 90; // 1.5 horas por defecto
   const endDate = addMinutes(startDate, durationMinutes);
 
-  return format(endDate, 'HH:mm');
+  return format(endDate, "HH:mm");
 };
 
 // Obtener etiqueta del tipo de clase
 const getClassTypeLabel = (type: string) => {
   switch (type) {
-  case 'individual':
-    return 'Individual';
-  case 'group':
-    return 'Grupal';
-  case 'ensemble':
-    return 'Conjunto';
-  case 'workshop':
-    return 'Taller';
-  default:
-    return 'Regular';
+    case "individual":
+      return "Individual";
+    case "group":
+      return "Grupal";
+    case "ensemble":
+      return "Conjunto";
+    case "workshop":
+      return "Taller";
+    default:
+      return "Regular";
   }
 };
 
 // Obtener clase CSS para el tipo de clase
 const getClassTypeClass = (type: string) => {
   switch (type) {
-  case 'individual':
-    return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200';
-  case 'group':
-    return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200';
-  case 'ensemble':
-    return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200';
-  case 'workshop':
-    return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200';
-  default:
-    return 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200';
+    case "individual":
+      return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200";
+    case "group":
+      return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200";
+    case "ensemble":
+      return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200";
+    case "workshop":
+      return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200";
+    default:
+      return "bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200";
   }
 };
 
@@ -573,10 +596,10 @@ const showStudentList = async (class_: TeacherClass) => {
     // Filtrar estudiantes de esta clase
     const studentList = class_.studentIds || class_.alumnos || [];
     classStudents.value = studentsStore.students.filter((student) =>
-      studentList.includes(student.id),
+      studentList.includes(student.id)
     );
   } catch (error) {
-    console.error('Error al cargar estudiantes de la clase:', error);
+    console.error("Error al cargar estudiantes de la clase:", error);
   }
 };
 
@@ -613,7 +636,7 @@ onMounted(async () => {
     // Cargar clases compartidas (donde es asistente)
     sharedClasses.value = await teachersStore.getSharedClasses(teacherId);
   } catch (error) {
-    console.error('Error al cargar clases del profesor:', error);
+    console.error("Error al cargar clases del profesor:", error);
   }
 });
 </script>
@@ -647,9 +670,7 @@ onMounted(async () => {
 
 .stat-card,
 .class-card {
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .stat-card:hover,
